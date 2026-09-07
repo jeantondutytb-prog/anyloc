@@ -7,10 +7,9 @@ export const SITE = {
 };
 
 export const DESTINATIONS = [
+  "Marbella",
   "Ibiza",
   "Mykonos",
-  "Miami",
-  "Marbella",
   "Monaco",
   "Los Angeles",
   "New York",
@@ -178,7 +177,7 @@ export const FEATURES = [
   {
     title: "Lieux favoris",
     description:
-      "Sauvegarde tes spots préférés — Ibiza, Miami, Mykonos — et y retourne en un tap.",
+      "Sauvegarde tes spots préférés — Marbella, Ibiza, Miami — et y retourne en un tap.",
     icon: "Bookmark",
   },
   {
@@ -196,10 +195,10 @@ export const FEATURES = [
 ];
 
 export const SAVED_LOCATIONS = [
-  { name: "Mykonos — Paradise Beach", lat: 37.4467, lng: 25.3289 },
+  { name: "Marbella — Puerto Banús", lat: 36.4848, lng: -4.9526 },
   { name: "Ibiza — Playa d'en Bossa", lat: 38.8767, lng: 1.4024 },
   { name: "Miami — South Beach", lat: 25.7907, lng: -80.13 },
-  { name: "Marbella — Puerto Banús", lat: 36.4848, lng: -4.9526 },
+  { name: "Mykonos — Paradise Beach", lat: 37.4467, lng: 25.3289 },
   { name: "Monaco — Port Hercule", lat: 43.7384, lng: 7.4246 },
   { name: "Valencia — Ciudad de las Artes", lat: 39.4549, lng: -0.3523 },
 ];

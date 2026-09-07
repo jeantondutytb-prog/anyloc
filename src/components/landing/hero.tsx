@@ -28,7 +28,7 @@ export function Hero() {
           <h1 className="text-4xl font-bold tracking-tight text-white sm:text-6xl sm:leading-[1.1]">
             Mets-toi à{" "}
             <span className="gradient-text">
-              Mykonos
+              Marbella
             </span>{" "}
             ce soir.
             <br />
@@ -91,20 +91,20 @@ export function Hero() {
                   </span>
                 </div>
                 <span className="text-sm font-medium text-pink-400">
-                  📍 Mykonos — Paradise Beach
+                  📍 Marbella — Puerto Banús
                 </span>
               </div>
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
                 <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
                   <p className="text-xs text-zinc-500">Sur ta map</p>
                   <p className="mt-1 font-medium text-white">
-                    📍 Mykonos — Paradise Beach
+                    📍 Marbella — Puerto Banús
                   </p>
                 </div>
                 <div className="rounded-xl border border-pink-500/20 bg-pink-500/5 p-4">
                   <p className="text-xs text-pink-400/70">Position système</p>
                   <p className="mt-1 font-medium text-pink-400">
-                    📍 Mykonos, Grèce
+                    📍 Marbella, Espagne
                   </p>
                 </div>
               </div>

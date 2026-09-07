@@ -31,9 +31,9 @@ const LocationMap = dynamic(
 export default function DashboardPage() {
   const [active, setActive] = useState(false);
   const [selected, setSelected] = useState({
-    name: "Mykonos — Paradise Beach",
-    lat: 37.4467,
-    lng: 25.3289,
+    name: "Marbella — Puerto Banús",
+    lat: 36.4848,
+    lng: -4.9526,
   });
 
   return (
