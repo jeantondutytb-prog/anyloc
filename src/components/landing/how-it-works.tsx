@@ -5,19 +5,19 @@ const steps = [
     icon: CreditCard,
     title: "Crée ton compte",
     description:
-      "Choisis une formule, valide en ligne — ton accès Anyloc est prêt en quelques secondes.",
+      "Choisis ta formule, valide en ligne — ton accès Anyloc est prêt en quelques secondes.",
   },
   {
     icon: Download,
-    title: "Configure ton appareil",
+    title: "Configure ton tel",
     description:
-      "Android : tout depuis le téléphone, étape par étape. iPhone : branchement unique à un ordi, puis c'est bon.",
+      "Android : tout depuis le mobile, étape par étape. iPhone : branchement unique à un ordi, puis c'est bon.",
   },
   {
     icon: MapPin,
     title: "Choisis ta destination",
     description:
-      "Sélectionne un point sur la carte, active le signal — toutes tes apps basculent au même endroit.",
+      "Sélectionne un spot sur la map, active le signal — toutes tes apps basculent au même endroit.",
   },
 ];
 
@@ -27,11 +27,11 @@ export function HowItWorks() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
-            En route en quelques minutes
+            Opérationnel en quelques minutes
           </h2>
           <p className="mt-4 text-zinc-600">
-            Pas besoin d&apos;être un expert tech. On t&apos;accompagne de
-            l&apos;inscription à ta première position.
+            Pas besoin d&apos;être un crack en tech. On te guide de
+            l&apos;inscription à ta première loc.
           </p>
         </div>
 

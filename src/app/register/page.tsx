@@ -18,7 +18,7 @@ export default function RegisterPage() {
           Crée ton compte
         </h1>
         <p className="mt-2 text-center text-sm text-zinc-500">
-          3 jours gratuits pour explorer Anyloc — sans engagement
+          3 jours gratuits pour tester Anyloc — sans engagement
         </p>
 
         <form className="mt-8 space-y-4" action="/dashboard">
@@ -59,7 +59,7 @@ export default function RegisterPage() {
             />
           </div>
           <Button type="submit" className="w-full">
-            Démarrer gratuitement
+            Go gratuit
           </Button>
         </form>
 

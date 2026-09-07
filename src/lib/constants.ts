@@ -1,9 +1,9 @@
 export const SITE = {
   name: "Anyloc",
   domain: "anyloc.io",
-  tagline: "Ton GPS. Ton choix. Partout.",
+  tagline: "Ton GPS. Ton délire. Partout.",
   description:
-    "Anyloc te permet de définir où ton téléphone se situe — Snap, Insta, apps de rencontre, jeux : une seule position pour tout l'appareil.",
+    "Anyloc te fait choisir où ton tel se croit — Snap, Insta, apps de rencontre, jeux : une loc pour tout l'appareil.",
 };
 
 export const DESTINATIONS = [
@@ -35,10 +35,10 @@ export const PLANS = [
     period: "/semaine",
     description: "Parfait pour un week-end ou une semaine de test.",
     features: [
-      "Changements de position illimités",
+      "Changements de loc illimités",
       "Compatible avec toutes tes apps",
       "iOS et Android",
-      "Assistance par email",
+      "Support par mail",
     ],
     popular: false,
     stripePriceId: process.env.STRIPE_PRICE_WEEKLY,
@@ -48,13 +48,13 @@ export const PLANS = [
     name: "Mensuel",
     price: "12,99€",
     period: "/mois",
-    description: "Le sweet spot pour un usage régulier.",
+    description: "Le sweet spot si tu l'utilises souvent.",
     features: [
       "Tout le plan Hebdo",
-      "Trajets simulés sur carte",
-      "Bibliothèque de lieux illimitée",
+      "Trajets simulés sur la map",
+      "Bibliothèque de spots illimitée",
       "Accès web (1 profil)",
-      "Nouvelles fonctions en avant-première",
+      "Nouvelles features en avant-première",
     ],
     popular: true,
     stripePriceId: process.env.STRIPE_PRICE_MONTHLY,
@@ -64,14 +64,14 @@ export const PLANS = [
     name: "Annuel",
     price: "49,99€",
     period: "/an",
-    description: "Le meilleur deal si tu l'utilises souvent.",
+    description: "Le meilleur deal si t'es un habitué.",
     savings: "Tu gardes 106€ sur l'année",
     features: [
       "Tout le plan Mensuel",
-      "App iPhone sans ordinateur",
+      "App iPhone sans ordi",
       "Accès web (3 profils)",
       "Support prioritaire",
-      "Mises à jour incluses à vie",
+      "Updates à vie incluses",
     ],
     popular: false,
     stripePriceId: process.env.STRIPE_PRICE_ANNUAL,
@@ -80,7 +80,7 @@ export const PLANS = [
 
 export const COMPARISON = [
   {
-    feature: "Modifie le GPS de tout le téléphone",
+    feature: "Modifie le GPS de tout le tel",
     anyloc: true,
     vpn: false,
     fakeGps: false,
@@ -115,7 +115,7 @@ export const COMPARISON = [
     screenshot: false,
   },
   {
-    feature: "Déplacement simulé crédible",
+    feature: "Trajet simulé crédible",
     anyloc: true,
     vpn: false,
     fakeGps: false,
@@ -125,72 +125,72 @@ export const COMPARISON = [
 
 export const FAQ = [
   {
-    q: "Quelles applications sont compatibles ?",
+    q: "Ça marche sur quelles apps ?",
     a:
-      "Toutes celles qui lisent le GPS de ton appareil : Snapchat, Instagram, Tinder, Bumble, Pokémon GO, Life360, etc. Anyloc agit au niveau du système, pas dans une seule app isolée.",
+      "Toutes celles qui lisent le GPS de ton tel : Snapchat, Insta, Tinder, Bumble, Pokémon GO, Life360, etc. Anyloc agit au niveau du système, pas dans une seule app.",
   },
   {
-    q: "Mes contacts peuvent détecter un faux ?",
+    q: "Mes potes peuvent capter que c'est fake ?",
     a:
-      "Ils voient un pin GPS normal, mis à jour en temps réel — le même signal que ton téléphone enverrait s'il était vraiment sur place. Pas de capture d'écran, pas de montage.",
+      "Ils voient un pin GPS normal, mis à jour en temps réel — le même signal que ton tel enverrait s'il était vraiment sur place. Pas de screen, pas de montage.",
   },
   {
-    q: "Pourquoi un VPN ne marche pas ?",
+    q: "Pourquoi un VPN ça suffit pas ?",
     a:
-      "Un VPN masque ton IP internet, pas ta position physique. Les apps sociales interrogent le capteur GPS du téléphone. Anyloc intervient exactement à cet endroit.",
+      "Un VPN cache ton IP, pas ta position. Les apps sociales checkent le capteur GPS du tel. Anyloc intervient pile là.",
   },
   {
-    q: "Ça fonctionne sur iPhone et Android ?",
+    q: "Ça passe sur iPhone et Android ?",
     a:
-      "Oui. Sur Android, l'installation et la gestion se font entièrement sur le mobile. Sur iPhone, une configuration initiale via Mac ou PC est nécessaire (limite imposée par Apple), puis tu gères tout depuis ton tel.",
+      "Oui. Sur Android, tout se fait depuis le tel. Sur iPhone, faut une config initiale via Mac ou PC (limite Apple), puis tu gères tout depuis ton mobile.",
   },
   {
-    q: "Jailbreak ou modifications risquées ?",
+    q: "Faut jailbreaker ou bidouiller le tel ?",
     a:
-      "Aucun jailbreak. Tu actives le mode développeur sur iOS et quelques réglages sur Android — chaque étape est détaillée dans ton espace client.",
+      "Non. Tu actives le mode dev sur iOS et quelques réglages sur Android — chaque étape est expliquée dans ton espace client.",
   },
   {
-    q: "La position reste active si je quitte l'app ?",
+    q: "La loc reste active si je ferme l'app ?",
     a:
-      "Sur Android, oui, y compris écran verrouillé. Avec le plan annuel sur iPhone, c'est pareil. Sinon, la position reste tant que la session Anyloc tourne.",
+      "Sur Android, oui, même écran verrouillé. Avec le plan annuel sur iPhone, pareil. Sinon, la loc reste tant que la session Anyloc tourne.",
   },
 ];
 
 export const FEATURES = [
   {
-    title: "Zéro limite géographique",
+    title: "Zéro limite géo",
     description:
-      "Tape une ville, une adresse ou un lieu précis et déplace ton pin en quelques secondes.",
+      "Tape une ville, une adresse ou un spot précis et bouge ton pin en quelques secondes.",
     icon: "MapPin",
   },
   {
     title: "Multi-apps native",
     description:
-      "Une modification, toutes les apps impactées — réseaux sociaux, rencontres, jeux, tout passe par le même GPS.",
+      "Un réglage, toutes les apps impactées — réseaux sociaux, rencontres, jeux, tout passe par le même GPS.",
     icon: "Smartphone",
   },
   {
     title: "Trajets simulés",
     description:
-      "Trace un parcours entre deux points, règle la vitesse et ajoute des pauses pour un déplacement crédible.",
+      "Trace un parcours entre deux points, règle la vitesse et mets des pauses pour un déplacement crédible.",
     icon: "Route",
   },
   {
     title: "Spots enregistrés",
     description:
-      "Garde tes destinations favorites — Marbella, Ibiza, Miami — et reviens y instantanément.",
+      "Garde tes destinations fav — Marbella, Ibiza, Miami — et reviens y en un tap.",
     icon: "Bookmark",
   },
   {
     title: "Version web incluse",
     description:
-      "Étends aussi ta position aux interfaces web de Snapchat et d'autres services connectés.",
+      "Étends aussi ta loc aux interfaces web de Snapchat et d'autres services connectés.",
     icon: "Globe",
   },
   {
     title: "Pilotage centralisé",
     description:
-      "Gère ton GPS depuis ton téléphone, ton Mac ou ton PC — un compte, tous tes appareils.",
+      "Gère ton GPS depuis ton tel, ton Mac ou ton PC — un compte, tous tes appareils.",
     icon: "Monitor",
   },
 ];

@@ -42,7 +42,7 @@ export function Header() {
             <Button variant="ghost" size="sm">Connexion</Button>
           </Link>
           <Link href="/register">
-            <Button size="sm">Essayer gratuitement</Button>
+            <Button size="sm">Go test gratuit</Button>
           </Link>
         </div>
       </div>

@@ -40,7 +40,7 @@ export function Pricing() {
             Choisis ton plan
           </h2>
           <p className="mt-4 text-zinc-600">
-            3 jours offerts pour tester. Tu résilies quand tu veux, sans paperasse.
+            3 jours offerts pour tester. Tu résilies quand tu veux, sans galère.
           </p>
         </div>
 
@@ -56,7 +56,7 @@ export function Pricing() {
             >
               {plan.popular && (
                 <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  Recommandé
+                  Le plus populaire
                 </Badge>
               )}
 
@@ -87,7 +87,7 @@ export function Pricing() {
                 onClick={() => handleCheckout(plan.id)}
                 disabled={loading === plan.id}
               >
-                {loading === plan.id ? "Chargement..." : "Choisir ce plan"}
+                {loading === plan.id ? "Chargement..." : "Je prends ce plan"}
               </Button>
             </Card>
           ))}
