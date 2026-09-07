@@ -23,10 +23,10 @@ const steps = [
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="border-y border-white/5 bg-white/[0.02] py-24 sm:py-32">
+    <section id="how-it-works" className="border-y border-zinc-200 bg-pink-50/50 py-24 sm:py-32">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
             Opérationnel en 3 étapes
           </h2>
         </div>
@@ -35,12 +35,12 @@ export function HowItWorks() {
           {steps.map((step, i) => (
             <div key={step.title} className="relative text-center">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-pink-500/10 border border-pink-500/20">
-                <step.icon className="h-6 w-6 text-pink-400" />
+                <step.icon className="h-6 w-6 text-pink-600" />
               </div>
-              <span className="mt-4 inline-block text-xs font-medium text-pink-400">
+              <span className="mt-4 inline-block text-xs font-medium text-pink-600">
                 Étape {i + 1}
               </span>
-              <h3 className="mt-2 text-lg font-semibold text-white">
+              <h3 className="mt-2 text-lg font-semibold text-zinc-900">
                 {step.title}
               </h3>
               <p className="mt-2 text-sm text-zinc-500">{step.description}</p>

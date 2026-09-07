@@ -36,10 +36,10 @@ export function Pricing() {
     <section id="pricing" className="py-24 sm:py-32">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
             Choisis ton plan
           </h2>
-          <p className="mt-4 text-zinc-400">
+          <p className="mt-4 text-zinc-600">
             Essai gratuit 3 jours. Annulation en 1 clic, sans justification.
           </p>
         </div>
@@ -60,22 +60,22 @@ export function Pricing() {
                 </Badge>
               )}
 
-              <h3 className="text-lg font-semibold text-white">{plan.name}</h3>
+              <h3 className="text-lg font-semibold text-zinc-900">{plan.name}</h3>
               <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-4xl font-bold text-white">
+                <span className="text-4xl font-bold text-zinc-900">
                   {plan.price}
                 </span>
                 <span className="text-zinc-500">{plan.period}</span>
               </div>
               {plan.savings && (
-                <p className="mt-1 text-sm text-pink-400">{plan.savings}</p>
+                <p className="mt-1 text-sm text-pink-600">{plan.savings}</p>
               )}
               <p className="mt-2 text-sm text-zinc-500">{plan.description}</p>
 
               <ul className="mt-6 flex-1 space-y-3">
                 {plan.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm text-zinc-400">
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-pink-400" />
+                  <li key={f} className="flex items-start gap-2 text-sm text-zinc-600">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-pink-600" />
                     {f}
                   </li>
                 ))}
@@ -95,7 +95,7 @@ export function Pricing() {
 
         <p className="mt-8 text-center text-sm text-zinc-600">
           Besoin d&apos;un plan entreprise ?{" "}
-          <Link href="mailto:support@anyloc.io" className="text-pink-400 hover:underline">
+          <Link href="mailto:support@anyloc.io" className="text-pink-600 hover:underline">
             Contacte-nous
           </Link>
         </p>

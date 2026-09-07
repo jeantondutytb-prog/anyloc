@@ -8,10 +8,10 @@ const buttonVariants = cva(
       variant: {
         default: "btn-gradient",
         secondary:
-          "bg-white/5 text-white border border-white/10 hover:bg-white/10 hover:border-pink-500/20",
-        ghost: "text-zinc-400 hover:text-white hover:bg-white/5",
+          "bg-white text-zinc-900 border border-zinc-200 shadow-sm hover:bg-zinc-50 hover:border-pink-300",
+        ghost: "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100",
         outline:
-          "border border-pink-500/30 text-pink-400 hover:bg-pink-500/10",
+          "border border-pink-300 text-pink-600 bg-pink-50 hover:bg-pink-100",
       },
       size: {
         default: "h-11 px-6 text-sm",

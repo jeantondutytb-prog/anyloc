@@ -9,6 +9,7 @@ export const SITE = {
 export const DESTINATIONS = [
   "Marbella",
   "Ibiza",
+  "Miami",
   "Mykonos",
   "Monaco",
   "Los Angeles",

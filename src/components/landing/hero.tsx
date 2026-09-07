@@ -25,7 +25,7 @@ export function Hero() {
         >
           <Badge className="mb-6">Nouveau — Spoofing multi-apps</Badge>
 
-          <h1 className="text-4xl font-bold tracking-tight text-white sm:text-6xl sm:leading-[1.1]">
+          <h1 className="text-4xl font-bold tracking-tight text-zinc-900 sm:text-6xl sm:leading-[1.1]">
             Mets-toi à{" "}
             <span className="gradient-text">
               Marbella
@@ -35,7 +35,7 @@ export function Hero() {
             Sans quitter ton lit.
           </h1>
 
-          <p className="mt-6 text-lg text-zinc-400 sm:text-xl">
+          <p className="mt-6 text-lg text-zinc-600 sm:text-xl">
             {SITE.name} change la position GPS de ton téléphone au niveau
             système — Snapchat, Instagram, Tinder, jeux et toutes tes apps.
           </p>
@@ -57,19 +57,19 @@ export function Hero() {
 
           <div className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-zinc-500">
             <span className="flex items-center gap-1.5">
-              <Check className="h-4 w-4 text-pink-400" />
+              <Check className="h-4 w-4 text-pink-600" />
               Position système
             </span>
             <span className="flex items-center gap-1.5">
-              <Check className="h-4 w-4 text-pink-400" />
+              <Check className="h-4 w-4 text-pink-600" />
               iPhone & Android
             </span>
             <span className="flex items-center gap-1.5">
-              <Check className="h-4 w-4 text-pink-400" />
+              <Check className="h-4 w-4 text-pink-600" />
               Toutes les apps
             </span>
             <span className="flex items-center gap-1.5">
-              <Check className="h-4 w-4 text-pink-400" />
+              <Check className="h-4 w-4 text-pink-600" />
               Sans jailbreak
             </span>
           </div>
@@ -82,28 +82,28 @@ export function Hero() {
           className="relative mx-auto mt-16 max-w-4xl"
         >
           <div className="overflow-hidden rounded-2xl border border-pink-500/15 bg-gradient-to-b from-pink-500/10 via-violet-500/5 to-transparent p-1 shadow-2xl shadow-pink-500/10">
-            <div className="rounded-xl bg-[#0f0a18] p-6 sm:p-8">
-              <div className="flex items-center justify-between border-b border-white/5 pb-4">
+            <div className="rounded-xl bg-white p-6 sm:p-8">
+              <div className="flex items-center justify-between border-b border-zinc-200 pb-4">
                 <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full bg-pink-400 animate-pulse" />
-                  <span className="text-sm text-zinc-400">
+                  <div className="h-3 w-3 rounded-full bg-pink-500 animate-pulse" />
+                  <span className="text-sm text-zinc-600">
                     Position active
                   </span>
                 </div>
-                <span className="text-sm font-medium text-pink-400">
+                <span className="text-sm font-medium text-pink-600">
                   📍 Marbella — Puerto Banús
                 </span>
               </div>
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
+                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
                   <p className="text-xs text-zinc-500">Sur ta map</p>
-                  <p className="mt-1 font-medium text-white">
+                  <p className="mt-1 font-medium text-zinc-900">
                     📍 Marbella — Puerto Banús
                   </p>
                 </div>
                 <div className="rounded-xl border border-pink-500/20 bg-pink-500/5 p-4">
-                  <p className="text-xs text-pink-400/70">Position système</p>
-                  <p className="mt-1 font-medium text-pink-400">
+                  <p className="text-xs text-pink-600/70">Position système</p>
+                  <p className="mt-1 font-medium text-pink-600">
                     📍 Marbella, Espagne
                   </p>
                 </div>

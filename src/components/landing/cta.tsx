@@ -6,10 +6,10 @@ export function Cta() {
   return (
     <section className="py-24 sm:py-32">
       <div className="mx-auto max-w-4xl px-4 text-center sm:px-6">
-        <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+        <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
           Ce soir, tu peux être à Marbella.
         </h2>
-        <p className="mt-4 text-zinc-400">
+        <p className="mt-4 text-zinc-600">
           Le seul qui saura que tu n&apos;as pas bougé de ton canapé, c&apos;est
           toi. Pour tous les autres, tu es à l&apos;autre bout du monde.
         </p>

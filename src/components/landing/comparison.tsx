@@ -3,7 +3,7 @@ import { COMPARISON } from "@/lib/constants";
 
 function Cell({ value }: { value: boolean | string }) {
   if (value === true) {
-    return <Check className="mx-auto h-5 w-5 text-pink-400 drop-shadow-[0_0_8px_rgba(244,114,182,0.5)]" />;
+    return <Check className="mx-auto h-5 w-5 text-pink-600 drop-shadow-[0_0_8px_rgba(244,114,182,0.5)]" />;
   }
   if (value === false) {
     return <X className="mx-auto h-5 w-5 text-zinc-600" />;
@@ -16,10 +16,10 @@ export function Comparison() {
     <section className="py-24 sm:py-32">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
             Anyloc vs tout le reste
           </h2>
-          <p className="mt-4 text-zinc-400">
+          <p className="mt-4 text-zinc-600">
             Le seul outil qui change ta position là où ton téléphone la lit
             vraiment — pour toutes tes apps.
           </p>
@@ -28,8 +28,8 @@ export function Comparison() {
         <div className="mt-12 overflow-x-auto">
           <table className="w-full min-w-[640px] border-collapse">
             <thead>
-              <tr className="border-b border-white/10">
-                <th className="py-4 pr-4 text-left text-sm font-medium text-zinc-400" />
+              <tr className="border-b border-zinc-200">
+                <th className="py-4 pr-4 text-left text-sm font-medium text-zinc-600" />
                 <th className="px-4 py-4 text-center text-sm font-semibold gradient-text">
                   Anyloc
                 </th>
@@ -46,8 +46,8 @@ export function Comparison() {
             </thead>
             <tbody>
               {COMPARISON.map((row) => (
-                <tr key={row.feature} className="border-b border-white/5">
-                  <td className="py-4 pr-4 text-sm text-zinc-300">
+                <tr key={row.feature} className="border-b border-zinc-200">
+                  <td className="py-4 pr-4 text-sm text-zinc-700">
                     {row.feature}
                   </td>
                   <td className="px-4 py-4">

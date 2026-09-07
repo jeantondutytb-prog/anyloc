@@ -13,7 +13,7 @@ export function DestinationsMarquee() {
             key={`${city}-${i}`}
             className="inline-flex items-center gap-2 text-sm text-zinc-500"
           >
-            <span className="text-pink-300/80">📍</span>
+            <span className="text-pink-600/80">📍</span>
             {city}
           </span>
         ))}

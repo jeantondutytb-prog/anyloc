@@ -46,17 +46,17 @@ export default function SetupAndroidPage() {
       <main className="mx-auto max-w-3xl px-4 pt-28 pb-20 sm:px-6">
         <Link
           href="/dashboard"
-          className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-white"
+          className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900"
         >
           <ArrowLeft className="h-4 w-4" />
           Retour au dashboard
         </Link>
 
         <Badge className="mt-6">Android 10+</Badge>
-        <h1 className="mt-4 text-3xl font-bold text-white sm:text-4xl">
+        <h1 className="mt-4 text-3xl font-bold text-zinc-900 sm:text-4xl">
           Guide d&apos;installation Android
         </h1>
-        <p className="mt-4 text-zinc-400">
+        <p className="mt-4 text-zinc-600">
           Installation 100% autonome depuis ton téléphone. Le spoofing tient en
           arrière-plan, même écran verrouillé.
         </p>
@@ -64,13 +64,13 @@ export default function SetupAndroidPage() {
         <div className="mt-12 space-y-6">
           {steps.map((step, i) => (
             <Card key={step.title} className="flex gap-4 p-6">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pink-500/10 text-sm font-bold text-pink-400">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pink-500/10 text-sm font-bold text-pink-600">
                 {i + 1}
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <step.icon className="h-4 w-4 text-pink-400" />
-                  <h3 className="font-semibold text-white">{step.title}</h3>
+                  <step.icon className="h-4 w-4 text-pink-600" />
+                  <h3 className="font-semibold text-zinc-900">{step.title}</h3>
                 </div>
                 <p className="mt-2 text-sm text-zinc-500">{step.description}</p>
               </div>
@@ -79,7 +79,7 @@ export default function SetupAndroidPage() {
         </div>
 
         <Card className="mt-8 p-6">
-          <h3 className="font-semibold text-white">Prérequis</h3>
+          <h3 className="font-semibold text-zinc-900">Prérequis</h3>
           <ul className="mt-3 space-y-2 text-sm text-zinc-500">
             <li>• Android 10 ou supérieur</li>
             <li>• Options développeur activées</li>
