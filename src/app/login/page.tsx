@@ -5,8 +5,8 @@ export default function LoginPage() {
   return (
     <AuthShell
       mode="login"
-      title="Bon retour"
-      description="Connecte-toi pour gérer ta position GPS sur toutes tes apps."
+      title="Connexion"
+      description="Entre ton email et ton mot de passe pour accéder à ton espace."
     >
       <LoginForm />
     </AuthShell>

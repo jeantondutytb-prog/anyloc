@@ -5,8 +5,8 @@ export default function SignupPage() {
   return (
     <AuthShell
       mode="signup"
-      title="Commence l'essai gratuit"
-      description="3 jours offerts — email et mot de passe suffisent pour démarrer."
+      title="Crée ton compte"
+      description="3 jours gratuits — email et mot de passe suffisent."
     >
       <SignupForm />
     </AuthShell>
