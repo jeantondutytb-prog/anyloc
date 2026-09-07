@@ -1,11 +1,10 @@
-export type GlobeCity = {
+export type AuthDestination = {
   name: string;
   lat: number;
   lng: number;
 };
 
-/** Destinations populaires — là où les jeunes veulent se montrer. */
-export const GLOBE_CITIES: GlobeCity[] = [
+export const AUTH_DESTINATIONS: AuthDestination[] = [
   { name: "Marbella", lat: 36.509, lng: -4.886 },
   { name: "Ibiza", lat: 38.9067, lng: 1.4206 },
   { name: "Miami", lat: 25.7617, lng: -80.1918 },
@@ -25,20 +24,3 @@ export const GLOBE_CITIES: GlobeCity[] = [
   { name: "Barcelone", lat: 41.3851, lng: 2.1734 },
   { name: "Bangkok", lat: 13.7563, lng: 100.5018 },
 ];
-
-export const GLOBE_RADIUS = 1.7;
-
-export function latLngToGlobeVector3(
-  lat: number,
-  lng: number,
-  radius: number
-): [number, number, number] {
-  const phi = ((90 - lat) * Math.PI) / 180;
-  const theta = ((180 - lng) * Math.PI) / 180;
-
-  const x = -(Math.sin(phi) * Math.cos(theta)) * radius;
-  const y = Math.cos(phi) * radius;
-  const z = Math.sin(phi) * Math.sin(theta) * radius;
-
-  return [x, y, z];
-}

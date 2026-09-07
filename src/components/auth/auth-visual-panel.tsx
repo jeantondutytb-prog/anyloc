@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { MapPin, Navigation, Smartphone, Sparkles } from "lucide-react";
-import { AuthGlobe } from "@/components/auth/auth-globe";
+import { AuthMap } from "@/components/auth/auth-map";
 import { SITE } from "@/lib/constants";
 
 const features = [
@@ -43,7 +43,7 @@ export function AuthVisualPanel({ mode }: { mode: "login" | "signup" }) {
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             className="flex w-full items-center justify-center"
           >
-            <AuthGlobe />
+            <AuthMap />
           </motion.div>
 
           <motion.div
