@@ -10,8 +10,8 @@ const AuthGlobeScene = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-[360px] w-[360px] items-center justify-center">
-        <div className="h-48 w-48 animate-pulse rounded-full bg-white/5" />
+      <div className="flex h-[min(42vw,380px)] w-[min(42vw,380px)] items-center justify-center">
+        <div className="h-44 w-44 animate-pulse rounded-full bg-indigo-500/10" />
       </div>
     ),
   }

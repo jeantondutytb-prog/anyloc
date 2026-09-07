@@ -23,19 +23,20 @@ export const GLOBE_CITIES: GlobeCity[] = [
   { name: "Marrakech", lat: 31.6295, lng: -7.9811 },
 ];
 
-export const GLOBE_RADIUS = 1.6;
+export const GLOBE_RADIUS = 1.65;
 
+/** Aligné sur la projection equirectangular standard (three-globe / NASA). */
 export function latLngToGlobeVector3(
   lat: number,
   lng: number,
   radius: number
 ): [number, number, number] {
-  const latRad = (lat * Math.PI) / 180;
-  const lngRad = (lng * Math.PI) / 180;
+  const phi = ((90 - lat) * Math.PI) / 180;
+  const theta = ((180 - lng) * Math.PI) / 180;
 
-  const x = radius * Math.cos(latRad) * Math.cos(lngRad);
-  const y = radius * Math.sin(latRad);
-  const z = radius * Math.cos(latRad) * Math.sin(lngRad);
+  const x = -(Math.sin(phi) * Math.cos(theta)) * radius;
+  const y = Math.cos(phi) * radius;
+  const z = Math.sin(phi) * Math.sin(theta) * radius;
 
   return [x, y, z];
 }
