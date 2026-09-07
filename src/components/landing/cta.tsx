@@ -15,7 +15,7 @@ export function Cta() {
         </p>
         <Link href="/signup" className="mt-8 inline-block">
           <Button size="lg">
-            Lancer mon essai gratuit
+            Commencer maintenant
             <ArrowRight className="h-4 w-4" />
           </Button>
         </Link>

@@ -40,7 +40,7 @@ export function Pricing() {
             Choisis ton plan
           </h2>
           <p className="mt-4 text-zinc-600">
-            3 jours offerts pour tester. Tu résilies quand tu veux, sans paperasse.
+            Tu résilies quand tu veux, sans paperasse.
           </p>
         </div>
 

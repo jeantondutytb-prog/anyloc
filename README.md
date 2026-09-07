@@ -10,7 +10,7 @@ SaaS de modification de position GPS — concurrent de [wiped.me](https://www.wi
 - Dashboard avec carte interactive (Leaflet)
 - Lieux favoris et activation spoofing
 - Guides d'installation iOS & Android
-- Intégration Stripe (abonnements + essai 3 jours)
+- Intégration Stripe (abonnements)
 - Pages auth (login / signup)
 
 ## Stack
