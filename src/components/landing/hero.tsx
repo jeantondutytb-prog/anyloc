@@ -30,9 +30,8 @@ export function Hero() {
             <span className="gradient-text">
               Marbella
             </span>
-            .
             <br />
-            T&apos;es en pyj chez toi.
+            alors que t&apos;es posé chez toi.
           </h1>
 
           <p className="mt-6 text-lg text-zinc-600 sm:text-xl">
