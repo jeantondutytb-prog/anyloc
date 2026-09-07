@@ -3,21 +3,21 @@ import { Download, MapPin, CreditCard } from "lucide-react";
 const steps = [
   {
     icon: CreditCard,
-    title: "Tu t'abonnes",
+    title: "Crée ton compte",
     description:
-      "Paiement sécurisé. Ton compte s'active instantanément après validation.",
+      "Choisis une formule, valide en ligne — ton accès Anyloc est prêt en quelques secondes.",
   },
   {
     icon: Download,
-    title: "Tu installes l'app",
+    title: "Configure ton appareil",
     description:
-      "Android : installation directe sur ton tel, guidé pas à pas. iPhone : setup unique depuis Mac/PC, puis autonomie totale.",
+      "Android : tout depuis le téléphone, étape par étape. iPhone : branchement unique à un ordi, puis c'est bon.",
   },
   {
     icon: MapPin,
-    title: "Tu poses ton point",
+    title: "Choisis ta destination",
     description:
-      "Ouvre la carte, choisis ta destination, lance. Ta position change pour toutes tes apps en direct.",
+      "Sélectionne un point sur la carte, active le signal — toutes tes apps basculent au même endroit.",
   },
 ];
 
@@ -27,8 +27,12 @@ export function HowItWorks() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
-            Opérationnel en 3 étapes
+            En route en quelques minutes
           </h2>
+          <p className="mt-4 text-zinc-600">
+            Pas besoin d&apos;être un expert tech. On t&apos;accompagne de
+            l&apos;inscription à ta première position.
+          </p>
         </div>
 
         <div className="mt-16 grid gap-8 md:grid-cols-3">
@@ -38,7 +42,7 @@ export function HowItWorks() {
                 <step.icon className="h-6 w-6 text-pink-600" />
               </div>
               <span className="mt-4 inline-block text-xs font-medium text-pink-600">
-                Étape {i + 1}
+                {i + 1} / 3
               </span>
               <h3 className="mt-2 text-lg font-semibold text-zinc-900">
                 {step.title}

@@ -15,10 +15,10 @@ export default function RegisterPage() {
         </Link>
 
         <h1 className="mt-8 text-center text-2xl font-bold text-zinc-900">
-          Essai gratuit 3 jours
+          Crée ton compte
         </h1>
         <p className="mt-2 text-center text-sm text-zinc-500">
-          Crée ton compte et change ta position dès maintenant
+          3 jours gratuits pour explorer Anyloc — sans engagement
         </p>
 
         <form className="mt-8 space-y-4" action="/dashboard">
@@ -59,7 +59,7 @@ export default function RegisterPage() {
             />
           </div>
           <Button type="submit" className="w-full">
-            Commencer l&apos;essai gratuit
+            Démarrer gratuitement
           </Button>
         </form>
 

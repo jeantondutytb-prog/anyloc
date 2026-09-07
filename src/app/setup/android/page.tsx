@@ -8,33 +8,33 @@ import { Footer } from "@/components/layout/footer";
 
 const steps = [
   {
-    title: "Télécharge l'APK Anyloc",
+    title: "Installe l'APK Anyloc",
     description:
-      "Depuis ton dashboard, télécharge l'application Anyloc pour Android (APK signé).",
+      "Récupère le fichier depuis ton dashboard — c'est une version signée, prête à installer.",
     icon: Download,
   },
   {
-    title: "Autorise les sources inconnues",
+    title: "Autorise l'installation",
     description:
-      "Réglages → Sécurité → Autoriser l'installation d'apps de sources inconnues pour ton navigateur.",
+      "Paramètres → Sécurité → autorise ton navigateur à installer des apps hors du Play Store.",
     icon: Settings,
   },
   {
-    title: "Installe l'application",
+    title: "Finalise l'installation",
     description:
-      "Ouvre le fichier APK téléchargé et suis les instructions d'installation.",
+      "Ouvre le fichier téléchargé et suis les étapes affichées à l'écran.",
     icon: Check,
   },
   {
-    title: "Active le mode développeur mock location",
+    title: "Définis Anyloc comme source GPS",
     description:
-      "Options développeur → Sélectionner une application de localisation fictive → Anyloc.",
+      "Options pour les développeurs → Application de localisation fictive → sélectionne Anyloc.",
     icon: Shield,
   },
   {
-    title: "Lance et choisis ta position",
+    title: "Active ta première position",
     description:
-      "Ouvre Anyloc, sélectionne ta destination sur la carte et active le spoofing. Ça tourne en arrière-plan.",
+      "Lance l'app, choisis un point sur la carte et démarre — le signal tourne en arrière-plan.",
     icon: Check,
   },
 ];
@@ -54,11 +54,11 @@ export default function SetupAndroidPage() {
 
         <Badge className="mt-6">Android 10+</Badge>
         <h1 className="mt-4 text-3xl font-bold text-zinc-900 sm:text-4xl">
-          Guide d&apos;installation Android
+          Installation sur Android
         </h1>
         <p className="mt-4 text-zinc-600">
-          Installation 100% autonome depuis ton téléphone. Le spoofing tient en
-          arrière-plan, même écran verrouillé.
+          Tout se fait depuis ton téléphone. Une fois lancé, le signal GPS
+          continue même avec l&apos;écran éteint.
         </p>
 
         <div className="mt-12 space-y-6">
@@ -79,9 +79,9 @@ export default function SetupAndroidPage() {
         </div>
 
         <Card className="mt-8 p-6">
-          <h3 className="font-semibold text-zinc-900">Prérequis</h3>
+          <h3 className="font-semibold text-zinc-900">Ce qu&apos;il te faut</h3>
           <ul className="mt-3 space-y-2 text-sm text-zinc-500">
-            <li>• Android 10 ou supérieur</li>
+            <li>• Android 10 minimum</li>
             <li>• Options développeur activées</li>
             <li>• Abonnement Anyloc actif</li>
           </ul>
@@ -92,7 +92,7 @@ export default function SetupAndroidPage() {
             <Button>Télécharger l&apos;APK</Button>
           </Link>
           <Link href="/setup/ios">
-            <Button variant="secondary">Guide iOS</Button>
+            <Button variant="secondary">Voir iOS</Button>
           </Link>
         </div>
       </main>

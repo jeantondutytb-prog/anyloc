@@ -24,11 +24,11 @@ export function Features() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
-            Une app. Toutes les positions. Toutes les apps.
+            Un seul outil pour tout ton téléphone
           </h2>
           <p className="mt-4 text-zinc-600">
-            Contrairement aux solutions limitées à Snapchat, Anyloc modifie ta
-            position GPS au niveau système — visible par toutes tes applications.
+            Fini les apps qui ne marchent que sur Snap. Anyloc touche le GPS
+            à la source — chaque application lit la même position.
           </p>
         </div>
 

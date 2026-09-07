@@ -6,9 +6,9 @@ function Cell({ value }: { value: boolean | string }) {
     return <Check className="mx-auto h-5 w-5 text-pink-600 drop-shadow-[0_0_8px_rgba(244,114,182,0.5)]" />;
   }
   if (value === false) {
-    return <X className="mx-auto h-5 w-5 text-zinc-600" />;
+    return <X className="mx-auto h-5 w-5 text-zinc-400" />;
   }
-  return <Minus className="mx-auto h-5 w-5 text-amber-400/70" />;
+  return <Minus className="mx-auto h-5 w-5 text-amber-500/80" />;
 }
 
 export function Comparison() {
@@ -17,11 +17,11 @@ export function Comparison() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
-            Anyloc vs tout le reste
+            Pourquoi Anyloc fait la différence
           </h2>
           <p className="mt-4 text-zinc-600">
-            Le seul outil qui change ta position là où ton téléphone la lit
-            vraiment — pour toutes tes apps.
+            Les autres solutions trichent en surface. Anyloc modifie le signal
+            que ton téléphone transmet vraiment.
           </p>
         </div>
 
@@ -37,10 +37,10 @@ export function Comparison() {
                   VPN
                 </th>
                 <th className="px-4 py-4 text-center text-sm font-medium text-zinc-500">
-                  Fake GPS
+                  App GPS fake
                 </th>
                 <th className="px-4 py-4 text-center text-sm font-medium text-zinc-500">
-                  Screenshot
+                  Capture écran
                 </th>
               </tr>
             </thead>
@@ -66,6 +66,9 @@ export function Comparison() {
               ))}
             </tbody>
           </table>
+          <p className="mt-4 text-center text-xs text-zinc-500">
+            « — » = fonctionne partiellement ou sur une seule application.
+          </p>
         </div>
       </div>
     </section>

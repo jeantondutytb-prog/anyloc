@@ -23,34 +23,34 @@ export function Hero() {
           transition={{ duration: 0.6 }}
           className="mx-auto max-w-3xl text-center"
         >
-          <Badge className="mb-6">Nouveau — Spoofing multi-apps</Badge>
+          <Badge className="mb-6">GPS modifié · toutes tes apps</Badge>
 
           <h1 className="text-4xl font-bold tracking-tight text-zinc-900 sm:text-6xl sm:leading-[1.1]">
-            Mets-toi à{" "}
+            Affiche-toi à{" "}
             <span className="gradient-text">
               Marbella
-            </span>{" "}
-            ce soir.
+            </span>
+            .
             <br />
-            Sans quitter ton lit.
+            Même en pyjama.
           </h1>
 
           <p className="mt-6 text-lg text-zinc-600 sm:text-xl">
-            {SITE.name} change la position GPS de ton téléphone au niveau
-            système — Snapchat, Instagram, Tinder, jeux et toutes tes apps.
+            {SITE.name} redéfinit où ton téléphone se trouve — Snap, Insta,
+            apps de rencontre, jeux : un seul réglage, tout ton appareil.
           </p>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link href="/register">
               <Button size="lg" className="w-full sm:w-auto">
-                Essai gratuit 3 jours
+                Tester 3 jours gratuits
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
             <Link href="/#how-it-works">
               <Button variant="secondary" size="lg" className="w-full sm:w-auto">
                 <Play className="h-4 w-4" />
-                Voir comment ça marche
+                Découvrir Anyloc
               </Button>
             </Link>
           </div>
@@ -58,19 +58,19 @@ export function Hero() {
           <div className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-zinc-500">
             <span className="flex items-center gap-1.5">
               <Check className="h-4 w-4 text-pink-600" />
-              Position système
+              GPS natif
             </span>
             <span className="flex items-center gap-1.5">
               <Check className="h-4 w-4 text-pink-600" />
-              iPhone & Android
+              iOS + Android
             </span>
             <span className="flex items-center gap-1.5">
               <Check className="h-4 w-4 text-pink-600" />
-              Toutes les apps
+              Multi-apps
             </span>
             <span className="flex items-center gap-1.5">
               <Check className="h-4 w-4 text-pink-600" />
-              Sans jailbreak
+              Zéro jailbreak
             </span>
           </div>
         </motion.div>
@@ -87,7 +87,7 @@ export function Hero() {
                 <div className="flex items-center gap-2">
                   <div className="h-3 w-3 rounded-full bg-pink-500 animate-pulse" />
                   <span className="text-sm text-zinc-600">
-                    Position active
+                    Signal GPS actif
                   </span>
                 </div>
                 <span className="text-sm font-medium text-pink-600">
@@ -96,21 +96,21 @@ export function Hero() {
               </div>
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
                 <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-                  <p className="text-xs text-zinc-500">Sur ta map</p>
+                  <p className="text-xs text-zinc-500">Ce que tes apps affichent</p>
                   <p className="mt-1 font-medium text-zinc-900">
                     📍 Marbella — Puerto Banús
                   </p>
                 </div>
                 <div className="rounded-xl border border-pink-500/20 bg-pink-500/5 p-4">
-                  <p className="text-xs text-pink-600/70">Position système</p>
+                  <p className="text-xs text-pink-600/70">Coordonnées envoyées</p>
                   <p className="mt-1 font-medium text-pink-600">
                     📍 Marbella, Espagne
                   </p>
                 </div>
               </div>
               <p className="mt-4 text-center text-xs text-zinc-600">
-                Le même point, au même endroit — ce n&apos;est pas un montage,
-                c&apos;est ta vraie position GPS.
+                Même coordonnées, même instant — un vrai signal GPS, pas une
+                image retouchée.
               </p>
             </div>
           </div>

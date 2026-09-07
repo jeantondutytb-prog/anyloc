@@ -40,7 +40,7 @@ export function Pricing() {
             Choisis ton plan
           </h2>
           <p className="mt-4 text-zinc-600">
-            Essai gratuit 3 jours. Annulation en 1 clic, sans justification.
+            3 jours offerts pour tester. Tu résilies quand tu veux, sans paperasse.
           </p>
         </div>
 
@@ -56,7 +56,7 @@ export function Pricing() {
             >
               {plan.popular && (
                 <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  Le plus populaire
+                  Recommandé
                 </Badge>
               )}
 
@@ -87,7 +87,7 @@ export function Pricing() {
                 onClick={() => handleCheckout(plan.id)}
                 disabled={loading === plan.id}
               >
-                {loading === plan.id ? "Chargement..." : "Commencer"}
+                {loading === plan.id ? "Chargement..." : "Choisir ce plan"}
               </Button>
             </Card>
           ))}

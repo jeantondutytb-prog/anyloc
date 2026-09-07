@@ -13,7 +13,7 @@ export function Faq() {
       <div className="mx-auto max-w-3xl px-4 sm:px-6">
         <div className="text-center">
           <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
-            Questions fréquentes
+            Tu te poses sûrement ces questions
           </h2>
         </div>
 

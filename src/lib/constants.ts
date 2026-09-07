@@ -1,9 +1,9 @@
 export const SITE = {
   name: "Anyloc",
   domain: "anyloc.io",
-  tagline: "Change ta position. Partout. Pour toutes tes apps.",
+  tagline: "Ton GPS. Ton choix. Partout.",
   description:
-    "Anyloc modifie la position GPS de ton téléphone au niveau système — Snapchat, Instagram, Tinder, Pokémon GO et toutes tes apps.",
+    "Anyloc te permet de définir où ton téléphone se situe — Snap, Insta, apps de rencontre, jeux : une seule position pour tout l'appareil.",
 };
 
 export const DESTINATIONS = [
@@ -33,12 +33,12 @@ export const PLANS = [
     name: "Hebdomadaire",
     price: "4,99€",
     period: "/semaine",
-    description: "Flexible, sans engagement long terme.",
+    description: "Parfait pour un week-end ou une semaine de test.",
     features: [
-      "Téléportation illimitée",
-      "Toutes les apps supportées",
-      "iOS & Android",
-      "Support par email",
+      "Changements de position illimités",
+      "Compatible avec toutes tes apps",
+      "iOS et Android",
+      "Assistance par email",
     ],
     popular: false,
     stripePriceId: process.env.STRIPE_PRICE_WEEKLY,
@@ -48,13 +48,13 @@ export const PLANS = [
     name: "Mensuel",
     price: "12,99€",
     period: "/mois",
-    description: "Idéal pour tester sur la durée.",
+    description: "Le sweet spot pour un usage régulier.",
     features: [
-      "Tout du plan Hebdo",
-      "Routes personnalisées",
-      "Lieux favoris illimités",
-      "Spoofing web (1 compte)",
-      "Mises à jour prioritaires",
+      "Tout le plan Hebdo",
+      "Trajets simulés sur carte",
+      "Bibliothèque de lieux illimitée",
+      "Accès web (1 profil)",
+      "Nouvelles fonctions en avant-première",
     ],
     popular: true,
     stripePriceId: process.env.STRIPE_PRICE_MONTHLY,
@@ -64,14 +64,14 @@ export const PLANS = [
     name: "Annuel",
     price: "49,99€",
     period: "/an",
-    description: "Meilleur rapport qualité-prix.",
-    savings: "Économise 106€/an",
+    description: "Le meilleur deal si tu l'utilises souvent.",
+    savings: "Tu gardes 106€ sur l'année",
     features: [
-      "Tout du plan Mensuel",
-      "App iPhone autonome",
-      "Spoofing web (3 comptes)",
-      "Support prioritaire 24/7",
-      "Mises à jour à vie",
+      "Tout le plan Mensuel",
+      "App iPhone sans ordinateur",
+      "Accès web (3 profils)",
+      "Support prioritaire",
+      "Mises à jour incluses à vie",
     ],
     popular: false,
     stripePriceId: process.env.STRIPE_PRICE_ANNUAL,
@@ -80,42 +80,42 @@ export const PLANS = [
 
 export const COMPARISON = [
   {
-    feature: "Position système (toutes les apps)",
+    feature: "Modifie le GPS de tout le téléphone",
     anyloc: true,
     vpn: false,
     fakeGps: false,
     screenshot: false,
   },
   {
-    feature: "Snapchat, Insta, Tinder, jeux…",
+    feature: "Snap, Insta, Tinder, jeux en même temps",
     anyloc: true,
     vpn: false,
     fakeGps: "partial",
     screenshot: false,
   },
   {
-    feature: "Tient en arrière-plan",
+    feature: "Reste actif en arrière-plan",
     anyloc: true,
     vpn: false,
     fakeGps: "partial",
     screenshot: false,
   },
   {
-    feature: "Impossible à griller",
+    feature: "Signal GPS réel (pas une image)",
     anyloc: true,
     vpn: false,
     fakeGps: false,
     screenshot: false,
   },
   {
-    feature: "Changement de ville en 1 tap",
+    feature: "Nouvelle ville en un clic",
     anyloc: true,
     vpn: false,
     fakeGps: "partial",
     screenshot: false,
   },
   {
-    feature: "Routes réalistes",
+    feature: "Déplacement simulé crédible",
     anyloc: true,
     vpn: false,
     fakeGps: false,
@@ -125,72 +125,72 @@ export const COMPARISON = [
 
 export const FAQ = [
   {
-    q: "Anyloc fonctionne sur quelles apps ?",
+    q: "Quelles applications sont compatibles ?",
     a:
-      "Toutes les apps qui utilisent le GPS de ton téléphone : Snapchat, Instagram, Tinder, Bumble, Pokémon GO, Life360, et bien d'autres. Contrairement aux solutions limitées à une seule app, Anyloc modifie ta position au niveau système.",
+      "Toutes celles qui lisent le GPS de ton appareil : Snapchat, Instagram, Tinder, Bumble, Pokémon GO, Life360, etc. Anyloc agit au niveau du système, pas dans une seule app isolée.",
   },
   {
-    q: "Est-ce qu'on peut me griller ?",
+    q: "Mes contacts peuvent détecter un faux ?",
     a:
-      "Non. Ce n'est pas un screenshot ni un montage : c'est ta vraie position système, en direct. Tes contacts voient un vrai pin GPS au bon endroit — exactement ce que ton téléphone envoie.",
+      "Ils voient un pin GPS normal, mis à jour en temps réel — le même signal que ton téléphone enverrait s'il était vraiment sur place. Pas de capture d'écran, pas de montage.",
   },
   {
-    q: "Un VPN ne suffit pas ?",
+    q: "Pourquoi un VPN ne marche pas ?",
     a:
-      "Non. Un VPN change ton adresse IP, pas ta position GPS. Les apps lisent directement le capteur GPS de ton téléphone — c'est exactement ce qu'Anyloc modifie.",
+      "Un VPN masque ton IP internet, pas ta position physique. Les apps sociales interrogent le capteur GPS du téléphone. Anyloc intervient exactement à cet endroit.",
   },
   {
-    q: "iPhone ou Android ?",
+    q: "Ça fonctionne sur iPhone et Android ?",
     a:
-      "Les deux. Sur Android, tout se fait depuis ton téléphone en autonomie. Sur iPhone, une mise en route unique depuis Mac ou PC est nécessaire (restriction Apple), puis tu pilotes tout depuis ton iPhone.",
+      "Oui. Sur Android, l'installation et la gestion se font entièrement sur le mobile. Sur iPhone, une configuration initiale via Mac ou PC est nécessaire (limite imposée par Apple), puis tu gères tout depuis ton tel.",
   },
   {
-    q: "Faut-il un jailbreak ?",
+    q: "Jailbreak ou modifications risquées ?",
     a:
-      "Non. Anyloc ne jailbreak pas ton téléphone. Tu auras besoin du mode développeur sur iOS et de quelques réglages guidés sur Android — tout est expliqué pas à pas dans ton dashboard.",
+      "Aucun jailbreak. Tu actives le mode développeur sur iOS et quelques réglages sur Android — chaque étape est détaillée dans ton espace client.",
   },
   {
-    q: "Ma position reste si je ferme l'app ?",
+    q: "La position reste active si je quitte l'app ?",
     a:
-      "Sur Android, oui — la position tient en arrière-plan même écran verrouillé. Sur iPhone avec l'app autonome (plan annuel), pareil. Sinon, la position tient toute la session active.",
+      "Sur Android, oui, y compris écran verrouillé. Avec le plan annuel sur iPhone, c'est pareil. Sinon, la position reste tant que la session Anyloc tourne.",
   },
 ];
 
 export const FEATURES = [
   {
-    title: "Téléportation",
+    title: "Zéro limite géographique",
     description:
-      "Cherche n'importe quelle ville, adresse ou lieu et pose ton pin en quelques secondes.",
+      "Tape une ville, une adresse ou un lieu précis et déplace ton pin en quelques secondes.",
     icon: "MapPin",
   },
   {
-    title: "Toutes les apps",
+    title: "Multi-apps native",
     description:
-      "Snap, Insta, Tinder, jeux, apps de rencontre — une seule position pour tout ton téléphone.",
+      "Une modification, toutes les apps impactées — réseaux sociaux, rencontres, jeux, tout passe par le même GPS.",
     icon: "Smartphone",
   },
   {
-    title: "Routes réalistes",
+    title: "Trajets simulés",
     description:
-      "Simule un trajet entre deux points avec vitesse personnalisable et arrêts réalistes.",
+      "Trace un parcours entre deux points, règle la vitesse et ajoute des pauses pour un déplacement crédible.",
     icon: "Route",
   },
   {
-    title: "Lieux favoris",
+    title: "Spots enregistrés",
     description:
-      "Sauvegarde tes spots préférés — Marbella, Ibiza, Miami — et y retourne en un tap.",
+      "Garde tes destinations favorites — Marbella, Ibiza, Miami — et reviens y instantanément.",
     icon: "Bookmark",
   },
   {
-    title: "Spoofing web",
+    title: "Version web incluse",
     description:
-      "Change aussi ta position sur les versions web de Snapchat et autres apps sociales.",
+      "Étends aussi ta position aux interfaces web de Snapchat et d'autres services connectés.",
     icon: "Globe",
   },
   {
-    title: "Multi-plateforme",
+    title: "Pilotage centralisé",
     description:
-      "iPhone, Android, Mac et Windows. Contrôle ta position depuis n'importe quel appareil.",
+      "Gère ton GPS depuis ton téléphone, ton Mac ou ton PC — un compte, tous tes appareils.",
     icon: "Monitor",
   },
 ];

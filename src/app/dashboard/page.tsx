@@ -75,7 +75,7 @@ export default function DashboardPage() {
           <div>
             <h1 className="text-2xl font-bold text-zinc-900">Dashboard</h1>
             <p className="text-sm text-zinc-500">
-              Choisis ta position et active le spoofing
+              Sélectionne un lieu et active ton signal GPS
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -91,7 +91,7 @@ export default function DashboardPage() {
                   active ? "bg-pink-500 animate-pulse" : "bg-zinc-400"
                 }`}
               />
-              {active ? "Spoofing actif" : "Inactif"}
+              {active ? "Signal actif" : "En pause"}
             </span>
             <Button
               variant={active ? "secondary" : "default"}
@@ -127,13 +127,13 @@ export default function DashboardPage() {
               </p>
               <Button className="mt-4 w-full" disabled={!active}>
                 <Navigation className="h-4 w-4" />
-                Appliquer cette position
+                Envoyer cette position
               </Button>
             </Card>
 
             <Card className="p-5">
               <h3 className="text-sm font-medium text-zinc-600">
-                Lieux favoris
+                Destinations rapides
               </h3>
               <ul className="mt-3 space-y-2">
                 {SAVED_LOCATIONS.map((loc) => (
@@ -159,11 +159,11 @@ export default function DashboardPage() {
 
             <Card className="p-5">
               <h3 className="text-sm font-medium text-zinc-600">
-                Installation requise
+                Branche ton téléphone
               </h3>
               <p className="mt-2 text-sm text-zinc-500">
-                Installe l&apos;app Anyloc sur ton téléphone pour activer le
-                spoofing GPS.
+                L&apos;app Anyloc doit être installée sur ton mobile pour
+                diffuser la position choisie.
               </p>
               <div className="mt-4 flex gap-2">
                 <Link href="/setup/ios" className="flex-1">

@@ -8,33 +8,33 @@ import { Footer } from "@/components/layout/footer";
 
 const steps = [
   {
-    title: "Télécharge Anyloc Setup",
+    title: "Récupère Anyloc Setup",
     description:
-      "Depuis ton dashboard, télécharge Anyloc Setup pour Mac (Ventura+) ou Windows 10+.",
+      "Dans ton espace client, télécharge le logiciel pour Mac (Ventura+) ou Windows 10+.",
     icon: Download,
   },
   {
     title: "Active le mode développeur",
     description:
-      "Sur ton iPhone : Réglages → Confidentialité → Mode développeur. Redémarre ton iPhone si demandé.",
+      "Sur iPhone : Réglages → Confidentialité et sécurité → Mode développeur. Redémarre si le système te le demande.",
     icon: Monitor,
   },
   {
-    title: "Branche ton iPhone en USB",
+    title: "Connecte ton iPhone",
     description:
-      "Connecte ton iPhone à ton Mac/PC avec un câble USB. Fais confiance à l'ordinateur si demandé.",
+      "Branche-le en USB à ton ordinateur et accepte la demande de confiance à l'écran.",
     icon: Usb,
   },
   {
-    title: "Installe l'app Anyloc",
+    title: "Lance l'installation",
     description:
-      "Lance Anyloc Setup, sélectionne ton iPhone et suis les instructions à l'écran. L'installation prend ~2 minutes.",
+      "Ouvre Anyloc Setup, sélectionne ton appareil et laisse le guide faire le reste — environ 2 minutes.",
     icon: Check,
   },
   {
-    title: "Contrôle depuis ton iPhone",
+    title: "Pilote depuis ton iPhone",
     description:
-      "Une fois installé, ouvre Anyloc sur ton iPhone. Choisis ta position sur la carte — plus besoin de l'ordinateur.",
+      "Une fois terminé, tout se gère depuis l'app mobile. L'ordinateur n'est plus nécessaire.",
     icon: Check,
   },
 ];
@@ -54,11 +54,11 @@ export default function SetupIosPage() {
 
         <Badge className="mt-6">iOS 17 / 18 / 26</Badge>
         <h1 className="mt-4 text-3xl font-bold text-zinc-900 sm:text-4xl">
-          Guide d&apos;installation iOS
+          Installation sur iPhone
         </h1>
         <p className="mt-4 text-zinc-600">
-          Une mise en route unique depuis ton ordinateur, puis tu pilotes tout
-          depuis ton iPhone. Aucun jailbreak requis.
+          Apple impose une config initiale via ordinateur. Après ça, tu es
+          autonome — sans jailbreak, sans bidouille.
         </p>
 
         <div className="mt-12 space-y-6">
@@ -79,9 +79,9 @@ export default function SetupIosPage() {
         </div>
 
         <Card className="mt-8 p-6">
-          <h3 className="font-semibold text-zinc-900">Prérequis</h3>
+          <h3 className="font-semibold text-zinc-900">Ce qu&apos;il te faut</h3>
           <ul className="mt-3 space-y-2 text-sm text-zinc-500">
-            <li>• iPhone avec iOS 17, 18 ou 26</li>
+            <li>• iPhone sous iOS 17, 18 ou 26</li>
             <li>• Mac (Ventura+) ou PC Windows 10+</li>
             <li>• Câble USB Lightning ou USB-C</li>
             <li>• Abonnement Anyloc actif</li>
@@ -94,7 +94,7 @@ export default function SetupIosPage() {
             <Button>Télécharger Anyloc Setup</Button>
           </Link>
           <Link href="/setup/android">
-            <Button variant="secondary">Guide Android</Button>
+            <Button variant="secondary">Voir Android</Button>
           </Link>
         </div>
       </main>
