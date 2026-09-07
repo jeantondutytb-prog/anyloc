@@ -13,7 +13,7 @@ import "leaflet/dist/leaflet.css";
 
 const markerIcon = new L.Icon({
   iconUrl:
-    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png",
   shadowUrl:
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
   iconSize: [25, 41],
@@ -78,9 +78,9 @@ export default function LocationMap({
             center={[selected.lat, selected.lng]}
             radius={500}
             pathOptions={{
-              color: "#34d399",
-              fillColor: "#34d399",
-              fillOpacity: 0.1,
+              color: "#e879f9",
+              fillColor: "#c084fc",
+              fillOpacity: 0.15,
             }}
           />
         )}

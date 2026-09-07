@@ -4,13 +4,13 @@ import { SITE } from "@/lib/constants";
 
 export function Footer() {
   return (
-    <footer className="border-t border-white/5 bg-[#050508]">
+    <footer className="border-t border-white/5 bg-background">
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
         <div className="grid gap-8 md:grid-cols-4">
           <div className="md:col-span-2">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/20">
-                <MapPin className="h-4 w-4 text-emerald-400" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-pink-500/20">
+                <MapPin className="h-4 w-4 text-pink-400" />
               </div>
               <span className="text-lg font-semibold">{SITE.name}</span>
             </div>

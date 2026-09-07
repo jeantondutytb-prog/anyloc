@@ -34,10 +34,10 @@ export function HowItWorks() {
         <div className="mt-16 grid gap-8 md:grid-cols-3">
           {steps.map((step, i) => (
             <div key={step.title} className="relative text-center">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
-                <step.icon className="h-6 w-6 text-emerald-400" />
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-pink-500/10 border border-pink-500/20">
+                <step.icon className="h-6 w-6 text-pink-400" />
               </div>
-              <span className="mt-4 inline-block text-xs font-medium text-emerald-400">
+              <span className="mt-4 inline-block text-xs font-medium text-pink-400">
                 Étape {i + 1}
               </span>
               <h3 className="mt-2 text-lg font-semibold text-white">

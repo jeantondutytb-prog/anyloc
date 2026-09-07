@@ -3,7 +3,7 @@ import { COMPARISON } from "@/lib/constants";
 
 function Cell({ value }: { value: boolean | string }) {
   if (value === true) {
-    return <Check className="mx-auto h-5 w-5 text-emerald-400" />;
+    return <Check className="mx-auto h-5 w-5 text-pink-400 drop-shadow-[0_0_8px_rgba(244,114,182,0.5)]" />;
   }
   if (value === false) {
     return <X className="mx-auto h-5 w-5 text-zinc-600" />;
@@ -30,7 +30,7 @@ export function Comparison() {
             <thead>
               <tr className="border-b border-white/10">
                 <th className="py-4 pr-4 text-left text-sm font-medium text-zinc-400" />
-                <th className="px-4 py-4 text-center text-sm font-semibold text-emerald-400">
+                <th className="px-4 py-4 text-center text-sm font-semibold gradient-text">
                   Anyloc
                 </th>
                 <th className="px-4 py-4 text-center text-sm font-medium text-zinc-500">

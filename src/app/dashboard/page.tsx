@@ -37,11 +37,11 @@ export default function DashboardPage() {
   });
 
   return (
-    <div className="flex min-h-screen bg-[#050508]">
-      <aside className="hidden w-64 shrink-0 border-r border-white/5 bg-[#050508] p-4 lg:block">
+    <div className="flex min-h-screen bg-background">
+      <aside className="hidden w-64 shrink-0 border-r border-white/5 bg-background p-4 lg:block">
         <Link href="/" className="flex items-center gap-2 px-2 py-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/20">
-            <MapPin className="h-4 w-4 text-emerald-400" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-pink-500/20">
+            <MapPin className="h-4 w-4 text-pink-400" />
           </div>
           <span className="text-lg font-semibold">Anyloc</span>
         </Link>
@@ -59,7 +59,7 @@ export default function DashboardPage() {
               href={item.href || "#"}
               className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors ${
                 item.active
-                  ? "bg-emerald-500/10 text-emerald-400"
+                  ? "bg-pink-500/10 text-pink-400"
                   : "text-zinc-400 hover:bg-white/5 hover:text-white"
               }`}
             >
@@ -82,13 +82,13 @@ export default function DashboardPage() {
             <span
               className={`flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium ${
                 active
-                  ? "bg-emerald-500/10 text-emerald-400"
+                  ? "bg-pink-500/10 text-pink-400"
                   : "bg-zinc-500/10 text-zinc-500"
               }`}
             >
               <span
                 className={`h-2 w-2 rounded-full ${
-                  active ? "bg-emerald-400 animate-pulse" : "bg-zinc-600"
+                  active ? "bg-pink-400 animate-pulse" : "bg-zinc-600"
                 }`}
               />
               {active ? "Spoofing actif" : "Inactif"}
@@ -149,7 +149,7 @@ export default function DashboardPage() {
                       }
                       className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-zinc-400 transition-colors hover:bg-white/5 hover:text-white"
                     >
-                      <MapPin className="h-3.5 w-3.5 shrink-0 text-emerald-400/60" />
+                      <MapPin className="h-3.5 w-3.5 shrink-0 text-pink-400/60" />
                       {loc.name}
                     </button>
                   </li>

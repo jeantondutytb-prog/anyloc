@@ -41,7 +41,7 @@ const steps = [
 
 export default function SetupAndroidPage() {
   return (
-    <div className="min-h-screen bg-[#050508]">
+    <div className="min-h-screen bg-background">
       <Header />
       <main className="mx-auto max-w-3xl px-4 pt-28 pb-20 sm:px-6">
         <Link
@@ -64,12 +64,12 @@ export default function SetupAndroidPage() {
         <div className="mt-12 space-y-6">
           {steps.map((step, i) => (
             <Card key={step.title} className="flex gap-4 p-6">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-sm font-bold text-emerald-400">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pink-500/10 text-sm font-bold text-pink-400">
                 {i + 1}
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <step.icon className="h-4 w-4 text-emerald-400" />
+                  <step.icon className="h-4 w-4 text-pink-400" />
                   <h3 className="font-semibold text-white">{step.title}</h3>
                 </div>
                 <p className="mt-2 text-sm text-zinc-500">{step.description}</p>

@@ -11,7 +11,7 @@ import { Cta } from "@/components/landing/cta";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-[#050508]">
+    <div className="min-h-screen bg-background">
       <Header />
       <main>
         <Hero />

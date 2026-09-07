@@ -50,7 +50,7 @@ export function Pricing() {
               key={plan.id}
               className={`relative flex flex-col p-6 ${
                 plan.popular
-                  ? "border-emerald-500/30 ring-1 ring-emerald-500/20"
+                  ? "border-pink-500/40 bg-gradient-to-b from-pink-500/10 to-violet-500/5 ring-1 ring-pink-500/25"
                   : ""
               }`}
             >
@@ -68,14 +68,14 @@ export function Pricing() {
                 <span className="text-zinc-500">{plan.period}</span>
               </div>
               {plan.savings && (
-                <p className="mt-1 text-sm text-emerald-400">{plan.savings}</p>
+                <p className="mt-1 text-sm text-pink-400">{plan.savings}</p>
               )}
               <p className="mt-2 text-sm text-zinc-500">{plan.description}</p>
 
               <ul className="mt-6 flex-1 space-y-3">
                 {plan.features.map((f) => (
                   <li key={f} className="flex items-start gap-2 text-sm text-zinc-400">
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-pink-400" />
                     {f}
                   </li>
                 ))}
@@ -95,7 +95,7 @@ export function Pricing() {
 
         <p className="mt-8 text-center text-sm text-zinc-600">
           Besoin d&apos;un plan entreprise ?{" "}
-          <Link href="mailto:support@anyloc.io" className="text-emerald-400 hover:underline">
+          <Link href="mailto:support@anyloc.io" className="text-pink-400 hover:underline">
             Contacte-nous
           </Link>
         </p>

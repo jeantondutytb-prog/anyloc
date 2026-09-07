@@ -36,9 +36,9 @@ export function Features() {
           {FEATURES.map((feature) => {
             const Icon = iconMap[feature.icon as keyof typeof iconMap];
             return (
-              <Card key={feature.title} className="p-6 transition-colors hover:border-emerald-500/20">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10">
-                  <Icon className="h-5 w-5 text-emerald-400" />
+              <Card key={feature.title} className="p-6 transition-colors hover:border-pink-500/20">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-pink-500/10">
+                  <Icon className="h-5 w-5 text-pink-400" />
                 </div>
                 <h3 className="mt-4 text-lg font-semibold text-white">
                   {feature.title}

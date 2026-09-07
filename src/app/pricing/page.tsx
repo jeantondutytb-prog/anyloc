@@ -5,7 +5,7 @@ import { Faq } from "@/components/landing/faq";
 
 export default function PricingPage() {
   return (
-    <div className="min-h-screen bg-[#050508]">
+    <div className="min-h-screen bg-background">
       <Header />
       <main className="pt-16">
         <Pricing />

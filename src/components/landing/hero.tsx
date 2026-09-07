@@ -11,8 +11,9 @@ export function Hero() {
   return (
     <section className="relative overflow-hidden pt-32 pb-20 sm:pt-40 sm:pb-28">
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute top-1/4 left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-emerald-500/8 blur-[120px]" />
-        <div className="absolute top-0 right-0 h-[300px] w-[400px] rounded-full bg-cyan-500/5 blur-[100px]" />
+        <div className="absolute top-1/4 left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-pink-500/10 blur-[120px]" />
+        <div className="absolute top-0 right-0 h-[300px] w-[400px] rounded-full bg-violet-500/10 blur-[100px]" />
+        <div className="absolute bottom-0 left-0 h-[250px] w-[350px] rounded-full bg-orange-500/8 blur-[100px]" />
       </div>
 
       <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
@@ -26,7 +27,7 @@ export function Hero() {
 
           <h1 className="text-4xl font-bold tracking-tight text-white sm:text-6xl sm:leading-[1.1]">
             Mets-toi à{" "}
-            <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
+            <span className="gradient-text">
               Dubaï
             </span>{" "}
             ce soir.
@@ -56,19 +57,19 @@ export function Hero() {
 
           <div className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-zinc-500">
             <span className="flex items-center gap-1.5">
-              <Check className="h-4 w-4 text-emerald-400" />
+              <Check className="h-4 w-4 text-pink-400" />
               Position système
             </span>
             <span className="flex items-center gap-1.5">
-              <Check className="h-4 w-4 text-emerald-400" />
+              <Check className="h-4 w-4 text-pink-400" />
               iPhone & Android
             </span>
             <span className="flex items-center gap-1.5">
-              <Check className="h-4 w-4 text-emerald-400" />
+              <Check className="h-4 w-4 text-pink-400" />
               Toutes les apps
             </span>
             <span className="flex items-center gap-1.5">
-              <Check className="h-4 w-4 text-emerald-400" />
+              <Check className="h-4 w-4 text-pink-400" />
               Sans jailbreak
             </span>
           </div>
@@ -80,16 +81,16 @@ export function Hero() {
           transition={{ duration: 0.8, delay: 0.2 }}
           className="relative mx-auto mt-16 max-w-4xl"
         >
-          <div className="overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/5 to-transparent p-1 shadow-2xl shadow-emerald-500/5">
-            <div className="rounded-xl bg-[#0a0a0f] p-6 sm:p-8">
+          <div className="overflow-hidden rounded-2xl border border-pink-500/15 bg-gradient-to-b from-pink-500/10 via-violet-500/5 to-transparent p-1 shadow-2xl shadow-pink-500/10">
+            <div className="rounded-xl bg-[#0f0a18] p-6 sm:p-8">
               <div className="flex items-center justify-between border-b border-white/5 pb-4">
                 <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full bg-emerald-400 animate-pulse" />
+                  <div className="h-3 w-3 rounded-full bg-pink-400 animate-pulse" />
                   <span className="text-sm text-zinc-400">
                     Position active
                   </span>
                 </div>
-                <span className="text-sm font-medium text-emerald-400">
+                <span className="text-sm font-medium text-pink-400">
                   📍 Dubaï — Burj Khalifa
                 </span>
               </div>
@@ -100,9 +101,9 @@ export function Hero() {
                     📍 Dubaï — Burj Khalifa
                   </p>
                 </div>
-                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
-                  <p className="text-xs text-emerald-400/70">Position système</p>
-                  <p className="mt-1 font-medium text-emerald-400">
+                <div className="rounded-xl border border-pink-500/20 bg-pink-500/5 p-4">
+                  <p className="text-xs text-pink-400/70">Position système</p>
+                  <p className="mt-1 font-medium text-pink-400">
                     📍 Dubaï, UAE
                   </p>
                 </div>
