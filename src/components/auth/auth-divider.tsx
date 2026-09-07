@@ -1,8 +1,8 @@
-export function AuthDivider({ label = "ou" }: { label?: string }) {
+export function AuthDivider() {
   return (
-    <div className="my-5 flex items-center gap-3 text-xs font-medium uppercase tracking-wider text-zinc-500">
+    <div className="my-6 flex items-center gap-3 text-xs text-zinc-400">
       <span className="h-px flex-1 bg-zinc-200" />
-      <span>{label}</span>
+      <span>ou avec ton email</span>
       <span className="h-px flex-1 bg-zinc-200" />
     </div>
   );

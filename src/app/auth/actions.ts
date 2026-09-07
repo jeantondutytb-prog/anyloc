@@ -55,12 +55,11 @@ export async function signup(
   _prevState: AuthState,
   formData: FormData
 ): Promise<AuthState> {
-  const firstName = String(formData.get("firstName") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
 
-  if (!firstName || !email || !password) {
-    return { error: "Tous les champs sont obligatoires." };
+  if (!email || !password) {
+    return { error: "Renseigne ton email et ton mot de passe." };
   }
 
   if (password.length < 6) {
@@ -72,39 +71,11 @@ export async function signup(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: { first_name: firstName },
-    },
-  });
+  const { error } = await supabase.auth.signUp({ email, password });
 
   if (error) {
     return { error: translateAuthError(error.message) };
   }
 
   redirect("/dashboard");
-}
-
-export async function signInWithOAuth(provider: "google" | "apple") {
-  if (!isSupabaseConfigured()) {
-    redirect("/dashboard");
-  }
-
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider,
-    options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/auth/callback`,
-    },
-  });
-
-  if (error) {
-    throw new Error("La connexion a échoué. Réessaie ou utilise ton email.");
-  }
-
-  if (data.url) {
-    redirect(data.url);
-  }
 }

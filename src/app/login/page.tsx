@@ -1,23 +1,12 @@
-import Link from "next/link";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { LoginForm } from "@/components/auth/login-form";
 
 export default function LoginPage() {
   return (
     <AuthShell
-      title="Connexion"
-      description="Entre ton email et ton mot de passe — ou connecte-toi en un clic avec Google ou Apple."
-      footer={
-        <p className="text-center text-sm text-zinc-500">
-          Pas encore de compte ?{" "}
-          <Link
-            href="/signup"
-            className="font-medium text-pink-600 hover:underline"
-          >
-            Créer un compte
-          </Link>
-        </p>
-      }
+      mode="login"
+      title="Bon retour"
+      description="Connecte-toi pour gérer ta position GPS sur toutes tes apps."
     >
       <LoginForm />
     </AuthShell>
