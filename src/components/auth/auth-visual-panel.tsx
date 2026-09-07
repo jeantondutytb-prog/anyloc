@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { MapPin, Navigation, Smartphone, Sparkles } from "lucide-react";
-import { AuthMap } from "@/components/auth/auth-map";
+import { AuthPointsBackground } from "@/components/auth/auth-points-background";
 import { SITE } from "@/lib/constants";
 
 const features = [
@@ -15,16 +15,18 @@ const features = [
 export function AuthVisualPanel({ mode }: { mode: "login" | "signup" }) {
   return (
     <div className="dark-panel relative hidden min-h-screen w-[44%] overflow-hidden bg-zinc-950 lg:flex lg:flex-col">
+      <AuthPointsBackground />
+
       <div className="pointer-events-none absolute inset-0">
         <motion.div
-          animate={{ scale: [1, 1.08, 1], opacity: [0.25, 0.4, 0.25] }}
+          animate={{ scale: [1, 1.08, 1], opacity: [0.2, 0.35, 0.2] }}
           transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -top-24 -left-24 h-80 w-80 rounded-full bg-indigo-500/20 blur-3xl"
+          className="absolute -top-24 -left-24 h-80 w-80 rounded-full bg-violet-500/15 blur-3xl"
         />
         <motion.div
-          animate={{ scale: [1, 1.12, 1], opacity: [0.2, 0.35, 0.2] }}
+          animate={{ scale: [1, 1.1, 1], opacity: [0.15, 0.3, 0.15] }}
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-          className="absolute top-1/2 left-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-pink-500/10 blur-3xl"
+          className="absolute right-0 bottom-0 h-72 w-72 rounded-full bg-orange-500/10 blur-3xl"
         />
       </div>
 
@@ -36,23 +38,14 @@ export function AuthVisualPanel({ mode }: { mode: "login" | "signup" }) {
           <span className="text-lg font-semibold tracking-tight">{SITE.name}</span>
         </Link>
 
-        <div className="flex flex-1 flex-col items-center justify-center gap-6 py-4 text-center">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.92 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="flex w-full items-center justify-center"
-          >
-            <AuthMap />
-          </motion.div>
-
+        <div className="flex flex-1 flex-col items-center justify-center gap-8 py-6 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
+            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
             className="max-w-sm"
           >
-            <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium uppercase tracking-wider text-zinc-300">
+            <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium uppercase tracking-wider text-zinc-300 backdrop-blur-sm">
               {mode === "login" ? "Espace membre" : "Essai gratuit · 3 jours"}
             </p>
 
@@ -81,7 +74,7 @@ export function AuthVisualPanel({ mode }: { mode: "login" | "signup" }) {
             initial="hidden"
             animate="visible"
             variants={{
-              visible: { transition: { staggerChildren: 0.1, delayChildren: 0.45 } },
+              visible: { transition: { staggerChildren: 0.1, delayChildren: 0.3 } },
             }}
             className="space-y-2.5 text-left"
           >
@@ -94,7 +87,7 @@ export function AuthVisualPanel({ mode }: { mode: "login" | "signup" }) {
                 }}
                 className="flex items-center gap-3 text-sm text-zinc-300"
               >
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/5">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/5 backdrop-blur-sm">
                   <feature.icon className="h-3.5 w-3.5 text-pink-300" />
                 </span>
                 {feature.text}

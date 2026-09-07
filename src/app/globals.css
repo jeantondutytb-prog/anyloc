@@ -78,22 +78,3 @@ body {
   background: #f4f4f5 !important;
   font-family: inherit;
 }
-
-.auth-map .leaflet-container {
-  background: #18181b !important;
-}
-
-.auth-map-tooltip.leaflet-tooltip {
-  background: rgba(24, 24, 27, 0.92);
-  border: 1px solid rgba(244, 114, 182, 0.35);
-  border-radius: 9999px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
-  color: #fafafa;
-  font-size: 10px;
-  font-weight: 500;
-  padding: 2px 8px;
-}
-
-.auth-map-tooltip.leaflet-tooltip-top::before {
-  border-top-color: rgba(244, 114, 182, 0.35);
-}
