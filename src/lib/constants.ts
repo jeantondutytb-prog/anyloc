@@ -12,7 +12,7 @@ export const DESTINATIONS = [
   "New York",
   "Paris",
   "Londres",
-  "Dubaï",
+  "Tokyo",
   "Tokyo",
   "Bangkok",
   "Bali",
@@ -178,7 +178,7 @@ export const FEATURES = [
   {
     title: "Lieux favoris",
     description:
-      "Sauvegarde tes spots préférés — Dubaï, Miami, Tokyo — et y retourne en un tap.",
+      "Sauvegarde tes spots préférés — Tokyo, Miami, Ibiza — et y retourne en un tap.",
     icon: "Bookmark",
   },
   {
@@ -196,7 +196,7 @@ export const FEATURES = [
 ];
 
 export const SAVED_LOCATIONS = [
-  { name: "Dubaï — Burj Khalifa", lat: 25.1972, lng: 55.2744 },
+  { name: "Los Angeles — Hollywood", lat: 34.0928, lng: -118.3287 },
   { name: "Miami Beach", lat: 25.7907, lng: -80.13 },
   { name: "Paris — Tour Eiffel", lat: 48.8584, lng: 2.2945 },
   { name: "Tokyo — Shibuya", lat: 35.6595, lng: 139.7004 },

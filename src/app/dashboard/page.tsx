@@ -31,17 +31,17 @@ const LocationMap = dynamic(
 export default function DashboardPage() {
   const [active, setActive] = useState(false);
   const [selected, setSelected] = useState({
-    name: "Dubaï — Burj Khalifa",
-    lat: 25.1972,
-    lng: 55.2744,
+    name: "Tokyo — Shibuya",
+    lat: 35.6595,
+    lng: 139.7004,
   });
 
   return (
     <div className="flex min-h-screen bg-background">
       <aside className="hidden w-64 shrink-0 border-r border-white/5 bg-background p-4 lg:block">
         <Link href="/" className="flex items-center gap-2 px-2 py-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-pink-500/20">
-            <MapPin className="h-4 w-4 text-pink-400" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-pink-500/30 to-violet-500/30">
+            <MapPin className="h-4 w-4 text-pink-300" />
           </div>
           <span className="text-lg font-semibold">Anyloc</span>
         </Link>

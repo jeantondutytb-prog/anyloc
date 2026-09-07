@@ -9,8 +9,8 @@ export function Footer() {
         <div className="grid gap-8 md:grid-cols-4">
           <div className="md:col-span-2">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-pink-500/20">
-                <MapPin className="h-4 w-4 text-pink-400" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-pink-500/30 to-violet-500/30">
+                <MapPin className="h-4 w-4 text-pink-300" />
               </div>
               <span className="text-lg font-semibold">{SITE.name}</span>
             </div>
