@@ -1,0 +1,120 @@
+"use client";
+
+import Link from "next/link";
+import { motion } from "framer-motion";
+import { ArrowRight, Check, Play } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { SITE } from "@/lib/constants";
+
+export function Hero() {
+  return (
+    <section className="relative overflow-hidden pt-32 pb-20 sm:pt-40 sm:pb-28">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute top-1/4 left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-emerald-500/8 blur-[120px]" />
+        <div className="absolute top-0 right-0 h-[300px] w-[400px] rounded-full bg-cyan-500/5 blur-[100px]" />
+      </div>
+
+      <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="mx-auto max-w-3xl text-center"
+        >
+          <Badge className="mb-6">Nouveau — Spoofing multi-apps</Badge>
+
+          <h1 className="text-4xl font-bold tracking-tight text-white sm:text-6xl sm:leading-[1.1]">
+            Mets-toi à{" "}
+            <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
+              Dubaï
+            </span>{" "}
+            ce soir.
+            <br />
+            Sans quitter ton lit.
+          </h1>
+
+          <p className="mt-6 text-lg text-zinc-400 sm:text-xl">
+            {SITE.name} change la position GPS de ton téléphone au niveau
+            système — Snapchat, Instagram, Tinder, jeux et toutes tes apps.
+          </p>
+
+          <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <Link href="/register">
+              <Button size="lg" className="w-full sm:w-auto">
+                Essai gratuit 3 jours
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+            <Link href="/#how-it-works">
+              <Button variant="secondary" size="lg" className="w-full sm:w-auto">
+                <Play className="h-4 w-4" />
+                Voir comment ça marche
+              </Button>
+            </Link>
+          </div>
+
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-zinc-500">
+            <span className="flex items-center gap-1.5">
+              <Check className="h-4 w-4 text-emerald-400" />
+              Position système
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Check className="h-4 w-4 text-emerald-400" />
+              iPhone & Android
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Check className="h-4 w-4 text-emerald-400" />
+              Toutes les apps
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Check className="h-4 w-4 text-emerald-400" />
+              Sans jailbreak
+            </span>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="relative mx-auto mt-16 max-w-4xl"
+        >
+          <div className="overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/5 to-transparent p-1 shadow-2xl shadow-emerald-500/5">
+            <div className="rounded-xl bg-[#0a0a0f] p-6 sm:p-8">
+              <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                <div className="flex items-center gap-2">
+                  <div className="h-3 w-3 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="text-sm text-zinc-400">
+                    Position active
+                  </span>
+                </div>
+                <span className="text-sm font-medium text-emerald-400">
+                  📍 Dubaï — Burj Khalifa
+                </span>
+              </div>
+              <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
+                  <p className="text-xs text-zinc-500">Sur ta map</p>
+                  <p className="mt-1 font-medium text-white">
+                    📍 Dubaï — Burj Khalifa
+                  </p>
+                </div>
+                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+                  <p className="text-xs text-emerald-400/70">Position système</p>
+                  <p className="mt-1 font-medium text-emerald-400">
+                    📍 Dubaï, UAE
+                  </p>
+                </div>
+              </div>
+              <p className="mt-4 text-center text-xs text-zinc-600">
+                Le même point, au même endroit — ce n&apos;est pas un montage,
+                c&apos;est ta vraie position GPS.
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
