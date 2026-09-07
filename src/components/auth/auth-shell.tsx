@@ -1,16 +1,13 @@
 import Link from "next/link";
 import { MapPin } from "lucide-react";
-import { AuthTabs } from "@/components/auth/auth-tabs";
 import { Card } from "@/components/ui/card";
 import { SITE } from "@/lib/constants";
 
 export function AuthShell({
-  mode,
   title,
   description,
   children,
 }: {
-  mode: "login" | "signup";
   title: string;
   description: string;
   children: React.ReactNode;
@@ -42,9 +39,7 @@ export function AuthShell({
           </Link>
         </div>
 
-        <AuthTabs mode={mode} />
-
-        <h1 className="mt-6 text-2xl font-bold tracking-tight text-zinc-900">
+        <h1 className="mt-8 text-2xl font-bold tracking-tight text-zinc-900">
           {title}
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-zinc-500">

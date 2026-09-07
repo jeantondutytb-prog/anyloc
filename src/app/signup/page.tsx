@@ -4,7 +4,6 @@ import { SignupForm } from "@/components/auth/signup-form";
 export default function SignupPage() {
   return (
     <AuthShell
-      mode="signup"
       title="Crée ton compte"
       description="3 jours gratuits — email et mot de passe suffisent."
     >
