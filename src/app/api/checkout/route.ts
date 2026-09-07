@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     payment_method_types: ["card"],
     line_items: [{ price: plan.stripePriceId, quantity: 1 }],
     success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?success=true`,
-    cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/pricing?canceled=true`,
+    cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/checkout?plan=${plan.id}&canceled=true`,
     subscription_data: {
       trial_period_days: 3,
     },

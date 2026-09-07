@@ -3,7 +3,16 @@ import { MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
-export default function RegisterPage() {
+export default async function RegisterPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ plan?: string }>;
+}) {
+  const { plan } = await searchParams;
+  const planId =
+    plan && ["weekly", "monthly", "annual"].includes(plan) ? plan : "annual";
+  const checkoutUrl = `/checkout?plan=${planId}`;
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md p-8">
@@ -21,7 +30,7 @@ export default function RegisterPage() {
           3 jours gratuits pour tester Anyloc — sans engagement
         </p>
 
-        <form className="mt-8 space-y-4" action="/dashboard">
+        <form className="mt-8 space-y-4" action={checkoutUrl}>
           <div>
             <label className="text-sm text-zinc-600" htmlFor="name">
               Prénom
@@ -59,7 +68,7 @@ export default function RegisterPage() {
             />
           </div>
           <Button type="submit" className="w-full">
-            Go gratuit
+            Continuer vers le paiement
           </Button>
         </form>
 
@@ -70,7 +79,10 @@ export default function RegisterPage() {
 
         <p className="mt-4 text-center text-sm text-zinc-500">
           Déjà un compte ?{" "}
-          <Link href="/login" className="text-pink-600 hover:underline">
+          <Link
+            href={`/login?plan=${planId}`}
+            className="text-pink-600 hover:underline"
+          >
             Se connecter
           </Link>
         </p>

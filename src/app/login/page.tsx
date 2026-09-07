@@ -3,7 +3,15 @@ import { MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ plan?: string; next?: string }>;
+}) {
+  const { plan, next } = await searchParams;
+  const redirectTo =
+    next ?? `/checkout?plan=${plan && ["weekly", "monthly", "annual"].includes(plan) ? plan : "annual"}`;
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md p-8">
@@ -18,10 +26,10 @@ export default function LoginPage() {
           Connexion
         </h1>
         <p className="mt-2 text-center text-sm text-zinc-500">
-          Retrouve ton espace et gère ta loc
+          Retrouve ton espace et finalise ton abonnement
         </p>
 
-        <form className="mt-8 space-y-4" action="/dashboard">
+        <form className="mt-8 space-y-4" action={redirectTo}>
           <div>
             <label className="text-sm text-zinc-600" htmlFor="email">
               Email
@@ -53,7 +61,10 @@ export default function LoginPage() {
 
         <p className="mt-6 text-center text-sm text-zinc-500">
           Pas encore de compte ?{" "}
-          <Link href="/register" className="text-pink-600 hover:underline">
+          <Link
+            href={`/register?plan=${plan ?? "annual"}`}
+            className="text-pink-600 hover:underline"
+          >
             Créer un compte
           </Link>
         </p>
