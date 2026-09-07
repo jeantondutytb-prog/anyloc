@@ -18,7 +18,7 @@ export default function LoginPage() {
           Connexion
         </h1>
         <p className="mt-2 text-center text-sm text-zinc-500">
-          Retrouve ton espace et gère ta position GPS
+          Retrouve ton espace et gère ta loc
         </p>
 
         <form className="mt-8 space-y-4" action="/dashboard">
