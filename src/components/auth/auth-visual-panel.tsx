@@ -14,26 +14,19 @@ const features = [
 
 export function AuthVisualPanel({ mode }: { mode: "login" | "signup" }) {
   return (
-    <div className="dark-panel relative hidden min-h-screen w-[44%] overflow-hidden bg-zinc-950 lg:flex lg:flex-col">
+    <div className="relative hidden min-h-screen w-[44%] overflow-hidden border-r border-pink-100/80 bg-background lg:flex lg:flex-col">
       <AuthPointsBackground />
 
       <div className="pointer-events-none absolute inset-0">
-        <motion.div
-          animate={{ scale: [1, 1.08, 1], opacity: [0.2, 0.35, 0.2] }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -top-24 -left-24 h-80 w-80 rounded-full bg-violet-500/15 blur-3xl"
-        />
-        <motion.div
-          animate={{ scale: [1, 1.1, 1], opacity: [0.15, 0.3, 0.15] }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-          className="absolute right-0 bottom-0 h-72 w-72 rounded-full bg-orange-500/10 blur-3xl"
-        />
+        <div className="absolute top-1/4 left-1/2 h-[420px] w-[640px] -translate-x-1/2 rounded-full bg-pink-500/10 blur-[120px]" />
+        <div className="absolute top-0 right-0 h-[280px] w-[360px] rounded-full bg-violet-500/10 blur-[100px]" />
+        <div className="absolute bottom-0 left-0 h-[220px] w-[320px] rounded-full bg-orange-500/8 blur-[100px]" />
       </div>
 
       <div className="relative z-10 flex h-full flex-col p-8 xl:p-10">
-        <Link href="/" className="inline-flex w-fit items-center gap-2 text-white">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm">
-            <MapPin className="h-4 w-4 text-pink-300" />
+        <Link href="/" className="inline-flex w-fit items-center gap-2 text-zinc-900">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-pink-500/30 to-violet-500/30">
+            <MapPin className="h-4 w-4 text-pink-600" />
           </div>
           <span className="text-lg font-semibold tracking-tight">{SITE.name}</span>
         </Link>
@@ -45,11 +38,11 @@ export function AuthVisualPanel({ mode }: { mode: "login" | "signup" }) {
             transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
             className="max-w-sm"
           >
-            <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium uppercase tracking-wider text-zinc-300 backdrop-blur-sm">
+            <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-pink-200/60 bg-white/70 px-3 py-1 text-xs font-medium uppercase tracking-wider text-zinc-600 backdrop-blur-sm">
               {mode === "login" ? "Espace membre" : "Essai gratuit · 3 jours"}
             </p>
 
-            <h2 className="text-3xl font-bold leading-tight tracking-tight text-white xl:text-4xl">
+            <h2 className="text-3xl font-bold leading-tight tracking-tight text-zinc-900 xl:text-4xl">
               {mode === "login" ? (
                 <>
                   Content de te{" "}
@@ -63,7 +56,7 @@ export function AuthVisualPanel({ mode }: { mode: "login" | "signup" }) {
               )}
             </h2>
 
-            <p className="mt-4 text-sm leading-relaxed text-zinc-400">
+            <p className="mt-4 text-sm leading-relaxed text-zinc-600">
               {mode === "login"
                 ? "Retrouve ton dashboard et ta position active."
                 : "Teste Anyloc gratuitement sur toutes tes apps."}
@@ -85,10 +78,10 @@ export function AuthVisualPanel({ mode }: { mode: "login" | "signup" }) {
                   hidden: { opacity: 0, y: 8 },
                   visible: { opacity: 1, y: 0 },
                 }}
-                className="flex items-center gap-3 text-sm text-zinc-300"
+                className="flex items-center gap-3 text-sm text-zinc-600"
               >
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/5 backdrop-blur-sm">
-                  <feature.icon className="h-3.5 w-3.5 text-pink-300" />
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-pink-100 bg-white/80 shadow-sm">
+                  <feature.icon className="h-3.5 w-3.5 text-pink-600" />
                 </span>
                 {feature.text}
               </motion.li>
