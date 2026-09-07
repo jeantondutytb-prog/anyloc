@@ -13,7 +13,7 @@ export const DESTINATIONS = [
   "Paris",
   "Londres",
   "Tokyo",
-  "Tokyo",
+  "Maldives",
   "Bangkok",
   "Bali",
   "Ibiza",
