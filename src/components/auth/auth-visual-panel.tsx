@@ -36,11 +36,20 @@ export function AuthVisualPanel({ mode }: { mode: "login" | "signup" }) {
           <span className="text-lg font-semibold tracking-tight">{SITE.name}</span>
         </Link>
 
-        <div className="flex flex-1 flex-col items-center justify-center gap-8 py-6 text-center">
+        <div className="flex flex-1 flex-col items-center justify-center gap-6 py-4 text-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="flex w-full items-center justify-center"
+          >
+            <AuthGlobe />
+          </motion.div>
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
             className="max-w-sm"
           >
             <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium uppercase tracking-wider text-zinc-300">
@@ -66,15 +75,6 @@ export function AuthVisualPanel({ mode }: { mode: "login" | "signup" }) {
                 ? "Retrouve ton dashboard et ta position active."
                 : "Teste Anyloc gratuitement sur toutes tes apps."}
             </p>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.94 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-            className="flex w-full items-center justify-center"
-          >
-            <AuthGlobe />
           </motion.div>
 
           <motion.ul

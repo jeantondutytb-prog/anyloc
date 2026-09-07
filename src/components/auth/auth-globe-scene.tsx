@@ -1,10 +1,11 @@
 "use client";
 
-import { Suspense, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Html, useTexture } from "@react-three/drei";
-import type { Group, Mesh } from "three";
+import { Text } from "@react-three/drei";
+import type { CanvasTexture, Group } from "three";
 import { BackSide, Vector3 } from "three";
+import { createStylizedEarthTexture } from "@/lib/create-stylized-earth-texture";
 import {
   GLOBE_CITIES,
   GLOBE_RADIUS,
@@ -20,7 +21,7 @@ function CityMarker({ city }: { city: GlobeCity }) {
   const groupRef = useRef<Group>(null);
   const [visible, setVisible] = useState(true);
   const position = useMemo(
-    () => latLngToGlobeVector3(city.lat, city.lng, GLOBE_RADIUS * 1.008),
+    () => latLngToGlobeVector3(city.lat, city.lng, GLOBE_RADIUS * 1.006),
     [city.lat, city.lng]
   );
 
@@ -31,75 +32,73 @@ function CityMarker({ city }: { city: GlobeCity }) {
     _normal.copy(_cityVector).normalize();
     _cameraVector.copy(camera.position).sub(_cityVector).normalize();
 
-    const isVisible = _normal.dot(_cameraVector) > 0.2;
+    const isVisible = _normal.dot(_cameraVector) > 0.15;
     groupRef.current.visible = isVisible;
     setVisible(isVisible);
   });
 
   return (
     <group ref={groupRef} position={position}>
-      <mesh renderOrder={2}>
-        <sphereGeometry args={[0.022, 10, 10]} />
-        <meshBasicMaterial color="#fda4af" toneMapped={false} />
-      </mesh>
-      <mesh renderOrder={2} scale={2.2}>
-        <sphereGeometry args={[0.022, 10, 10]} />
-        <meshBasicMaterial
-          color="#f472b6"
-          transparent
-          opacity={0.35}
-          toneMapped={false}
-          depthWrite={false}
-        />
+      <mesh visible={visible}>
+        <sphereGeometry args={[0.024, 10, 10]} />
+        <meshBasicMaterial color="#f9a8d4" toneMapped={false} />
       </mesh>
 
       {visible ? (
-        <Html
-          distanceFactor={7}
-          position={[0.05, 0.035, 0]}
-          style={{ pointerEvents: "none", userSelect: "none" }}
-          zIndexRange={[100, 0]}
+        <Text
+          position={[0.07, 0.04, 0]}
+          fontSize={0.075}
+          color="#f8fafc"
+          anchorX="left"
+          anchorY="middle"
+          outlineWidth={0.012}
+          outlineColor="#020617"
+          maxWidth={0.8}
         >
-          <span className="whitespace-nowrap text-[10px] font-medium tracking-wide text-amber-100/95 drop-shadow-[0_0_8px_rgba(251,191,36,0.55),0_1px_4px_rgba(0,0,0,0.9)]">
-            {city.name}
-          </span>
-        </Html>
+          {city.name}
+        </Text>
       ) : null}
     </group>
   );
 }
 
-function EarthGlobe() {
+function GlobePlaceholder() {
+  return (
+    <mesh>
+      <sphereGeometry args={[GLOBE_RADIUS, 48, 48]} />
+      <meshPhongMaterial color="#0a1220" shininess={12} specular="#1e293b" />
+    </mesh>
+  );
+}
+
+function RotatingGlobe({ texture }: { texture: CanvasTexture }) {
   const groupRef = useRef<Group>(null);
-  const earthRef = useRef<Mesh>(null);
-  const [nightMap] = useTexture(["/textures/earth-night.jpg"]);
 
   useFrame((_, delta) => {
     if (groupRef.current) {
-      groupRef.current.rotation.y += delta * 0.1;
+      groupRef.current.rotation.y += delta * 0.14;
     }
   });
 
   return (
-    <group ref={groupRef} rotation={[0.18, 0, 0]}>
-      <mesh ref={earthRef} renderOrder={1}>
-        <sphereGeometry args={[GLOBE_RADIUS, 72, 72]} />
-        <meshStandardMaterial
-          map={nightMap}
-          emissiveMap={nightMap}
-          emissive="#ffffff"
-          emissiveIntensity={0.85}
-          roughness={1}
-          metalness={0}
+    <group ref={groupRef} rotation={[0.15, -0.4, 0]}>
+      <mesh>
+        <sphereGeometry args={[GLOBE_RADIUS, 64, 64]} />
+        <meshPhongMaterial
+          map={texture}
+          shininess={18}
+          specular="#334155"
+          emissive="#050a12"
+          emissiveIntensity={0.35}
         />
       </mesh>
 
-      <mesh scale={1.04} renderOrder={0}>
-        <sphereGeometry args={[GLOBE_RADIUS, 64, 64]} />
+      <mesh scale={1.025}>
+        <sphereGeometry args={[GLOBE_RADIUS, 48, 48]} />
         <meshBasicMaterial
-          color="#1e3a8a"
+          color="#1e3a5f"
           transparent
-          opacity={0.12}
+          opacity={0.08}
           depthWrite={false}
           side={BackSide}
         />
@@ -112,32 +111,58 @@ function EarthGlobe() {
   );
 }
 
+function EarthScene() {
+  const [texture, setTexture] = useState<CanvasTexture | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    createStylizedEarthTexture()
+      .then((loaded) => {
+        if (active) setTexture(loaded);
+      })
+      .catch(() => {
+        if (active) setTexture(null);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (!texture) {
+    return <GlobePlaceholder />;
+  }
+
+  return <RotatingGlobe texture={texture} />;
+}
+
 function Scene() {
   return (
     <>
-      <ambientLight intensity={0.08} />
-      <directionalLight position={[6, 2, 4]} intensity={0.35} color="#93c5fd" />
-      <pointLight position={[-4, -2, -5]} intensity={0.15} color="#6366f1" />
-      <EarthGlobe />
+      <ambientLight intensity={0.55} />
+      <directionalLight position={[-4, 2, 5]} intensity={1.1} color="#cbd5e1" />
+      <directionalLight position={[3, -1, -2]} intensity={0.15} color="#64748b" />
+      <Suspense fallback={<GlobePlaceholder />}>
+        <EarthScene />
+      </Suspense>
     </>
   );
 }
 
 export function AuthGlobeScene() {
   return (
-    <div className="relative mx-auto flex h-[min(42vw,380px)] w-[min(42vw,380px)] items-center justify-center">
-      <div className="pointer-events-none absolute inset-0 rounded-full bg-indigo-500/10 blur-3xl" />
-      <div className="pointer-events-none absolute inset-[12%] rounded-full bg-pink-500/8 blur-2xl" />
+    <div className="relative h-[400px] w-[400px] shrink-0">
+      <div className="pointer-events-none absolute inset-2 rounded-full bg-slate-500/10 blur-3xl" />
 
       <Canvas
-        camera={{ position: [0, 0, 4.35], fov: 38 }}
-        gl={{ antialias: true, alpha: true }}
-        dpr={[1, 2]}
-        style={{ background: "transparent", width: "100%", height: "100%" }}
+        camera={{ position: [0, 0.15, 4.5], fov: 36 }}
+        gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
+        dpr={[1, 1.75]}
+        frameloop="always"
+        style={{ width: "400px", height: "400px" }}
       >
-        <Suspense fallback={null}>
-          <Scene />
-        </Suspense>
+        <Scene />
       </Canvas>
     </div>
   );
