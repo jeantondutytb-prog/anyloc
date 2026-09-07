@@ -17,9 +17,6 @@ export function LoginForm() {
 
   return (
     <div>
-      <GoogleAuthLink />
-      <AuthDivider />
-
       <form action={formAction} className="space-y-4">
         {state.error ? (
           <div
@@ -62,6 +59,9 @@ export function LoginForm() {
           )}
         </Button>
       </form>
+
+      <AuthDivider />
+      <GoogleAuthLink />
 
       <p className="mt-4 text-center text-sm text-zinc-500">
         Pas encore de compte ?{" "}

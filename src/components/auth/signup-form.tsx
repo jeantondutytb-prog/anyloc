@@ -17,9 +17,6 @@ export function SignupForm() {
 
   return (
     <div>
-      <GoogleAuthLink />
-      <AuthDivider />
-
       <form action={formAction} className="space-y-4">
         {state.error ? (
           <div
@@ -71,6 +68,9 @@ export function SignupForm() {
           .
         </p>
       </form>
+
+      <AuthDivider />
+      <GoogleAuthLink />
 
       <p className="mt-4 text-center text-sm text-zinc-500">
         Déjà un compte ?{" "}
