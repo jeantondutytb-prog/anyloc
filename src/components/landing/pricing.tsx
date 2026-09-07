@@ -23,10 +23,10 @@ export function Pricing() {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        window.location.href = "/register";
+        window.location.href = "/signup";
       }
     } catch {
-      window.location.href = "/register";
+      window.location.href = "/signup";
     } finally {
       setLoading(null);
     }

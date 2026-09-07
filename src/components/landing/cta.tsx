@@ -13,7 +13,7 @@ export function Cta() {
           Toi tu connais la vérité. Eux, ils voient Marbella. C&apos;est tout
           ce qui compte sur la map.
         </p>
-        <Link href="/register" className="mt-8 inline-block">
+        <Link href="/signup" className="mt-8 inline-block">
           <Button size="lg">
             Lancer mon essai gratuit
             <ArrowRight className="h-4 w-4" />
