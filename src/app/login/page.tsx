@@ -6,7 +6,7 @@ export default function LoginPage() {
   return (
     <AuthShell
       title="Connexion"
-      description="Retrouve ton espace et gère ta position GPS"
+      description="Entre ton email et ton mot de passe — ou connecte-toi en un clic avec Google ou Apple."
       footer={
         <p className="text-center text-sm text-zinc-500">
           Pas encore de compte ?{" "}

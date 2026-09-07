@@ -86,3 +86,25 @@ export async function signup(
 
   redirect("/dashboard");
 }
+
+export async function signInWithOAuth(provider: "google" | "apple") {
+  if (!isSupabaseConfigured()) {
+    redirect("/dashboard");
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider,
+    options: {
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/auth/callback`,
+    },
+  });
+
+  if (error) {
+    throw new Error("La connexion a échoué. Réessaie ou utilise ton email.");
+  }
+
+  if (data.url) {
+    redirect(data.url);
+  }
+}

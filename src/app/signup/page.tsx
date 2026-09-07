@@ -6,7 +6,7 @@ export default function SignupPage() {
   return (
     <AuthShell
       title="Crée ton compte"
-      description="3 jours gratuits pour explorer Anyloc — sans engagement"
+      description="3 jours gratuits pour explorer Anyloc — sans engagement, sans carte bancaire."
       footer={
         <p className="text-center text-sm text-zinc-500">
           Déjà un compte ?{" "}
