@@ -7,24 +7,24 @@ export const SITE = {
 };
 
 export const DESTINATIONS = [
-  "Los Angeles",
+  "Ibiza",
+  "Mykonos",
   "Miami",
+  "Marbella",
+  "Monaco",
+  "Los Angeles",
   "New York",
+  "Tokyo",
+  "Bali",
+  "Phuket",
+  "Valencia",
+  "Marrakech",
   "Paris",
   "Londres",
-  "Tokyo",
-  "Maldives",
-  "Bangkok",
-  "Bali",
-  "Ibiza",
-  "Monaco",
-  "Mykonos",
-  "Marrakech",
   "Cancún",
-  "Singapour",
-  "Sydney",
   "Rio",
   "Barcelone",
+  "Bangkok",
 ];
 
 export const PLANS = [
@@ -178,7 +178,7 @@ export const FEATURES = [
   {
     title: "Lieux favoris",
     description:
-      "Sauvegarde tes spots préférés — Tokyo, Miami, Ibiza — et y retourne en un tap.",
+      "Sauvegarde tes spots préférés — Ibiza, Miami, Mykonos — et y retourne en un tap.",
     icon: "Bookmark",
   },
   {
@@ -196,10 +196,10 @@ export const FEATURES = [
 ];
 
 export const SAVED_LOCATIONS = [
-  { name: "Los Angeles — Hollywood", lat: 34.0928, lng: -118.3287 },
-  { name: "Miami Beach", lat: 25.7907, lng: -80.13 },
-  { name: "Paris — Tour Eiffel", lat: 48.8584, lng: 2.2945 },
-  { name: "Tokyo — Shibuya", lat: 35.6595, lng: 139.7004 },
-  { name: "Ibiza", lat: 38.9067, lng: 1.4206 },
-  { name: "Monaco", lat: 43.7384, lng: 7.4246 },
+  { name: "Mykonos — Paradise Beach", lat: 37.4467, lng: 25.3289 },
+  { name: "Ibiza — Playa d'en Bossa", lat: 38.8767, lng: 1.4024 },
+  { name: "Miami — South Beach", lat: 25.7907, lng: -80.13 },
+  { name: "Marbella — Puerto Banús", lat: 36.4848, lng: -4.9526 },
+  { name: "Monaco — Port Hercule", lat: 43.7384, lng: 7.4246 },
+  { name: "Valencia — Ciudad de las Artes", lat: 39.4549, lng: -0.3523 },
 ];

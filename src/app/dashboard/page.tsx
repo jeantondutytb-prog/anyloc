@@ -31,9 +31,9 @@ const LocationMap = dynamic(
 export default function DashboardPage() {
   const [active, setActive] = useState(false);
   const [selected, setSelected] = useState({
-    name: "Tokyo — Shibuya",
-    lat: 35.6595,
-    lng: 139.7004,
+    name: "Mykonos — Paradise Beach",
+    lat: 37.4467,
+    lng: 25.3289,
   });
 
   return (
