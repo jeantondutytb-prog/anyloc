@@ -7,34 +7,70 @@ export type SubscriptionAccess = {
   hasAccess: boolean;
   status: string | null;
   planId: string | null;
+  isAdmin: boolean;
 };
+
+function getAdminEmails() {
+  return (process.env.ANYLOC_ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+export function isAdminEmail(email: string | null | undefined) {
+  if (!email) {
+    return false;
+  }
+
+  return getAdminEmails().includes(email.trim().toLowerCase());
+}
 
 export function isActiveSubscriptionStatus(status: string | null | undefined) {
   return status !== null && status !== undefined && ACTIVE_STATUSES.has(status);
 }
 
 export async function getSubscriptionAccessForUser(
-  userId: string
+  userId: string,
+  email?: string | null
 ): Promise<SubscriptionAccess> {
+  if (isAdminEmail(email)) {
+    return {
+      hasAccess: true,
+      status: "admin",
+      planId: "admin",
+      isAdmin: true,
+    };
+  }
+
   if (!isSupabaseAdminConfigured()) {
-    return { hasAccess: false, status: null, planId: null };
+    return { hasAccess: false, status: null, planId: null, isAdmin: false };
   }
 
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("profiles")
-    .select("subscription_status, plan_id")
+    .select("subscription_status, plan_id, email")
     .eq("id", userId)
     .maybeSingle();
 
   if (error || !data) {
-    return { hasAccess: false, status: null, planId: null };
+    return { hasAccess: false, status: null, planId: null, isAdmin: false };
+  }
+
+  if (isAdminEmail(data.email)) {
+    return {
+      hasAccess: true,
+      status: "admin",
+      planId: "admin",
+      isAdmin: true,
+    };
   }
 
   return {
     hasAccess: isActiveSubscriptionStatus(data.subscription_status),
     status: data.subscription_status,
     planId: data.plan_id,
+    isAdmin: false,
   };
 }
 
@@ -69,7 +105,7 @@ export async function requireActiveSubscription() {
     return { user: null, access: null, error };
   }
 
-  const access = await getSubscriptionAccessForUser(user.id);
+  const access = await getSubscriptionAccessForUser(user.id, user.email);
 
   if (!access.hasAccess) {
     return {
