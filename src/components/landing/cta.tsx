@@ -15,7 +15,7 @@ export function Cta() {
         </p>
         <Link href="/register" className="mt-8 inline-block">
           <Button size="lg">
-            Go test gratuit
+            Fake ma loc
             <ArrowRight className="h-4 w-4" />
           </Button>
         </Link>

@@ -42,7 +42,7 @@ export function Hero() {
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link href="/register">
               <Button size="lg" className="w-full sm:w-auto">
-                Go test 3 jours gratuits
+                Fake ma loc
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
