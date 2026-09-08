@@ -129,7 +129,7 @@ export default function DashboardPage() {
               />
             </div>
 
-            <Card className="overflow-hidden border-zinc-800 bg-zinc-950 p-0">
+            <Card className="overflow-hidden border-zinc-200 bg-white p-0">
               <LocationMap
                 selected={selected}
                 onSelect={selectLocation}
