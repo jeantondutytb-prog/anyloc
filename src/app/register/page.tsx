@@ -2,6 +2,7 @@ import Link from "next/link";
 import { MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { isValidPlanId } from "@/lib/constants";
 
 export default async function RegisterPage({
   searchParams,
@@ -9,8 +10,7 @@ export default async function RegisterPage({
   searchParams: Promise<{ plan?: string }>;
 }) {
   const { plan } = await searchParams;
-  const planId =
-    plan && ["weekly", "monthly", "annual"].includes(plan) ? plan : "annual";
+  const planId = isValidPlanId(plan) ? plan! : "annual";
   const checkoutUrl = `/checkout?plan=${planId}`;
 
   return (

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { CheckoutView } from "@/components/checkout/checkout-view";
-import { PLANS } from "@/lib/constants";
+import { isValidPlanId } from "@/lib/constants";
 
 export default async function CheckoutPage({
   searchParams,
@@ -10,7 +10,7 @@ export default async function CheckoutPage({
   const { plan, canceled } = await searchParams;
   const planId = plan ?? "annual";
 
-  const isValidPlan = PLANS.some((p) => p.id === planId);
+  const isValidPlan = isValidPlanId(planId);
   if (!isValidPlan) {
     redirect("/checkout?plan=annual");
   }

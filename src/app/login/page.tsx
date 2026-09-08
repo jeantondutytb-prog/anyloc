@@ -2,6 +2,7 @@ import Link from "next/link";
 import { MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { isValidPlanId } from "@/lib/constants";
 
 export default async function LoginPage({
   searchParams,
@@ -10,7 +11,7 @@ export default async function LoginPage({
 }) {
   const { plan, next } = await searchParams;
   const redirectTo =
-    next ?? `/checkout?plan=${plan && ["weekly", "monthly", "annual"].includes(plan) ? plan : "annual"}`;
+    next ?? `/checkout?plan=${isValidPlanId(plan) ? plan : "annual"}`;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">

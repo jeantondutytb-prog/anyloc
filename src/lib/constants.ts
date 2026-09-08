@@ -29,11 +29,11 @@ export const DESTINATIONS = [
 
 export const PLANS = [
   {
-    id: "weekly",
-    name: "Hebdomadaire",
-    price: "4,99€",
-    period: "/semaine",
-    description: "Parfait pour un week-end ou une semaine de test.",
+    id: "6months",
+    name: "6 mois",
+    price: "24,99€",
+    period: "/6 mois",
+    description: "Idéal pour tester sur la durée sans t'engager à l'année.",
     features: [
       "Changements de loc illimités",
       "Compatible avec toutes tes apps",
@@ -41,7 +41,7 @@ export const PLANS = [
       "Support par mail",
     ],
     popular: false,
-    stripePriceId: process.env.STRIPE_PRICE_WEEKLY,
+    stripePriceId: process.env.STRIPE_PRICE_6MONTHS,
   },
   {
     id: "monthly",
@@ -50,7 +50,7 @@ export const PLANS = [
     period: "/mois",
     description: "Le sweet spot si tu l'utilises souvent.",
     features: [
-      "Tout le plan Hebdo",
+      "Tout le plan 6 mois",
       "Trajets simulés sur la map",
       "Bibliothèque de spots illimitée",
       "Accès web (1 profil)",
@@ -76,7 +76,13 @@ export const PLANS = [
     popular: false,
     stripePriceId: process.env.STRIPE_PRICE_ANNUAL,
   },
-];
+] ;
+
+export const PLAN_IDS = PLANS.map((plan) => plan.id);
+
+export function isValidPlanId(plan: string | undefined) {
+  return plan !== undefined && PLAN_IDS.includes(plan as (typeof PLAN_IDS)[number]);
+}
 
 export const COMPARISON = [
   {

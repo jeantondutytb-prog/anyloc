@@ -52,9 +52,7 @@ export function CheckoutView({
       if (data.url) {
         window.location.href = data.url;
       } else {
-        setError(
-          "Le paiement n'est pas encore configuré. Contacte le support ou réessaie plus tard."
-        );
+        setError(data.error ?? "Le paiement n'est pas encore configuré.");
       }
     } catch {
       setError("Une erreur est survenue. Réessaie dans quelques instants.");
