@@ -17,6 +17,7 @@ import { Card } from "@/components/ui/card";
 import { Logo } from "@/components/ui/logo";
 import { DashboardWelcome } from "@/components/dashboard/dashboard-welcome";
 import { InstallPrompt } from "@/components/dashboard/install-prompt";
+import { LocationSearch } from "@/components/dashboard/location-search";
 import { OnboardingChecklist } from "@/components/dashboard/onboarding-checklist";
 import { useDashboardOnboarding } from "@/hooks/use-dashboard-onboarding";
 import { SAVED_LOCATIONS } from "@/lib/constants";
@@ -199,8 +200,10 @@ export function DashboardView() {
             </div>
 
             <div className="grid gap-6 lg:grid-cols-3">
-              <div className="lg:col-span-2">
-                <Card className="overflow-hidden p-0">
+              <div className="space-y-4 lg:col-span-2">
+                <LocationSearch onSelect={handleSelectLocation} />
+
+                <Card className="overflow-hidden border-zinc-200 bg-white p-0">
                   <LocationMap
                     selected={selected}
                     onSelect={handleSelectLocation}
