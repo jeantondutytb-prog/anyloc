@@ -29,11 +29,11 @@ export const DESTINATIONS = [
 
 export const PLANS = [
   {
-    id: "weekly",
-    name: "Hebdomadaire",
-    price: "4,99€",
-    period: "/semaine",
-    description: "Parfait pour un week-end ou une semaine de test.",
+    id: "6months",
+    name: "6 mois",
+    price: "29€",
+    period: "/6 mois",
+    description: "Parfait pour tester sur la durée sans t'engager à l'année.",
     features: [
       "Changements de loc illimités",
       "Compatible avec toutes tes apps",
@@ -41,16 +41,16 @@ export const PLANS = [
       "Support par mail",
     ],
     popular: false,
-    stripePriceId: process.env.STRIPE_PRICE_WEEKLY,
+    stripePriceId: process.env.STRIPE_PRICE_6MONTHS,
   },
   {
     id: "monthly",
     name: "Mensuel",
-    price: "12,99€",
+    price: "8€",
     period: "/mois",
     description: "Le sweet spot si tu l'utilises souvent.",
     features: [
-      "Tout le plan Hebdo",
+      "Tout le plan 6 mois",
       "Trajets simulés sur la map",
       "Bibliothèque de spots illimitée",
       "Accès web (1 profil)",
@@ -62,10 +62,10 @@ export const PLANS = [
   {
     id: "annual",
     name: "Annuel",
-    price: "49,99€",
+    price: "49€",
     period: "/an",
     description: "Le meilleur deal si t'es un habitué.",
-    savings: "Tu gardes 106€ sur l'année",
+    savings: "Tu gardes 47€ sur l'année",
     features: [
       "Tout le plan Mensuel",
       "App iPhone sans ordi",
