@@ -95,6 +95,8 @@ Au checkout, l'email Supabase est prérempli et le compte est lié via `client_r
 2. Le dashboard lit/écrit via `GET` et `PUT` `/api/location` (auth Supabase requise).
 3. Lie un appareil depuis le dashboard → token `anyloc_...`.
 4. L'app mobile lit la position via `GET /api/device/location` avec `Authorization: Bearer <token>`.
+5. **Trajets simulés** : `/dashboard/routes` — la position avance automatiquement le long du tracé.
+6. **Web spoofing** : `/web` — override `navigator.geolocation` pour Snapchat Web, Insta Web, etc.
 
 ## Apps natives
 
