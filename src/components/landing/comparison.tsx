@@ -17,11 +17,11 @@ export function Comparison() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
-            Pourquoi Anyloc fait la différence
+            Pourquoi Anyloc c&apos;est validé
           </h2>
           <p className="mt-4 text-zinc-600">
             Les autres solutions trichent en surface. Anyloc modifie le signal
-            que ton téléphone transmet vraiment.
+            que ton tel envoie vraiment.
           </p>
         </div>
 
@@ -67,7 +67,7 @@ export function Comparison() {
             </tbody>
           </table>
           <p className="mt-4 text-center text-xs text-zinc-500">
-            « — » = fonctionne partiellement ou sur une seule application.
+            « — » = ça marche partiellement ou sur une seule app.
           </p>
         </div>
       </div>

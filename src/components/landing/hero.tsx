@@ -23,21 +23,20 @@ export function Hero() {
           transition={{ duration: 0.6 }}
           className="mx-auto max-w-3xl text-center"
         >
-          <Badge className="mb-6">GPS modifié · toutes tes apps</Badge>
+          <Badge className="mb-6">GPS spoofé · toutes tes apps</Badge>
 
           <h1 className="text-4xl font-bold tracking-tight text-zinc-900 sm:text-6xl sm:leading-[1.1]">
-            Affiche-toi à{" "}
+            Fake ta loc à{" "}
             <span className="gradient-text">
               Marbella
             </span>
-            .
             <br />
-            Même en pyjama.
+            alors que t&apos;es posé chez toi.
           </h1>
 
           <p className="mt-6 text-lg text-zinc-600 sm:text-xl">
-            {SITE.name} redéfinit où ton téléphone se trouve — Snap, Insta,
-            apps de rencontre, jeux : un seul réglage, tout ton appareil.
+            {SITE.name} hack ton GPS — Snap, Insta, Tinder, jeux : un réglage
+            et tout ton tel déménage.
           </p>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
@@ -50,7 +49,7 @@ export function Hero() {
             <Link href="/#how-it-works">
               <Button variant="secondary" size="lg" className="w-full sm:w-auto">
                 <Play className="h-4 w-4" />
-                Découvrir Anyloc
+                Voir comment ça marche
               </Button>
             </Link>
           </div>
@@ -96,7 +95,7 @@ export function Hero() {
               </div>
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
                 <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-                  <p className="text-xs text-zinc-500">Ce que tes apps affichent</p>
+                  <p className="text-xs text-zinc-500">Ce que tes potes voient</p>
                   <p className="mt-1 font-medium text-zinc-900">
                     📍 Marbella — Puerto Banús
                   </p>
@@ -109,8 +108,8 @@ export function Hero() {
                 </div>
               </div>
               <p className="mt-4 text-center text-xs text-zinc-600">
-                Même coordonnées, même instant — un vrai signal GPS, pas une
-                image retouchée.
+                Même coords, même instant — un vrai signal GPS, pas un montage
+                chelou.
               </p>
             </div>
           </div>

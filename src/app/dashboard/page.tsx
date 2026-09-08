@@ -75,7 +75,7 @@ export default function DashboardPage() {
           <div>
             <h1 className="text-2xl font-bold text-zinc-900">Dashboard</h1>
             <p className="text-sm text-zinc-500">
-              Sélectionne un lieu et active ton signal GPS
+              Choisis un spot et active ton signal GPS
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -117,7 +117,7 @@ export default function DashboardPage() {
           <div className="space-y-6">
             <Card className="p-5">
               <h3 className="text-sm font-medium text-zinc-600">
-                Position sélectionnée
+                Loc sélectionnée
               </h3>
               <p className="mt-2 text-lg font-semibold text-zinc-900">
                 📍 {selected.name}
@@ -133,7 +133,7 @@ export default function DashboardPage() {
 
             <Card className="p-5">
               <h3 className="text-sm font-medium text-zinc-600">
-                Destinations rapides
+                Spots rapides
               </h3>
               <ul className="mt-3 space-y-2">
                 {SAVED_LOCATIONS.map((loc) => (
@@ -159,11 +159,11 @@ export default function DashboardPage() {
 
             <Card className="p-5">
               <h3 className="text-sm font-medium text-zinc-600">
-                Branche ton téléphone
+                Branche ton tel
               </h3>
               <p className="mt-2 text-sm text-zinc-500">
                 L&apos;app Anyloc doit être installée sur ton mobile pour
-                diffuser la position choisie.
+                envoyer la loc choisie.
               </p>
               <div className="mt-4 flex gap-2">
                 <Link href="/setup/ios" className="flex-1">

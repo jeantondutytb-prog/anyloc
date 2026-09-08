@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: `${SITE.name} — Contrôle ton GPS sur toutes tes apps`,
+  title: `${SITE.name} — Fake ta loc sur toutes tes apps`,
   description: SITE.description,
   metadataBase: new URL("https://anyloc.io"),
   openGraph: {

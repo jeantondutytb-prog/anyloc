@@ -56,7 +56,7 @@ export function Pricing() {
             >
               {plan.popular && (
                 <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  Recommandé
+                  Le plus populaire
                 </Badge>
               )}
 
@@ -87,7 +87,7 @@ export function Pricing() {
                 onClick={() => handleCheckout(plan.id)}
                 disabled={loading === plan.id}
               >
-                {loading === plan.id ? "Chargement..." : "Choisir ce plan"}
+                {loading === plan.id ? "Chargement..." : "Je prends ce plan"}
               </Button>
             </Card>
           ))}
