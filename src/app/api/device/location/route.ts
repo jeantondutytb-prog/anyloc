@@ -1,0 +1,41 @@
+import { createClient } from "@/lib/supabase/server";
+import { extractBearerToken } from "@/lib/device";
+import {
+  getDeviceContext,
+  getLocationPayloadForUser,
+  touchDeviceLastSeen,
+} from "@/lib/device-server";
+
+export async function GET(request: Request) {
+  const token = extractBearerToken(request);
+
+  if (!token) {
+    return Response.json(
+      { error: "Authorization Bearer token requis." },
+      { status: 401 }
+    );
+  }
+
+  const { device, error } = await getDeviceContext(token);
+
+  if (!device) {
+    return Response.json({ error }, { status: 401 });
+  }
+
+  if (error) {
+    return Response.json({ error }, { status: 403 });
+  }
+
+  await touchDeviceLastSeen(device.id);
+
+  const payload = await getLocationPayloadForUser(device.user_id);
+
+  return Response.json({
+    device: {
+      id: device.id,
+      platform: device.platform,
+      deviceName: device.device_name,
+    },
+    ...payload,
+  });
+}

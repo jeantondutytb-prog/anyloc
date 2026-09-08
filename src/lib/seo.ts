@@ -21,6 +21,7 @@ export const PUBLIC_ROUTES = [
   { path: "/pricing", changeFrequency: "monthly" as const, priority: 0.9 },
   { path: "/setup/ios", changeFrequency: "monthly" as const, priority: 0.7 },
   { path: "/setup/android", changeFrequency: "monthly" as const, priority: 0.7 },
+  { path: "/web", changeFrequency: "monthly" as const, priority: 0.8 },
 ];
 
 export function absoluteUrl(path: string) {

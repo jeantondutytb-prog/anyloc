@@ -32,6 +32,11 @@ export function Footer() {
                   Dashboard
                 </Link>
               </li>
+              <li>
+                <Link href="/web" className="hover:text-zinc-900">
+                  Web Spoofing
+                </Link>
+              </li>
             </ul>
           </div>
 

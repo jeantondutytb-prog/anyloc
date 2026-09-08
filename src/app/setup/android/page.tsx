@@ -17,9 +17,9 @@ export const metadata = createPageMetadata({
 
 const steps = [
   {
-    title: "Installe l'APK Anyloc",
+    title: "Télécharge l'APK Anyloc",
     description:
-      "Récupère le fichier depuis ton dashboard — c'est une version signée, prête à installer.",
+      "Depuis ton dashboard, récupère l'APK signé — il est débloqué dès que ton abonnement est actif.",
     icon: Download,
   },
   {
@@ -29,10 +29,10 @@ const steps = [
     icon: Settings,
   },
   {
-    title: "Finalise l'installation",
+    title: "Active les options développeur",
     description:
-      "Ouvre le fichier téléchargé et suis les étapes affichées à l'écran.",
-    icon: Check,
+      "Paramètres → À propos du téléphone → tape 7 fois sur « Numéro de build », puis ouvre Options pour les développeurs.",
+    icon: Shield,
   },
   {
     title: "Définis Anyloc comme source GPS",
@@ -41,9 +41,9 @@ const steps = [
     icon: Shield,
   },
   {
-    title: "Active ta première position",
+    title: "Connecte ton compte et active ta position",
     description:
-      "Lance l'app, choisis un point sur la carte et démarre — le signal tourne en arrière-plan.",
+      "Ouvre l'app, connecte-toi avec ton compte Anyloc, choisis un spot sur la carte et démarre — le signal tourne en arrière-plan.",
     icon: Check,
   },
 ];
@@ -93,6 +93,7 @@ export default function SetupAndroidPage() {
             <li>• Android 10 minimum</li>
             <li>• Options développeur activées</li>
             <li>• Abonnement Anyloc actif</li>
+            <li>• Compte Anyloc (même email que sur le site)</li>
           </ul>
         </Card>
 

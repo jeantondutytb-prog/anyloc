@@ -26,9 +26,9 @@ export const DEFAULT_ONBOARDING_STATE: OnboardingState = {
 export const ONBOARDING_STEP_ITEMS = [
   {
     id: "install" as const,
-    title: "Installe l'app sur ton téléphone",
+    title: "Installe Anyloc sur ton téléphone",
     description:
-      "Suis le guide iOS ou Android — c'est l'étape indispensable avant d'envoyer une position.",
+      "iPhone : Anyloc Setup + USB une fois. Android : APK depuis le dashboard.",
     cta: "Voir le guide",
   },
   {

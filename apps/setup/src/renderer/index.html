@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Anyloc Setup</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <p class="badge">Anyloc Setup v0.2</p>
+        <h1>Installe Anyloc sur ton iPhone</h1>
+        <p class="subtitle">
+          Branche ton iPhone une seule fois. Ensuite, tu pilotes tout depuis ton
+          téléphone.
+        </p>
+      </header>
+
+      <section class="steps" id="steps"></section>
+
+      <section class="panel">
+        <h2>État USB</h2>
+        <p id="usb-status" class="usb-status">Vérification en cours...</p>
+        <div class="actions">
+          <button id="refresh-usb" type="button" class="secondary">
+            Revérifier
+          </button>
+          <button id="install-ios" type="button" disabled>
+            Installer sur iPhone
+          </button>
+        </div>
+        <p id="install-status" class="install-status"></p>
+      </section>
+
+      <section class="panel muted">
+        <h2>Prérequis</h2>
+        <ul class="checklist">
+          <li>Mode développeur activé sur l'iPhone</li>
+          <li>LocalDevVPN installé (App Store)</li>
+          <li>Token appareil généré depuis le dashboard Anyloc</li>
+          <li>
+            Outils USB :
+            <code>pip install -r apps/setup/scripts/requirements.txt</code>
+          </li>
+        </ul>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
