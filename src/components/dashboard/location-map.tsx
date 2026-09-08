@@ -1,7 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { getMapKit } from "@/lib/mapkit-client";
+import { useEffect, useRef } from "react";
+import {
+  GeoJSONSource,
+  Map,
+  Marker,
+  NavigationControl,
+} from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
+
+const SIMPLE_MAP_STYLE = "https://tiles.openfreemap.org/styles/positron";
 
 interface Location {
   name: string;
@@ -9,31 +17,117 @@ interface Location {
   lng: number;
 }
 
-function syncActiveOverlays(
-  map: mapkit.Map,
-  outerCircle: mapkit.CircleOverlay,
-  innerCircle: mapkit.CircleOverlay,
-  active: boolean,
-  overlaysVisibleRef: { current: boolean }
+function createPinElement(active: boolean) {
+  const wrapper = document.createElement("div");
+  wrapper.innerHTML = `
+    <div class="map-pin ${active ? "map-pin--active" : ""}">
+      <span class="map-pin__dot"></span>
+    </div>
+  `;
+  return wrapper;
+}
+
+function createGeoJSONCircle(
+  center: [number, number],
+  radiusInMeters: number,
+  points = 64
 ) {
-  if (active && !overlaysVisibleRef.current) {
-    map.addOverlay(outerCircle);
-    map.addOverlay(innerCircle);
-    overlaysVisibleRef.current = true;
-    return;
+  const [lng, lat] = center;
+  const km = radiusInMeters / 1000;
+  const distanceX = km / (111.32 * Math.cos((lat * Math.PI) / 180));
+  const distanceY = km / 110.574;
+  const coordinates: [number, number][] = [];
+
+  for (let i = 0; i < points; i += 1) {
+    const theta = (i / points) * (2 * Math.PI);
+    coordinates.push([
+      lng + distanceX * Math.cos(theta),
+      lat + distanceY * Math.sin(theta),
+    ]);
   }
 
-  if (!active && overlaysVisibleRef.current) {
-    map.removeOverlay(outerCircle);
-    map.removeOverlay(innerCircle);
-    overlaysVisibleRef.current = false;
-  }
+  coordinates.push(coordinates[0]);
+
+  return {
+    type: "Feature" as const,
+    properties: {},
+    geometry: {
+      type: "Polygon" as const,
+      coordinates: [coordinates],
+    },
+  };
 }
-function createRegion(lat: number, lng: number, mapkitApi: typeof mapkit) {
-  return new mapkitApi.CoordinateRegion(
-    new mapkitApi.Coordinate(lat, lng),
-    new mapkitApi.CoordinateSpan(0.08, 0.08)
-  );
+
+function addActiveRadiusLayers(map: Map) {
+  map.addSource("active-outer", {
+    type: "geojson",
+    data: createGeoJSONCircle([0, 0], 500),
+  });
+  map.addSource("active-inner", {
+    type: "geojson",
+    data: createGeoJSONCircle([0, 0], 180),
+  });
+
+  map.addLayer({
+    id: "active-outer-fill",
+    type: "fill",
+    source: "active-outer",
+    layout: { visibility: "none" },
+    paint: {
+      "fill-color": "#f472b6",
+      "fill-opacity": 0.12,
+    },
+  });
+  map.addLayer({
+    id: "active-outer-line",
+    type: "line",
+    source: "active-outer",
+    layout: { visibility: "none" },
+    paint: {
+      "line-color": "#ec4899",
+      "line-width": 1.5,
+    },
+  });
+  map.addLayer({
+    id: "active-inner-fill",
+    type: "fill",
+    source: "active-inner",
+    layout: { visibility: "none" },
+    paint: {
+      "fill-color": "#f9a8d4",
+      "fill-opacity": 0.18,
+    },
+  });
+}
+
+function updateActiveRadiusLayers(
+  map: Map,
+  active: boolean,
+  lng: number,
+  lat: number
+) {
+  const visibility = active ? "visible" : "none";
+
+  for (const layerId of [
+    "active-outer-fill",
+    "active-outer-line",
+    "active-inner-fill",
+  ]) {
+    if (map.getLayer(layerId)) {
+      map.setLayoutProperty(layerId, "visibility", visibility);
+    }
+  }
+
+  const outerSource = map.getSource("active-outer") as GeoJSONSource | undefined;
+  const innerSource = map.getSource("active-inner") as GeoJSONSource | undefined;
+
+  if (outerSource) {
+    outerSource.setData(createGeoJSONCircle([lng, lat], 500));
+  }
+
+  if (innerSource) {
+    innerSource.setData(createGeoJSONCircle([lng, lat], 180));
+  }
 }
 
 export default function LocationMap({
@@ -46,14 +140,11 @@ export default function LocationMap({
   active: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<mapkit.Map | null>(null);
-  const annotationRef = useRef<mapkit.MarkerAnnotation | null>(null);
-  const outerCircleRef = useRef<mapkit.CircleOverlay | null>(null);
-  const innerCircleRef = useRef<mapkit.CircleOverlay | null>(null);
+  const mapRef = useRef<Map | null>(null);
+  const markerRef = useRef<Marker | null>(null);
+  const pinRef = useRef<HTMLDivElement | null>(null);
   const onSelectRef = useRef(onSelect);
   const hasCenteredRef = useRef(false);
-  const overlaysVisibleRef = useRef(false);
-  const [error, setError] = useState<string | null>(null);
 
   onSelectRef.current = onSelect;
 
@@ -62,178 +153,100 @@ export default function LocationMap({
       return;
     }
 
-    let disposed = false;
-    let tapHandler:
-      | ((event: { pointOnPage: DOMPoint; target: unknown }) => void)
-      | null = null;
+    const map = new Map({
+      container: containerRef.current,
+      style: SIMPLE_MAP_STYLE,
+      center: [selected.lng, selected.lat],
+      zoom: 12,
+      minZoom: 3,
+      maxPitch: 0,
+      attributionControl: {},
+    });
 
-    void getMapKit()
-      .then((mapkit) => {
-        if (disposed || !containerRef.current) {
-          return;
-        }
+    map.addControl(
+      new NavigationControl({ showCompass: false }),
+      "top-left"
+    );
 
-        const map = new mapkit.Map(containerRef.current, {
-          region: createRegion(selected.lat, selected.lng, mapkit),
-          showsZoomControl: true,
-          showsCompass: mapkit.Map.FeatureVisibility.Hidden,
-          showsMapTypeControl: false,
-          isRotationEnabled: false,
-        });
-
-        const annotation = new mapkit.MarkerAnnotation(
-          new mapkit.Coordinate(selected.lat, selected.lng),
-          {
-            title: selected.name,
-            color: active ? "#14b8a6" : "#ec4899",
-            selected: true,
-          }
-        );
-
-        const outerCircle = new mapkit.CircleOverlay(
-          new mapkit.Coordinate(selected.lat, selected.lng),
-          500,
-          {
-            style: new mapkit.Style({
-              strokeColor: "#5eead4",
-              fillColor: "rgba(45, 212, 191, 0.12)",
-              lineWidth: 1.5,
-              fillOpacity: 0.12,
-              strokeOpacity: 0.8,
-            }),
-          }
-        );
-
-        const innerCircle = new mapkit.CircleOverlay(
-          new mapkit.Coordinate(selected.lat, selected.lng),
-          180,
-          {
-            style: new mapkit.Style({
-              strokeColor: "#99f6e4",
-              fillColor: "rgba(20, 184, 166, 0.18)",
-              lineWidth: 1,
-              fillOpacity: 0.18,
-              strokeOpacity: 0.9,
-            }),
-          }
-        );
-
-        map.addAnnotation(annotation);
-
-        tapHandler = (event) => {
-          if (event.target !== map) {
-            return;
-          }
-
-          const coordinate = map.convertPointOnPageToCoordinate(
-            event.pointOnPage
-          );
-
-          onSelectRef.current({
-            name: `${coordinate.latitude.toFixed(4)}, ${coordinate.longitude.toFixed(4)}`,
-            lat: coordinate.latitude,
-            lng: coordinate.longitude,
-          });
-        };
-
-        map.addEventListener("single-tap", tapHandler);
-
-        mapRef.current = map;
-        annotationRef.current = annotation;
-        outerCircleRef.current = outerCircle;
-        innerCircleRef.current = innerCircle;
-
-        syncActiveOverlays(map, outerCircle, innerCircle, active, overlaysVisibleRef);
-      })
-      .catch((loadError) => {
-        if (disposed) {
-          return;
-        }
-
-        setError(
-          loadError instanceof Error
-            ? loadError.message
-            : "Impossible de charger Apple Maps."
-        );
+    map.on("click", (event) => {
+      onSelectRef.current({
+        name: `${event.lngLat.lat.toFixed(4)}, ${event.lngLat.lng.toFixed(4)}`,
+        lat: event.lngLat.lat,
+        lng: event.lngLat.lng,
       });
+    });
+
+    map.on("load", () => {
+      addActiveRadiusLayers(map);
+      updateActiveRadiusLayers(map, active, selected.lng, selected.lat);
+    });
+
+    const pinWrapper = createPinElement(active);
+    pinRef.current = pinWrapper.querySelector(".map-pin");
+    const marker = new Marker({ element: pinWrapper, anchor: "bottom" })
+      .setLngLat([selected.lng, selected.lat])
+      .addTo(map);
+
+    mapRef.current = map;
+    markerRef.current = marker;
 
     return () => {
-      disposed = true;
-      const map = mapRef.current;
-
-      if (map && tapHandler) {
-        map.removeEventListener("single-tap", tapHandler);
-      }
-
-      map?.destroy();
+      marker.remove();
+      map.remove();
       mapRef.current = null;
-      annotationRef.current = null;
-      outerCircleRef.current = null;
-      innerCircleRef.current = null;
+      markerRef.current = null;
+      pinRef.current = null;
     };
   }, []);
 
   useEffect(() => {
     const map = mapRef.current;
-    const annotation = annotationRef.current;
-    const outerCircle = outerCircleRef.current;
-    const innerCircle = innerCircleRef.current;
-
-    if (!map || !annotation || !outerCircle || !innerCircle) {
+    const marker = markerRef.current;
+    if (!map || !marker) {
       return;
     }
 
-    const coordinate = new mapkit.Coordinate(selected.lat, selected.lng);
+    marker.setLngLat([selected.lng, selected.lat]);
 
-    annotation.coordinate = coordinate;
-    annotation.title = selected.name;
-    outerCircle.coordinate = coordinate;
-    innerCircle.coordinate = coordinate;
-
-    if (hasCenteredRef.current && window.mapkit) {
-      map.setRegionAnimated(
-        createRegion(selected.lat, selected.lng, window.mapkit),
-        true
-      );
+    if (hasCenteredRef.current) {
+      map.flyTo({
+        center: [selected.lng, selected.lat],
+        duration: 800,
+        essential: true,
+      });
     } else {
       hasCenteredRef.current = true;
     }
-  }, [selected.lat, selected.lng, selected.name]);
+
+    if (map.isStyleLoaded()) {
+      updateActiveRadiusLayers(map, active, selected.lng, selected.lat);
+    } else {
+      map.once("load", () => {
+        updateActiveRadiusLayers(map, active, selected.lng, selected.lat);
+      });
+    }
+  }, [selected.lat, selected.lng]);
 
   useEffect(() => {
-    const map = mapRef.current;
-    const annotation = annotationRef.current;
-    const outerCircle = outerCircleRef.current;
-    const innerCircle = innerCircleRef.current;
+    pinRef.current?.classList.toggle("map-pin--active", active);
 
-    if (!map || !annotation || !outerCircle || !innerCircle) {
+    const map = mapRef.current;
+    if (!map) {
       return;
     }
 
-    annotation.color = active ? "#14b8a6" : "#ec4899";
-    syncActiveOverlays(map, outerCircle, innerCircle, active, overlaysVisibleRef);
-  }, [active]);
-
-  if (error) {
-    return (
-      <div className="apple-map-shell flex h-[400px] w-full items-center justify-center lg:h-[500px]">
-        <div className="max-w-sm px-6 text-center">
-          <p className="text-sm font-semibold text-zinc-900">
-            Apple Maps non disponible
-          </p>
-          <p className="mt-2 text-sm leading-relaxed text-zinc-500">
-            {error.includes("non configuré")
-              ? "Ajoute tes clés Apple MapKit dans les variables d'environnement pour afficher la carte."
-              : error}
-          </p>
-        </div>
-      </div>
-    );
-  }
+    if (map.isStyleLoaded()) {
+      updateActiveRadiusLayers(map, active, selected.lng, selected.lat);
+    } else {
+      map.once("load", () => {
+        updateActiveRadiusLayers(map, active, selected.lng, selected.lat);
+      });
+    }
+  }, [active, selected.lat, selected.lng]);
 
   return (
-    <div className="apple-map-shell h-[400px] w-full lg:h-[500px]">
-      <div ref={containerRef} className="apple-map h-full w-full rounded-xl" />
+    <div className="simple-map-shell h-[400px] w-full lg:h-[500px]">
+      <div ref={containerRef} className="simple-map h-full w-full rounded-xl" />
     </div>
   );
 }
