@@ -1,5 +1,6 @@
 import type Stripe from "stripe";
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
+import { stripe } from "@/lib/stripe";
 
 export type ProfileRow = {
   id: string;
@@ -23,6 +24,57 @@ export async function getProfileStripeCustomerId(userId: string) {
     .maybeSingle();
 
   return data?.stripe_customer_id ?? null;
+}
+
+export async function ensureStripeCustomerForUser({
+  userId,
+  email,
+}: {
+  userId: string;
+  email: string;
+}) {
+  if (!stripe) {
+    console.warn("[billing] Stripe not configured, skipping customer creation.");
+    return null;
+  }
+
+  const existingCustomerId = await getProfileStripeCustomerId(userId);
+  if (existingCustomerId) {
+    return existingCustomerId;
+  }
+
+  const existingCustomers = await stripe.customers.list({
+    email,
+    limit: 1,
+  });
+
+  const customer =
+    existingCustomers.data[0] ??
+    (await stripe.customers.create({
+      email,
+      metadata: {
+        supabase_user_id: userId,
+      },
+    }));
+
+  if (isSupabaseAdminConfigured()) {
+    const admin = createAdminClient();
+    const { error } = await admin.from("profiles").upsert(
+      {
+        id: userId,
+        email,
+        stripe_customer_id: customer.id,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id" }
+    );
+
+    if (error) {
+      throw new Error(`Failed to save Stripe customer on profile: ${error.message}`);
+    }
+  }
+
+  return customer.id;
 }
 
 export async function syncProfileFromCheckoutSession(

@@ -1,7 +1,7 @@
 import type { User } from "@supabase/supabase-js";
 import type Stripe from "stripe";
 import type { Plan } from "@/lib/constants";
-import { getProfileStripeCustomerId } from "@/lib/billing";
+import { ensureStripeCustomerForUser } from "@/lib/billing";
 import { getAppUrl, stripe } from "@/lib/stripe";
 
 type CheckoutMode = "embedded_page" | "hosted_page";
@@ -24,7 +24,10 @@ export async function createSubscriptionCheckoutSession({
   }
 
   const appUrl = getAppUrl();
-  const existingCustomerId = await getProfileStripeCustomerId(user.id);
+  const customerId = await ensureStripeCustomerForUser({
+    userId: user.id,
+    email: user.email,
+  });
 
   const sharedParams: Stripe.Checkout.SessionCreateParams = {
     mode: "subscription",
@@ -40,8 +43,8 @@ export async function createSubscriptionCheckoutSession({
         plan_id: plan.id,
       },
     },
-    ...(existingCustomerId
-      ? { customer: existingCustomerId }
+    ...(customerId
+      ? { customer: customerId }
       : { customer_email: user.email }),
   };
 
