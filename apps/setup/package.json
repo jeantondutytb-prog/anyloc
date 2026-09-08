@@ -1,0 +1,31 @@
+{
+  "name": "anyloc-setup",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Anyloc Setup — installation iPhone via USB",
+  "main": "src/main.js",
+  "scripts": {
+    "dev": "electron .",
+    "start": "electron .",
+    "build:mac": "electron-builder --mac dmg",
+    "build:win": "electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "io.anyloc.setup",
+    "productName": "Anyloc Setup",
+    "directories": {
+      "output": "dist"
+    },
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": ["dmg"]
+    },
+    "win": {
+      "target": ["nsis"]
+    }
+  },
+  "devDependencies": {
+    "electron": "^35.0.0",
+    "electron-builder": "^25.1.8"
+  }
+}

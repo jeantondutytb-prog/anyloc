@@ -18,6 +18,7 @@ import { Card } from "@/components/ui/card";
 import { Logo } from "@/components/ui/logo";
 import { DashboardWelcome } from "@/components/dashboard/dashboard-welcome";
 import { DownloadSection } from "@/components/dashboard/download-section";
+import { DeviceLinkSection } from "@/components/dashboard/device-link-section";
 import { InstallPrompt } from "@/components/dashboard/install-prompt";
 import { LocationSearch } from "@/components/dashboard/location-search";
 import { OnboardingChecklist } from "@/components/dashboard/onboarding-checklist";
@@ -226,6 +227,7 @@ export function DashboardView() {
           <div className="space-y-6">
             <InstallPrompt onMarkComplete={handleMarkInstallComplete} />
             <DownloadSection />
+            <DeviceLinkSection />
           </div>
         ) : (
           <>
@@ -335,6 +337,8 @@ export function DashboardView() {
                 </Card>
 
                 <DownloadSection />
+
+                <DeviceLinkSection />
 
                 <Card className="p-5">
                   <h3 className="text-sm font-medium text-zinc-600">

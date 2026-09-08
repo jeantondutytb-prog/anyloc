@@ -44,20 +44,22 @@ Optimisé pour [Vercel](https://vercel.com). Configure le domaine `anyloc.io` da
 
 ## Roadmap produit
 
-### Étape 1 — Plateforme web (en cours)
+### Étape 1 — Plateforme web
 - [x] Dashboard + sync position (`/api/location`, table `location_settings`)
 - [x] Téléchargements gated par abonnement (`/api/downloads`)
 - [x] Guides iOS/Android alignés (Setup desktop + mode dev + LocalDevVPN)
+- [x] API device tokens (`/api/device`, `/api/device/location`)
 - [ ] Auth obligatoire sur le dashboard
 
 ### Étape 2 — Anyloc Setup (desktop)
-- [ ] App Electron/Tauri Mac + Windows
-- [ ] Install USB de l'app iOS sideloadée
+- [x] Shell Electron Mac + Windows (`apps/setup`)
+- [ ] Détection USB iPhone + install sideload
 - [ ] Hébergement des `.dmg` / `.exe` (variables `ANYLOC_DOWNLOAD_*`)
 
 ### Étape 3 — Apps mobiles
-- [ ] App iOS (spoofing GPS système, lit `/api/location`)
-- [ ] APK Android (mock location + service arrière-plan)
+- [ ] App iOS (spoofing GPS système, lit `/api/device/location`)
+- [x] Scaffold APK Android (`apps/android`) — mock location + sync API
+- [ ] Build APK release + upload
 - [ ] Renouvellement signature via LocalDevVPN (iOS)
 
 ### Étape 4 — Options
@@ -84,9 +86,19 @@ Au checkout, l'email Supabase est prérempli et le compte est lié via `client_r
 
 ## Sync position (dashboard ↔ apps)
 
-1. Applique la migration `supabase/migrations/20250908213000_location_settings.sql`.
+1. Applique les migrations dans `supabase/migrations/`.
 2. Le dashboard lit/écrit via `GET` et `PUT` `/api/location` (auth Supabase requise).
-3. Les apps mobiles (à venir) utiliseront la même API pour récupérer la position active.
+3. Lie un appareil depuis le dashboard → token `anyloc_...`.
+4. L'app mobile lit la position via `GET /api/device/location` avec `Authorization: Bearer <token>`.
+
+## Apps natives
+
+| Projet | Chemin | Statut |
+|--------|--------|--------|
+| APK Android | `apps/android/` | Scaffold — mock location + poll API |
+| Anyloc Setup | `apps/setup/` | Shell Electron — install USB à brancher |
+
+Voir les README dans chaque dossier pour build et dev.
 
 ## Téléchargements
 

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Anyloc Setup</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <p class="badge">Anyloc Setup v0.1</p>
+        <h1>Installe Anyloc sur ton iPhone</h1>
+        <p class="subtitle">
+          Branche ton iPhone une seule fois. Ensuite, tu pilotes tout depuis ton
+          téléphone.
+        </p>
+      </header>
+
+      <section class="steps" id="steps"></section>
+
+      <section class="panel">
+        <h2>État USB</h2>
+        <p id="usb-status" class="usb-status">Vérification en cours...</p>
+        <button id="refresh-usb" type="button">Revérifier la connexion</button>
+      </section>
+
+      <section class="panel muted">
+        <h2>Prochaine étape technique</h2>
+        <p>
+          Cette version affiche le guide et détectera bientôt l'iPhone via USB
+          pour installer l'app Anyloc sideloadée (comme Locaflex / Wiped Setup).
+        </p>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
