@@ -1,7 +1,6 @@
-import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { SITE } from "@/lib/constants";
+import { rootMetadata, SITE_URL } from "@/lib/seo";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,32 +12,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: `${SITE.name} — Fake ta loc sur toutes tes apps`,
-  description: SITE.description,
-  metadataBase: new URL("https://anyloc.io"),
-  openGraph: {
-    title: SITE.name,
-    description: SITE.description,
-    url: "https://anyloc.io",
-    siteName: SITE.name,
-    locale: "fr_FR",
-    type: "website",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: SITE.name,
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: SITE.name,
-    description: SITE.description,
-    images: ["/og-image.png"],
-  },
+export const metadata = {
+  ...rootMetadata,
+  metadataBase: new URL(SITE_URL),
+  ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+    ? {
+        verification: {
+          google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+        },
+      }
+    : {}),
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

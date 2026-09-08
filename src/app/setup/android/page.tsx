@@ -5,6 +5,15 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
+import { SITE } from "@/lib/constants";
+import { createPageMetadata } from "@/lib/seo";
+
+export const metadata = createPageMetadata({
+  title: `Installation ${SITE.name} sur Android — Guide APK`,
+  description:
+    "Installe Anyloc sur Android en 5 étapes : APK, options développeur et localisation fictive active en arrière-plan.",
+  path: "/setup/android",
+});
 
 const steps = [
   {

@@ -1,5 +1,6 @@
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
+import { HomeJsonLd } from "@/components/seo/json-ld";
 import { Hero } from "@/components/landing/hero";
 import { DestinationsMarquee } from "@/components/landing/destinations-marquee";
 import { Features } from "@/components/landing/features";
@@ -12,6 +13,7 @@ import { Cta } from "@/components/landing/cta";
 export default function Home() {
   return (
     <div className="min-h-screen bg-background">
+      <HomeJsonLd />
       <Header />
       <main>
         <Hero />
