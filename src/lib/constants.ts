@@ -33,7 +33,7 @@ export const PLANS = [
     name: "6 mois",
     price: "29€",
     period: "/6 mois",
-    description: "Parfait pour tester sur la durée sans t'engager à l'année.",
+    description: "Idéal pour tester sur la durée sans t'engager à l'année.",
     features: [
       "Changements de loc illimités",
       "Compatible avec toutes tes apps",
@@ -77,6 +77,17 @@ export const PLANS = [
     stripePriceId: process.env.STRIPE_PRICE_ANNUAL,
   },
 ];
+
+export const PLAN_IDS = PLANS.map((plan) => plan.id);
+
+export function isValidPlanId(plan: string | undefined) {
+  return plan !== undefined && PLAN_IDS.includes(plan as (typeof PLAN_IDS)[number]);
+}
+
+export function getCheckoutUrl(plan: string = "annual") {
+  const planId = isValidPlanId(plan) ? plan : "annual";
+  return `/checkout?plan=${planId}`;
+}
 
 export const COMPARISON = [
   {

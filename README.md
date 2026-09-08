@@ -10,8 +10,8 @@ SaaS de modification de position GPS — concurrent de [wiped.me](https://www.wi
 - Dashboard avec carte interactive (Leaflet)
 - Lieux favoris et activation spoofing
 - Guides d'installation iOS & Android
-- Intégration Stripe (abonnements + essai 3 jours)
-- Pages auth (login / register)
+- Intégration Stripe (abonnements)
+- Pages auth (login / signup)
 
 ## Stack
 
@@ -44,7 +44,7 @@ Optimisé pour [Vercel](https://vercel.com). Configure le domaine `anyloc.io` da
 
 ## Prochaines étapes
 
-- [ ] Auth réelle (Supabase / Clerk)
+- [ ] Configurer Supabase Auth (voir `.env.example`)
 - [ ] Apps natives iOS & Android
 - [ ] Webhooks Stripe pour gestion abonnements
 - [ ] Spoofing web (Snapchat web, etc.)
