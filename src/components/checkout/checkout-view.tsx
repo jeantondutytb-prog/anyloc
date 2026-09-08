@@ -81,15 +81,15 @@ export function CheckoutView({
           <div className="my-auto max-w-md">
             <Badge className="mb-6 border-pink-300/50 bg-white/70 text-pink-700 backdrop-blur">
               <Sparkles className="mr-1 h-3 w-3" />
-              3 jours offerts
+              Abonnement flexible
             </Badge>
             <h2 className="text-3xl font-bold tracking-tight text-zinc-900 xl:text-4xl">
               Presque prêt à{" "}
               <span className="gradient-text">changer de life</span>
             </h2>
             <p className="mt-4 text-base leading-relaxed text-zinc-600">
-              Choisis ton plan, active ton essai gratuit et commence à piloter
-              ta loc sur toutes tes apps — Snap, Insta, Tinder, jeux, tout.
+              Choisis ton plan et commence à piloter ta loc sur toutes tes apps
+              — Snap, Insta, Tinder, jeux, tout.
             </p>
 
             <ul className="mt-8 space-y-3">
@@ -148,8 +148,7 @@ export function CheckoutView({
               Finalise ton abonnement
             </h1>
             <p className="mt-2 text-sm text-zinc-500">
-              Sélectionne ton plan — tu ne seras facturé qu&apos;après les 3
-              jours d&apos;essai.
+              Sélectionne ton plan — tu peux annuler à tout moment.
             </p>
 
             {canceled && (
@@ -226,16 +225,8 @@ export function CheckoutView({
               </ul>
 
               <div className="border-t border-zinc-100 bg-zinc-50/50 px-6 py-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-zinc-600">Essai gratuit</span>
-                  <span className="font-medium text-emerald-600">
-                    3 jours — 0€
-                  </span>
-                </div>
-                <div className="mt-2 flex items-center justify-between">
-                  <span className="text-sm text-zinc-600">
-                    Après l&apos;essai
-                  </span>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-zinc-600">Total</span>
                   <span className="font-semibold text-zinc-900">
                     {selectedPlan.price}
                     {selectedPlan.period}
@@ -261,7 +252,7 @@ export function CheckoutView({
               ) : (
                 <>
                   <CreditCard className="h-4 w-4" />
-                  Activer mon essai gratuit
+                  Procéder au paiement
                 </>
               )}
             </Button>
@@ -279,8 +270,7 @@ export function CheckoutView({
 
             <p className="mt-6 text-center text-xs leading-relaxed text-zinc-500">
               En continuant, tu acceptes nos conditions d&apos;utilisation. Tu
-              peux annuler à tout moment depuis ton espace client. Aucun
-              prélèvement pendant les 3 jours d&apos;essai.
+              peux annuler à tout moment depuis ton espace client.
             </p>
           </div>
         </div>

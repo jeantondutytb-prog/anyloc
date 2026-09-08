@@ -84,6 +84,11 @@ export function isValidPlanId(plan: string | undefined) {
   return plan !== undefined && PLAN_IDS.includes(plan as (typeof PLAN_IDS)[number]);
 }
 
+export function getCheckoutUrl(plan: string = "annual") {
+  const planId = isValidPlanId(plan) ? plan : "annual";
+  return `/checkout?plan=${planId}`;
+}
+
 export const COMPARISON = [
   {
     feature: "Modifie le GPS de tout le tel",

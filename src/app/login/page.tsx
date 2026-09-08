@@ -1,8 +1,6 @@
-import Link from "next/link";
-import { MapPin } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { isValidPlanId } from "@/lib/constants";
+import { AuthShell } from "@/components/auth/auth-shell";
+import { LoginForm } from "@/components/auth/login-form";
+import { getCheckoutUrl, isValidPlanId } from "@/lib/constants";
 
 export default async function LoginPage({
   searchParams,
@@ -10,66 +8,15 @@ export default async function LoginPage({
   searchParams: Promise<{ plan?: string; next?: string }>;
 }) {
   const { plan, next } = await searchParams;
-  const redirectTo =
-    next ?? `/checkout?plan=${isValidPlanId(plan) ? plan : "annual"}`;
+  const planId = isValidPlanId(plan) ? plan! : "annual";
+  const redirectTo = next ?? getCheckoutUrl(planId);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-md p-8">
-        <Link href="/" className="mx-auto flex w-fit items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-pink-500/30 to-violet-500/30">
-            <MapPin className="h-4 w-4 text-pink-600" />
-          </div>
-          <span className="text-lg font-semibold">Anyloc</span>
-        </Link>
-
-        <h1 className="mt-8 text-center text-2xl font-bold text-zinc-900">
-          Connexion
-        </h1>
-        <p className="mt-2 text-center text-sm text-zinc-500">
-          Retrouve ton espace et finalise ton abonnement
-        </p>
-
-        <form className="mt-8 space-y-4" action={redirectTo}>
-          <div>
-            <label className="text-sm text-zinc-600" htmlFor="email">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              className="mt-1.5 w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-pink-500/50"
-              placeholder="toi@email.com"
-            />
-          </div>
-          <div>
-            <label className="text-sm text-zinc-600" htmlFor="password">
-              Mot de passe
-            </label>
-            <input
-              id="password"
-              type="password"
-              required
-              className="mt-1.5 w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-pink-500/50"
-              placeholder="••••••••"
-            />
-          </div>
-          <Button type="submit" className="w-full">
-            Se connecter
-          </Button>
-        </form>
-
-        <p className="mt-6 text-center text-sm text-zinc-500">
-          Pas encore de compte ?{" "}
-          <Link
-            href={`/register?plan=${plan ?? "annual"}`}
-            className="text-pink-600 hover:underline"
-          >
-            Créer un compte
-          </Link>
-        </p>
-      </Card>
-    </div>
+    <AuthShell
+      title="Connexion"
+      description="Entre ton email et ton mot de passe pour finaliser ton abonnement."
+    >
+      <LoginForm plan={planId} redirectTo={redirectTo} />
+    </AuthShell>
   );
 }

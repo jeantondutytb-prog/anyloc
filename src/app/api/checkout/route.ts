@@ -25,9 +25,6 @@ export async function POST(request: Request) {
     line_items: [{ price: plan.stripePriceId, quantity: 1 }],
     success_url: `${appUrl}/dashboard?success=true`,
     cancel_url: `${appUrl}/checkout?plan=${plan.id}&canceled=true`,
-    subscription_data: {
-      trial_period_days: 3,
-    },
   });
 
   return NextResponse.json({ url: session.url });
