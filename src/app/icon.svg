@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <defs>
+    <linearGradient id="pin" x1="8" y1="40" x2="40" y2="8" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f472b6" />
+      <stop offset="0.45" stop-color="#e879f9" />
+      <stop offset="1" stop-color="#a855f7" />
+    </linearGradient>
+  </defs>
+  <path
+    d="M24 5.5C17.1 5.5 11.5 11.1 11.5 18c0 7.8 12.5 20.5 12.5 20.5S36.5 25.8 36.5 18C36.5 11.1 30.9 5.5 24 5.5z"
+    stroke="url(#pin)"
+    stroke-width="2.75"
+    stroke-linejoin="round"
+    stroke-linecap="round"
+  />
+  <circle cx="24" cy="18" r="4.75" stroke="url(#pin)" stroke-width="2.75" />
+</svg>
