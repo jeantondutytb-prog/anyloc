@@ -5,6 +5,7 @@ import {
   MapContainer,
   TileLayer,
   Marker,
+  useMap,
   useMapEvents,
   Circle,
 } from "react-leaflet";
@@ -45,6 +46,16 @@ function MapClickHandler({
   return null;
 }
 
+function MapRecenter({ lat, lng }: { lat: number; lng: number }) {
+  const map = useMap();
+
+  useEffect(() => {
+    map.flyTo([lat, lng], map.getZoom(), { duration: 0.8 });
+  }, [lat, lng, map]);
+
+  return null;
+}
+
 export default function LocationMap({
   selected,
   onSelect,
@@ -72,6 +83,7 @@ export default function LocationMap({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <MapClickHandler onSelect={onSelect} />
+        <MapRecenter lat={selected.lat} lng={selected.lng} />
         <Marker position={[selected.lat, selected.lng]} icon={markerIcon} />
         {active && (
           <Circle
