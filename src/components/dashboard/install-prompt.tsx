@@ -18,12 +18,12 @@ export function InstallPrompt({ onMarkComplete }: InstallPromptProps) {
         </div>
 
         <h2 className="mt-5 text-2xl font-bold text-zinc-900">
-          Commence par installer l&apos;app
+          Installe Anyloc sur ton téléphone
         </h2>
         <p className="mt-3 text-sm text-zinc-600 sm:text-base">
-          La carte et les spots ne servent à rien tant que l&apos;app Anyloc
-          n&apos;est pas sur ton téléphone. Choisis ton système et suis le guide
-          — ça prend environ 5 minutes.
+          Sur iPhone, branche ton tel à un Mac ou PC une seule fois avec Anyloc
+          Setup. Sur Android, installe l&apos;APK — tout se pilote ensuite depuis
+          ton mobile.
         </p>
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
@@ -46,7 +46,7 @@ export function InstallPrompt({ onMarkComplete }: InstallPromptProps) {
           onClick={onMarkComplete}
           className="mt-6 text-sm text-pink-600 underline-offset-4 hover:underline"
         >
-          J&apos;ai déjà installé l&apos;app — passer à la carte
+          J&apos;ai déjà installé Anyloc — passer à la carte
         </button>
       </div>
     </Card>

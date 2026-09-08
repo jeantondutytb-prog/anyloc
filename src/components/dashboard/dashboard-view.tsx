@@ -1,10 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Bookmark,
+  Loader2,
   MapPin,
   Navigation,
   Power,
@@ -16,10 +17,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Logo } from "@/components/ui/logo";
 import { DashboardWelcome } from "@/components/dashboard/dashboard-welcome";
+import { DownloadSection } from "@/components/dashboard/download-section";
 import { InstallPrompt } from "@/components/dashboard/install-prompt";
 import { LocationSearch } from "@/components/dashboard/location-search";
 import { OnboardingChecklist } from "@/components/dashboard/onboarding-checklist";
 import { useDashboardOnboarding } from "@/hooks/use-dashboard-onboarding";
+import { useLocationSync } from "@/hooks/use-location-sync";
+import { DEFAULT_LOCATION } from "@/lib/location";
 import { SAVED_LOCATIONS } from "@/lib/constants";
 
 const LocationMap = dynamic(
@@ -34,12 +38,6 @@ const LocationMap = dynamic(
   }
 );
 
-const DEFAULT_LOCATION = {
-  name: "Marbella — Puerto Banús",
-  lat: 36.4848,
-  lng: -4.9526,
-};
-
 export function DashboardView() {
   const {
     hydrated,
@@ -52,9 +50,37 @@ export function DashboardView() {
     showMap,
   } = useDashboardOnboarding();
 
+  const { location, loading, saving, error, saveLocation } = useLocationSync({
+    onSynced: () => completeStep("sendPosition"),
+  });
+
   const [active, setActive] = useState(false);
-  const [selected, setSelected] = useState(DEFAULT_LOCATION);
-  const initialLocationRef = useRef(DEFAULT_LOCATION);
+  const [selected, setSelected] = useState({
+    name: DEFAULT_LOCATION.name,
+    lat: DEFAULT_LOCATION.lat,
+    lng: DEFAULT_LOCATION.lng,
+  });
+  const initialLocationRef = useRef(selected);
+  const hasHydratedLocationRef = useRef(false);
+
+  useEffect(() => {
+    if (!location || hasHydratedLocationRef.current) {
+      return;
+    }
+
+    setSelected({
+      name: location.name,
+      lat: location.lat,
+      lng: location.lng,
+    });
+    setActive(location.isActive);
+    initialLocationRef.current = {
+      name: location.name,
+      lat: location.lat,
+      lng: location.lng,
+    };
+    hasHydratedLocationRef.current = true;
+  }, [location]);
 
   useEffect(() => {
     if (!hydrated) {
@@ -77,20 +103,40 @@ export function DashboardView() {
     }
   }, [active, completeStep]);
 
-  const handleSendPosition = () => {
-    completeStep("sendPosition");
+  const persistLocation = useCallback(
+    async (nextActive: boolean) => {
+      await saveLocation({
+        name: selected.name,
+        lat: selected.lat,
+        lng: selected.lng,
+        isActive: nextActive,
+      });
+    },
+    [saveLocation, selected]
+  );
+
+  const handleSendPosition = async () => {
+    setActive(true);
+    await persistLocation(true);
   };
 
-  const handleSelectLocation = (location: {
+  const handleSelectLocation = (nextLocation: {
     name: string;
     lat: number;
     lng: number;
   }) => {
-    setSelected(location);
+    setSelected(nextLocation);
   };
 
-  const handleToggleActive = () => {
-    setActive((current) => !current);
+  const handleToggleActive = async () => {
+    const nextActive = !active;
+    setActive(nextActive);
+
+    try {
+      await persistLocation(nextActive);
+    } catch {
+      setActive(!nextActive);
+    }
   };
 
   const handleStartGuide = () => {
@@ -105,6 +151,13 @@ export function DashboardView() {
   const handleMarkInstallComplete = () => {
     completeStep("install");
   };
+
+  const lastSyncedLabel = location?.updatedAt
+    ? new Date(location.updatedAt).toLocaleString("fr-FR", {
+        dateStyle: "short",
+        timeStyle: "short",
+      })
+    : null;
 
   return (
     <div className="flex min-h-screen flex-col bg-background lg:flex-row">
@@ -127,7 +180,7 @@ export function DashboardView() {
             { icon: MapPin, label: "Carte", active: true },
             { icon: Route, label: "Routes", href: "#" },
             { icon: Bookmark, label: "Favoris", href: "#" },
-            { icon: Smartphone, label: "Mes appareils", href: "/setup/ios" },
+            { icon: Smartphone, label: "Installation", href: "/setup/ios" },
             { icon: Settings, label: "Paramètres", href: "#" },
           ].map((item) => (
             <Link
@@ -149,8 +202,14 @@ export function DashboardView() {
       <main className="flex-1 p-4 sm:p-6 lg:p-8">
         {paymentSuccess && hydrated && !showWelcome && (
           <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-            Paiement confirmé — ton accès Anyloc est actif. Suis le guide ci-dessous
-            pour envoyer ta première position.
+            Paiement confirmé — ton accès Anyloc est actif. Télécharge Anyloc
+            Setup ou l&apos;APK, puis envoie ta première position.
+          </div>
+        )}
+
+        {error && (
+          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
           </div>
         )}
 
@@ -164,14 +223,17 @@ export function DashboardView() {
         )}
 
         {!showMap ? (
-          <InstallPrompt onMarkComplete={handleMarkInstallComplete} />
+          <div className="space-y-6">
+            <InstallPrompt onMarkComplete={handleMarkInstallComplete} />
+            <DownloadSection />
+          </div>
         ) : (
           <>
             <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h1 className="text-2xl font-bold text-zinc-900">Dashboard</h1>
                 <p className="text-sm text-zinc-500">
-                  Choisis un spot et active ton signal GPS
+                  Choisis un spot et synchronise ton signal GPS
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -191,9 +253,14 @@ export function DashboardView() {
                 </span>
                 <Button
                   variant={active ? "secondary" : "default"}
-                  onClick={handleToggleActive}
+                  onClick={() => void handleToggleActive()}
+                  disabled={saving || loading}
                 >
-                  <Power className="h-4 w-4" />
+                  {saving ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Power className="h-4 w-4" />
+                  )}
                   {active ? "Arrêter" : "Activer"}
                 </Button>
               </div>
@@ -225,15 +292,24 @@ export function DashboardView() {
                   </p>
                   <Button
                     className="mt-4 w-full"
-                    disabled={!active}
-                    onClick={handleSendPosition}
+                    disabled={!active || saving || loading}
+                    onClick={() => void handleSendPosition()}
                   >
-                    <Navigation className="h-4 w-4" />
+                    {saving ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Navigation className="h-4 w-4" />
+                    )}
                     Envoyer cette position
                   </Button>
                   {!active && (
                     <p className="mt-2 text-xs text-zinc-500">
                       Active le signal en haut à droite pour débloquer l&apos;envoi.
+                    </p>
+                  )}
+                  {lastSyncedLabel && (
+                    <p className="mt-2 text-xs text-zinc-400">
+                      Dernière sync : {lastSyncedLabel}
                     </p>
                   )}
                 </Card>
@@ -258,13 +334,15 @@ export function DashboardView() {
                   </ul>
                 </Card>
 
+                <DownloadSection />
+
                 <Card className="p-5">
                   <h3 className="text-sm font-medium text-zinc-600">
-                    Branche ton tel
+                    Guides d&apos;installation
                   </h3>
                   <p className="mt-2 text-sm text-zinc-500">
-                    L&apos;app Anyloc doit être installée sur ton mobile pour
-                    envoyer la loc choisie.
+                    iPhone : Setup desktop + USB une fois. Android : APK direct
+                    sur le tel.
                   </p>
                   <div className="mt-4 flex gap-2">
                     <Link href="/setup/ios" className="flex-1">

@@ -42,12 +42,34 @@ cp .env.example .env.local
 
 Optimisé pour [Vercel](https://vercel.com). Configure le domaine `anyloc.io` dans les paramètres du projet.
 
-## Prochaines étapes
+## Roadmap produit
+
+### Étape 1 — Plateforme web (en cours)
+- [x] Dashboard + sync position (`/api/location`, table `location_settings`)
+- [x] Téléchargements gated par abonnement (`/api/downloads`)
+- [x] Guides iOS/Android alignés (Setup desktop + mode dev + LocalDevVPN)
+- [ ] Auth obligatoire sur le dashboard
+
+### Étape 2 — Anyloc Setup (desktop)
+- [ ] App Electron/Tauri Mac + Windows
+- [ ] Install USB de l'app iOS sideloadée
+- [ ] Hébergement des `.dmg` / `.exe` (variables `ANYLOC_DOWNLOAD_*`)
+
+### Étape 3 — Apps mobiles
+- [ ] App iOS (spoofing GPS système, lit `/api/location`)
+- [ ] APK Android (mock location + service arrière-plan)
+- [ ] Renouvellement signature via LocalDevVPN (iOS)
+
+### Étape 4 — Options
+- [ ] Web spoofing (Snapchat web, etc.)
+- [ ] Trajets simulés / routes
+
+## Prochaines étapes techniques
 
 - [x] Configurer Supabase Auth (voir `.env.example`)
-- [ ] Apps natives iOS & Android
 - [x] Webhooks Stripe pour gestion abonnements (voir ci-dessous)
-- [ ] Spoofing web (Snapchat web, etc.)
+- [x] Migration `location_settings` (voir `supabase/migrations/`)
+- [ ] Apps natives iOS & Android
 
 ## Stripe ↔ Supabase
 
@@ -59,3 +81,19 @@ Optimisé pour [Vercel](https://vercel.com). Configure le domaine `anyloc.io` da
 4. Copie le signing secret dans `STRIPE_WEBHOOK_SECRET`.
 
 Au checkout, l'email Supabase est prérempli et le compte est lié via `client_reference_id`. Le client Stripe est créé au paiement et enregistré dans `public.profiles`.
+
+## Sync position (dashboard ↔ apps)
+
+1. Applique la migration `supabase/migrations/20250908213000_location_settings.sql`.
+2. Le dashboard lit/écrit via `GET` et `PUT` `/api/location` (auth Supabase requise).
+3. Les apps mobiles (à venir) utiliseront la même API pour récupérer la position active.
+
+## Téléchargements
+
+Configure les URLs des binaires dans `.env.local` :
+
+- `ANYLOC_DOWNLOAD_SETUP_MAC` — Anyloc Setup `.dmg`
+- `ANYLOC_DOWNLOAD_SETUP_WIN` — Anyloc Setup `.exe`
+- `ANYLOC_DOWNLOAD_APK` — APK Android
+
+Les liens `/api/downloads/{platform}` redirigent vers ces URLs si l'abonnement est actif (`subscription_status` = `active` ou `trialing`).

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Check, Download, Monitor, Usb } from "lucide-react";
+import { ArrowLeft, Check, Download, Monitor, Shield, Usb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,39 +11,45 @@ import { createPageMetadata } from "@/lib/seo";
 export const metadata = createPageMetadata({
   title: `Installation ${SITE.name} sur iPhone — Guide iOS`,
   description:
-    "Guide pas à pas pour installer Anyloc sur iPhone (iOS 17+). Mode développeur, Anyloc Setup et GPS spoofé sans jailbreak.",
+    "Guide pas à pas pour installer Anyloc sur iPhone : Anyloc Setup, mode développeur, USB et GPS spoofé sans jailbreak.",
   path: "/setup/ios",
 });
 
 const steps = [
   {
-    title: "Récupère Anyloc Setup",
+    title: "Télécharge Anyloc Setup",
     description:
-      "Dans ton espace client, télécharge le logiciel pour Mac (Ventura+) ou Windows 10+.",
+      "Depuis ton dashboard, récupère le logiciel pour Mac (Ventura+) ou Windows 10+. C'est inclus dans ton abonnement.",
     icon: Download,
   },
   {
     title: "Active le mode développeur",
     description:
-      "Sur iPhone : Réglages → Confidentialité et sécurité → Mode développeur. Redémarre si le système te le demande.",
+      "Réglages → Confidentialité et sécurité → Mode développeur. Redémarre l'iPhone et confirme avec ton code quand iOS te le demande.",
+    icon: Shield,
+  },
+  {
+    title: "Installe LocalDevVPN (recommandé)",
+    description:
+      "Depuis l'App Store, installe LocalDevVPN. Il permet de renouveler l'app Anyloc sans rebrancher ton ordi à chaque fois.",
     icon: Monitor,
   },
   {
-    title: "Connecte ton iPhone",
+    title: "Branche ton iPhone en USB",
     description:
-      "Branche-le en USB à ton ordinateur et accepte la demande de confiance à l'écran.",
+      "Connecte ton iPhone au Mac ou PC, accepte « Faire confiance à cet ordinateur » et laisse Anyloc Setup détecter l'appareil.",
     icon: Usb,
   },
   {
     title: "Lance l'installation",
     description:
-      "Ouvre Anyloc Setup, sélectionne ton appareil et laisse le guide faire le reste — environ 2 minutes.",
+      "Ouvre Anyloc Setup, sélectionne ton iPhone et suis le guide — l'app Anyloc sera installée en environ 2 minutes.",
     icon: Check,
   },
   {
     title: "Pilote depuis ton iPhone",
     description:
-      "Une fois terminé, tout se gère depuis l'app mobile. L'ordinateur n'est plus nécessaire.",
+      "Une fois terminé, choisis ta ville depuis l'app ou le dashboard web. L'ordinateur n'est plus nécessaire au quotidien.",
     icon: Check,
   },
 ];
@@ -66,8 +72,8 @@ export default function SetupIosPage() {
           Installation sur iPhone
         </h1>
         <p className="mt-4 text-zinc-600">
-          Apple impose une config initiale via ordinateur. Après ça, tu es
-          autonome — sans jailbreak, sans bidouille.
+          Apple impose une config initiale via ordinateur. Après cette mise en
+          route unique, tu gères tout depuis ton iPhone — sans jailbreak.
         </p>
 
         <div className="mt-12 space-y-6">
@@ -95,6 +101,7 @@ export default function SetupIosPage() {
             <li>• Câble USB Lightning ou USB-C</li>
             <li>• Abonnement Anyloc actif</li>
             <li>• Mode développeur activé</li>
+            <li>• LocalDevVPN (App Store) pour les renouvellements</li>
           </ul>
         </Card>
 
