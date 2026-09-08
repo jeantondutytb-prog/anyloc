@@ -28,15 +28,22 @@ export function Logo({
 
   const content = (
     <>
-      <Image
-        src="/logo.png"
-        alt={`${SITE.name} logo`}
-        width={src}
-        height={src}
-        unoptimized
-        className={cn("object-contain", imageClassName)}
-        priority
-      />
+      <span
+        className={cn(
+          "inline-flex shrink-0 overflow-hidden rounded-xl bg-background",
+          imageClassName
+        )}
+      >
+        <Image
+          src="/logo.png"
+          alt={`${SITE.name} logo`}
+          width={src}
+          height={src}
+          unoptimized
+          className="h-full w-full object-contain"
+          priority
+        />
+      </span>
       {showName && (
         <span
           className={cn(
