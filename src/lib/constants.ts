@@ -27,12 +27,24 @@ export const DESTINATIONS = [
   "Bangkok",
 ];
 
+export const CHECKOUT_PERKS = [
+  "Changements de loc illimités sur toutes tes apps",
+  "Signal GPS réel — pas un screenshot ni un montage",
+  "Snap, Insta, Tinder, jeux : une loc pour tout le tel",
+  "Installation guidée pas à pas pour ton modèle",
+  "Résiliation en 1 clic, sans justificatif",
+];
+
 export const PLANS = [
   {
     id: "6months",
     name: "6 mois",
     price: "29€",
     period: "/6 mois",
+    perMonth: "≈ 4,83 €",
+    perMonthLabel: "/mois",
+    billedNote: "Facturé 29 € tous les 6 mois. Résilie quand tu veux.",
+    compare: "Soit 58 € sur l'année si tu reprends",
     description: "Idéal pour tester sur la durée sans t'engager à l'année.",
     features: [
       "Changements de loc illimités",
@@ -48,6 +60,10 @@ export const PLANS = [
     name: "Mensuel",
     price: "8€",
     period: "/mois",
+    perMonth: "8 €",
+    perMonthLabel: "/mois",
+    billedNote: "Facturé 8 € chaque mois. Résilie quand tu veux.",
+    compare: "Flexible si tu testes encore",
     description: "Le sweet spot si tu l'utilises souvent.",
     features: [
       "Tout le plan 6 mois",
@@ -64,6 +80,11 @@ export const PLANS = [
     name: "Annuel",
     price: "49€",
     period: "/an",
+    perMonth: "≈ 4,08 €",
+    perMonthLabel: "/mois",
+    billedNote: "Facturé 49 € une fois par an.",
+    compare: "Tu gardes 47 € sur l'année",
+    badge: "App iPhone incluse",
     description: "Le meilleur deal si t'es un habitué.",
     savings: "Tu gardes 47€ sur l'année",
     features: [

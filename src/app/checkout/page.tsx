@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { CheckoutView } from "@/components/checkout/checkout-view";
-import { isValidPlanId } from "@/lib/constants";
+import { getCheckoutUrl, isValidPlanId } from "@/lib/constants";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
 export default async function CheckoutPage({
   searchParams,
@@ -10,9 +11,17 @@ export default async function CheckoutPage({
   const { plan, canceled } = await searchParams;
   const planId = plan ?? "annual";
 
-  const isValidPlan = isValidPlanId(planId);
-  if (!isValidPlan) {
+  if (!isValidPlanId(planId)) {
     redirect("/checkout?plan=annual");
+  }
+
+  if (isSupabaseConfigured()) {
+    const supabase = await createClient();
+    const { data } = await supabase.auth.getClaims();
+
+    if (!data?.claims) {
+      redirect(`/login?next=${encodeURIComponent(getCheckoutUrl(planId))}`);
+    }
   }
 
   return (
