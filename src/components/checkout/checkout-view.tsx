@@ -7,8 +7,10 @@ import {
   ArrowLeft,
   Check,
   CreditCard,
+  Download,
   Loader2,
   Lock,
+  MapPin,
   Shield,
 } from "lucide-react";
 import { Footer } from "@/components/layout/footer";
@@ -16,8 +18,36 @@ import { StripeEmbeddedCheckout } from "@/components/checkout/stripe-embedded-ch
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Logo } from "@/components/ui/logo";
-import { CHECKOUT_PERKS, PLANS, SITE } from "@/lib/constants";
+import {
+  CHECKOUT_PERKS,
+  DESTINATIONS,
+  FAQ,
+  PLANS,
+  SITE,
+} from "@/lib/constants";
 import { cn } from "@/lib/utils";
+
+const SETUP_STEPS = [
+  {
+    icon: CreditCard,
+    title: "Valide ta formule",
+    description: "Paiement sécurisé — ton accès Anyloc est prêt en quelques secondes.",
+  },
+  {
+    icon: Download,
+    title: "Configure ton tel",
+    description:
+      "Android : tout depuis le mobile. iPhone : branchement unique à un ordi, puis c'est bon.",
+  },
+  {
+    icon: MapPin,
+    title: "Choisis ta destination",
+    description:
+      "Un spot sur la map, un signal activé — toutes tes apps basculent au même endroit.",
+  },
+] as const;
+
+const SIDEBAR_FAQ = FAQ.slice(0, 2);
 
 const TRUST_ITEMS = [
   "Paiement chiffré via Stripe",
@@ -154,7 +184,123 @@ export function CheckoutView({
       <main className="relative flex-1">
         <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
           <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-12 xl:gap-16">
-            <aside className="lg:sticky lg:top-24 lg:self-start">
+            <aside className="hidden lg:flex lg:min-h-full lg:flex-col lg:rounded-2xl lg:border lg:border-zinc-200 lg:bg-white/80 lg:p-6 lg:backdrop-blur-sm">
+              <Badge className="mb-5">GPS spoofé · toutes tes apps</Badge>
+
+                <h1 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+                  Fake ta loc.
+                  <br />
+                  <span className="gradient-text">{SITE.tagline}</span>
+                </h1>
+
+                <p className="mt-4 text-sm leading-relaxed text-zinc-600 sm:text-base">
+                  {SITE.description} Ton accès {SITE.name} s&apos;active dès la
+                  validation — pas de screenshot, pas de montage : un vrai signal
+                  GPS.
+                </p>
+
+                <ul className="mt-8 space-y-3">
+                  {CHECKOUT_PERKS.map((perk) => (
+                    <li
+                      key={perk}
+                      className="flex items-start gap-2.5 text-sm text-zinc-700"
+                    >
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-pink-600" />
+                      {perk}
+                    </li>
+                  ))}
+                </ul>
+
+                <Card className="mt-8 border-pink-500/15 bg-gradient-to-b from-pink-500/5 to-transparent p-4">
+                  <div className="flex items-center justify-between border-b border-zinc-200 pb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-full bg-pink-500 animate-pulse" />
+                      <span className="text-xs text-zinc-600">Signal GPS actif</span>
+                    </div>
+                    <span className="text-xs font-medium text-pink-600">
+                      📍 Marbella
+                    </span>
+                  </div>
+                  <p className="mt-3 text-xs leading-relaxed text-zinc-500">
+                    Toi t&apos;es chez toi. Sur la map t&apos;es à Marbella. Même
+                    coords, même instant — comme sur la{" "}
+                    <Link href="/" className="text-pink-600 hover:underline">
+                      page d&apos;accueil
+                    </Link>
+                    .
+                  </p>
+                </Card>
+
+              <div className="mt-8 space-y-8 border-t border-zinc-200 pt-8">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-pink-600">
+                    Opérationnel en quelques minutes
+                  </p>
+                  <div className="mt-4 space-y-4">
+                    {SETUP_STEPS.map((step, index) => (
+                      <div key={step.title} className="flex gap-3">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-pink-500/20 bg-pink-500/10">
+                          <step.icon className="h-4 w-4 text-pink-600" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-pink-600">
+                            {index + 1} / 3
+                          </p>
+                          <p className="text-sm font-semibold text-zinc-900">
+                            {step.title}
+                          </p>
+                          <p className="mt-0.5 text-xs leading-relaxed text-zinc-500">
+                            {step.description}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-pink-600">
+                    Questions rapides
+                  </p>
+                  <div className="mt-4 space-y-4">
+                    {SIDEBAR_FAQ.map((item) => (
+                      <div key={item.q}>
+                        <p className="text-sm font-semibold text-zinc-900">
+                          {item.q}
+                        </p>
+                        <p className="mt-1 text-xs leading-relaxed text-zinc-500">
+                          {item.a}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  <Link
+                    href="/#faq"
+                    className="mt-4 inline-block text-xs font-medium text-pink-600 hover:underline"
+                  >
+                    Voir toute la FAQ →
+                  </Link>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-pink-600">
+                    Destinations populaires
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {DESTINATIONS.slice(0, 10).map((city) => (
+                      <span
+                        key={city}
+                        className="rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-[11px] font-medium text-zinc-600"
+                      >
+                        📍 {city}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </aside>
+
+            <div className="lg:hidden">
               <Badge className="mb-5">GPS spoofé · toutes tes apps</Badge>
 
               <h1 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
@@ -170,7 +316,7 @@ export function CheckoutView({
               </p>
 
               <ul className="mt-8 space-y-3">
-                {CHECKOUT_PERKS.map((perk) => (
+                {CHECKOUT_PERKS.slice(0, 3).map((perk) => (
                   <li
                     key={perk}
                     className="flex items-start gap-2.5 text-sm text-zinc-700"
@@ -180,27 +326,7 @@ export function CheckoutView({
                   </li>
                 ))}
               </ul>
-
-              <Card className="mt-8 hidden border-pink-500/15 bg-gradient-to-b from-pink-500/5 to-transparent p-4 lg:block">
-                <div className="flex items-center justify-between border-b border-zinc-200 pb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full bg-pink-500 animate-pulse" />
-                    <span className="text-xs text-zinc-600">Signal GPS actif</span>
-                  </div>
-                  <span className="text-xs font-medium text-pink-600">
-                    📍 Marbella
-                  </span>
-                </div>
-                <p className="mt-3 text-xs leading-relaxed text-zinc-500">
-                  Toi t&apos;es chez toi. Sur la map t&apos;es à Marbella. Même
-                  coords, même instant — comme sur la{" "}
-                  <Link href="/" className="text-pink-600 hover:underline">
-                    page d&apos;accueil
-                  </Link>
-                  .
-                </p>
-              </Card>
-            </aside>
+            </div>
 
             <div>
               {canceled && (
