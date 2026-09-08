@@ -128,7 +128,7 @@ export function DashboardView() {
             { icon: Route, label: "Routes", href: "#" },
             { icon: Bookmark, label: "Favoris", href: "#" },
             { icon: Smartphone, label: "Mes appareils", href: "/setup/ios" },
-            { icon: Settings, label: "Paramètres", href: "#" },
+            { icon: Settings, label: "Paramètres", href: "/dashboard/settings" },
           ].map((item) => (
             <Link
               key={item.label}
