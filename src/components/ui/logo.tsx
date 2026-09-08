@@ -30,7 +30,7 @@ export function Logo({
     <>
       <span
         className={cn(
-          "inline-flex shrink-0 overflow-hidden rounded-xl bg-background",
+          "inline-flex shrink-0 overflow-hidden rounded-xl bg-logo-background",
           imageClassName
         )}
       >

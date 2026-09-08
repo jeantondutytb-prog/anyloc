@@ -39,11 +39,11 @@ export default function DashboardPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background lg:flex-row">
-      <header className="sticky top-0 z-20 flex h-14 items-center border-b border-zinc-200 bg-background px-4 lg:hidden">
+      <header className="sticky top-0 z-20 flex h-14 items-center border-b border-zinc-200 bg-logo-background px-4 lg:hidden">
         <Logo />
       </header>
 
-      <aside className="hidden w-64 shrink-0 border-r border-zinc-200 bg-background p-4 lg:block">
+      <aside className="hidden w-64 shrink-0 border-r border-zinc-200 bg-logo-background p-4 lg:block">
         <Logo className="px-2 py-4" />
 
         <nav className="mt-4 space-y-1">
