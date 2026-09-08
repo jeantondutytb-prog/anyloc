@@ -4,7 +4,7 @@ import { Logo } from "@/components/ui/logo";
 
 export function Header() {
   return (
-    <header className="fixed top-0 z-50 w-full border-b border-zinc-200 bg-background/80 backdrop-blur-xl">
+    <header className="fixed top-0 z-50 w-full border-b border-zinc-200 bg-logo-background">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <Logo />
 

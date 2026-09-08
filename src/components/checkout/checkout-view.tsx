@@ -131,7 +131,7 @@ export function CheckoutView({
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white/80 backdrop-blur">
+      <header className="sticky top-0 z-20 border-b border-zinc-200 bg-logo-background">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-2 px-4 sm:h-16 sm:px-5">
           <Logo nameClassName="text-base font-extrabold tracking-tight sm:text-lg" />
           <Link
