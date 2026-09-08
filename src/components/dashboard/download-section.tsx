@@ -18,6 +18,7 @@ type DownloadAssetInfo = {
 
 type DownloadsResponse = {
   hasAccess: boolean;
+  isAdmin?: boolean;
   subscriptionStatus: string | null;
   assets: DownloadAssetInfo[];
 };
@@ -113,6 +114,12 @@ export function DownloadSection() {
             </Link>
           </div>
         </div>
+      )}
+
+      {data.isAdmin && (
+        <p className="mt-4 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-800">
+          Mode admin actif — accès dev sans abonnement.
+        </p>
       )}
 
       <ul className="mt-4 space-y-3">

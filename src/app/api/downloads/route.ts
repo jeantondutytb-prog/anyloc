@@ -26,6 +26,7 @@ export async function GET() {
     hasAccess: access.hasAccess,
     subscriptionStatus: access.status,
     planId: access.planId,
+    isAdmin: access.isAdmin,
     assets,
   });
 }
