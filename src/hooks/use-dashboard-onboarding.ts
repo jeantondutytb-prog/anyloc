@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import {
   DEFAULT_ONBOARDING_STATE,
   isOnboardingComplete,
+  PAYMENT_SUCCESS_SESSION_KEY,
   readOnboardingState,
   type OnboardingState,
   type OnboardingSteps,
@@ -23,18 +24,25 @@ export function useDashboardOnboarding() {
     setState(stored);
     setHydrated(true);
 
-    const success = searchParams.get("success") === "true";
-    setPaymentSuccess(success);
+    const urlSuccess =
+      searchParams.get("success") === "true" ||
+      new URLSearchParams(window.location.search).get("success") === "true";
+    const sessionSuccess =
+      window.sessionStorage.getItem(PAYMENT_SUCCESS_SESSION_KEY) === "true";
+    const success = urlSuccess || sessionSuccess;
 
-    if (success || !stored.welcomeDismissed) {
-      setShowWelcome(true);
-    }
-
-    if (success) {
+    if (urlSuccess) {
+      window.sessionStorage.setItem(PAYMENT_SUCCESS_SESSION_KEY, "true");
       const url = new URL(window.location.href);
       url.searchParams.delete("success");
       url.searchParams.delete("session_id");
       window.history.replaceState({}, "", url.pathname + url.search);
+    }
+
+    setPaymentSuccess(success);
+
+    if (success || !stored.welcomeDismissed) {
+      setShowWelcome(true);
     }
   }, [searchParams]);
 

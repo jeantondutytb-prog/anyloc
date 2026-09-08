@@ -1,4 +1,5 @@
 export const ONBOARDING_STORAGE_KEY = "anyloc-dashboard-onboarding";
+export const PAYMENT_SUCCESS_SESSION_KEY = "anyloc-payment-success";
 
 export type OnboardingSteps = {
   install: boolean;
