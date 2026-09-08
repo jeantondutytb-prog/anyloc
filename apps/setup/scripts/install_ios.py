@@ -1,30 +1,43 @@
 #!/usr/bin/env python3
-"""Install Anyloc iOS app on a connected device (scaffold)."""
+"""Install Anyloc iOS app on a connected device."""
 
 from __future__ import annotations
 
 import argparse
 import json
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
 
 def install_with_pymobiledevice3(ipa_path: Path, udid: str | None) -> dict:
-    try:
-        from pymobiledevice3.cli.cli import cli
-    except ImportError:
+    if not shutil.which("pymobiledevice3"):
         return {
             "ok": False,
             "message": "pymobiledevice3 non installé. Lance: pip install pymobiledevice3",
         }
 
-    # Scaffold: real install will call pymobiledevice3 apps install.
+    command = ["pymobiledevice3", "apps", "install", str(ipa_path)]
+
+    if udid:
+        command.extend(["--udid", udid])
+
+    result = subprocess.run(command, capture_output=True, text=True, check=False)
+
+    if result.returncode == 0:
+        return {
+            "ok": True,
+            "message": "Anyloc installé sur ton iPhone. Ouvre l'app et colle ton token.",
+            "udid": udid,
+            "output": result.stdout.strip(),
+        }
+
+    error_output = (result.stderr or result.stdout or "").strip()
+
     return {
         "ok": False,
-        "message": (
-            f"IPA trouvé ({ipa_path.name}) — branchement install pymobiledevice3 à finaliser. "
-            "Build l'app iOS depuis apps/ios/ puis place Anyloc.ipa dans apps/ios/dist/."
-        ),
+        "message": error_output or "Échec de l'installation. Vérifie le mode développeur et la confiance USB.",
         "udid": udid,
     }
 
@@ -42,7 +55,10 @@ def main() -> int:
             json.dumps(
                 {
                     "ok": False,
-                    "message": f"IPA introuvable: {ipa_path}",
+                    "message": (
+                        f"IPA introuvable: {ipa_path}. "
+                        "Build l'app iOS depuis apps/ios/ puis exporte vers apps/ios/dist/Anyloc.ipa"
+                    ),
                 }
             )
         )

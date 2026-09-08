@@ -3,6 +3,7 @@ import {
   DEFAULT_LOCATION,
   mapLocationRow,
   parseLocationPayload,
+  toLocationResponse,
 } from "@/lib/location";
 import { requireAuthenticatedUser } from "@/lib/subscription";
 
@@ -36,23 +37,17 @@ export async function GET() {
         lng: DEFAULT_LOCATION.lng,
         accuracy: DEFAULT_LOCATION.accuracy,
         isActive: false,
+        mode: "static",
+        waypoints: [],
+        speedKmh: 40,
+        routeStartedAt: null,
+        routeProgress: null,
         updatedAt: null,
       },
     });
   }
 
-  const mapped = mapLocationRow(data);
-
-  return Response.json({
-    location: {
-      name: mapped.name,
-      lat: mapped.lat,
-      lng: mapped.lng,
-      accuracy: mapped.accuracy,
-      isActive: mapped.isActive,
-      updatedAt: mapped.updatedAt,
-    },
-  });
+  return Response.json(toLocationResponse(mapLocationRow(data)));
 }
 
 export async function PUT(request: Request) {
@@ -80,6 +75,29 @@ export async function PUT(request: Request) {
   }
 
   const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("location_settings")
+    .select("route_started_at, is_active, mode")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const activating = payload.isActive === true;
+  const switchingToRoute = payload.mode === "route";
+  const shouldStartRoute =
+    switchingToRoute &&
+    activating &&
+    (payload.resetRoute ||
+      !existing?.route_started_at ||
+      existing.mode !== "route" ||
+      !existing.is_active);
+
+  const routeStartedAt =
+    switchingToRoute && activating
+      ? shouldStartRoute
+        ? new Date().toISOString()
+        : existing?.route_started_at ?? new Date().toISOString()
+      : existing?.route_started_at ?? null;
+
   const { data, error: dbError } = await supabase
     .from("location_settings")
     .upsert(
@@ -90,6 +108,10 @@ export async function PUT(request: Request) {
         lng: payload.lng,
         accuracy: payload.accuracy ?? DEFAULT_LOCATION.accuracy,
         is_active: payload.isActive ?? false,
+        mode: payload.mode ?? "static",
+        route_waypoints: payload.waypoints ?? null,
+        route_speed_kmh: payload.speedKmh ?? 40,
+        route_started_at: routeStartedAt,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "user_id" }
@@ -105,16 +127,5 @@ export async function PUT(request: Request) {
     );
   }
 
-  const mapped = mapLocationRow(data);
-
-  return Response.json({
-    location: {
-      name: mapped.name,
-      lat: mapped.lat,
-      lng: mapped.lng,
-      accuracy: mapped.accuracy,
-      isActive: mapped.isActive,
-      updatedAt: mapped.updatedAt,
-    },
-  });
+  return Response.json(toLocationResponse(mapLocationRow(data)));
 }

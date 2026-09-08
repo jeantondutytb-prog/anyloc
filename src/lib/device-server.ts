@@ -1,5 +1,10 @@
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
-import { DEFAULT_LOCATION, mapLocationRow } from "@/lib/location";
+import {
+  DEFAULT_LOCATION,
+  mapLocationRow,
+  resolveLocation,
+  toLocationResponse,
+} from "@/lib/location";
 import { hashDeviceToken, type DeviceTokenRow } from "@/lib/device";
 import { getSubscriptionAccessForUser, isActiveSubscriptionStatus } from "@/lib/subscription";
 
@@ -43,6 +48,11 @@ export async function getLocationPayloadForUser(userId: string) {
         lng: DEFAULT_LOCATION.lng,
         accuracy: DEFAULT_LOCATION.accuracy,
         isActive: false,
+        mode: "static" as const,
+        waypoints: [],
+        speedKmh: 40,
+        routeStartedAt: null,
+        routeProgress: null,
         updatedAt: null,
       },
     };
@@ -67,21 +77,32 @@ export async function getLocationPayloadForUser(userId: string) {
         lng: DEFAULT_LOCATION.lng,
         accuracy: DEFAULT_LOCATION.accuracy,
         isActive: false,
+        mode: "static" as const,
+        waypoints: [],
+        speedKmh: 40,
+        routeStartedAt: null,
+        routeProgress: null,
         updatedAt: null,
       },
     };
   }
 
   const mapped = mapLocationRow(data);
+  const resolved = resolveLocation(mapped);
 
   return {
     location: {
-      name: mapped.name,
-      lat: mapped.lat,
-      lng: mapped.lng,
-      accuracy: mapped.accuracy,
-      isActive: mapped.isActive,
-      updatedAt: mapped.updatedAt,
+      name: resolved.name,
+      lat: resolved.lat,
+      lng: resolved.lng,
+      accuracy: resolved.accuracy,
+      isActive: resolved.isActive,
+      mode: resolved.mode,
+      waypoints: resolved.waypoints,
+      speedKmh: resolved.speedKmh,
+      routeStartedAt: resolved.routeStartedAt,
+      routeProgress: resolved.routeProgress,
+      updatedAt: resolved.updatedAt,
     },
   };
 }

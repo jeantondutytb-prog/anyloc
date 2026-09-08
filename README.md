@@ -49,12 +49,12 @@ Optimisé pour [Vercel](https://vercel.com). Configure le domaine `anyloc.io` da
 - [x] Téléchargements gated par abonnement (`/api/downloads`)
 - [x] Guides iOS/Android alignés (Setup desktop + mode dev + LocalDevVPN)
 - [x] API device tokens (`/api/device`, `/api/device/location`)
-- [ ] Auth obligatoire sur le dashboard
+- [x] Auth obligatoire sur le dashboard
 
 ### Étape 2 — Anyloc Setup (desktop)
 - [x] Shell Electron Mac + Windows (`apps/setup`)
 - [x] Détection USB iPhone (`pymobiledevice3` / `idevice_id`)
-- [ ] Install IPA iOS via USB (finaliser pymobiledevice3)
+- [x] Install IPA iOS via USB (`pymobiledevice3 apps install`)
 - [ ] Hébergement des `.dmg` / `.exe` (variables `ANYLOC_DOWNLOAD_*`)
 
 ### Étape 3 — Apps mobiles
@@ -65,8 +65,11 @@ Optimisé pour [Vercel](https://vercel.com). Configure le domaine `anyloc.io` da
 - [ ] Renouvellement signature via LocalDevVPN (iOS)
 
 ### Étape 4 — Options
-- [ ] Web spoofing (Snapchat web, etc.)
-- [ ] Trajets simulés / routes
+- [x] Web spoofing (`/web` — override `navigator.geolocation`)
+- [x] Trajets simulés (`/dashboard/routes` + interpolation serveur)
+- [x] Auth obligatoire sur le dashboard
+- [x] Install IPA via `pymobiledevice3 apps install`
+- [x] Guide renouvellement LocalDevVPN (app iOS)
 
 ## Prochaines étapes techniques
 

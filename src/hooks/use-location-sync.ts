@@ -8,14 +8,23 @@ export type SyncedLocation = {
   lng: number;
   accuracy: number;
   isActive: boolean;
+  mode: "static" | "route";
+  waypoints: Array<{ lat: number; lng: number; name?: string }>;
+  speedKmh: number;
+  routeStartedAt: string | null;
+  routeProgress: number | null;
   updatedAt: string | null;
 };
 
 type UseLocationSyncOptions = {
   onSynced?: () => void;
+  pollIntervalMs?: number;
 };
 
-export function useLocationSync({ onSynced }: UseLocationSyncOptions = {}) {
+export function useLocationSync({
+  onSynced,
+  pollIntervalMs = 0,
+}: UseLocationSyncOptions = {}) {
   const [location, setLocation] = useState<SyncedLocation | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -54,14 +63,20 @@ export function useLocationSync({ onSynced }: UseLocationSyncOptions = {}) {
     void loadLocation();
   }, [loadLocation]);
 
+  useEffect(() => {
+    if (!pollIntervalMs || pollIntervalMs <= 0) {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      void loadLocation();
+    }, pollIntervalMs);
+
+    return () => window.clearInterval(interval);
+  }, [loadLocation, pollIntervalMs]);
+
   const saveLocation = useCallback(
-    async (next: {
-      name: string;
-      lat: number;
-      lng: number;
-      accuracy?: number;
-      isActive?: boolean;
-    }) => {
+    async (next: Record<string, unknown>) => {
       setSaving(true);
       setError(null);
 

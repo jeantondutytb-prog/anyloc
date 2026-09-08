@@ -179,7 +179,7 @@ export function DashboardView() {
         <nav className="mt-4 space-y-1">
           {[
             { icon: MapPin, label: "Carte", active: true },
-            { icon: Route, label: "Routes", href: "#" },
+            { icon: Route, label: "Trajets", href: "/dashboard/routes" },
             { icon: Bookmark, label: "Favoris", href: "#" },
             { icon: Smartphone, label: "Installation", href: "/setup/ios" },
             { icon: Settings, label: "Paramètres", href: "#" },

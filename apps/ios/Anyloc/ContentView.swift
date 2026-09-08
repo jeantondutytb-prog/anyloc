@@ -42,6 +42,19 @@ struct ContentView: View {
                         }
                     }
                 }
+
+                Section("Renouvellement (LocalDevVPN)") {
+                    Text(
+                        "Toutes les ~7 jours, ouvre LocalDevVPN, connecte le VPN, puis relance Anyloc Setup sur ton Mac pour réinstaller l'app si nécessaire."
+                    )
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+
+                    Link(
+                        "Télécharger LocalDevVPN",
+                        destination: URL(string: "https://apps.apple.com/app/localdevvpn/id6755608044")!
+                    )
+                }
             }
             .navigationTitle("Anyloc")
         }
