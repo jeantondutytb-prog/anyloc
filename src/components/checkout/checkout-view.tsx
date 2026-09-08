@@ -14,7 +14,7 @@ import {
   Shield,
 } from "lucide-react";
 import { Footer } from "@/components/layout/footer";
-import { StripeEmbeddedCheckout } from "@/components/checkout/stripe-embedded-checkout";
+import { StripePaymentForm } from "@/components/checkout/stripe-payment-form";
 import { PlanPrice } from "@/components/pricing/plan-price";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -60,10 +60,12 @@ export function CheckoutView({
   initialPlanId,
   canceled,
   stripePublishableKey,
+  returnUrl,
 }: {
   initialPlanId: string;
   canceled?: boolean;
   stripePublishableKey: string;
+  returnUrl: string;
 }) {
   const router = useRouter();
   const [selectedPlanId, setSelectedPlanId] = useState(initialPlanId);
@@ -102,7 +104,7 @@ export function CheckoutView({
     setError(null);
 
     try {
-      const res = await fetch("/api/stripe/embedded-checkout", {
+      const res = await fetch("/api/stripe/payment-intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ planId }),
@@ -467,10 +469,11 @@ export function CheckoutView({
                         </div>
                       </div>
                     ) : null}
-                    <StripeEmbeddedCheckout
+                    <StripePaymentForm
                       key={clientSecret}
                       clientSecret={clientSecret}
                       publishableKey={stripePublishableKey}
+                      returnUrl={returnUrl}
                     />
                   </>
                 ) : null}
