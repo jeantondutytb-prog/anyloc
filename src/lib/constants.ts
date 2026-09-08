@@ -31,7 +31,7 @@ export const PLANS = [
   {
     id: "6months",
     name: "6 mois",
-    price: "24,99€",
+    price: "29€",
     period: "/6 mois",
     description: "Idéal pour tester sur la durée sans t'engager à l'année.",
     features: [
@@ -46,7 +46,7 @@ export const PLANS = [
   {
     id: "monthly",
     name: "Mensuel",
-    price: "12,99€",
+    price: "8€",
     period: "/mois",
     description: "Le sweet spot si tu l'utilises souvent.",
     features: [
@@ -62,10 +62,10 @@ export const PLANS = [
   {
     id: "annual",
     name: "Annuel",
-    price: "49,99€",
+    price: "49€",
     period: "/an",
     description: "Le meilleur deal si t'es un habitué.",
-    savings: "Tu gardes 106€ sur l'année",
+    savings: "Tu gardes 47€ sur l'année",
     features: [
       "Tout le plan Mensuel",
       "App iPhone sans ordi",
@@ -76,7 +76,7 @@ export const PLANS = [
     popular: false,
     stripePriceId: process.env.STRIPE_PRICE_ANNUAL,
   },
-] ;
+];
 
 export const PLAN_IDS = PLANS.map((plan) => plan.id);
 
