@@ -99,6 +99,8 @@ export const PLANS = [
   },
 ];
 
+export type Plan = (typeof PLANS)[number];
+
 export const PLAN_IDS = PLANS.map((plan) => plan.id);
 
 export function isValidPlanId(plan: string | undefined) {

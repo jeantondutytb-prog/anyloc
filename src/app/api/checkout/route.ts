@@ -1,31 +1,56 @@
 import { NextResponse } from "next/server";
-import { stripe, getAppUrl } from "@/lib/stripe";
 import { PLANS } from "@/lib/constants";
+import {
+  createSubscriptionCheckoutSession,
+  getAuthenticatedCheckoutUser,
+} from "@/lib/stripe-checkout";
 
 export async function POST(request: Request) {
-  const { planId } = await request.json();
-  const plan = PLANS.find((p) => p.id === planId);
+  try {
+    const body = await request.json().catch(() => null);
+    const planId = body?.planId;
 
-  if (!plan) {
-    return NextResponse.json({ error: "Plan invalide" }, { status: 400 });
+    if (typeof planId !== "string") {
+      return NextResponse.json({ error: "Plan invalide" }, { status: 400 });
+    }
+
+    const plan = PLANS.find((item) => item.id === planId);
+
+    if (!plan) {
+      return NextResponse.json({ error: "Plan invalide" }, { status: 400 });
+    }
+
+    const user = await getAuthenticatedCheckoutUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "Connecte-toi pour continuer." },
+        { status: 401 }
+      );
+    }
+
+    const session = await createSubscriptionCheckoutSession({
+      plan,
+      user,
+      uiMode: "hosted_page",
+    });
+
+    if (!session.url) {
+      return NextResponse.json(
+        { error: "Impossible de démarrer le paiement." },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ url: session.url });
+  } catch (error) {
+    console.error("[checkout]", error);
+
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Impossible de démarrer le paiement.";
+
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  if (!stripe || !plan.stripePriceId) {
-    return NextResponse.json(
-      { error: "Paiement non configuré pour ce plan" },
-      { status: 503 }
-    );
-  }
-
-  const appUrl = getAppUrl();
-
-  const session = await stripe.checkout.sessions.create({
-    mode: "subscription",
-    payment_method_types: ["card"],
-    line_items: [{ price: plan.stripePriceId, quantity: 1 }],
-    success_url: `${appUrl}/dashboard?success=true`,
-    cancel_url: `${appUrl}/checkout?plan=${plan.id}&canceled=true`,
-  });
-
-  return NextResponse.json({ url: session.url });
 }
