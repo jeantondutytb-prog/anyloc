@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -12,21 +12,26 @@ import {
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-const markerIcon = new L.Icon({
-  iconUrl:
-    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png",
-  shadowUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
+const DARK_TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 
 interface Location {
   name: string;
   lat: number;
   lng: number;
+}
+
+function createGtaBlipIcon(active: boolean) {
+  return L.divIcon({
+    className: "gta-blip-marker",
+    html: `
+      <div class="gta-blip ${active ? "gta-blip--active" : ""}">
+        <span class="gta-blip__ring"></span>
+        <span class="gta-blip__core"></span>
+      </div>
+    `,
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+  });
 }
 
 function MapClickHandler({
@@ -65,36 +70,57 @@ export default function LocationMap({
   onSelect: (loc: Location) => void;
   active: boolean;
 }) {
+  const blipIcon = useMemo(() => createGtaBlipIcon(active), [active]);
+
   useEffect(() => {
     delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })
       ._getIconUrl;
   }, []);
 
   return (
-    <div className="h-[400px] w-full lg:h-[500px]">
+    <div className="gta-map-shell h-[400px] w-full lg:h-[500px]">
       <MapContainer
         center={[selected.lat, selected.lng]}
         zoom={13}
-        className="h-full w-full rounded-xl"
+        className="gta-map h-full w-full rounded-xl"
         scrollWheelZoom
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          url={DARK_TILE_URL}
+          className="gta-map-tiles"
         />
         <MapClickHandler onSelect={onSelect} />
         <MapRecenter lat={selected.lat} lng={selected.lng} />
-        <Marker position={[selected.lat, selected.lng]} icon={markerIcon} />
+        <Marker
+          position={[selected.lat, selected.lng]}
+          icon={blipIcon}
+          zIndexOffset={1000}
+        />
         {active && (
-          <Circle
-            center={[selected.lat, selected.lng]}
-            radius={500}
-            pathOptions={{
-              color: "#e879f9",
-              fillColor: "#c084fc",
-              fillOpacity: 0.15,
-            }}
-          />
+          <>
+            <Circle
+              center={[selected.lat, selected.lng]}
+              radius={500}
+              pathOptions={{
+                color: "#5eead4",
+                fillColor: "#2dd4bf",
+                fillOpacity: 0.08,
+                weight: 1.5,
+                dashArray: "6 8",
+              }}
+            />
+            <Circle
+              center={[selected.lat, selected.lng]}
+              radius={180}
+              pathOptions={{
+                color: "#99f6e4",
+                fillColor: "#14b8a6",
+                fillOpacity: 0.12,
+                weight: 1,
+              }}
+            />
+          </>
         )}
       </MapContainer>
     </div>
