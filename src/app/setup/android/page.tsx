@@ -97,7 +97,7 @@ export default function SetupAndroidPage() {
         </Card>
 
         <div className="mt-8 flex gap-4">
-          <Link href="/dashboard">
+          <Link href="/dashboard/settings">
             <Button>Télécharger l&apos;APK</Button>
           </Link>
           <Link href="/setup/ios">

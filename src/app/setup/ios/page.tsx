@@ -99,7 +99,7 @@ export default function SetupIosPage() {
         </Card>
 
         <div className="mt-8 flex gap-4">
-          <Link href="/dashboard">
+          <Link href="/dashboard/settings">
             <Button>Télécharger Anyloc Setup</Button>
           </Link>
           <Link href="/setup/android">

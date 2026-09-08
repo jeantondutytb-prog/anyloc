@@ -17,7 +17,7 @@ const NAV_ITEMS = [
   { icon: Route, label: "Routes", href: "/dashboard", disabled: true },
   { icon: Bookmark, label: "Favoris", href: "/dashboard", disabled: true },
   { icon: Smartphone, label: "Appareils", href: "/setup/ios" },
-  { icon: Settings, label: "Paramètres", href: "/dashboard", disabled: true },
+  { icon: Settings, label: "Paramètres", href: "/dashboard/settings" },
 ];
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
