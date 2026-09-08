@@ -13,7 +13,7 @@ export function Cta() {
           Toi t&apos;es chez toi. Sur la map t&apos;es à Marbella. C&apos;est
           carré.
         </p>
-        <Link href="/signup" className="mt-8 inline-block">
+        <Link href="/signup?plan=annual" className="mt-8 inline-block">
           <Button size="lg">
             Commencer maintenant
             <ArrowRight className="h-4 w-4" />

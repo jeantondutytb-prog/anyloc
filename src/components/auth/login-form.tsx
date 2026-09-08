@@ -11,13 +11,21 @@ import { Button } from "@/components/ui/button";
 
 const initialState: AuthState = {};
 
-export function LoginForm() {
+export function LoginForm({
+  plan = "annual",
+  redirectTo,
+}: {
+  plan?: string;
+  redirectTo?: string;
+}) {
   const [state, formAction, pending] = useActionState(login, initialState);
   const [showPassword, setShowPassword] = useState(false);
+  const checkoutUrl = redirectTo ?? `/checkout?plan=${plan}`;
 
   return (
     <div>
       <form action={formAction} className="space-y-4">
+        <input type="hidden" name="redirectTo" value={checkoutUrl} />
         {state.error ? (
           <div
             role="alert"
@@ -61,11 +69,14 @@ export function LoginForm() {
       </form>
 
       <AuthDivider />
-      <GoogleAuthLink />
+      <GoogleAuthLink redirectTo={checkoutUrl} />
 
       <p className="mt-4 text-center text-sm text-zinc-500">
         Pas encore de compte ?{" "}
-        <Link href="/signup" className="font-medium text-pink-600 hover:underline">
+        <Link
+          href={`/signup?plan=${plan}`}
+          className="font-medium text-pink-600 hover:underline"
+        >
           Créer un compte
         </Link>
       </p>

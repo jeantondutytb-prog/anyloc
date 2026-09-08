@@ -1,6 +1,3 @@
-"use client";
-
-import { useState } from "react";
 import Link from "next/link";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,29 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { PLANS } from "@/lib/constants";
 
 export function Pricing() {
-  const [loading, setLoading] = useState<string | null>(null);
-
-  async function handleCheckout(planId: string) {
-    setLoading(planId);
-    try {
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planId }),
-      });
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        window.location.href = "/signup";
-      }
-    } catch {
-      window.location.href = "/signup";
-    } finally {
-      setLoading(null);
-    }
-  }
-
   return (
     <section id="pricing" className="py-24 sm:py-32">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
@@ -81,14 +55,14 @@ export function Pricing() {
                 ))}
               </ul>
 
-              <Button
-                className="mt-8 w-full"
-                variant={plan.popular ? "default" : "secondary"}
-                onClick={() => handleCheckout(plan.id)}
-                disabled={loading === plan.id}
-              >
-                {loading === plan.id ? "Chargement..." : "Je prends ce plan"}
-              </Button>
+              <Link href={`/signup?plan=${plan.id}`} className="mt-8 block">
+                <Button
+                  className="w-full"
+                  variant={plan.popular ? "default" : "secondary"}
+                >
+                  Je prends ce plan
+                </Button>
+              </Link>
             </Card>
           ))}
         </div>

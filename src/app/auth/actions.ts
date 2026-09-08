@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { getCheckoutUrl } from "@/lib/constants";
 
 export type AuthState = {
   error?: string;
@@ -26,6 +27,11 @@ function translateAuthError(message: string) {
   return message;
 }
 
+function getRedirectTo(formData: FormData) {
+  const redirectTo = String(formData.get("redirectTo") ?? "").trim();
+  return redirectTo || getCheckoutUrl("annual");
+}
+
 export async function login(
   _prevState: AuthState,
   formData: FormData
@@ -38,7 +44,7 @@ export async function login(
   }
 
   if (!isSupabaseConfigured()) {
-    redirect("/dashboard");
+    redirect(getRedirectTo(formData));
   }
 
   const supabase = await createClient();
@@ -48,7 +54,7 @@ export async function login(
     return { error: translateAuthError(error.message) };
   }
 
-  redirect("/dashboard");
+  redirect(getRedirectTo(formData));
 }
 
 export async function signup(
@@ -67,7 +73,7 @@ export async function signup(
   }
 
   if (!isSupabaseConfigured()) {
-    redirect("/dashboard");
+    redirect(getRedirectTo(formData));
   }
 
   const supabase = await createClient();
@@ -77,5 +83,5 @@ export async function signup(
     return { error: translateAuthError(error.message) };
   }
 
-  redirect("/dashboard");
+  redirect(getRedirectTo(formData));
 }
