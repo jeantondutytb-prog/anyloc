@@ -1,8 +1,9 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { ensureStripeCustomerForUser } from "@/lib/billing";
 import { getCheckoutUrl } from "@/lib/constants";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
 export type AuthState = {
   error?: string;
@@ -32,6 +33,14 @@ function getRedirectTo(formData: FormData) {
   return redirectTo || getCheckoutUrl("annual");
 }
 
+async function linkStripeCustomer(userId: string, email: string) {
+  try {
+    await ensureStripeCustomerForUser({ userId, email });
+  } catch (error) {
+    console.error("[auth] Failed to create Stripe customer:", error);
+  }
+}
+
 export async function login(
   _prevState: AuthState,
   formData: FormData
@@ -48,10 +57,17 @@ export async function login(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
 
   if (error) {
     return { error: translateAuthError(error.message) };
+  }
+
+  if (data.user?.email) {
+    await linkStripeCustomer(data.user.id, data.user.email);
   }
 
   redirect(getRedirectTo(formData));
@@ -77,10 +93,14 @@ export async function signup(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({ email, password });
+  const { data, error } = await supabase.auth.signUp({ email, password });
 
   if (error) {
     return { error: translateAuthError(error.message) };
+  }
+
+  if (data.user?.email) {
+    await linkStripeCustomer(data.user.id, data.user.email);
   }
 
   redirect(getRedirectTo(formData));
