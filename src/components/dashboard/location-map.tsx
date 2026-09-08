@@ -1,15 +1,10 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import {
-  GeoJSONSource,
-  Map,
-  Marker,
-  NavigationControl,
-} from "maplibre-gl";
-import "maplibre-gl/dist/maplibre-gl.css";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
-const SIMPLE_MAP_STYLE = "https://tiles.openfreemap.org/styles/positron";
+const TILE_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 
 interface Location {
   name: string;
@@ -17,117 +12,13 @@ interface Location {
   lng: number;
 }
 
-function createPinElement(active: boolean) {
-  const wrapper = document.createElement("div");
-  wrapper.innerHTML = `
-    <div class="map-pin ${active ? "map-pin--active" : ""}">
-      <span class="map-pin__dot"></span>
-    </div>
-  `;
-  return wrapper;
-}
-
-function createGeoJSONCircle(
-  center: [number, number],
-  radiusInMeters: number,
-  points = 64
-) {
-  const [lng, lat] = center;
-  const km = radiusInMeters / 1000;
-  const distanceX = km / (111.32 * Math.cos((lat * Math.PI) / 180));
-  const distanceY = km / 110.574;
-  const coordinates: [number, number][] = [];
-
-  for (let i = 0; i < points; i += 1) {
-    const theta = (i / points) * (2 * Math.PI);
-    coordinates.push([
-      lng + distanceX * Math.cos(theta),
-      lat + distanceY * Math.sin(theta),
-    ]);
-  }
-
-  coordinates.push(coordinates[0]);
-
-  return {
-    type: "Feature" as const,
-    properties: {},
-    geometry: {
-      type: "Polygon" as const,
-      coordinates: [coordinates],
-    },
-  };
-}
-
-function addActiveRadiusLayers(map: Map) {
-  map.addSource("active-outer", {
-    type: "geojson",
-    data: createGeoJSONCircle([0, 0], 500),
+function createPinIcon(active: boolean) {
+  return L.divIcon({
+    className: "map-pin-icon",
+    html: `<div class="map-pin ${active ? "map-pin--active" : ""}"><span class="map-pin__dot"></span></div>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 28],
   });
-  map.addSource("active-inner", {
-    type: "geojson",
-    data: createGeoJSONCircle([0, 0], 180),
-  });
-
-  map.addLayer({
-    id: "active-outer-fill",
-    type: "fill",
-    source: "active-outer",
-    layout: { visibility: "none" },
-    paint: {
-      "fill-color": "#f472b6",
-      "fill-opacity": 0.12,
-    },
-  });
-  map.addLayer({
-    id: "active-outer-line",
-    type: "line",
-    source: "active-outer",
-    layout: { visibility: "none" },
-    paint: {
-      "line-color": "#ec4899",
-      "line-width": 1.5,
-    },
-  });
-  map.addLayer({
-    id: "active-inner-fill",
-    type: "fill",
-    source: "active-inner",
-    layout: { visibility: "none" },
-    paint: {
-      "fill-color": "#f9a8d4",
-      "fill-opacity": 0.18,
-    },
-  });
-}
-
-function updateActiveRadiusLayers(
-  map: Map,
-  active: boolean,
-  lng: number,
-  lat: number
-) {
-  const visibility = active ? "visible" : "none";
-
-  for (const layerId of [
-    "active-outer-fill",
-    "active-outer-line",
-    "active-inner-fill",
-  ]) {
-    if (map.getLayer(layerId)) {
-      map.setLayoutProperty(layerId, "visibility", visibility);
-    }
-  }
-
-  const outerSource = map.getSource("active-outer") as GeoJSONSource | undefined;
-  const innerSource = map.getSource("active-inner") as GeoJSONSource | undefined;
-
-  if (outerSource) {
-    outerSource.setData(createGeoJSONCircle([lng, lat], 500));
-  }
-
-  if (innerSource) {
-    innerSource.setData(createGeoJSONCircle([lng, lat], 180));
-  }
 }
 
 export default function LocationMap({
@@ -140,9 +31,10 @@ export default function LocationMap({
   active: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<Map | null>(null);
-  const markerRef = useRef<Marker | null>(null);
-  const pinRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const markerRef = useRef<L.Marker | null>(null);
+  const outerCircleRef = useRef<L.Circle | null>(null);
+  const innerCircleRef = useRef<L.Circle | null>(null);
   const onSelectRef = useRef(onSelect);
   const hasCenteredRef = useRef(false);
 
@@ -153,96 +45,115 @@ export default function LocationMap({
       return;
     }
 
-    const map = new Map({
-      container: containerRef.current,
-      style: SIMPLE_MAP_STYLE,
-      center: [selected.lng, selected.lat],
+    const map = L.map(containerRef.current, {
+      center: [selected.lat, selected.lng],
       zoom: 12,
-      minZoom: 3,
-      maxPitch: 0,
-      attributionControl: {},
+      zoomControl: true,
+      attributionControl: true,
     });
 
-    map.addControl(
-      new NavigationControl({ showCompass: false }),
-      "top-left"
-    );
+    L.tileLayer(TILE_URL, {
+      subdomains: ["a", "b", "c"],
+      maxZoom: 19,
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(map);
+
+    const marker = L.marker([selected.lat, selected.lng], {
+      icon: createPinIcon(active),
+      zIndexOffset: 1000,
+    }).addTo(map);
+
+    const outerCircle = L.circle([selected.lat, selected.lng], {
+      radius: 500,
+      color: "#ec4899",
+      fillColor: "#f472b6",
+      fillOpacity: 0.1,
+      weight: 1.5,
+      dashArray: "6 8",
+    });
+
+    const innerCircle = L.circle([selected.lat, selected.lng], {
+      radius: 180,
+      color: "#f9a8d4",
+      fillColor: "#fbcfe8",
+      fillOpacity: 0.15,
+      weight: 1,
+    });
+
+    if (active) {
+      outerCircle.addTo(map);
+      innerCircle.addTo(map);
+    }
 
     map.on("click", (event) => {
       onSelectRef.current({
-        name: `${event.lngLat.lat.toFixed(4)}, ${event.lngLat.lng.toFixed(4)}`,
-        lat: event.lngLat.lat,
-        lng: event.lngLat.lng,
+        name: `${event.latlng.lat.toFixed(4)}, ${event.latlng.lng.toFixed(4)}`,
+        lat: event.latlng.lat,
+        lng: event.latlng.lng,
       });
     });
 
-    map.on("load", () => {
-      addActiveRadiusLayers(map);
-      updateActiveRadiusLayers(map, active, selected.lng, selected.lat);
-    });
-
-    const pinWrapper = createPinElement(active);
-    pinRef.current = pinWrapper.querySelector(".map-pin");
-    const marker = new Marker({ element: pinWrapper, anchor: "bottom" })
-      .setLngLat([selected.lng, selected.lat])
-      .addTo(map);
-
     mapRef.current = map;
     markerRef.current = marker;
+    outerCircleRef.current = outerCircle;
+    innerCircleRef.current = innerCircle;
+
+    requestAnimationFrame(() => {
+      map.invalidateSize();
+    });
 
     return () => {
-      marker.remove();
       map.remove();
       mapRef.current = null;
       markerRef.current = null;
-      pinRef.current = null;
+      outerCircleRef.current = null;
+      innerCircleRef.current = null;
     };
   }, []);
 
   useEffect(() => {
     const map = mapRef.current;
     const marker = markerRef.current;
-    if (!map || !marker) {
+    const outerCircle = outerCircleRef.current;
+    const innerCircle = innerCircleRef.current;
+
+    if (!map || !marker || !outerCircle || !innerCircle) {
       return;
     }
 
-    marker.setLngLat([selected.lng, selected.lat]);
+    const position: L.LatLngExpression = [selected.lat, selected.lng];
+
+    marker.setLatLng(position);
+    marker.setIcon(createPinIcon(active));
+    outerCircle.setLatLng(position);
+    innerCircle.setLatLng(position);
 
     if (hasCenteredRef.current) {
-      map.flyTo({
-        center: [selected.lng, selected.lat],
-        duration: 800,
-        essential: true,
-      });
+      map.flyTo(position, map.getZoom(), { duration: 0.8 });
     } else {
       hasCenteredRef.current = true;
     }
-
-    if (map.isStyleLoaded()) {
-      updateActiveRadiusLayers(map, active, selected.lng, selected.lat);
-    } else {
-      map.once("load", () => {
-        updateActiveRadiusLayers(map, active, selected.lng, selected.lat);
-      });
-    }
-  }, [selected.lat, selected.lng]);
+  }, [selected.lat, selected.lng, active]);
 
   useEffect(() => {
-    pinRef.current?.classList.toggle("map-pin--active", active);
-
     const map = mapRef.current;
-    if (!map) {
+    const outerCircle = outerCircleRef.current;
+    const innerCircle = innerCircleRef.current;
+
+    if (!map || !outerCircle || !innerCircle) {
       return;
     }
 
-    if (map.isStyleLoaded()) {
-      updateActiveRadiusLayers(map, active, selected.lng, selected.lat);
-    } else {
-      map.once("load", () => {
-        updateActiveRadiusLayers(map, active, selected.lng, selected.lat);
-      });
+    if (active) {
+      outerCircle.addTo(map);
+      innerCircle.addTo(map);
+      return;
     }
-  }, [active, selected.lat, selected.lng]);
+
+    outerCircle.remove();
+    innerCircle.remove();
+  }, [active]);
 
   return (
     <div className="simple-map-shell h-[400px] w-full lg:h-[500px]">

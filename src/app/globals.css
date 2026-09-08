@@ -73,36 +73,51 @@ body {
   overflow: hidden;
   border-radius: 0.75rem;
   border: 1px solid #e4e4e7;
-  background: #f4f4f5;
+  background: #eef0f3;
 }
 
-.simple-map.maplibregl-map {
+.simple-map.leaflet-container {
+  width: 100%;
+  height: 100%;
   font-family: inherit;
+  background: #eef0f3;
+  z-index: 0;
 }
 
-.simple-map .maplibregl-ctrl-group {
+.simple-map .leaflet-tile-pane {
+  filter: saturate(0.75) contrast(0.98);
+}
+
+.simple-map .leaflet-control-zoom {
   border: 1px solid #e4e4e7;
   border-radius: 0.75rem;
   overflow: hidden;
   box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
 }
 
-.simple-map .maplibregl-ctrl-group button {
+.simple-map .leaflet-control-zoom a {
   width: 34px;
   height: 34px;
+  line-height: 34px;
   background: #fff;
   color: #52525b;
+  border-bottom: 1px solid #e4e4e7;
 }
 
-.simple-map .maplibregl-ctrl-group button:hover {
+.simple-map .leaflet-control-zoom a:hover {
   background: #fafafa;
   color: #18181b;
 }
 
-.simple-map .maplibregl-ctrl-attrib {
-  background: rgba(255, 255, 255, 0.9);
+.simple-map .leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.92);
   color: #a1a1aa;
   font-size: 10px;
+}
+
+.map-pin-icon {
+  background: transparent !important;
+  border: none !important;
 }
 
 .map-pin {
