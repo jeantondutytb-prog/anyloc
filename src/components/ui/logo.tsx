@@ -33,7 +33,7 @@ export function Logo({
         alt={`${SITE.name} logo`}
         width={px}
         height={px}
-        className={cn(imageClassName, "rounded-lg object-contain")}
+        className={cn(imageClassName, "object-contain")}
         priority
       />
       {showName && (
