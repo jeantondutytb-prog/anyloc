@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { CheckoutView } from "@/components/checkout/checkout-view";
 import { getCheckoutUrl, isValidPlanId } from "@/lib/constants";
+import { getStripePublishableKey } from "@/lib/stripe-client";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
 export default async function CheckoutPage({
@@ -28,6 +29,7 @@ export default async function CheckoutPage({
     <CheckoutView
       initialPlanId={planId}
       canceled={canceled === "true"}
+      stripePublishableKey={getStripePublishableKey()}
     />
   );
 }

@@ -41,9 +41,11 @@ const TRUST_ITEMS = [
 export function CheckoutView({
   initialPlanId,
   canceled,
+  stripePublishableKey,
 }: {
   initialPlanId: string;
   canceled?: boolean;
+  stripePublishableKey: string;
 }) {
   const router = useRouter();
   const [selectedPlanId, setSelectedPlanId] = useState(initialPlanId);
@@ -55,6 +57,19 @@ export function CheckoutView({
 
   const selectedPlan =
     PLANS.find((plan) => plan.id === selectedPlanId) ?? PLANS[2];
+
+  async function parseJsonResponse(res: Response) {
+    const text = await res.text();
+    if (!text) {
+      throw new Error("Réponse serveur vide. Réessaie dans quelques instants.");
+    }
+
+    try {
+      return JSON.parse(text) as { clientSecret?: string; error?: string };
+    } catch {
+      throw new Error("Réponse serveur invalide. Réessaie dans quelques instants.");
+    }
+  }
 
   async function startCheckout(planId: string, isInitial = false) {
     requestRef.current?.abort();
@@ -75,7 +90,7 @@ export function CheckoutView({
         body: JSON.stringify({ planId }),
         signal: controller.signal,
       });
-      const data = await res.json();
+      const data = await parseJsonResponse(res);
 
       if (!res.ok || !data.clientSecret) {
         throw new Error(data.error ?? "Impossible de démarrer le paiement.");
@@ -334,6 +349,7 @@ export function CheckoutView({
                 <StripeEmbeddedCheckout
                   key={clientSecret}
                   clientSecret={clientSecret}
+                  publishableKey={stripePublishableKey}
                 />
               </>
             ) : null}

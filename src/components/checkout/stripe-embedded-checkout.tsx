@@ -3,14 +3,14 @@
 import { useMemo } from "react";
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
-import { getStripePublishableKey } from "@/lib/stripe-client";
 
 export function StripeEmbeddedCheckout({
   clientSecret,
+  publishableKey,
 }: {
   clientSecret: string;
+  publishableKey: string;
 }) {
-  const publishableKey = getStripePublishableKey();
   const stripePromise = useMemo(
     () => (publishableKey ? loadStripe(publishableKey) : null),
     [publishableKey]
