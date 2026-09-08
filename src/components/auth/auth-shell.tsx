@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { MapPin } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { SITE } from "@/lib/constants";
+import { Logo } from "@/components/ui/logo";
 
 export function AuthShell({
   title,
@@ -22,14 +21,7 @@ export function AuthShell({
 
       <Card className="relative w-full max-w-md border-zinc-200/80 p-8 shadow-lg shadow-pink-500/5">
         <div className="flex items-center justify-between gap-4">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-pink-500/30 to-violet-500/30">
-              <MapPin className="h-4 w-4 text-pink-600" />
-            </div>
-            <span className="text-lg font-semibold tracking-tight text-zinc-900">
-              {SITE.name}
-            </span>
-          </Link>
+          <Logo />
 
           <Link
             href="/"

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Logo } from "@/components/ui/logo";
 import { SAVED_LOCATIONS } from "@/lib/constants";
 
 const LocationMap = dynamic(
@@ -39,12 +40,7 @@ export default function DashboardPage() {
   return (
     <div className="flex min-h-screen bg-background">
       <aside className="hidden w-64 shrink-0 border-r border-zinc-200 bg-background p-4 lg:block">
-        <Link href="/" className="flex items-center gap-2 px-2 py-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-pink-500/30 to-violet-500/30">
-            <MapPin className="h-4 w-4 text-pink-600" />
-          </div>
-          <span className="text-lg font-semibold">Anyloc</span>
-        </Link>
+        <Logo className="px-2 py-4" />
 
         <nav className="mt-4 space-y-1">
           {[
