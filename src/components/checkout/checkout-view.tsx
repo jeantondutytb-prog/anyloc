@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Footer } from "@/components/layout/footer";
 import { StripeEmbeddedCheckout } from "@/components/checkout/stripe-embedded-checkout";
+import { PlanPrice } from "@/components/pricing/plan-price";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Logo } from "@/components/ui/logo";
@@ -361,9 +362,14 @@ export function CheckoutView({
                           : "border-zinc-200 bg-white hover:border-pink-300/60"
                       )}
                     >
-                      {(plan.badge || plan.popular) && (
+                      {plan.popular && (
                         <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-pink-200 bg-pink-50 px-2.5 py-0.5 text-[10px] font-semibold text-pink-600">
-                          {plan.badge ?? "Le plus populaire"}
+                          Le plus populaire
+                        </span>
+                      )}
+                      {plan.badge && !plan.popular && (
+                        <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-pink-200 bg-pink-50 px-2.5 py-0.5 text-[10px] font-semibold text-pink-600">
+                          {plan.badge}
                         </span>
                       )}
 
@@ -385,18 +391,7 @@ export function CheckoutView({
                         </span>
                       </div>
 
-                      <div className="mt-3 flex items-baseline gap-1">
-                        <span className="text-2xl font-bold text-zinc-900">
-                          {plan.price}
-                        </span>
-                        <span className="text-xs text-zinc-500">
-                          {plan.period}
-                        </span>
-                      </div>
-
-                      <p className="mt-1 text-xs text-zinc-500">
-                        {plan.perMonth} {plan.perMonthLabel}
-                      </p>
+                      <PlanPrice plan={plan} size="card" className="mt-3" />
 
                       {plan.savings && (
                         <p className="mt-1 text-xs font-medium text-pink-600">
@@ -439,10 +434,7 @@ export function CheckoutView({
                   </p>
                 </div>
                 <div className="shrink-0 text-right">
-                  <p className="text-2xl font-bold text-zinc-900">
-                    {selectedPlan.price}
-                  </p>
-                  <p className="text-xs text-zinc-500">{selectedPlan.period}</p>
+                  <PlanPrice plan={selectedPlan} size="summary" align="right" />
                 </div>
               </Card>
 

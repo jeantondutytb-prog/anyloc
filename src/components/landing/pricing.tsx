@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PLANS } from "@/lib/constants";
+import { PlanPrice } from "@/components/pricing/plan-price";
 
 export function Pricing() {
   return (
@@ -33,14 +34,14 @@ export function Pricing() {
                   Le plus populaire
                 </Badge>
               )}
+              {plan.badge && !plan.popular && (
+                <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  {plan.badge}
+                </Badge>
+              )}
 
               <h3 className="text-lg font-semibold text-zinc-900">{plan.name}</h3>
-              <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-4xl font-bold text-zinc-900">
-                  {plan.price}
-                </span>
-                <span className="text-zinc-500">{plan.period}</span>
-              </div>
+              <PlanPrice plan={plan} size="landing" className="mt-4" />
               {plan.savings && (
                 <p className="mt-1 text-sm text-pink-600">{plan.savings}</p>
               )}

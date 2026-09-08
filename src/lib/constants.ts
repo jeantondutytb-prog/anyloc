@@ -37,25 +37,6 @@ export const CHECKOUT_PERKS = [
 
 export const PLANS = [
   {
-    id: "6months",
-    name: "6 mois",
-    price: "29€",
-    period: "/6 mois",
-    perMonth: "≈ 4,83 €",
-    perMonthLabel: "/mois",
-    billedNote: "Facturé 29 € tous les 6 mois. Résilie quand tu veux.",
-    compare: "Soit 58 € sur l'année si tu reprends",
-    description: "Idéal pour tester sur la durée sans t'engager à l'année.",
-    features: [
-      "Changements de loc illimités",
-      "Compatible avec toutes tes apps",
-      "iOS et Android",
-      "Support par mail",
-    ],
-    popular: false,
-    stripePriceId: process.env.STRIPE_PRICE_6MONTHS,
-  },
-  {
     id: "monthly",
     name: "Mensuel",
     price: "8€",
@@ -64,7 +45,7 @@ export const PLANS = [
     perMonthLabel: "/mois",
     billedNote: "Facturé 8 € chaque mois. Résilie quand tu veux.",
     compare: "Flexible si tu testes encore",
-    description: "Le sweet spot si tu l'utilises souvent.",
+    description: "Sans engagement, tu paies mois par mois.",
     features: [
       "Tout le plan 6 mois",
       "Trajets simulés sur la map",
@@ -72,8 +53,27 @@ export const PLANS = [
       "Accès web (1 profil)",
       "Nouvelles features en avant-première",
     ],
-    popular: true,
+    popular: false,
     stripePriceId: process.env.STRIPE_PRICE_MONTHLY,
+  },
+  {
+    id: "6months",
+    name: "6 mois",
+    price: "29€",
+    period: "/6 mois",
+    perMonth: "≈ 4,83 €",
+    perMonthLabel: "/mois",
+    billedNote: "Facturé 29 € tous les 6 mois. Résilie quand tu veux.",
+    compare: "Soit 58 € sur l'année si tu reprends",
+    description: "Le sweet spot si tu l'utilises souvent.",
+    features: [
+      "Changements de loc illimités",
+      "Compatible avec toutes tes apps",
+      "iOS et Android",
+      "Support par mail",
+    ],
+    popular: true,
+    stripePriceId: process.env.STRIPE_PRICE_6MONTHS,
   },
   {
     id: "annual",
