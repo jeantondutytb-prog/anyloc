@@ -112,6 +112,14 @@ export function getCheckoutUrl(plan: string = "annual") {
   return `/checkout?plan=${planId}`;
 }
 
+export function getCheckoutSuccessUrl(sessionId?: string) {
+  if (!sessionId) {
+    return "/checkout/success";
+  }
+
+  return `/checkout/success?session_id=${encodeURIComponent(sessionId)}`;
+}
+
 export const COMPARISON = [
   {
     feature: "Modifie le GPS de tout le tel",
