@@ -4,9 +4,9 @@ import { SITE } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 const sizes = {
-  sm: { px: 24, className: "h-6 w-6" },
-  md: { px: 32, className: "h-8 w-8" },
-  lg: { px: 48, className: "h-12 w-12" },
+  sm: { src: 256, className: "h-6 w-6" },
+  md: { src: 512, className: "h-8 w-8" },
+  lg: { src: 768, className: "h-12 w-12" },
 } as const;
 
 type LogoProps = {
@@ -24,16 +24,17 @@ export function Logo({
   className,
   nameClassName,
 }: LogoProps) {
-  const { px, className: imageClassName } = sizes[size];
+  const { src, className: imageClassName } = sizes[size];
 
   const content = (
     <>
       <Image
         src="/logo.png"
         alt={`${SITE.name} logo`}
-        width={px}
-        height={px}
-        className={cn(imageClassName, "object-contain")}
+        width={src}
+        height={src}
+        unoptimized
+        className={cn("object-contain", imageClassName)}
         priority
       />
       {showName && (
