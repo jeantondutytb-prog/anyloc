@@ -5,6 +5,15 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
+import { SITE } from "@/lib/constants";
+import { createPageMetadata } from "@/lib/seo";
+
+export const metadata = createPageMetadata({
+  title: `Installation ${SITE.name} sur iPhone — Guide iOS`,
+  description:
+    "Guide pas à pas pour installer Anyloc sur iPhone (iOS 17+). Mode développeur, Anyloc Setup et GPS spoofé sans jailbreak.",
+  path: "/setup/ios",
+});
 
 const steps = [
   {
