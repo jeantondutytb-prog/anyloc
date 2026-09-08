@@ -1,17 +1,17 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
   CheckCircle2,
   MapPin,
   Navigation,
   Power,
-  Search,
   Smartphone,
 } from "lucide-react";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
+import { LocationSearch } from "@/components/dashboard/location-search";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { SAVED_LOCATIONS } from "@/lib/constants";
@@ -38,21 +38,11 @@ type Location = {
 export default function DashboardPage() {
   const [active, setActive] = useState(false);
   const [sent, setSent] = useState(false);
-  const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Location>({
     name: "Marbella — Puerto Banús",
     lat: 36.4848,
     lng: -4.9526,
   });
-
-  const filteredSpots = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    if (!query) return SAVED_LOCATIONS;
-
-    return SAVED_LOCATIONS.filter((loc) =>
-      loc.name.toLowerCase().includes(query)
-    );
-  }, [search]);
 
   function selectLocation(loc: Location) {
     setSelected(loc);
@@ -118,16 +108,7 @@ export default function DashboardPage() {
 
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="space-y-4 lg:col-span-2">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-              <input
-                type="search"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Recherche une ville ou un lieu…"
-                className="w-full rounded-2xl border border-zinc-200 bg-white py-3 pl-11 pr-4 text-sm text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-400 focus:border-pink-300 focus:ring-2 focus:ring-pink-200/50"
-              />
-            </div>
+            <LocationSearch onSelect={selectLocation} />
 
             <Card className="overflow-hidden border-zinc-200 bg-white p-0">
               <LocationMap
@@ -136,31 +117,6 @@ export default function DashboardPage() {
                 active={active}
               />
             </Card>
-
-            {search && filteredSpots.length > 0 && (
-              <Card className="p-3">
-                <p className="px-2 pb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  Résultats
-                </p>
-                <ul className="space-y-1">
-                  {filteredSpots.map((loc) => (
-                    <li key={loc.name}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          selectLocation(loc);
-                          setSearch("");
-                        }}
-                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
-                      >
-                        <MapPin className="h-3.5 w-3.5 shrink-0 text-pink-600/60" />
-                        {loc.name}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </Card>
-            )}
           </div>
 
           <div className="space-y-4">
