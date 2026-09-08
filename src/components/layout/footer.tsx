@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MapPin } from "lucide-react";
+import { Logo } from "@/components/ui/logo";
 import { SITE } from "@/lib/constants";
 
 export function Footer() {
@@ -8,12 +8,7 @@ export function Footer() {
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
         <div className="grid gap-8 md:grid-cols-4">
           <div className="md:col-span-2">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-pink-500/30 to-violet-500/30">
-                <MapPin className="h-4 w-4 text-pink-600" />
-              </div>
-              <span className="text-lg font-semibold">{SITE.name}</span>
-            </div>
+            <Logo href={null} />
             <p className="mt-4 max-w-sm text-sm text-zinc-500">
               {SITE.description}
             </p>

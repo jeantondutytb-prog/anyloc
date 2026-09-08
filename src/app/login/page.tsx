@@ -1,18 +1,13 @@
 import Link from "next/link";
-import { MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Logo } from "@/components/ui/logo";
 
 export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md p-8">
-        <Link href="/" className="mx-auto flex w-fit items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-pink-500/30 to-violet-500/30">
-            <MapPin className="h-4 w-4 text-pink-600" />
-          </div>
-          <span className="text-lg font-semibold">Anyloc</span>
-        </Link>
+        <Logo className="mx-auto w-fit" />
 
         <h1 className="mt-8 text-center text-2xl font-bold text-zinc-900">
           Connexion
