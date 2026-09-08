@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Loader2, Lock, MapPin, Shield, ShieldCheck } from "lucide-react";
+import { Loader2, Lock, Shield, ShieldCheck } from "lucide-react";
 import { Footer } from "@/components/layout/footer";
+import { Logo } from "@/components/ui/logo";
 import { StripeEmbeddedCheckout } from "@/components/checkout/stripe-embedded-checkout";
 import { CHECKOUT_PERKS, PLANS, SITE } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -132,14 +133,7 @@ export function CheckoutView({
     <div className="flex min-h-screen flex-col bg-background">
       <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white/80 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-2 px-4 sm:h-16 sm:px-5">
-          <Link href="/" className="flex shrink-0 items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-pink-500/30 to-violet-500/30 sm:h-9 sm:w-9 sm:rounded-xl">
-              <MapPin className="h-4 w-4 text-pink-600" />
-            </div>
-            <span className="text-base font-extrabold tracking-tight sm:text-lg">
-              {SITE.name}
-            </span>
-          </Link>
+          <Logo nameClassName="text-base font-extrabold tracking-tight sm:text-lg" />
           <Link
             href="/"
             className="text-sm text-zinc-500 transition hover:text-zinc-900"
