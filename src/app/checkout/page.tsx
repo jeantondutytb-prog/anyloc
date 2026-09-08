@@ -3,6 +3,7 @@ import { CheckoutView } from "@/components/checkout/checkout-view";
 import { ensureStripeCustomerForUser } from "@/lib/billing";
 import { getCheckoutUrl, isValidPlanId } from "@/lib/constants";
 import { getStripePublishableKey } from "@/lib/stripe-client";
+import { getAppUrl } from "@/lib/stripe";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
 export default async function CheckoutPage({
@@ -44,6 +45,7 @@ export default async function CheckoutPage({
       initialPlanId={planId}
       canceled={canceled === "true"}
       stripePublishableKey={getStripePublishableKey()}
+      returnUrl={`${getAppUrl()}/dashboard?success=true`}
     />
   );
 }
