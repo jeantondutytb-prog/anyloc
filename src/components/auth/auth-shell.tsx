@@ -19,8 +19,8 @@ export function AuthShell({
         <div className="absolute bottom-0 left-0 h-[220px] w-[320px] rounded-full bg-orange-500/8 blur-[100px]" />
       </div>
 
-      <Card className="relative w-full max-w-md border-zinc-200/80 p-8 shadow-lg shadow-pink-500/5">
-        <div className="flex items-center justify-between gap-4">
+      <Card className="relative w-full max-w-md overflow-hidden border-zinc-200/80 p-0 shadow-lg shadow-pink-500/5">
+        <div className="flex items-center justify-between gap-4 bg-logo-background px-8 py-6">
           <Logo />
 
           <Link
@@ -31,14 +31,16 @@ export function AuthShell({
           </Link>
         </div>
 
-        <h1 className="mt-8 text-2xl font-bold tracking-tight text-zinc-900">
-          {title}
-        </h1>
-        <p className="mt-2 text-sm leading-relaxed text-zinc-500">
-          {description}
-        </p>
+        <div className="p-8">
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-900">
+            {title}
+          </h1>
+          <p className="mt-2 text-sm leading-relaxed text-zinc-500">
+            {description}
+          </p>
 
-        <div className="mt-8">{children}</div>
+          <div className="mt-8">{children}</div>
+        </div>
       </Card>
     </div>
   );
