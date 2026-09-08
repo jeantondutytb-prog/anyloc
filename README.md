@@ -44,7 +44,18 @@ Optimisé pour [Vercel](https://vercel.com). Configure le domaine `anyloc.io` da
 
 ## Prochaines étapes
 
-- [ ] Configurer Supabase Auth (voir `.env.example`)
+- [x] Configurer Supabase Auth (voir `.env.example`)
 - [ ] Apps natives iOS & Android
-- [ ] Webhooks Stripe pour gestion abonnements
+- [x] Webhooks Stripe pour gestion abonnements (voir ci-dessous)
 - [ ] Spoofing web (Snapchat web, etc.)
+
+## Stripe ↔ Supabase
+
+1. Applique la migration `supabase/migrations/20250908140000_profiles_stripe.sql` dans Supabase (SQL Editor ou CLI).
+2. Ajoute `SUPABASE_SERVICE_ROLE_KEY` et `STRIPE_WEBHOOK_SECRET` sur Vercel.
+3. Dans Stripe Dashboard → Developers → Webhooks, crée un endpoint :
+   - URL : `https://anyloc.io/api/stripe/webhook`
+   - Events : `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`
+4. Copie le signing secret dans `STRIPE_WEBHOOK_SECRET`.
+
+Au checkout, l'email Supabase est prérempli et le compte est lié via `client_reference_id`. Le client Stripe est créé au paiement et enregistré dans `public.profiles`.

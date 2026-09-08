@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { PLANS } from "@/lib/constants";
-import { getAppUrl, stripe } from "@/lib/stripe";
+import {
+  createSubscriptionCheckoutSession,
+  getAuthenticatedCheckoutUser,
+} from "@/lib/stripe-checkout";
 
 export async function POST(request: Request) {
   try {
@@ -17,20 +20,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Plan invalide" }, { status: 400 });
     }
 
-    if (!stripe || !plan.stripePriceId) {
+    const user = await getAuthenticatedCheckoutUser();
+
+    if (!user) {
       return NextResponse.json(
-        { error: "Paiement non configuré pour ce plan" },
-        { status: 503 }
+        { error: "Connecte-toi pour continuer." },
+        { status: 401 }
       );
     }
 
-    const appUrl = getAppUrl();
-
-    const session = await stripe.checkout.sessions.create({
-      ui_mode: "embedded_page",
-      mode: "subscription",
-      line_items: [{ price: plan.stripePriceId, quantity: 1 }],
-      return_url: `${appUrl}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`,
+    const session = await createSubscriptionCheckoutSession({
+      plan,
+      user,
+      uiMode: "embedded_page",
     });
 
     if (!session.client_secret) {
