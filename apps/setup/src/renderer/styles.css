@@ -97,9 +97,25 @@ body {
   font-size: 16px;
 }
 
-.usb-status {
+.usb-status,
+.install-status {
   margin: 0 0 12px;
   color: #52525b;
+  line-height: 1.45;
+}
+
+.install-status.ok {
+  color: #047857;
+}
+
+.install-status.error {
+  color: #b91c1c;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 button {
@@ -112,6 +128,31 @@ button {
   cursor: pointer;
 }
 
-button:hover {
+button:hover:not(:disabled) {
   background: #db2777;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button.secondary {
+  background: #f4f4f5;
+  color: #18181b;
+}
+
+button.secondary:hover:not(:disabled) {
+  background: #e4e4e7;
+}
+
+.checklist {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: #52525b;
+  line-height: 1.6;
+}
+
+code {
+  font-size: 12px;
 }

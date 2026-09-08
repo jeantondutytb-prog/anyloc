@@ -17,9 +17,11 @@ const STEPS = [
   {
     title: "Lance l'installation",
     description:
-      "Anyloc Setup détectera ton iPhone et installera l'app Anyloc (bientôt disponible).",
+      "Clique sur « Installer sur iPhone » une fois l'appareil détecté.",
   },
 ];
+
+let lastUsbState = null;
 
 function renderSteps() {
   const container = document.getElementById("steps");
@@ -37,18 +39,48 @@ function renderSteps() {
   ).join("");
 }
 
+function setInstallStatus(message, type = "") {
+  const status = document.getElementById("install-status");
+  status.textContent = message;
+  status.className = `install-status ${type}`.trim();
+}
+
 async function refreshUsbStatus() {
   const status = document.getElementById("usb-status");
+  const installButton = document.getElementById("install-ios");
+
   status.textContent = "Vérification en cours...";
+  installButton.disabled = true;
 
   const result = await window.anylocSetup.checkUsb();
+  lastUsbState = result;
 
   if (result.connected && result.deviceName) {
-    status.textContent = `iPhone détecté : ${result.deviceName}`;
+    status.textContent = `${result.deviceName} — ${result.message}`;
+    installButton.disabled = false;
     return;
   }
 
   status.textContent = result.message;
+}
+
+async function installIos() {
+  if (!lastUsbState?.connected) {
+    setInstallStatus("Branche un iPhone avant d'installer.", "error");
+    return;
+  }
+
+  setInstallStatus("Installation en cours...");
+  const result = await window.anylocSetup.installIos({
+    udid: lastUsbState.udid,
+  });
+
+  if (result.ok) {
+    setInstallStatus(result.message, "ok");
+    return;
+  }
+
+  setInstallStatus(result.message, "error");
 }
 
 async function init() {
@@ -57,6 +89,10 @@ async function init() {
 
   document.getElementById("refresh-usb").addEventListener("click", () => {
     void refreshUsbStatus();
+  });
+
+  document.getElementById("install-ios").addEventListener("click", () => {
+    void installIos();
   });
 
   const platform = await window.anylocSetup.getPlatform();

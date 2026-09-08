@@ -1,10 +1,11 @@
 const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
+const { detectUsbDevice, installIosApp } = require("./usb");
 
 function createWindow() {
   const window = new BrowserWindow({
     width: 960,
-    height: 700,
+    height: 720,
     minWidth: 800,
     minHeight: 600,
     title: "Anyloc Setup",
@@ -31,13 +32,12 @@ ipcMain.handle("setup:get-platform", () => {
 });
 
 ipcMain.handle("setup:check-usb", async () => {
-  // Placeholder — branchera pymobiledevice3 / idevice_id à l'étape suivante.
-  return {
-    connected: false,
-    deviceName: null,
-    message:
-      "Branche ton iPhone en USB et accepte « Faire confiance à cet ordinateur ».",
-  };
+  return detectUsbDevice();
+});
+
+ipcMain.handle("setup:install-ios", async (_event, payload) => {
+  const udid = payload?.udid ?? null;
+  return installIosApp({ udid });
 });
 
 app.whenReady().then(() => {

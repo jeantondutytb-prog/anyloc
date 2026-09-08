@@ -4,7 +4,13 @@ Logiciel desktop Mac/Windows pour la mise en route iPhone : branchement USB, mod
 
 ## Statut
 
-**v0.1 — shell UI** : l'interface guide l'utilisateur. L'install USB iOS sera branchée à l'étape suivante (`pymobiledevice3` / `libimobiledevice`).
+**v0.2** : détection USB réelle via `pymobiledevice3` ou `idevice_id`. Bouton d'installation branché (IPA à placer dans `apps/ios/dist/Anyloc.ipa`).
+
+## Prérequis USB (Mac)
+
+```bash
+pip install -r apps/setup/scripts/requirements.txt
+```
 
 ## Développement
 

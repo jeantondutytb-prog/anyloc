@@ -53,13 +53,15 @@ Optimisé pour [Vercel](https://vercel.com). Configure le domaine `anyloc.io` da
 
 ### Étape 2 — Anyloc Setup (desktop)
 - [x] Shell Electron Mac + Windows (`apps/setup`)
-- [ ] Détection USB iPhone + install sideload
+- [x] Détection USB iPhone (`pymobiledevice3` / `idevice_id`)
+- [ ] Install IPA iOS via USB (finaliser pymobiledevice3)
 - [ ] Hébergement des `.dmg` / `.exe` (variables `ANYLOC_DOWNLOAD_*`)
 
 ### Étape 3 — Apps mobiles
-- [ ] App iOS (spoofing GPS système, lit `/api/device/location`)
-- [x] Scaffold APK Android (`apps/android`) — mock location + sync API
-- [ ] Build APK release + upload
+- [x] Scaffold app iOS SwiftUI (`apps/ios`) + xcodegen
+- [x] APK Android buildable + CI GitHub Actions
+- [x] Script upload Vercel Blob (`scripts/upload-release.mjs`)
+- [ ] Spoofing GPS système iOS (entitlements)
 - [ ] Renouvellement signature via LocalDevVPN (iOS)
 
 ### Étape 4 — Options
@@ -95,10 +97,21 @@ Au checkout, l'email Supabase est prérempli et le compte est lié via `client_r
 
 | Projet | Chemin | Statut |
 |--------|--------|--------|
-| APK Android | `apps/android/` | Scaffold — mock location + poll API |
-| Anyloc Setup | `apps/setup/` | Shell Electron — install USB à brancher |
+| APK Android | `apps/android/` | Buildable — `./scripts/build-android.sh` |
+| App iOS | `apps/ios/` | Scaffold SwiftUI + xcodegen |
+| Anyloc Setup | `apps/setup/` | Electron + détection USB |
 
 Voir les README dans chaque dossier pour build et dev.
+
+## Release (APK / Setup)
+
+```bash
+# Build APK
+./scripts/build-android.sh
+
+# Upload vers Vercel Blob (puis copie l'URL dans ANYLOC_DOWNLOAD_APK)
+BLOB_READ_WRITE_TOKEN=xxx node scripts/upload-release.mjs android dist/android/Anyloc.apk
+```
 
 ## Téléchargements
 
