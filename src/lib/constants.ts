@@ -27,13 +27,25 @@ export const DESTINATIONS = [
   "Bangkok",
 ];
 
+export const CHECKOUT_PERKS = [
+  "Changements de loc illimités sur toutes tes apps",
+  "Signal GPS réel — pas un screenshot ni un montage",
+  "Snap, Insta, Tinder, jeux : une loc pour tout le tel",
+  "Installation guidée pas à pas pour ton modèle",
+  "Résiliation en 1 clic, sans justificatif",
+];
+
 export const PLANS = [
   {
-    id: "weekly",
-    name: "Hebdomadaire",
-    price: "4,99€",
-    period: "/semaine",
-    description: "Parfait pour un week-end ou une semaine de test.",
+    id: "6months",
+    name: "6 mois",
+    price: "29€",
+    period: "/6 mois",
+    perMonth: "≈ 4,83 €",
+    perMonthLabel: "/mois",
+    billedNote: "Facturé 29 € tous les 6 mois. Résilie quand tu veux.",
+    compare: "Soit 58 € sur l'année si tu reprends",
+    description: "Idéal pour tester sur la durée sans t'engager à l'année.",
     features: [
       "Changements de loc illimités",
       "Compatible avec toutes tes apps",
@@ -41,16 +53,20 @@ export const PLANS = [
       "Support par mail",
     ],
     popular: false,
-    stripePriceId: process.env.STRIPE_PRICE_WEEKLY,
+    stripePriceId: process.env.STRIPE_PRICE_6MONTHS,
   },
   {
     id: "monthly",
     name: "Mensuel",
-    price: "12,99€",
+    price: "8€",
     period: "/mois",
+    perMonth: "8 €",
+    perMonthLabel: "/mois",
+    billedNote: "Facturé 8 € chaque mois. Résilie quand tu veux.",
+    compare: "Flexible si tu testes encore",
     description: "Le sweet spot si tu l'utilises souvent.",
     features: [
-      "Tout le plan Hebdo",
+      "Tout le plan 6 mois",
       "Trajets simulés sur la map",
       "Bibliothèque de spots illimitée",
       "Accès web (1 profil)",
@@ -62,10 +78,15 @@ export const PLANS = [
   {
     id: "annual",
     name: "Annuel",
-    price: "49,99€",
+    price: "49€",
     period: "/an",
+    perMonth: "≈ 4,08 €",
+    perMonthLabel: "/mois",
+    billedNote: "Facturé 49 € une fois par an.",
+    compare: "Tu gardes 47 € sur l'année",
+    badge: "App iPhone incluse",
     description: "Le meilleur deal si t'es un habitué.",
-    savings: "Tu gardes 106€ sur l'année",
+    savings: "Tu gardes 47€ sur l'année",
     features: [
       "Tout le plan Mensuel",
       "App iPhone sans ordi",
@@ -77,6 +98,17 @@ export const PLANS = [
     stripePriceId: process.env.STRIPE_PRICE_ANNUAL,
   },
 ];
+
+export const PLAN_IDS = PLANS.map((plan) => plan.id);
+
+export function isValidPlanId(plan: string | undefined) {
+  return plan !== undefined && PLAN_IDS.includes(plan as (typeof PLAN_IDS)[number]);
+}
+
+export function getCheckoutUrl(plan: string = "annual") {
+  const planId = isValidPlanId(plan) ? plan : "annual";
+  return `/checkout?plan=${planId}`;
+}
 
 export const COMPARISON = [
   {

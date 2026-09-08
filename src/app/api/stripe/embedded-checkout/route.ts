@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { stripe, getAppUrl } from "@/lib/stripe";
 import { PLANS } from "@/lib/constants";
+import { getAppUrl, stripe } from "@/lib/stripe";
 
 export async function POST(request: Request) {
   const { planId } = await request.json();
-  const plan = PLANS.find((p) => p.id === planId);
+  const plan = PLANS.find((item) => item.id === planId);
 
   if (!plan) {
     return NextResponse.json({ error: "Plan invalide" }, { status: 400 });
@@ -20,12 +20,19 @@ export async function POST(request: Request) {
   const appUrl = getAppUrl();
 
   const session = await stripe.checkout.sessions.create({
+    ui_mode: "embedded",
     mode: "subscription",
     payment_method_types: ["card"],
     line_items: [{ price: plan.stripePriceId, quantity: 1 }],
-    success_url: `${appUrl}/dashboard?success=true`,
-    cancel_url: `${appUrl}/checkout?plan=${plan.id}&canceled=true`,
+    return_url: `${appUrl}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`,
   });
 
-  return NextResponse.json({ url: session.url });
+  if (!session.client_secret) {
+    return NextResponse.json(
+      { error: "Impossible de démarrer le paiement." },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({ clientSecret: session.client_secret });
 }
