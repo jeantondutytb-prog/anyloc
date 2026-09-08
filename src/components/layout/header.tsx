@@ -41,8 +41,8 @@ export function Header() {
           <Link href="/login" className="hidden sm:block">
             <Button variant="ghost" size="sm">Connexion</Button>
           </Link>
-          <Link href="/register">
-            <Button size="sm">Go test gratuit</Button>
+          <Link href="/signup">
+            <Button size="sm">S&apos;inscrire</Button>
           </Link>
         </div>
       </div>

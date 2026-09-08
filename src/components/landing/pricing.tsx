@@ -23,10 +23,10 @@ export function Pricing() {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        window.location.href = "/register";
+        window.location.href = "/signup";
       }
     } catch {
-      window.location.href = "/register";
+      window.location.href = "/signup";
     } finally {
       setLoading(null);
     }
@@ -40,7 +40,7 @@ export function Pricing() {
             Choisis ton plan
           </h2>
           <p className="mt-4 text-zinc-600">
-            3 jours offerts pour tester. Tu résilies quand tu veux, sans galère.
+            Tu résilies quand tu veux, sans paperasse.
           </p>
         </div>
 
