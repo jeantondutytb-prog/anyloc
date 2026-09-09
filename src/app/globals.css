@@ -76,6 +76,21 @@ body {
   background: #eef0f3;
 }
 
+.simple-map-shell--fullscreen {
+  border: none;
+  border-radius: 0;
+}
+
+.simple-map-shell--fullscreen .leaflet-control-zoom {
+  margin-bottom: 9rem;
+}
+
+@media (min-width: 1024px) {
+  .simple-map-shell--fullscreen .leaflet-control-zoom {
+    margin-bottom: 6rem;
+  }
+}
+
 .simple-map.leaflet-container {
   width: 100%;
   height: 100%;

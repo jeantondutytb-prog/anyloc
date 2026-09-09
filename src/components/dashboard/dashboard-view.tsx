@@ -3,24 +3,31 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Loader2, MapPin, Navigation, Power, Smartphone } from "lucide-react";
+import {
+  ChevronLeft,
+  Loader2,
+  MapPin,
+  Navigation,
+  Power,
+  Smartphone,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Logo } from "@/components/ui/logo";
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
-import { LocationSearch } from "@/components/dashboard/location-search";
+import { DestinationPanel } from "@/components/dashboard/destination-panel";
 import { OnboardingChecklist } from "@/components/dashboard/onboarding-checklist";
 import { useDashboardOnboarding } from "@/hooks/use-dashboard-onboarding";
 import { useLocationSync } from "@/hooks/use-location-sync";
 import { DEFAULT_LOCATION } from "@/lib/location";
-import { SAVED_LOCATIONS } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 
 const LocationMap = dynamic(
   () => import("@/components/dashboard/location-map"),
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-full min-h-[400px] items-center justify-center rounded-xl bg-zinc-50 text-zinc-500">
+      <div className="flex h-full w-full items-center justify-center bg-zinc-100 text-zinc-500">
         Chargement de la carte...
       </div>
     ),
@@ -35,6 +42,8 @@ export function DashboardView() {
   });
 
   const [active, setActive] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [showOnboardingBanner, setShowOnboardingBanner] = useState(true);
   const [selected, setSelected] = useState({
     name: DEFAULT_LOCATION.name,
     lat: DEFAULT_LOCATION.lat,
@@ -123,85 +132,143 @@ export function DashboardView() {
       })
     : null;
 
-  const showOnboarding = hydrated && !isComplete;
+  const showOnboarding = hydrated && !isComplete && showOnboardingBanner;
 
   return (
-    <div className="flex min-h-screen flex-col bg-background lg:flex-row">
-      <header className="sticky top-0 z-20 flex h-14 items-center border-b border-zinc-200 bg-logo-background px-4 lg:hidden">
-        <Logo />
-      </header>
-
+    <div className="flex h-[100dvh] overflow-hidden bg-background">
       <DashboardNav />
 
-      <main className="flex-1 p-4 pb-24 sm:p-6 lg:p-8 lg:pb-8">
+      <div className="relative flex min-w-0 flex-1 flex-col">
+        <header className="absolute left-0 right-0 top-0 z-20 flex items-center justify-between px-4 py-3 lg:hidden">
+          <Logo />
+          <Link
+            href="/dashboard/installation"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-zinc-600 shadow-md backdrop-blur-sm"
+            aria-label="Guide d'installation"
+          >
+            <Smartphone className="h-4 w-4" />
+          </Link>
+        </header>
+
+        <div className="absolute inset-0 z-0">
+          <LocationMap
+            selected={selected}
+            onSelect={handleSelectLocation}
+            active={active}
+            fullScreen
+            layoutKey={panelOpen ? 1 : 0}
+          />
+        </div>
+
         {error && (
-          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="absolute left-4 right-4 top-16 z-20 rounded-xl border border-red-200 bg-red-50/95 px-4 py-3 text-sm text-red-700 shadow-sm backdrop-blur-sm lg:top-4 lg:left-auto lg:right-[calc(380px+1rem)] lg:max-w-sm">
             {error}
           </div>
         )}
 
         {showOnboarding && (
-          <div className="mb-6">
-            <OnboardingChecklist
-              steps={state.steps}
-              onMarkInstallComplete={() => completeStep("install")}
-            />
+          <div className="absolute left-4 right-4 top-16 z-20 max-h-[40vh] overflow-y-auto lg:top-4 lg:max-w-md">
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowOnboardingBanner(false)}
+                className="absolute right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white text-zinc-500 shadow-sm hover:bg-zinc-100"
+                aria-label="Masquer le guide"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+              <OnboardingChecklist
+                steps={state.steps}
+                onMarkInstallComplete={() => completeStep("install")}
+              />
+            </div>
           </div>
         )}
 
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-zinc-900">Carte</h1>
-            <p className="text-sm text-zinc-500">
-              Choisis un spot et active ton signal GPS
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <span
-              className={`flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium ${
-                active
-                  ? "bg-pink-500/10 text-pink-600"
-                  : "bg-zinc-500/10 text-zinc-500"
-              }`}
-            >
-              <span
-                className={`h-2 w-2 rounded-full ${
-                  active ? "bg-pink-500 animate-pulse" : "bg-zinc-400"
-                }`}
-              />
-              {active ? "Signal actif" : "En pause"}
-            </span>
-          </div>
+        <div
+          className={cn(
+            "absolute left-4 top-4 z-10 hidden items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium shadow-md backdrop-blur-sm lg:flex",
+            active ? "text-pink-600" : "text-zinc-500"
+          )}
+        >
+          <span
+            className={cn(
+              "h-2 w-2 rounded-full",
+              active ? "bg-pink-500 animate-pulse" : "bg-zinc-400"
+            )}
+          />
+          {active ? "Signal actif" : "Signal en pause"}
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          <div className="space-y-4 lg:col-span-2">
-            <LocationSearch onSelect={handleSelectLocation} />
+        {!panelOpen && (
+          <button
+            type="button"
+            onClick={() => setPanelOpen(true)}
+            className="absolute right-0 top-1/2 z-20 hidden -translate-y-1/2 lg:flex"
+            aria-label="Ouvrir les destinations"
+          >
+            <span className="flex h-14 w-7 items-center justify-center rounded-l-2xl border border-r-0 border-zinc-200 bg-white/95 text-zinc-500 shadow-lg backdrop-blur-sm transition-colors hover:bg-white hover:text-pink-600">
+              <ChevronLeft className="h-4 w-4" />
+            </span>
+          </button>
+        )}
 
-            <Card className="overflow-hidden border-zinc-200 bg-white p-0">
-              <LocationMap
-                selected={selected}
-                onSelect={handleSelectLocation}
-                active={active}
-              />
-            </Card>
-          </div>
+        <DestinationPanel
+          open={panelOpen}
+          onClose={() => setPanelOpen(false)}
+          onSelect={handleSelectLocation}
+          selectedName={selected.name}
+        />
 
-          <div className="space-y-6">
-            <Card className="p-5">
-              <h3 className="text-sm font-medium text-zinc-600">
-                Loc sélectionnée
-              </h3>
-              <p className="mt-2 text-lg font-semibold text-zinc-900">
-                📍 {selected.name}
-              </p>
-              <p className="mt-1 text-xs text-zinc-600">
-                {selected.lat.toFixed(4)}, {selected.lng.toFixed(4)}
-              </p>
+        <div
+          className={cn(
+            "absolute inset-x-0 bottom-0 z-20 px-4 pb-20 pt-3 lg:pb-4",
+            panelOpen && "lg:right-[380px]"
+          )}
+        >
+          <div className="mx-auto max-w-2xl rounded-2xl border border-zinc-200/80 bg-white/95 p-4 shadow-xl backdrop-blur-md">
+            <div className="flex items-start gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-pink-500/10">
+                <MapPin className="h-5 w-5 text-pink-600" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                  Ta loc actuelle
+                </p>
+                <p className="truncate text-base font-semibold text-zinc-900">
+                  {selected.name}
+                </p>
+                {lastSyncedLabel && (
+                  <p className="mt-0.5 text-xs text-zinc-400">
+                    Sync {lastSyncedLabel}
+                  </p>
+                )}
+              </div>
+              <span
+                className={cn(
+                  "shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide lg:hidden",
+                  active
+                    ? "bg-pink-500/10 text-pink-600"
+                    : "bg-zinc-100 text-zinc-500"
+                )}
+              >
+                {active ? "Actif" : "Pause"}
+              </span>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <Button
+                variant="secondary"
+                className="w-full"
+                onClick={() => setPanelOpen(true)}
+              >
+                <MapPin className="h-4 w-4" />
+                Changer ma loc
+              </Button>
               {active ? (
                 <Button
                   variant="secondary"
-                  className="mt-4 w-full"
+                  className="w-full"
                   disabled={saving || loading}
                   onClick={() => void handleStopSignal()}
                 >
@@ -210,11 +277,11 @@ export function DashboardView() {
                   ) : (
                     <Power className="h-4 w-4" />
                   )}
-                  Arrêter le signal
+                  Arrêter
                 </Button>
               ) : (
                 <Button
-                  className="mt-4 w-full"
+                  className="w-full"
                   disabled={saving || loading}
                   onClick={() => void handleActivateSignal()}
                 >
@@ -226,51 +293,10 @@ export function DashboardView() {
                   Activer le signal
                 </Button>
               )}
-              {lastSyncedLabel && (
-                <p className="mt-2 text-xs text-zinc-400">
-                  Dernière sync : {lastSyncedLabel}
-                </p>
-              )}
-            </Card>
-
-            <Card className="p-5">
-              <h3 className="text-sm font-medium text-zinc-600">
-                Spots rapides
-              </h3>
-              <ul className="mt-3 space-y-2">
-                {SAVED_LOCATIONS.map((loc) => (
-                  <li key={loc.name}>
-                    <button
-                      type="button"
-                      onClick={() => handleSelectLocation(loc)}
-                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
-                    >
-                      <MapPin className="h-3.5 w-3.5 shrink-0 text-pink-600/60" />
-                      {loc.name}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-
-            <Card className="p-5">
-              <h3 className="text-sm font-medium text-zinc-600">
-                Besoin d&apos;aide ?
-              </h3>
-              <p className="mt-2 text-sm text-zinc-500">
-                Le guide d&apos;installation explique tout de A à Z avec les
-                boutons de téléchargement au bon moment.
-              </p>
-              <Link href="/dashboard/installation" className="mt-4 block">
-                <Button variant="secondary" size="sm" className="w-full">
-                  <Smartphone className="h-4 w-4" />
-                  Guide d&apos;installation
-                </Button>
-              </Link>
-            </Card>
+            </div>
           </div>
         </div>
-      </main>
+      </div>
 
       <DashboardNav mobile />
     </div>

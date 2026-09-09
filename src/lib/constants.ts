@@ -1,3 +1,5 @@
+import { DESTINATION_SPOTS } from "@/lib/destination-spots";
+
 export const SITE = {
   name: "Anyloc",
   domain: "anyloc.io",
@@ -229,11 +231,8 @@ export const FEATURES = [
   },
 ];
 
-export const SAVED_LOCATIONS = [
-  { name: "Marbella — Puerto Banús", lat: 36.4848, lng: -4.9526 },
-  { name: "Ibiza — Playa d'en Bossa", lat: 38.8767, lng: 1.4024 },
-  { name: "Miami — South Beach", lat: 25.7907, lng: -80.13 },
-  { name: "Mykonos — Paradise Beach", lat: 37.4467, lng: 25.3289 },
-  { name: "Monaco — Port Hercule", lat: 43.7384, lng: 7.4246 },
-  { name: "Valencia — Ciudad de las Artes", lat: 39.4549, lng: -0.3523 },
-];
+export const SAVED_LOCATIONS = DESTINATION_SPOTS.map(({ name, lat, lng }) => ({
+  name,
+  lat,
+  lng,
+}));
