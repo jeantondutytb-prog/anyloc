@@ -23,11 +23,16 @@ npm run dev
 ## Build
 
 ```bash
-npm run build:mac   # .dmg
-npm run build:win   # .exe
+# Depuis la racine du repo
+./scripts/build-setup.sh
+
+# Ou ici directement
+npm run build:mac   # dist/Anyloc-Setup.dmg
+npm run build:win   # dist/Anyloc-Setup.exe
 ```
 
-Les artefacts buildés seront hébergés et référencés via `ANYLOC_DOWNLOAD_SETUP_MAC` et `ANYLOC_DOWNLOAD_SETUP_WIN` sur Vercel.
+CI : GitHub Actions **Build Anyloc Setup** publie les binaires en release GitHub.
+Configure ensuite `ANYLOC_DOWNLOAD_SETUP_MAC` et `ANYLOC_DOWNLOAD_SETUP_WIN` sur Vercel avec les URLs de la release.
 
 ## Flow utilisateur
 
