@@ -17,7 +17,7 @@ const steps = [
     icon: MapPin,
     title: "Choisis ta destination",
     description:
-      "Sélectionne un spot sur la map, active le signal — toutes tes apps basculent au même endroit.",
+      "Sélectionne ta destination dans l'app Anyloc — toutes tes apps basculent au même endroit.",
   },
 ];
 

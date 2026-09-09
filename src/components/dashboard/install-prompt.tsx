@@ -21,9 +21,9 @@ export function InstallPrompt({ onMarkComplete }: InstallPromptProps) {
           Installe Anyloc sur ton téléphone
         </h2>
         <p className="mt-3 text-sm text-zinc-600 sm:text-base">
-          Sur iPhone, branche ton tel à un Mac ou PC une seule fois avec Anyloc
-          Setup. Sur Android, installe l&apos;APK — tout se pilote ensuite depuis
-          ton mobile.
+          Sur iPhone, branche ton tel à un Mac ou PC une seule fois pour installer
+          l&apos;app. Sur Android, installe l&apos;APK directement. Ensuite,
+          change ta position depuis l&apos;app — sans repasser par ton ordi.
         </p>
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
