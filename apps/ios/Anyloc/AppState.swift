@@ -118,7 +118,7 @@ final class AppState: ObservableObject {
             if !isSyncing {
                 startSync()
             } else {
-                await LocationSpoofService.shared.apply(location: location)
+                LocationSpoofService.shared.apply(location: location, pairingPath: nil)
             }
         } catch {
             statusMessage = "Erreur : \(error.localizedDescription)"
@@ -163,7 +163,7 @@ final class AppState: ObservableObject {
                     lastLocation = location
 
                     if location.isActive {
-                        await LocationSpoofService.shared.apply(location: location)
+                        LocationSpoofService.shared.apply(location: location, pairingPath: nil)
                         statusMessage = "Actif · \(location.name)"
                     } else {
                         statusMessage = "En pause"

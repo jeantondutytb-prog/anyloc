@@ -1,26 +1,34 @@
 import CoreLocation
 import Foundation
 
-/// Placeholder pour le spoofing GPS système.
-/// L'implémentation finale utilisera les APIs développeur / simulation de position
-/// une fois l'app sideloadée via Anyloc Setup.
 @MainActor
-final class LocationSpoofService: NSObject, ObservableObject {
+final class LocationSpoofService: ObservableObject {
     static let shared = LocationSpoofService()
 
     @Published private(set) var lastApplied: RemoteLocation?
+    let spoofSession = SpoofSession()
 
-    private let manager = CLLocationManager()
+    private init() {}
 
-    override private init() {
-        super.init()
-        manager.delegate = self
-    }
-
-    func apply(location: RemoteLocation) async {
+    func apply(location: RemoteLocation, pairingPath: String?) {
         lastApplied = location
-        // TODO: brancher simulation GPS système (entitlements dev requis).
+
+        if location.isActive {
+            guard pairingPath != nil else {
+                print("Anyloc: pairing manquant — importe un fichier RPPairing avant de lancer le spoofing.")
+                return
+            }
+            guard LocalDevVPNHelper.isConnected else {
+                print("Anyloc: LocalDevVPN non connecté — le tunnel 10.7.0.x est requis.")
+                return
+            }
+            spoofSession.start(
+                latitude: location.lat,
+                longitude: location.lng,
+                pairingPath: pairingPath!
+            )
+        } else if spoofSession.isSpoofing {
+            spoofSession.stop()
+        }
     }
 }
-
-extension LocationSpoofService: CLLocationManagerDelegate {}
