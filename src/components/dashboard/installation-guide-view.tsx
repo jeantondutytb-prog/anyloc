@@ -353,8 +353,10 @@ function IosGuide({ hasAccess }: { hasAccess: boolean }) {
           <li>Après le redémarrage, appuie sur <strong>Activer</strong> et entre ton code</li>
         </ol>
         <p className="text-xs text-zinc-500">
-          Toujours invisible ? Débranche/rebranche le câble avec Anyloc Setup ouvert,
-          ou installe Xcode gratuitement sur Mac (App Store) puis branche l&apos;iPhone.
+          Toujours invisible ? Installe d&apos;abord les outils USB sur ton Mac
+          (<code className="text-xs">pip3 install pymobiledevice3</code>), puis
+          installe <strong>Xcode</strong> (App Store), ouvre-le et branche l&apos;iPhone
+          — le mode développeur apparaît ensuite en bas de Confidentialité et sécurité.
         </p>
       </StepCard>
 

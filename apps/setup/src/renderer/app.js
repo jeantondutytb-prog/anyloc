@@ -1,18 +1,18 @@
 const STEPS = [
   {
-    title: "Active le mode développeur",
+    title: "Installe les outils USB sur ton Mac",
     description:
-      "Réglages → Confidentialité et sécurité → Mode développeur. Redémarre et confirme.",
-  },
-  {
-    title: "Installe LocalDevVPN",
-    description:
-      "Depuis l'App Store sur ton iPhone — utile pour renouveler l'app sans rebrancher l'ordi.",
+      "Terminal : pip3 install pymobiledevice3 — puis Revérifier dans Anyloc Setup.",
   },
   {
     title: "Branche ton iPhone en USB",
     description:
       "Accepte « Faire confiance à cet ordinateur » sur l'écran du téléphone.",
+  },
+  {
+    title: "Active le mode développeur",
+    description:
+      "Visible seulement après la connexion USB. Réglages → Confidentialité et sécurité → tout en bas → Mode développeur.",
   },
   {
     title: "Lance l'installation",
