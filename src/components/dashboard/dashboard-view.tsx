@@ -10,13 +10,11 @@ import {
   Navigation,
   Power,
   Smartphone,
-  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
 import { DestinationPanel } from "@/components/dashboard/destination-panel";
-import { OnboardingChecklist } from "@/components/dashboard/onboarding-checklist";
 import { useDashboardOnboarding } from "@/hooks/use-dashboard-onboarding";
 import { useLocationSync } from "@/hooks/use-location-sync";
 import { DEFAULT_LOCATION } from "@/lib/location";
@@ -35,7 +33,7 @@ const LocationMap = dynamic(
 );
 
 export function DashboardView() {
-  const { hydrated, state, completeStep, isComplete } = useDashboardOnboarding();
+  const { hydrated, completeStep } = useDashboardOnboarding();
 
   const { location, loading, saving, error, saveLocation } = useLocationSync({
     onSynced: () => completeStep("activate"),
@@ -43,7 +41,6 @@ export function DashboardView() {
 
   const [active, setActive] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
-  const [showOnboardingBanner, setShowOnboardingBanner] = useState(true);
   const [selected, setSelected] = useState({
     name: DEFAULT_LOCATION.name,
     lat: DEFAULT_LOCATION.lat,
@@ -132,8 +129,6 @@ export function DashboardView() {
       })
     : null;
 
-  const showOnboarding = hydrated && !isComplete && showOnboardingBanner;
-
   return (
     <div className="flex h-[100dvh] overflow-hidden bg-background">
       <DashboardNav />
@@ -163,25 +158,6 @@ export function DashboardView() {
         {error && (
           <div className="absolute left-4 right-4 top-16 z-20 rounded-xl border border-red-200 bg-red-50/95 px-4 py-3 text-sm text-red-700 shadow-sm backdrop-blur-sm lg:top-4 lg:left-auto lg:right-[calc(380px+1rem)] lg:max-w-sm">
             {error}
-          </div>
-        )}
-
-        {showOnboarding && (
-          <div className="absolute left-4 right-4 top-16 z-20 max-h-[40vh] overflow-y-auto lg:top-4 lg:max-w-md">
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setShowOnboardingBanner(false)}
-                className="absolute right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white text-zinc-500 shadow-sm hover:bg-zinc-100"
-                aria-label="Masquer le guide"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-              <OnboardingChecklist
-                steps={state.steps}
-                onMarkInstallComplete={() => completeStep("install")}
-              />
-            </div>
           </div>
         )}
 
