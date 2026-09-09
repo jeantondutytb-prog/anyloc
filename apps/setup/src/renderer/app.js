@@ -12,16 +12,22 @@ const STEPS = [
   {
     title: "Active le mode développeur",
     description:
-      "Visible seulement après la connexion USB. Réglages → Confidentialité et sécurité → tout en bas → Mode développeur.",
+      "Réglages → Confidentialité et sécurité → tout en bas → Mode développeur.",
   },
   {
-    title: "Lance l'installation",
+    title: "Colle ton token et applique la position",
     description:
-      "Clique sur « Installer sur iPhone » une fois l'appareil détecté.",
+      "Choisis Marbella (ou autre) sur le dashboard, puis clique « Appliquer la position GPS ».",
   },
 ];
 
+const TOKEN_STORAGE_KEY = "anyloc.deviceToken";
+const API_STORAGE_KEY = "anyloc.apiBaseUrl";
+const SYNC_INTERVAL_MS = 10000;
+
 let lastUsbState = null;
+let syncTimer = null;
+let syncEnabled = false;
 
 function renderSteps() {
   const container = document.getElementById("steps");
@@ -39,60 +45,181 @@ function renderSteps() {
   ).join("");
 }
 
-function setInstallStatus(message, type = "") {
-  const status = document.getElementById("install-status");
+function setStatus(elementId, message, type = "") {
+  const status = document.getElementById(elementId);
   status.textContent = message;
-  status.className = `install-status ${type}`.trim();
+  status.className = `${elementId === "gps-status" ? "install-status gps-status" : "install-status"} ${type}`.trim();
+}
+
+function getTokenValue() {
+  return document.getElementById("device-token").value.trim();
+}
+
+function getApiBaseUrl() {
+  const value = document.getElementById("api-base-url").value.trim();
+  return value || "https://anyloc.io";
+}
+
+function persistSettings() {
+  localStorage.setItem(TOKEN_STORAGE_KEY, getTokenValue());
+  localStorage.setItem(API_STORAGE_KEY, getApiBaseUrl());
+}
+
+function restoreSettings() {
+  const savedToken = localStorage.getItem(TOKEN_STORAGE_KEY);
+  const savedApiBaseUrl = localStorage.getItem(API_STORAGE_KEY);
+
+  if (savedToken) {
+    document.getElementById("device-token").value = savedToken;
+  }
+
+  if (savedApiBaseUrl) {
+    document.getElementById("api-base-url").value = savedApiBaseUrl;
+  }
+}
+
+function updateActionButtons() {
+  const installButton = document.getElementById("install-ios");
+  const applyButton = document.getElementById("apply-gps");
+  const syncButton = document.getElementById("toggle-sync");
+  const hasToken = Boolean(getTokenValue());
+  const usbReady = Boolean(lastUsbState?.connected);
+
+  installButton.disabled = !usbReady || !lastUsbState?.installReady;
+  applyButton.disabled = !usbReady || !hasToken;
+  syncButton.disabled = !usbReady || !hasToken;
+  syncButton.textContent = `Synchronisation auto : ${syncEnabled ? "on" : "off"}`;
 }
 
 async function refreshUsbStatus() {
   const status = document.getElementById("usb-status");
-  const installButton = document.getElementById("install-ios");
 
   status.textContent = "Vérification en cours...";
-  installButton.disabled = true;
+  updateActionButtons();
 
   const result = await window.anylocSetup.checkUsb();
   lastUsbState = result;
 
   if (result.connected && result.deviceName) {
     status.textContent = `${result.deviceName} — ${result.message}`;
-    installButton.disabled = !result.installReady;
 
     if (result.installReady) {
-      setInstallStatus("Tu peux installer Anyloc sur ton iPhone.", "ok");
+      setStatus("install-status", "Tu peux aussi installer l'app native Anyloc.", "ok");
     } else if (result.installHint) {
-      setInstallStatus(result.installHint, "error");
+      setStatus("install-status", result.installHint, "");
+    }
+
+    updateActionButtons();
+
+    if (syncEnabled && getTokenValue()) {
+      void applyGps({ silent: true });
     }
 
     return;
   }
 
   status.textContent = result.message;
+  updateActionButtons();
 }
 
 async function installIos() {
   if (!lastUsbState?.connected) {
-    setInstallStatus("Branche un iPhone avant d'installer.", "error");
+    setStatus("install-status", "Branche un iPhone avant d'installer.", "error");
     return;
   }
 
-  setInstallStatus("Installation en cours...");
+  setStatus("install-status", "Installation en cours...");
   const result = await window.anylocSetup.installIos({
     udid: lastUsbState.udid,
   });
 
   if (result.ok) {
-    setInstallStatus(result.message, "ok");
+    setStatus("install-status", result.message, "ok");
     return;
   }
 
-  setInstallStatus(result.message, "error");
+  setStatus("install-status", result.message, "error");
+}
+
+async function applyGps({ silent = false } = {}) {
+  if (!lastUsbState?.connected) {
+    if (!silent) {
+      setStatus("gps-status", "Branche un iPhone en USB avant d'appliquer la position.", "error");
+    }
+    return;
+  }
+
+  if (!getTokenValue()) {
+    if (!silent) {
+      setStatus("gps-status", "Colle ton token appareil depuis le dashboard.", "error");
+    }
+    return;
+  }
+
+  if (!silent) {
+    setStatus("gps-status", "Application de la position GPS...");
+  }
+
+  persistSettings();
+
+  const result = await window.anylocSetup.applyGps({
+    udid: lastUsbState.udid,
+    token: getTokenValue(),
+    apiBaseUrl: getApiBaseUrl(),
+  });
+
+  if (result.ok) {
+    setStatus("gps-status", result.message, "ok");
+    return;
+  }
+
+  if (!silent) {
+    setStatus("gps-status", result.message, "error");
+  }
+}
+
+function stopSync() {
+  syncEnabled = false;
+
+  if (syncTimer) {
+    window.clearInterval(syncTimer);
+    syncTimer = null;
+  }
+
+  updateActionButtons();
+}
+
+function startSync() {
+  stopSync();
+  syncEnabled = true;
+  updateActionButtons();
+  void applyGps({ silent: true });
+
+  syncTimer = window.setInterval(() => {
+    void applyGps({ silent: true });
+  }, SYNC_INTERVAL_MS);
+}
+
+function toggleSync() {
+  if (syncEnabled) {
+    stopSync();
+    setStatus("gps-status", "Synchronisation automatique désactivée.", "");
+    return;
+  }
+
+  startSync();
+  setStatus(
+    "gps-status",
+    "Synchronisation auto activée. Change la position sur le dashboard, elle sera appliquée toutes les 10 secondes.",
+    "ok"
+  );
 }
 
 async function init() {
   renderSteps();
+  restoreSettings();
   await refreshUsbStatus();
+  updateActionButtons();
 
   document.getElementById("refresh-usb").addEventListener("click", () => {
     void refreshUsbStatus();
@@ -100,6 +227,23 @@ async function init() {
 
   document.getElementById("install-ios").addEventListener("click", () => {
     void installIos();
+  });
+
+  document.getElementById("apply-gps").addEventListener("click", () => {
+    void applyGps();
+  });
+
+  document.getElementById("toggle-sync").addEventListener("click", () => {
+    toggleSync();
+  });
+
+  document.getElementById("device-token").addEventListener("input", () => {
+    persistSettings();
+    updateActionButtons();
+  });
+
+  document.getElementById("api-base-url").addEventListener("input", () => {
+    persistSettings();
   });
 
   const platform = await window.anylocSetup.getPlatform();

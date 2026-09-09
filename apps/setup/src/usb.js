@@ -251,7 +251,7 @@ function getInstallAvailability() {
   return {
     installReady: false,
     installHint:
-      "L'app iOS n'est pas encore disponible (fichier IPA en cours de build). En attendant, ouvre https://anyloc.io/web sur ton iPhone depuis Safari.",
+      "L'app iOS native n'est pas encore disponible. Utilise « Appliquer la position GPS » dans Anyloc Setup pour simuler ta position via USB.",
   };
 }
 
@@ -305,6 +305,42 @@ async function detectUsbDevice() {
   }
 }
 
+async function applyGpsLocation({ udid, token, apiBaseUrl }) {
+  if (!token?.trim()) {
+    return {
+      ok: false,
+      message: "Colle ton token appareil depuis le dashboard Anyloc.",
+    };
+  }
+
+  const args = [
+    "--api-base-url",
+    apiBaseUrl || "https://anyloc.io",
+    "--token",
+    token.trim(),
+    "--userspace",
+  ];
+
+  if (udid) {
+    args.push("--udid", udid);
+  }
+
+  const result = await runPython("simulate_location.py", args);
+
+  if (result.ok === false && result.message) {
+    return result;
+  }
+
+  if (result.ok) {
+    return result;
+  }
+
+  return {
+    ok: false,
+    message: result.message || "Impossible d'appliquer la position GPS.",
+  };
+}
+
 async function installIosApp({ udid }) {
   const ipaPath = getIpaPath();
 
@@ -312,7 +348,7 @@ async function installIosApp({ udid }) {
     return {
       ok: false,
       message:
-        "L'app iOS n'est pas encore disponible (IPA en cours de build). Utilise https://anyloc.io/web sur ton iPhone depuis Safari en attendant.",
+        "L'app iOS native n'est pas encore disponible. Utilise « Appliquer la position GPS » dans Anyloc Setup pour simuler ta position via USB.",
     };
   }
 
@@ -345,4 +381,5 @@ async function installIosApp({ udid }) {
 module.exports = {
   detectUsbDevice,
   installIosApp,
+  applyGpsLocation,
 };
