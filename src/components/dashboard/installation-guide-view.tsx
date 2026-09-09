@@ -290,17 +290,43 @@ function IosGuide({ hasAccess }: { hasAccess: boolean }) {
         </p>
       </StepCard>
 
-      <StepCard number={2} title="Active le mode développeur sur ton iPhone">
+      <StepCard number={2} title="Branche ton iPhone en USB">
+        <div className="flex items-start gap-3 rounded-xl bg-zinc-50 p-4">
+          <Usb className="mt-0.5 h-5 w-5 shrink-0 text-pink-600" />
+          <ul className="space-y-2">
+            <li>Connecte ton iPhone au Mac ou PC avec un câble USB</li>
+            <li>Sur l&apos;iPhone, appuie sur <strong>Faire confiance à cet ordinateur</strong></li>
+            <li>Ouvre <strong>Anyloc Setup</strong> sur l&apos;ordi et attends que l&apos;iPhone soit détecté</li>
+            <li>Laisse le câble branché pendant toute l&apos;installation</li>
+          </ul>
+        </div>
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <strong>Le mode développeur n&apos;apparaît pas encore ?</strong> C&apos;est
+          normal. Apple ne l&apos;affiche qu&apos;après cette première connexion USB
+          avec Anyloc Setup (ou Xcode). Passe à l&apos;étape suivante une fois
+          l&apos;iPhone détecté.
+        </p>
+      </StepCard>
+
+      <StepCard number={3} title="Active le mode développeur sur ton iPhone">
+        <p>
+          Après la connexion USB, l&apos;option devient visible dans les réglages.
+        </p>
         <ol className="list-decimal space-y-2 pl-5">
           <li>Ouvre <strong>Réglages</strong> sur ton iPhone</li>
           <li>Va dans <strong>Confidentialité et sécurité</strong></li>
-          <li>Active <strong>Mode développeur</strong></li>
+          <li>Descends tout en bas → <strong>Mode développeur</strong></li>
+          <li>Active l&apos;interrupteur</li>
           <li>Redémarre l&apos;iPhone quand iOS te le demande</li>
-          <li>Confirme avec ton code après le redémarrage</li>
+          <li>Après le redémarrage, appuie sur <strong>Activer</strong> et entre ton code</li>
         </ol>
+        <p className="text-xs text-zinc-500">
+          Toujours invisible ? Débranche/rebranche le câble avec Anyloc Setup ouvert,
+          ou installe Xcode gratuitement sur Mac (App Store) puis branche l&apos;iPhone.
+        </p>
       </StepCard>
 
-      <StepCard number={3} title="Installe LocalDevVPN (recommandé)">
+      <StepCard number={4} title="Installe LocalDevVPN (recommandé)">
         <p>
           Cette app gratuite permet de renouveler Anyloc sans rebrancher ton
           ordinateur à chaque mise à jour.
@@ -315,17 +341,6 @@ function IosGuide({ hasAccess }: { hasAccess: boolean }) {
             Télécharger LocalDevVPN sur l&apos;App Store
           </Button>
         </a>
-      </StepCard>
-
-      <StepCard number={4} title="Branche ton iPhone en USB">
-        <div className="flex items-start gap-3 rounded-xl bg-zinc-50 p-4">
-          <Usb className="mt-0.5 h-5 w-5 shrink-0 text-pink-600" />
-          <ul className="space-y-2">
-            <li>Connecte ton iPhone au Mac ou PC avec un câble USB</li>
-            <li>Sur l&apos;iPhone, appuie sur <strong>Faire confiance à cet ordinateur</strong></li>
-            <li>Laisse le câble branché pendant toute l&apos;installation</li>
-          </ul>
-        </div>
       </StepCard>
 
       <StepCard number={5} title="Lance l'installation avec Anyloc Setup">
@@ -545,6 +560,10 @@ export function InstallationGuideView() {
                   <li className="flex items-center gap-2">
                     <Check className="h-4 w-4 text-pink-600" />
                     Abonnement Anyloc actif
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-pink-600" />
+                    Mode développeur (visible après branchement USB)
                   </li>
                 </>
               ) : (
