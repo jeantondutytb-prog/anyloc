@@ -3,19 +3,13 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import {
-  ArrowRight,
-  Loader2,
-  MapPin,
-  Navigation,
-  Power,
-  Smartphone,
-} from "lucide-react";
+import { Loader2, MapPin, Navigation, Power, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Logo } from "@/components/ui/logo";
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
 import { LocationSearch } from "@/components/dashboard/location-search";
+import { OnboardingChecklist } from "@/components/dashboard/onboarding-checklist";
 import { useDashboardOnboarding } from "@/hooks/use-dashboard-onboarding";
 import { useLocationSync } from "@/hooks/use-location-sync";
 import { DEFAULT_LOCATION } from "@/lib/location";
@@ -34,10 +28,10 @@ const LocationMap = dynamic(
 );
 
 export function DashboardView() {
-  const { hydrated, state, completeStep } = useDashboardOnboarding();
+  const { hydrated, state, completeStep, isComplete } = useDashboardOnboarding();
 
   const { location, loading, saving, error, saveLocation } = useLocationSync({
-    onSynced: () => completeStep("sendPosition"),
+    onSynced: () => completeStep("activate"),
   });
 
   const [active, setActive] = useState(false);
@@ -66,7 +60,11 @@ export function DashboardView() {
       lng: location.lng,
     };
     hasHydratedLocationRef.current = true;
-  }, [location]);
+
+    if (location.isActive) {
+      completeStep("activate");
+    }
+  }, [location, completeStep]);
 
   useEffect(() => {
     if (!hydrated) {
@@ -83,12 +81,6 @@ export function DashboardView() {
     }
   }, [completeStep, hydrated, selected]);
 
-  useEffect(() => {
-    if (active) {
-      completeStep("activate");
-    }
-  }, [active, completeStep]);
-
   const persistLocation = useCallback(
     async (nextActive: boolean) => {
       await saveLocation({
@@ -101,9 +93,19 @@ export function DashboardView() {
     [saveLocation, selected]
   );
 
-  const handleSendPosition = async () => {
+  const handleActivateSignal = async () => {
     setActive(true);
     await persistLocation(true);
+  };
+
+  const handleStopSignal = async () => {
+    setActive(false);
+
+    try {
+      await persistLocation(false);
+    } catch {
+      setActive(true);
+    }
   };
 
   const handleSelectLocation = (nextLocation: {
@@ -114,17 +116,6 @@ export function DashboardView() {
     setSelected(nextLocation);
   };
 
-  const handleToggleActive = async () => {
-    const nextActive = !active;
-    setActive(nextActive);
-
-    try {
-      await persistLocation(nextActive);
-    } catch {
-      setActive(!nextActive);
-    }
-  };
-
   const lastSyncedLabel = location?.updatedAt
     ? new Date(location.updatedAt).toLocaleString("fr-FR", {
         dateStyle: "short",
@@ -132,7 +123,7 @@ export function DashboardView() {
       })
     : null;
 
-  const showInstallBanner = hydrated && !state.steps.install;
+  const showOnboarding = hydrated && !isComplete;
 
   return (
     <div className="flex min-h-screen flex-col bg-background lg:flex-row">
@@ -149,29 +140,12 @@ export function DashboardView() {
           </div>
         )}
 
-        {showInstallBanner && (
-          <div className="mb-6 rounded-xl border border-pink-200 bg-gradient-to-r from-pink-50 to-white px-4 py-4 sm:px-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pink-500/10">
-                  <Smartphone className="h-5 w-5 text-pink-600" />
-                </div>
-                <div>
-                  <p className="font-semibold text-zinc-900">
-                    Installe Anyloc sur ton téléphone
-                  </p>
-                  <p className="mt-1 text-sm text-zinc-600">
-                    Suis le guide pas à pas avec les téléchargements intégrés.
-                  </p>
-                </div>
-              </div>
-              <Link href="/dashboard/installation">
-                <Button className="w-full sm:w-auto">
-                  Voir le guide
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
+        {showOnboarding && (
+          <div className="mb-6">
+            <OnboardingChecklist
+              steps={state.steps}
+              onMarkInstallComplete={() => completeStep("install")}
+            />
           </div>
         )}
 
@@ -179,7 +153,7 @@ export function DashboardView() {
           <div>
             <h1 className="text-2xl font-bold text-zinc-900">Carte</h1>
             <p className="text-sm text-zinc-500">
-              Choisis un spot et synchronise ton signal GPS
+              Choisis un spot et active ton signal GPS
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -197,18 +171,6 @@ export function DashboardView() {
               />
               {active ? "Signal actif" : "En pause"}
             </span>
-            <Button
-              variant={active ? "secondary" : "default"}
-              onClick={() => void handleToggleActive()}
-              disabled={saving || loading}
-            >
-              {saving ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Power className="h-4 w-4" />
-              )}
-              {active ? "Arrêter" : "Activer"}
-            </Button>
           </div>
         </div>
 
@@ -236,22 +198,33 @@ export function DashboardView() {
               <p className="mt-1 text-xs text-zinc-600">
                 {selected.lat.toFixed(4)}, {selected.lng.toFixed(4)}
               </p>
-              <Button
-                className="mt-4 w-full"
-                disabled={!active || saving || loading}
-                onClick={() => void handleSendPosition()}
-              >
-                {saving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Navigation className="h-4 w-4" />
-                )}
-                Envoyer cette position
-              </Button>
-              {!active && (
-                <p className="mt-2 text-xs text-zinc-500">
-                  Active le signal en haut à droite pour débloquer l&apos;envoi.
-                </p>
+              {active ? (
+                <Button
+                  variant="secondary"
+                  className="mt-4 w-full"
+                  disabled={saving || loading}
+                  onClick={() => void handleStopSignal()}
+                >
+                  {saving ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Power className="h-4 w-4" />
+                  )}
+                  Arrêter le signal
+                </Button>
+              ) : (
+                <Button
+                  className="mt-4 w-full"
+                  disabled={saving || loading}
+                  onClick={() => void handleActivateSignal()}
+                >
+                  {saving ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Navigation className="h-4 w-4" />
+                  )}
+                  Activer le signal
+                </Button>
               )}
               {lastSyncedLabel && (
                 <p className="mt-2 text-xs text-zinc-400">

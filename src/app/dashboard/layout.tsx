@@ -12,7 +12,7 @@ export default async function DashboardLayout({
     const user = await getAuthenticatedUser();
 
     if (!user) {
-      redirect("/login?redirectTo=/dashboard");
+      redirect("/login?next=/dashboard");
     }
   }
 

@@ -30,7 +30,7 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <Link href="/login?plan=annual" className="hidden sm:block">
+          <Link href="/login" className="hidden sm:block">
             <Button variant="ghost" size="sm">Connexion</Button>
           </Link>
           <Link href="/signup?plan=annual">
