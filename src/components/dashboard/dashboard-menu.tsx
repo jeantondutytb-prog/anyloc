@@ -4,13 +4,37 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { MapPin, Menu, Route, Smartphone, X } from "lucide-react";
+import {
+  CreditCard,
+  HelpCircle,
+  MapPin,
+  Menu,
+  Settings,
+  Smartphone,
+  X,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const MENU_ITEMS = [
-  { icon: MapPin, label: "Carte", href: "/dashboard" },
-  { icon: Smartphone, label: "Installation", href: "/dashboard/installation" },
-  { icon: Route, label: "Trajets", href: "/dashboard/routes" },
+type MenuItem = {
+  icon: typeof MapPin;
+  label: string;
+  href: string;
+};
+
+const MENU_SECTIONS: { items: MenuItem[] }[] = [
+  {
+    items: [
+      { icon: MapPin, label: "Carte", href: "/dashboard" },
+      { icon: Smartphone, label: "Installation", href: "/dashboard/installation" },
+    ],
+  },
+  {
+    items: [
+      { icon: Settings, label: "Paramètres", href: "/dashboard/settings" },
+      { icon: CreditCard, label: "Mon abonnement", href: "/dashboard/settings#abonnement" },
+      { icon: HelpCircle, label: "Aide", href: "/#faq" },
+    ],
+  },
 ];
 
 const menuPanel = {
@@ -22,7 +46,7 @@ const menuPanel = {
     transition: {
       duration: 0.22,
       ease: [0.16, 1, 0.3, 1] as const,
-      staggerChildren: 0.05,
+      staggerChildren: 0.04,
       delayChildren: 0.03,
     },
   },
@@ -42,6 +66,20 @@ const menuItem = {
     transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] as const },
   },
 };
+
+function isActive(pathname: string, href: string) {
+  const path = href.split("#")[0];
+
+  if (path === "/dashboard") {
+    return pathname === "/dashboard";
+  }
+
+  if (!path.startsWith("/dashboard")) {
+    return false;
+  }
+
+  return pathname.startsWith(path);
+}
 
 export function DashboardMenu() {
   const pathname = usePathname();
@@ -106,34 +144,37 @@ export function DashboardMenu() {
             animate="visible"
             exit="exit"
             variants={menuPanel}
-            className="absolute left-0 top-12 z-50 w-52 origin-top-left overflow-hidden rounded-2xl border border-zinc-200 bg-white/95 shadow-xl backdrop-blur-md"
+            className="absolute left-0 top-12 z-50 w-56 origin-top-left overflow-hidden rounded-2xl border border-zinc-200 bg-white/95 shadow-xl backdrop-blur-md"
           >
-            <motion.ul className="p-1.5" variants={menuPanel}>
-              {MENU_ITEMS.map((item) => {
-                const active =
-                  item.href === "/dashboard"
-                    ? pathname === "/dashboard"
-                    : pathname.startsWith(item.href);
+            {MENU_SECTIONS.map((section, sectionIndex) => (
+              <motion.ul
+                key={sectionIndex}
+                className={cn("p-1.5", sectionIndex > 0 && "border-t border-zinc-100")}
+                variants={menuPanel}
+              >
+                {section.items.map((item) => {
+                  const active = isActive(pathname, item.href);
 
-                return (
-                  <motion.li key={item.href} variants={menuItem}>
-                    <Link
-                      href={item.href}
-                      onClick={() => setOpen(false)}
-                      className={cn(
-                        "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-150",
-                        active
-                          ? "bg-pink-500/10 text-pink-600"
-                          : "text-zinc-700 hover:bg-zinc-50"
-                      )}
-                    >
-                      <item.icon className="h-4 w-4 shrink-0" />
-                      {item.label}
-                    </Link>
-                  </motion.li>
-                );
-              })}
-            </motion.ul>
+                  return (
+                    <motion.li key={item.href} variants={menuItem}>
+                      <Link
+                        href={item.href}
+                        onClick={() => setOpen(false)}
+                        className={cn(
+                          "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-150",
+                          active
+                            ? "bg-pink-500/10 text-pink-600"
+                            : "text-zinc-700 hover:bg-zinc-50"
+                        )}
+                      >
+                        <item.icon className="h-4 w-4 shrink-0" />
+                        {item.label}
+                      </Link>
+                    </motion.li>
+                  );
+                })}
+              </motion.ul>
+            ))}
           </motion.div>
         )}
       </AnimatePresence>

@@ -23,7 +23,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
-import { Logo } from "@/components/ui/logo";
 import { useDownloads } from "@/hooks/use-downloads";
 import { getCheckoutUrl } from "@/lib/constants";
 import { useDashboardOnboarding } from "@/hooks/use-dashboard-onboarding";
