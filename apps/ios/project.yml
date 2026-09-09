@@ -14,6 +14,10 @@ targets:
     platform: iOS
     sources:
       - Anyloc
+      - path: Vendor/idevice/module.modulemap
+        buildPhase: none
+      - path: Vendor/idevice/idevice.h
+        buildPhase: none
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.anyloc.app
@@ -22,6 +26,21 @@ targets:
         INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription: Anyloc maintient ta position fictive en arrière-plan.
         INFOPLIST_KEY_UIBackgroundModes:
           - location
+        LIBRARY_SEARCH_PATHS:
+          - $(inherited)
+          - $(PROJECT_DIR)/Vendor/idevice
+        OTHER_LDFLAGS:
+          - $(inherited)
+          - -lidevice_ffi
+          - -lc++
+          - -lz
+        SWIFT_INCLUDE_PATHS:
+          - $(inherited)
+          - $(PROJECT_DIR)/Vendor/idevice
+        HEADER_SEARCH_PATHS:
+          - $(inherited)
+          - $(PROJECT_DIR)/Vendor/idevice
+        ENABLE_BITCODE: NO
     info:
       path: Anyloc/Info.plist
       properties:
