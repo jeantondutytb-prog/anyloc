@@ -5,16 +5,10 @@ import dynamic from "next/dynamic";
 import { Loader2, MapPin, Play, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Logo } from "@/components/ui/logo";
-import {
-  DashboardSidebar,
-  DashboardSidebarToggle,
-  useDashboardSidebar,
-} from "@/components/dashboard/dashboard-sidebar";
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 import { useLocationSync } from "@/hooks/use-location-sync";
 import { SAVED_LOCATIONS } from "@/lib/constants";
 import type { Waypoint } from "@/lib/route-simulation";
-import { cn } from "@/lib/utils";
 
 const RouteMap = dynamic(() => import("@/components/dashboard/route-map"), {
   ssr: false,
@@ -26,7 +20,6 @@ const RouteMap = dynamic(() => import("@/components/dashboard/route-map"), {
 });
 
 export function RoutesView() {
-  const sidebar = useDashboardSidebar();
   const { location, loading, saving, error, saveLocation, reload } =
     useLocationSync({ pollIntervalMs: 5000 });
 
@@ -80,19 +73,9 @@ export function RoutesView() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-20 border-b border-zinc-200 bg-logo-background px-4 py-4 lg:hidden">
-        <Logo />
-      </header>
+      <DashboardPageHeader title="Trajets" />
 
-      <DashboardSidebarToggle open={sidebar.open} onOpen={sidebar.onOpen} />
-      <DashboardSidebar open={sidebar.open} onClose={sidebar.onClose} />
-
-      <main
-        className={cn(
-          "mx-auto max-w-5xl px-4 py-8 sm:px-6",
-          sidebar.open && "lg:ml-[392px]"
-        )}
-      >
+      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
         <h1 className="text-2xl font-bold text-zinc-900">Trajets simulés</h1>
         <p className="mt-2 text-sm text-zinc-600">
           Trace un parcours crédible entre deux points. Ta position avance
