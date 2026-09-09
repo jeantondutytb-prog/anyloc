@@ -26,20 +26,20 @@ export const ONBOARDING_STEP_ITEMS = [
     id: "install" as const,
     title: "Installe Anyloc sur ton téléphone",
     description:
-      "Suis le guide pas à pas — téléchargements et code de liaison inclus.",
+      "iPhone : Setup + USB une fois. Android : APK sur le téléphone.",
     cta: "Voir le guide",
   },
   {
     id: "chooseSpot" as const,
     title: "Choisis ta destination",
     description:
-      "Clique sur la carte ou prends un spot rapide (Marbella, Ibiza, Miami…).",
+      "Ouvre l'app Anyloc et cherche ta ville (Marbella, Paris, Miami…).",
   },
   {
     id: "activate" as const,
     title: "Active ton signal GPS",
     description:
-      "Un clic et ta position est synchronisée sur ton téléphone.",
+      "Appuie sur la destination dans l'app — le GPS se met à jour tout seul.",
   },
 ] as const;
 

@@ -262,8 +262,8 @@ function DeviceTokenStep({ platform }: { platform: Platform }) {
           <code className="mt-3 block break-all rounded-lg bg-white px-3 py-2 text-xs text-zinc-800">
             {createdToken.token}
           </code>
-          <p className="mt-2 text-xs text-pink-600/90">
-            Colle ce code dans Anyloc Setup tel quel (commence par{" "}
+          <p className="text-xs text-pink-600/90">
+            Colle ce code dans l&apos;app Anyloc sur ton téléphone (commence par{" "}
             <strong>anyloc_</strong>, sans « Bearer »).
           </p>
           <Button size="sm" className="mt-3" onClick={() => void copyToken()}>
@@ -299,10 +299,18 @@ function TroubleshootingAccordion({
 function IosGuide({ hasAccess }: { hasAccess: boolean }) {
   return (
     <div className="space-y-4">
-      <StepCard number={1} title="Télécharge et installe Anyloc Setup">
+      <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-900">
+        <p className="font-semibold">Ordinateur une seule fois</p>
+        <p className="mt-1">
+          Tu utilises ton Mac ou PC uniquement pour installer l&apos;app. Ensuite,
+          tu changes ta position directement depuis l&apos;app Anyloc.
+        </p>
+      </div>
+
+      <StepCard number={1} title="Télécharge Anyloc Setup">
         <p>
-          Sur ton Mac ou PC, télécharge Anyloc Setup — c&apos;est l&apos;outil qui
-          connecte ton iPhone et applique ta position GPS.
+          Sur ton Mac ou PC, télécharge Anyloc Setup — il installe l&apos;app
+          Anyloc sur ton iPhone via USB.
         </p>
         <DownloadButtons
           assetIds={["setup-mac", "setup-win"]}
@@ -360,30 +368,16 @@ function IosGuide({ hasAccess }: { hasAccess: boolean }) {
         <DeviceTokenStep platform="ios" />
       </StepCard>
 
-      <StepCard number={4} title="Applique la position GPS avec Anyloc Setup">
+      <StepCard number={4} title="Installe l'app et choisis ta destination">
         <ol className="list-decimal space-y-2 pl-5">
-          <li>Ouvre <strong>Anyloc Setup</strong> sur ton ordinateur</li>
-          <li>Colle ton <strong>code de liaison</strong></li>
-          <li>Clique sur <strong>Appliquer la position GPS</strong></li>
-          <li>Active la <strong>synchronisation auto</strong> pour suivre le dashboard</li>
+          <li>Dans <strong>Anyloc Setup</strong>, colle ton code et clique <strong>Installer l&apos;app iPhone</strong></li>
+          <li>Ouvre <strong>Anyloc</strong> sur ton iPhone, colle le même code</li>
+          <li>Cherche une ville (ex. Marbella) et appuie dessus — c&apos;est tout</li>
         </ol>
         <p className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-950">
-          L&apos;iPhone reste branché en USB. La position s&apos;applique sur toutes
-          tes apps (Instagram, Plans, etc.).
+          Tu peux débrancher le câble USB. Plus besoin de ton ordinateur pour
+          changer de position.
         </p>
-      </StepCard>
-
-      <StepCard number={5} title="Choisis ta destination sur la carte">
-        <p>
-          Retourne sur le dashboard, place un point (ex. Marbella) et clique sur
-          <strong> Activer le signal</strong>.
-        </p>
-        <Link href="/dashboard">
-          <Button>
-            Aller à la carte
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-        </Link>
       </StepCard>
     </div>
   );
@@ -392,6 +386,14 @@ function IosGuide({ hasAccess }: { hasAccess: boolean }) {
 function AndroidGuide({ hasAccess }: { hasAccess: boolean }) {
   return (
     <div className="space-y-4">
+      <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-900">
+        <p className="font-semibold">100 % depuis ton téléphone</p>
+        <p className="mt-1">
+          Pas besoin d&apos;ordinateur. Installe l&apos;APK, configure une fois,
+          puis change ta position dans l&apos;app Anyloc.
+        </p>
+      </div>
+
       <StepCard number={1} title="Télécharge et installe l'APK Anyloc">
         <p>
           Depuis ton Android, télécharge et installe l&apos;app — pas besoin
@@ -425,17 +427,12 @@ function AndroidGuide({ hasAccess }: { hasAccess: boolean }) {
         <DeviceTokenStep platform="android" />
       </StepCard>
 
-      <StepCard number={4} title="Choisis ta destination sur la carte">
+      <StepCard number={4} title="Choisis ta destination dans l'app">
         <p>
-          Lance Anyloc, colle le code de liaison, puis retourne sur le dashboard
-          pour choisir ta ville et cliquer sur <strong>Activer le signal</strong>.
+          Ouvre Anyloc, colle ton code, cherche une ville (ex. Marbella) et
+          appuie dessus pour activer le GPS. Tu changes de spot quand tu veux —
+          tout se fait depuis l&apos;app.
         </p>
-        <Link href="/dashboard">
-          <Button>
-            Aller à la carte
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-        </Link>
       </StepCard>
     </div>
   );

@@ -9,12 +9,12 @@
   <body>
     <main class="shell">
       <header class="hero">
-        <p class="badge">Anyloc Setup v0.2.4</p>
-        <h1>Applique ta position GPS sur iPhone</h1>
+        <p class="badge">Anyloc Setup v0.2.5</p>
+        <h1>Installe Anyloc sur ton iPhone</h1>
         <p class="subtitle">
-          Branche ton iPhone en USB, colle ton token depuis le dashboard, puis
-          applique Marbella (ou toute autre position) directement sur ton
-          téléphone.
+          Branche ton iPhone en USB une seule fois, installe l&apos;app, puis
+          change ta position directement depuis ton téléphone — sans repasser
+          par l&apos;ordi.
         </p>
       </header>
 
@@ -24,7 +24,8 @@
         <h2>1. Token appareil</h2>
         <p class="panel-copy">
           Génère un code sur
-          <strong>anyloc.io/dashboard/installation</strong>, puis colle-le ici.
+          <strong>anyloc.io/dashboard/installation</strong>, puis colle-le ici
+          et dans l&apos;app Anyloc sur ton iPhone.
         </p>
         <label class="field-label" for="device-token">Code de liaison</label>
         <input
@@ -60,13 +61,28 @@
       </section>
 
       <section class="panel highlight">
-        <h2>3. Appliquer la position GPS</h2>
+        <h2>3. Installer l&apos;app iPhone</h2>
         <p class="panel-copy">
-          Choisis ta ville sur le dashboard Anyloc, puis clique ci-dessous.
-          L'iPhone doit rester branché en USB pendant l'utilisation.
+          Clique ci-dessous pour installer l&apos;app Anyloc sur ton iPhone.
+          Ensuite, ouvre l&apos;app sur ton tel, colle ton code, et choisis ta
+          destination — tu n&apos;as plus besoin de l&apos;ordi.
         </p>
         <div class="actions">
-          <button id="apply-gps" type="button" disabled>
+          <button id="install-ios" type="button" disabled>
+            Installer l&apos;app iPhone
+          </button>
+        </div>
+        <p id="install-status" class="install-status"></p>
+      </section>
+
+      <section class="panel muted">
+        <h2>Mode avancé (USB)</h2>
+        <p class="panel-copy">
+          Si l&apos;app native n&apos;est pas encore installée, tu peux appliquer
+          la position GPS directement via USB en attendant.
+        </p>
+        <div class="actions">
+          <button id="apply-gps" type="button" class="secondary" disabled>
             Appliquer la position GPS
           </button>
           <button id="toggle-sync" type="button" class="secondary" disabled>
@@ -74,20 +90,6 @@
           </button>
         </div>
         <p id="gps-status" class="install-status"></p>
-      </section>
-
-      <section class="panel muted">
-        <h2>Installation native (optionnel)</h2>
-        <p class="panel-copy">
-          L'app iOS native n'est pas encore disponible. En attendant, la
-          simulation GPS via USB fonctionne avec Anyloc Setup.
-        </p>
-        <div class="actions">
-          <button id="install-ios" type="button" class="secondary" disabled>
-            Installer l'app iPhone
-          </button>
-        </div>
-        <p id="install-status" class="install-status"></p>
       </section>
 
       <section class="panel muted">
@@ -103,7 +105,7 @@
             sécurité)
           </li>
           <li>Token appareil généré depuis le dashboard Anyloc</li>
-          <li>Position activée sur la carte du dashboard</li>
+          <li>Abonnement Anyloc actif</li>
         </ul>
       </section>
     </main>

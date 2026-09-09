@@ -4,12 +4,17 @@ import Foundation
 final class AppState: ObservableObject {
     @Published var apiBaseUrl: String
     @Published var deviceToken: String
-    @Published var statusMessage = "Configure ton token depuis le dashboard."
+    @Published var statusMessage = "Configure ton token, puis choisis une ville."
     @Published var isSyncing = false
     @Published var lastLocation: RemoteLocation?
+    @Published var searchQuery = ""
+    @Published var searchResults: [GeocodeResult] = []
+    @Published var isSearching = false
+    @Published var isUpdatingLocation = false
 
     private let defaults = UserDefaults.standard
     private var syncTask: Task<Void, Never>?
+    private var searchTask: Task<Void, Never>?
 
     init() {
         apiBaseUrl = defaults.string(forKey: "apiBaseUrl") ?? "https://anyloc.io"
@@ -21,18 +26,125 @@ final class AppState: ObservableObject {
         defaults.set(deviceToken, forKey: "deviceToken")
     }
 
+    private var api: AnylocAPI? {
+        let token = deviceToken.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !token.isEmpty else {
+            return nil
+        }
+
+        return AnylocAPI(baseURL: apiBaseUrl, token: token)
+    }
+
     func testConnection() async {
+        guard let api else {
+            statusMessage = "Colle ton token appareil d'abord."
+            return
+        }
+
+        saveSettings()
         statusMessage = "Connexion en cours..."
 
         do {
-            let api = AnylocAPI(baseURL: apiBaseUrl, token: deviceToken)
             let location = try await api.fetchLocation()
             lastLocation = location
             statusMessage = location.isActive
                 ? "Connecté · \(location.name)"
-                : "Connecté · position en pause sur le dashboard"
+                : "Connecté · position en pause"
         } catch {
             statusMessage = "Échec : \(error.localizedDescription)"
+        }
+    }
+
+    func searchPlaces() {
+        searchTask?.cancel()
+
+        let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard query.count >= 2 else {
+            searchResults = []
+            return
+        }
+
+        searchTask = Task {
+            try? await Task.sleep(nanoseconds: 350_000_000)
+
+            guard !Task.isCancelled else {
+                return
+            }
+
+            isSearching = true
+            defer { isSearching = false }
+
+            do {
+                let api = AnylocAPI(baseURL: apiBaseUrl, token: deviceToken)
+                let results = try await api.searchPlaces(query: query)
+
+                guard !Task.isCancelled else {
+                    return
+                }
+
+                searchResults = results
+            } catch {
+                searchResults = []
+            }
+        }
+    }
+
+    func activateLocation(_ result: GeocodeResult) async {
+        guard let api else {
+            statusMessage = "Colle ton token appareil d'abord."
+            return
+        }
+
+        saveSettings()
+        isUpdatingLocation = true
+        statusMessage = "Activation de \(result.name)..."
+
+        defer { isUpdatingLocation = false }
+
+        do {
+            let location = try await api.updateLocation(
+                name: result.name,
+                lat: result.lat,
+                lng: result.lng,
+                isActive: true
+            )
+
+            lastLocation = location
+            searchQuery = result.name
+            searchResults = []
+            statusMessage = "Actif · \(location.name)"
+
+            if !isSyncing {
+                startSync()
+            } else {
+                await LocationSpoofService.shared.apply(location: location)
+            }
+        } catch {
+            statusMessage = "Erreur : \(error.localizedDescription)"
+        }
+    }
+
+    func pauseLocation() async {
+        guard let api, let current = lastLocation else {
+            return
+        }
+
+        isUpdatingLocation = true
+        defer { isUpdatingLocation = false }
+
+        do {
+            let location = try await api.updateLocation(
+                name: current.name,
+                lat: current.lat,
+                lng: current.lng,
+                isActive: false
+            )
+
+            lastLocation = location
+            statusMessage = "Position en pause"
+        } catch {
+            statusMessage = "Erreur : \(error.localizedDescription)"
         }
     }
 
@@ -54,7 +166,7 @@ final class AppState: ObservableObject {
                         await LocationSpoofService.shared.apply(location: location)
                         statusMessage = "Actif · \(location.name)"
                     } else {
-                        statusMessage = "En pause — active le signal sur le dashboard"
+                        statusMessage = "En pause"
                     }
                 } catch {
                     statusMessage = "Erreur sync : \(error.localizedDescription)"
