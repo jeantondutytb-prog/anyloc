@@ -174,8 +174,8 @@ export function DashboardView() {
         {error && (
           <div
             className={cn(
-              "absolute left-4 right-4 top-28 z-20 rounded-xl border border-red-200 bg-red-50/95 px-4 py-3 text-sm text-red-700 shadow-sm backdrop-blur-sm lg:top-20 lg:left-auto lg:right-[calc(380px+1rem)] lg:max-w-sm",
-              panelOpen && "lg:right-[calc(380px+1rem)]"
+              "absolute left-4 right-4 top-28 z-20 rounded-xl border border-red-200 bg-red-50/95 px-4 py-3 text-sm text-red-700 shadow-sm backdrop-blur-sm lg:top-20 lg:left-auto lg:right-[calc(392px+1rem)] lg:max-w-sm",
+              panelOpen && "lg:right-[calc(392px+1rem)]"
             )}
           >
             {error}
