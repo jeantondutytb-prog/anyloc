@@ -210,6 +210,21 @@ function runPython(scriptName, args = []) {
     });
 
     child.on("close", (code) => {
+      const trimmedStdout = stdout.trim();
+
+      if (trimmedStdout) {
+        try {
+          const parsed = JSON.parse(trimmedStdout);
+
+          if (parsed && typeof parsed === "object") {
+            resolve(parsed);
+            return;
+          }
+        } catch {
+          // fall through to generic handling
+        }
+      }
+
       if (code !== 0) {
         resolve({
           connected: false,
@@ -218,22 +233,19 @@ function runPython(scriptName, args = []) {
           deviceName: null,
           message:
             stderr.trim() ||
+            trimmedStdout ||
             "Impossible d'exécuter le script USB. Vérifie que pymobiledevice3 est installé.",
         });
         return;
       }
 
-      try {
-        resolve(JSON.parse(stdout.trim()));
-      } catch {
-        resolve({
-          connected: false,
-          ok: false,
-          udid: null,
-          deviceName: null,
-          message: "Réponse USB invalide.",
-        });
-      }
+      resolve({
+        connected: false,
+        ok: false,
+        udid: null,
+        deviceName: null,
+        message: "Réponse USB invalide.",
+      });
     });
   });
 }
@@ -305,6 +317,86 @@ async function detectUsbDevice() {
   }
 }
 
+async function fetchDashboardLocation({ token, apiBaseUrl }) {
+  const baseUrl = (apiBaseUrl || "https://anyloc.io").replace(/\/$/, "");
+  const url = `${baseUrl}/api/device/location`;
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token.trim()}`,
+        Accept: "application/json",
+      },
+    });
+
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        message:
+          payload.error ||
+          `Erreur API Anyloc (${response.status}). Vérifie ton token et ton abonnement.`,
+      };
+    }
+
+    return {
+      ok: true,
+      payload,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message: `Impossible de joindre l'API Anyloc : ${error.message}`,
+    };
+  }
+}
+
+function buildSimulateLocationArgs(action, udid, mode) {
+  const args = ["developer", "dvt", "simulate-location"];
+
+  if (mode === "native") {
+    args.push("--native");
+  } else {
+    args.push("--userspace");
+  }
+
+  if (udid) {
+    args.push("--udid", udid);
+  }
+
+  if (action.type === "clear") {
+    args.push("clear", "--");
+    return args;
+  }
+
+  args.push("set", "--", String(action.lat), String(action.lng));
+  return args;
+}
+
+async function runSimulateLocation(action, udid) {
+  const modes =
+    process.platform === "darwin" ? ["native", "userspace"] : ["userspace"];
+
+  let lastError = "Impossible d'appliquer la position GPS sur l'iPhone.";
+
+  for (const mode of modes) {
+    const args = buildSimulateLocationArgs(action, udid, mode);
+    const result = await runCli(args);
+
+    if (result.ok) {
+      return { ok: true };
+    }
+
+    lastError = (result.stderr || result.stdout || lastError).trim();
+  }
+
+  return {
+    ok: false,
+    message: lastError,
+  };
+}
+
 async function applyGpsLocation({ udid, token, apiBaseUrl }) {
   if (!token?.trim()) {
     return {
@@ -313,31 +405,65 @@ async function applyGpsLocation({ udid, token, apiBaseUrl }) {
     };
   }
 
-  const args = [
-    "--api-base-url",
-    apiBaseUrl || "https://anyloc.io",
-    "--token",
-    token.trim(),
-    "--userspace",
-  ];
+  const cli = resolvePymobiledevice3Cli();
 
-  if (udid) {
-    args.push("--udid", udid);
+  if (!cli) {
+    return {
+      ok: false,
+      message:
+        "pymobiledevice3 introuvable. Terminal : pip3 install pymobiledevice3 puis relance Anyloc Setup avec :\nPATH=\"/Library/Frameworks/Python.framework/Versions/3.14/bin:$PATH\" open -a \"Anyloc Setup\"",
+    };
   }
 
-  const result = await runPython("simulate_location.py", args);
+  const locationResult = await fetchDashboardLocation({ token, apiBaseUrl });
 
-  if (result.ok === false && result.message) {
-    return result;
+  if (!locationResult.ok) {
+    return locationResult;
   }
 
-  if (result.ok) {
-    return result;
+  const { location, device } = locationResult.payload;
+
+  if (!location?.isActive) {
+    const cleared = await runSimulateLocation({ type: "clear" }, udid);
+
+    if (!cleared.ok) {
+      return cleared;
+    }
+
+    return {
+      ok: true,
+      action: "cleared",
+      message:
+        "Le GPS du dashboard est désactivé. Active Marbella sur la carte puis réessaie.",
+      location,
+      device,
+    };
   }
+
+  const { lat, lng, name } = location;
+
+  if (lat == null || lng == null) {
+    return {
+      ok: false,
+      message:
+        "Aucune coordonnée GPS active. Va sur le dashboard, choisis Marbella et active le signal GPS.",
+    };
+  }
+
+  const applied = await runSimulateLocation({ type: "set", lat, lng }, udid);
+
+  if (!applied.ok) {
+    return applied;
+  }
+
+  const locationName = name || "Position choisie";
 
   return {
-    ok: false,
-    message: result.message || "Impossible d'appliquer la position GPS.",
+    ok: true,
+    action: "set",
+    message: `GPS appliqué : ${locationName} (${lat}, ${lng})`,
+    location,
+    device,
   };
 }
 

@@ -136,6 +136,7 @@ body {
   margin: 0 0 12px;
   color: #52525b;
   line-height: 1.45;
+  white-space: pre-wrap;
 }
 
 .gps-status.ok,

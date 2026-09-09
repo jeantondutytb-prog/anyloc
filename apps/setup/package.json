@@ -1,6 +1,6 @@
 {
   "name": "anyloc-setup",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "Anyloc Setup — installation iPhone via USB",
   "author": "Anyloc <contact@anyloc.io>",
