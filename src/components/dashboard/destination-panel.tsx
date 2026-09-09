@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { MapPin, X } from "lucide-react";
-import { LocationSearch } from "@/components/dashboard/location-search";
 import {
   filterSpotsByCategory,
   SPOT_CATEGORIES,
@@ -77,9 +76,12 @@ export function DestinationPanel({
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-4">
-          <LocationSearch onSelect={handleSelect} variant="panel" />
+          <p className="mb-4 text-sm text-zinc-500">
+            Choisis un spot ci-dessous ou utilise la barre de recherche en haut
+            de la carte.
+          </p>
 
-          <div className="mt-4 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {SPOT_CATEGORIES.map((item) => (
               <button
                 key={item.id}

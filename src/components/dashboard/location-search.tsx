@@ -17,7 +17,7 @@ export function LocationSearch({
   variant = "default",
 }: {
   onSelect: (location: Location) => void;
-  variant?: "default" | "panel";
+  variant?: "default" | "panel" | "top";
 }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<GeocodeResult[]>([]);
@@ -137,10 +137,12 @@ export function LocationSearch({
         onFocus={() => setOpen(true)}
         placeholder="Recherche une ville, plage, adresse…"
         className={cn(
-          "w-full rounded-2xl border py-3 pl-11 pr-4 text-sm text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-400 focus:border-pink-300 focus:ring-2 focus:ring-pink-200/50",
-          variant === "panel"
-            ? "border-zinc-200 bg-zinc-50"
-            : "border-zinc-200 bg-white"
+          "w-full rounded-2xl border pl-11 pr-4 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-pink-300 focus:ring-2 focus:ring-pink-200/50",
+          variant === "top"
+            ? "border-zinc-200/80 bg-white/95 py-2.5 shadow-lg backdrop-blur-md"
+            : variant === "panel"
+              ? "border-zinc-200 bg-zinc-50 py-3 shadow-sm"
+              : "border-zinc-200 bg-white py-3 shadow-sm"
         )}
         autoComplete="off"
       />
@@ -148,8 +150,8 @@ export function LocationSearch({
       {showDropdown && (
         <div
           className={cn(
-            "absolute z-30 mt-2 w-full overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-lg",
-            variant === "panel" && "max-h-64"
+            "absolute z-50 mt-2 w-full overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl",
+            (variant === "panel" || variant === "top") && "max-h-72"
           )}
         >
           {loading && (
