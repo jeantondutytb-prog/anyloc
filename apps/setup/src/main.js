@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
-const { detectUsbDevice, installIosApp } = require("./usb");
+const { detectUsbDevice, installIosApp, applyGpsLocation } = require("./usb");
 
 function createWindow() {
   const window = new BrowserWindow({
@@ -38,6 +38,14 @@ ipcMain.handle("setup:check-usb", async () => {
 ipcMain.handle("setup:install-ios", async (_event, payload) => {
   const udid = payload?.udid ?? null;
   return installIosApp({ udid });
+});
+
+ipcMain.handle("setup:apply-gps", async (_event, payload) => {
+  const udid = payload?.udid ?? null;
+  const token = payload?.token ?? "";
+  const apiBaseUrl = payload?.apiBaseUrl ?? "https://anyloc.io";
+
+  return applyGpsLocation({ udid, token, apiBaseUrl });
 });
 
 app.whenReady().then(() => {

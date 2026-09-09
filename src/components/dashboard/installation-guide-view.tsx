@@ -278,8 +278,8 @@ function IosGuide({ hasAccess }: { hasAccess: boolean }) {
     <div className="space-y-4">
       <StepCard number={1} title="Télécharge Anyloc Setup sur ton ordinateur">
         <p>
-          Choisis la version selon ton ordinateur. C&apos;est un logiciel léger
-          qui installe l&apos;app Anyloc sur ton iPhone via USB — une seule fois.
+          Choisis la version selon ton ordinateur. Anyloc Setup applique ta
+          position GPS (Marbella, Paris, etc.) sur ton iPhone via USB.
         </p>
         <DownloadButtons
           assetIds={["setup-mac", "setup-win"]}
@@ -360,40 +360,14 @@ function IosGuide({ hasAccess }: { hasAccess: boolean }) {
         </p>
       </StepCard>
 
-      <StepCard number={4} title="Installe LocalDevVPN (recommandé)">
-        <p>
-          Cette app gratuite permet de renouveler Anyloc sans rebrancher ton
-          ordinateur à chaque mise à jour.
-        </p>
-        <a
-          href="https://apps.apple.com/app/localdevvpn/id6446805484"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Button variant="secondary">
-            <ExternalLink className="h-4 w-4" />
-            Télécharger LocalDevVPN sur l&apos;App Store
-          </Button>
-        </a>
-      </StepCard>
-
-      <StepCard number={5} title="Lance l'installation avec Anyloc Setup">
-        <ol className="list-decimal space-y-2 pl-5">
-          <li>Ouvre <strong>Anyloc Setup</strong> sur ton ordinateur</li>
-          <li>Attends que ton iPhone soit détecté (quelques secondes)</li>
-          <li>Clique sur <strong>Installer</strong> et suis les instructions</li>
-          <li>L&apos;app Anyloc apparaît sur ton iPhone en ~2 minutes</li>
-        </ol>
-      </StepCard>
-
-      <StepCard number={6} title="Lie ton iPhone à ton compte">
+      <StepCard number={4} title="Génère ton code de liaison">
         <DeviceTokenStep platform="ios" />
       </StepCard>
 
-      <StepCard number={7} title="Choisis ta position sur la carte">
+      <StepCard number={5} title="Choisis ta position sur la carte">
         <p>
-          Retourne sur le dashboard, place un point sur la carte et active le
-          signal GPS. Ton iPhone suivra cette position.
+          Sur le dashboard, place un point sur la carte (ex. Marbella) et
+          active le signal GPS.
         </p>
         <Link href="/dashboard">
           <Button>
@@ -401,6 +375,32 @@ function IosGuide({ hasAccess }: { hasAccess: boolean }) {
             <ArrowRight className="h-4 w-4" />
           </Button>
         </Link>
+      </StepCard>
+
+      <StepCard number={6} title="Applique la position GPS avec Anyloc Setup">
+        <ol className="list-decimal space-y-2 pl-5">
+          <li>Ouvre <strong>Anyloc Setup</strong> sur ton ordinateur</li>
+          <li>Colle ton <strong>code de liaison</strong> généré à l&apos;étape 4</li>
+          <li>Attends que ton iPhone soit détecté en USB</li>
+          <li>Clique sur <strong>Appliquer la position GPS</strong></li>
+          <li>Active la <strong>synchronisation auto</strong> pour suivre les changements du dashboard</li>
+        </ol>
+        <p className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-950">
+          L&apos;iPhone doit rester branché en USB pendant l&apos;utilisation.
+          La position s&apos;applique sur toutes les apps (Instagram, Plans, etc.).
+        </p>
+      </StepCard>
+
+      <StepCard number={7} title="Installe les outils USB sur ton Mac">
+        <p>
+          Si Anyloc Setup ne détecte pas ton iPhone, ouvre le Terminal et lance :
+        </p>
+        <code className="block break-all rounded-lg bg-zinc-100 px-3 py-2 text-xs text-zinc-800">
+          pip3 install pymobiledevice3
+        </code>
+        <p className="mt-3 text-xs text-zinc-500">
+          Puis relance Anyloc Setup et clique sur Revérifier.
+        </p>
       </StepCard>
     </div>
   );
