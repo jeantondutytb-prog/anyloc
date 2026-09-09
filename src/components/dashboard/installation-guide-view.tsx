@@ -533,8 +533,9 @@ export function InstallationGuideView() {
             Installe Anyloc sur ton téléphone
           </h1>
           <p className="mt-3 text-zinc-600">
-            Tout est ici, étape par étape. Choisis ton téléphone, suis les
-            instructions dans l&apos;ordre, et tu seras prêt en quelques minutes.
+            Suis les étapes une par une, dans l&apos;ordre. Chaque bouton est sur
+            cette page. Si tu bloques, reviens sur la carte — les instructions
+            simples sont aussi en bas.
           </p>
 
           <div className="mt-8 flex gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 p-1.5">

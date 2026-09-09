@@ -123,16 +123,6 @@ export function DashboardView() {
     [persistLocation, phoneOnline]
   );
 
-  const handlePreviewLocation = useCallback(
-    (nextLocation: { name: string; lat: number; lng: number }) => {
-      if (!phoneOnline) {
-        return;
-      }
-
-      void handleSelectLocation(nextLocation);
-    },
-    [handleSelectLocation, phoneOnline]
-  );
 
   const handleToggleLocation = useCallback(async () => {
     if (active) {
