@@ -44,13 +44,8 @@ export function Footer() {
             <h4 className="text-sm font-medium text-zinc-900">Installation</h4>
             <ul className="mt-4 space-y-2 text-sm text-zinc-500">
               <li>
-                <Link href="/setup/ios" className="hover:text-zinc-900">
-                  Guide iOS
-                </Link>
-              </li>
-              <li>
-                <Link href="/setup/android" className="hover:text-zinc-900">
-                  Guide Android
+                <Link href="/dashboard/installation" className="hover:text-zinc-900">
+                  Guide d&apos;installation
                 </Link>
               </li>
             </ul>
