@@ -1,4 +1,5 @@
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
+import { refineLocationPayload } from "@/lib/coordinate-refinement";
 import {
   DEFAULT_LOCATION,
   mapLocationRow,
@@ -15,6 +16,7 @@ export async function upsertLocationForUser(
     throw new Error("Configuration serveur incomplète.");
   }
 
+  const refinedPayload = await refineLocationPayload(payload);
   const admin = createAdminClient();
   const { data: existing } = await admin
     .from("location_settings")
@@ -22,12 +24,12 @@ export async function upsertLocationForUser(
     .eq("user_id", userId)
     .maybeSingle();
 
-  const activating = payload.isActive === true;
-  const switchingToRoute = payload.mode === "route";
+  const activating = refinedPayload.isActive === true;
+  const switchingToRoute = refinedPayload.mode === "route";
   const shouldStartRoute =
     switchingToRoute &&
     activating &&
-    (payload.resetRoute ||
+    (refinedPayload.resetRoute ||
       !existing?.route_started_at ||
       existing.mode !== "route" ||
       !existing.is_active);
@@ -44,14 +46,14 @@ export async function upsertLocationForUser(
     .upsert(
       {
         user_id: userId,
-        name: payload.name,
-        lat: payload.lat,
-        lng: payload.lng,
-        accuracy: payload.accuracy ?? DEFAULT_LOCATION.accuracy,
-        is_active: payload.isActive ?? false,
-        mode: payload.mode ?? "static",
-        route_waypoints: payload.waypoints ?? null,
-        route_speed_kmh: payload.speedKmh ?? 40,
+        name: refinedPayload.name,
+        lat: refinedPayload.lat,
+        lng: refinedPayload.lng,
+        accuracy: refinedPayload.accuracy ?? DEFAULT_LOCATION.accuracy,
+        is_active: refinedPayload.isActive ?? false,
+        mode: refinedPayload.mode ?? "static",
+        route_waypoints: refinedPayload.waypoints ?? null,
+        route_speed_kmh: refinedPayload.speedKmh ?? 40,
         route_started_at: routeStartedAt,
         updated_at: new Date().toISOString(),
       },

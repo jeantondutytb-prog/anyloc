@@ -85,12 +85,20 @@ export function DashboardView() {
       setActive(true);
 
       try {
-        await saveLocation({
+        const saved = await saveLocation({
           name: nextLocation.name,
           lat: nextLocation.lat,
           lng: nextLocation.lng,
           isActive: true,
         });
+
+        if (saved) {
+          setSelected({
+            name: saved.name,
+            lat: saved.lat,
+            lng: saved.lng,
+          });
+        }
       } catch {
         setActive(false);
       }

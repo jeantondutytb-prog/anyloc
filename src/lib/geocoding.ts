@@ -1,3 +1,5 @@
+import { isWaterFeature, scorePhotonFeature } from "@/lib/coordinate-refinement";
+
 export type GeocodeResult = {
   id: string;
   name: string;
@@ -13,7 +15,10 @@ type PhotonFeature = {
   properties: {
     osm_id?: number;
     osm_type?: string;
+    osm_key?: string;
+    osm_value?: string;
     name?: string;
+    street?: string;
     city?: string;
     state?: string;
     country?: string;
@@ -51,8 +56,17 @@ export function parsePhotonResponse(data: PhotonResponse): GeocodeResult[] {
 
   const seen = new Set<string>();
 
-  return data.features
-    .map((feature) => {
+  const ranked = data.features
+    .filter((feature) => !isWaterFeature(feature.properties))
+    .map((feature) => ({
+      feature,
+      score: scorePhotonFeature(feature.properties),
+    }))
+    .filter((entry) => entry.score > 0)
+    .sort((a, b) => b.score - a.score);
+
+  return ranked
+    .map(({ feature }) => {
       const [lng, lat] = feature.geometry.coordinates;
       const name = feature.properties.name?.trim();
 

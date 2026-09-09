@@ -10,11 +10,13 @@ export async function GET(request: Request) {
 
   const url = new URL("https://photon.komoot.io/api/");
   url.searchParams.set("q", query);
-  url.searchParams.set("limit", "8");
+  url.searchParams.set("limit", "12");
   url.searchParams.set("lang", "fr");
-  url.searchParams.set("layer", "city");
+  url.searchParams.set("layer", "house");
+  url.searchParams.append("layer", "street");
   url.searchParams.append("layer", "locality");
   url.searchParams.append("layer", "district");
+  url.searchParams.append("layer", "city");
   url.searchParams.append("layer", "county");
 
   try {
