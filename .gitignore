@@ -51,3 +51,6 @@ apps/android/local.properties
 apps/android/keystore.properties
 apps/android/*.keystore
 dist/
+
+# iOS vendor binaries (compiled locally, too large for Git)
+apps/ios/Vendor/idevice/*.a
