@@ -15,9 +15,11 @@ type Location = {
 export function LocationSearch({
   onSelect,
   variant = "default",
+  disabled = false,
 }: {
   onSelect: (location: Location) => void;
   variant?: "default" | "panel" | "top";
+  disabled?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<GeocodeResult[]>([]);
@@ -130,19 +132,29 @@ export function LocationSearch({
       <input
         type="search"
         value={query}
+        disabled={disabled}
         onChange={(event) => {
           setQuery(event.target.value);
           setOpen(true);
         }}
-        onFocus={() => setOpen(true)}
-        placeholder="Recherche une ville, plage, adresse…"
+        onFocus={() => {
+          if (!disabled) {
+            setOpen(true);
+          }
+        }}
+        placeholder={
+          disabled
+            ? "Connecte ton téléphone pour choisir une ville…"
+            : "Recherche une ville, plage, adresse…"
+        }
         className={cn(
           "w-full rounded-2xl border pl-11 pr-4 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-pink-300 focus:ring-2 focus:ring-pink-200/50",
           variant === "top"
             ? "border-zinc-200/80 bg-white/95 py-2.5 shadow-lg backdrop-blur-md"
             : variant === "panel"
               ? "border-zinc-200 bg-zinc-50 py-3 shadow-sm"
-              : "border-zinc-200 bg-white py-3 shadow-sm"
+              : "border-zinc-200 bg-white py-3 shadow-sm",
+          disabled && "cursor-not-allowed opacity-60"
         )}
         autoComplete="off"
       />

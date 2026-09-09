@@ -5,7 +5,7 @@ import Foundation
 final class AppState: ObservableObject {
     @Published var apiBaseUrl: String
     @Published var deviceToken: String
-    @Published var statusMessage = "Configure ton token, puis choisis une ville."
+    @Published var statusMessage = "Colle ton code depuis le dashboard, puis laisse l'app ouverte."
     @Published var isSyncing = false
     @Published var lastLocation: RemoteLocation?
     @Published var searchQuery = ""
@@ -44,6 +44,16 @@ final class AppState: ObservableObject {
     func saveSettings() {
         defaults.set(apiBaseUrl, forKey: "apiBaseUrl")
         defaults.set(deviceToken, forKey: "deviceToken")
+        autoStartIfConfigured()
+    }
+
+    func autoStartIfConfigured() {
+        let token = deviceToken.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !token.isEmpty, !isSyncing else {
+            return
+        }
+
+        startSync()
     }
 
     func importPairing(from url: URL) {

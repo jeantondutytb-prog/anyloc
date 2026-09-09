@@ -75,11 +75,21 @@ class MainActivity : AppCompatActivity() {
 
         requestLocationPermissionIfNeeded()
         refreshCurrentLocation()
+        ensureSpoofingRunning()
     }
 
     override fun onResume() {
         super.onResume()
         refreshCurrentLocation()
+        ensureSpoofingRunning()
+    }
+
+    private fun ensureSpoofingRunning() {
+        val credentials = readCredentials() ?: return
+
+        persistCredentials(credentials.first, credentials.second)
+        MockLocationService.start(this, credentials.first, credentials.second)
+        statusText.text = "En attente d'une position depuis le dashboard…"
     }
 
     private fun scheduleSearch(query: String) {
@@ -278,8 +288,9 @@ class MainActivity : AppCompatActivity() {
                 statusText.text = if (location.isActive) {
                     "Connecté · ${location.name}"
                 } else {
-                    "Connecté · position en pause"
+                    "Connecté · en attente d'une position depuis le dashboard"
                 }
+                ensureSpoofingRunning()
             }
         }.start()
     }
