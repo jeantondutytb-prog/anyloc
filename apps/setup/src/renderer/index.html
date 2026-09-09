@@ -9,24 +9,37 @@
   <body>
     <main class="shell">
       <header class="hero">
-        <p class="badge">Anyloc Setup v0.3.0</p>
+        <p class="badge">Anyloc Setup</p>
         <h1>Installe Anyloc sur ton iPhone</h1>
         <p class="subtitle">
-          Branche ton iPhone en USB une seule fois pour installer l&apos;app.
-          Ensuite, tout se fait depuis ton iPhone — position et renouvellement
-          via LocalDevVPN, sans repasser par l&apos;ordi.
+          Une seule fois avec ton ordinateur. Après, tu changes ta position
+          directement sur le site — plus besoin de rebrancher le câble.
         </p>
       </header>
 
       <section class="steps" id="steps"></section>
 
       <section class="panel highlight">
-        <h2>1. Token appareil</h2>
+        <h2>Tout faire d&apos;un coup</h2>
         <p class="panel-copy">
-          Ton code arrive automatiquement depuis le dashboard (bouton « Ouvrir Setup »).
-          Sinon, génère-le sur <strong>anyloc.io/dashboard</strong>.
+          Branche ton iPhone, puis clique ci-dessous. Le programme installe
+          l&apos;app et connecte ton téléphone à ton compte.
         </p>
-        <label class="field-label" for="device-token">Code de liaison</label>
+        <div class="actions">
+          <button id="full-setup" type="button">
+            Installer et connecter mon iPhone
+          </button>
+        </div>
+        <p id="install-status" class="install-status"></p>
+      </section>
+
+      <section class="panel">
+        <h2>Ton mot de passe (rempli tout seul)</h2>
+        <p class="panel-copy">
+          Clique « Ouvrir le programme » sur le site anyloc.io — ce champ se
+          remplit automatiquement. Tu n&apos;as normalement rien à copier.
+        </p>
+        <label class="field-label" for="device-token">Mot de passe Anyloc</label>
         <input
           id="device-token"
           class="text-input"
@@ -35,11 +48,7 @@
           autocomplete="off"
           spellcheck="false"
         />
-        <p class="field-hint">
-          Copie uniquement le code qui commence par <strong>anyloc_</strong>
-          (sans « Bearer »).
-        </p>
-        <label class="field-label" for="api-base-url">URL API</label>
+        <label class="field-label" for="api-base-url">Adresse du site</label>
         <input
           id="api-base-url"
           class="text-input"
@@ -50,7 +59,7 @@
       </section>
 
       <section class="panel">
-        <h2>2. État USB</h2>
+        <h2>Mon iPhone est-il branché ?</h2>
         <p id="usb-status" class="usb-status">Vérification en cours...</p>
         <div class="actions">
           <button id="refresh-usb" type="button" class="secondary">
@@ -60,29 +69,16 @@
       </section>
 
       <section class="panel highlight">
-        <h2>3. Installer l&apos;app iPhone</h2>
+        <h2>Étape par étape (si besoin)</h2>
         <p class="panel-copy">
-          Clique ci-dessous pour installer l&apos;app Anyloc sur ton iPhone.
-          Ensuite, ouvre l&apos;app sur ton tel, colle ton code, et choisis ta
-          destination — tu n&apos;as plus besoin de l&apos;ordi.
+          Si le bouton du haut ne marche pas, fais les deux étapes séparément.
         </p>
         <div class="actions">
           <button id="install-ios" type="button" disabled>
-            Installer l&apos;app iPhone
+            Installer l&apos;app sur mon iPhone
           </button>
-        </div>
-        <p id="install-status" class="install-status"></p>
-      </section>
-
-      <section class="panel highlight">
-        <h2>4. Envoyer le pairing</h2>
-        <p class="panel-copy">
-          Le pairing est envoyé au serveur Anyloc. Ouvre ensuite Anyloc sur ton
-          iPhone : il sera récupéré automatiquement.
-        </p>
-        <div class="actions">
           <button id="export-pairing" type="button" disabled>
-            Envoyer le pairing à ton iPhone
+            Connecter mon iPhone à Anyloc
           </button>
         </div>
         <p id="pairing-export-status" class="install-status"></p>
@@ -97,36 +93,18 @@
       </section>
 
       <section class="panel muted">
-        <h2>Secours USB (optionnel)</h2>
-        <p class="panel-copy">
-          Uniquement si l&apos;installation de l&apos;app échoue : applique la
-          position GPS directement via USB en attendant.
-        </p>
-        <div class="actions">
-          <button id="apply-gps" type="button" class="secondary" disabled>
-            Appliquer la position GPS
-          </button>
-          <button id="toggle-sync" type="button" class="secondary" disabled>
-            Synchronisation auto : off
-          </button>
-        </div>
-        <p id="gps-status" class="install-status"></p>
-      </section>
-
-      <section class="panel muted">
-        <h2>Prérequis</h2>
+        <h2>Ça bloque ?</h2>
         <ul class="checklist">
+          <li>iPhone branché avec le câble + « Faire confiance » accepté</li>
           <li>
-            Outils USB Mac :
-            <code>pip3 install pymobiledevice3</code>
+            Mode développeur activé : Réglages → Confidentialité et sécurité →
+            Mode développeur
           </li>
-          <li>iPhone branché + « Faire confiance à cet ordinateur »</li>
           <li>
-            Mode développeur (après connexion USB, en bas de Confidentialité et
-            sécurité)
+            Sur Mac seulement, si l&apos;iPhone n&apos;est pas détecté, ouvre le
+            Terminal et tape : <code>pip3 install pymobiledevice3</code>
           </li>
-          <li>Token appareil généré depuis le dashboard Anyloc</li>
-          <li>Abonnement Anyloc actif</li>
+          <li>Tu as cliqué « Ouvrir le programme » sur le site avant</li>
         </ul>
       </section>
     </main>

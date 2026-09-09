@@ -18,11 +18,13 @@ type Location = {
 type DestinationSidebarProps = {
   selectedName?: string;
   onSelect: (location: Location) => void;
+  disabled?: boolean;
 };
 
 export function DestinationSidebar({
   selectedName,
   onSelect,
+  disabled = false,
 }: DestinationSidebarProps) {
   const [category, setCategory] = useState<SpotCategory>("all");
   const spots = useMemo(() => filterSpotsByCategory(category), [category]);
@@ -35,7 +37,9 @@ export function DestinationSidebar({
         </p>
         <h2 className="text-lg font-bold text-zinc-900">Où veux-tu être ?</h2>
         <p className="mt-1 text-sm text-zinc-500">
-          Choisis un spot ou cherche une adresse en haut.
+          {disabled
+            ? "Installe d'abord l'app sur ton téléphone (en bas) — ensuite tu pourras cliquer ici."
+            : "Clique sur une ville, puis appuie sur « Changer ma loc » en bas."}
         </p>
       </div>
 
@@ -67,6 +71,7 @@ export function DestinationSidebar({
             <li key={spot.name}>
               <button
                 type="button"
+                disabled={disabled}
                 onClick={() =>
                   onSelect({
                     name: spot.name,
@@ -76,9 +81,12 @@ export function DestinationSidebar({
                 }
                 className={cn(
                   "flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors",
-                  isSelected
+                  disabled && "cursor-not-allowed opacity-50",
+                  !disabled && isSelected
                     ? "bg-pink-50 ring-1 ring-pink-200"
-                    : "hover:bg-zinc-50"
+                    : !disabled
+                      ? "hover:bg-zinc-50"
+                      : ""
                 )}
               >
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-lg">

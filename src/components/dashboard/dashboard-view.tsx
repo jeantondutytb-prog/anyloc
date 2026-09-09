@@ -112,22 +112,7 @@ export function DashboardView() {
     [saveLocation]
   );
 
-  const handlePreviewLocation = useCallback(
-    (nextLocation: { name: string; lat: number; lng: number }) => {
-      if (!phoneOnline) {
-        return;
-      }
-
-      setSelected(nextLocation);
-
-      if (active) {
-        void persistLocation(nextLocation, true);
-      }
-    },
-    [active, persistLocation, phoneOnline]
-  );
-
-  const handleSelectFromSearch = useCallback(
+  const handleSelectLocation = useCallback(
     async (nextLocation: { name: string; lat: number; lng: number }) => {
       if (!phoneOnline) {
         return;
@@ -136,6 +121,17 @@ export function DashboardView() {
       await persistLocation(nextLocation, true);
     },
     [persistLocation, phoneOnline]
+  );
+
+  const handlePreviewLocation = useCallback(
+    (nextLocation: { name: string; lat: number; lng: number }) => {
+      if (!phoneOnline) {
+        return;
+      }
+
+      void handleSelectLocation(nextLocation);
+    },
+    [handleSelectLocation, phoneOnline]
   );
 
   const handleToggleLocation = useCallback(async () => {
@@ -177,17 +173,18 @@ export function DashboardView() {
   const canPickLocation = phoneOnline;
   const statusLabel = active
     ? phoneOnline
-      ? "GPS actif sur ton téléphone"
-      : "Position enregistrée · en attente du tel"
+      ? "Ta fausse position est allumée sur ton téléphone"
+      : "Position enregistrée — ouvre l'app Anyloc sur ton tel"
     : phoneOnline
-      ? "Prêt · choisis une ville"
-      : "Connecte ton téléphone d'abord";
+      ? "Choisis où tu veux apparaître"
+      : "Commence par installer l'app sur ton téléphone (en bas)";
 
   return (
     <div className="flex h-[100dvh] overflow-hidden bg-background">
       <DestinationSidebar
         selectedName={selected.name}
-        onSelect={handlePreviewLocation}
+            onSelect={handleSelectLocation}
+        disabled={!canPickLocation}
       />
 
       <div className="relative min-w-0 flex-1">
@@ -198,7 +195,7 @@ export function DashboardView() {
               <LocationSearch
                 ref={locationSearchRef}
                 variant="top"
-                onSelect={handleSelectFromSearch}
+                onSelect={handleSelectLocation}
                 disabled={!canPickLocation}
               />
             </div>
@@ -222,7 +219,7 @@ export function DashboardView() {
         <div className="absolute inset-0 z-0">
           <LocationMap
             selected={selected}
-            onSelect={handlePreviewLocation}
+            onSelect={handleSelectLocation}
             active={active}
             fullScreen
           />
@@ -272,7 +269,7 @@ export function DashboardView() {
                     </p>
                     {lastSyncedLabel && (
                       <p className="mt-0.5 text-xs text-zinc-400">
-                        Sync {lastSyncedLabel}
+                        Dernière mise à jour : {lastSyncedLabel}
                       </p>
                     )}
                   </div>
@@ -282,17 +279,17 @@ export function DashboardView() {
                   className="w-full"
                   variant={active ? "secondary" : "default"}
                   onClick={() => void handleToggleLocation()}
-                  disabled={saving}
+                  disabled={saving || !phoneOnline}
                 >
                   {active ? (
                     <>
                       <MapPinOff className="h-4 w-4" />
-                      Arrêter de fake ma loc
+                      Arrêter — revenir à ma vraie position
                     </>
                   ) : (
                     <>
                       <MapPin className="h-4 w-4" />
-                      Changer ma loc
+                      Clique une ville à gauche pour t&apos;y téléporter
                     </>
                   )}
                 </Button>

@@ -1,28 +1,23 @@
 const STEPS = [
   {
-    title: "Installe les outils USB sur ton Mac",
+    title: "Branche ton iPhone avec le câble",
     description:
-      "Terminal : pip3 install pymobiledevice3 — puis Revérifier dans Anyloc Setup.",
+      "Sur l'iPhone, appuie sur « Faire confiance » quand ça s'affiche.",
   },
   {
-    title: "Branche ton iPhone en USB",
+    title: "Active le mode développeur sur l'iPhone",
     description:
-      "Accepte « Faire confiance à cet ordinateur » sur l'écran du téléphone.",
+      "Réglages → Confidentialité et sécurité → tout en bas → Mode développeur → ON → redémarre si demandé.",
   },
   {
-    title: "Active le mode développeur",
+    title: "Installe l'app Anyloc sur ton iPhone",
     description:
-      "Réglages → Confidentialité et sécurité → tout en bas → Mode développeur.",
+      "Clique « Installer l'app sur mon iPhone » ci-dessous. Ton mot de passe est déjà rempli.",
   },
   {
-    title: "Installe l'app et configure ton token",
+    title: "Connecte ton iPhone à ton compte Anyloc",
     description:
-      "Installe l'app Anyloc via Setup, colle ton code dans l'app, puis choisis ta ville directement sur ton iPhone.",
-  },
-  {
-    title: "Envoie le pairing",
-    description:
-      "Envoie le RPPairing au serveur Anyloc depuis Setup. Anyloc sur ton iPhone le récupère automatiquement.",
+      "Clique « Connecter mon iPhone à Anyloc ». Ensuite, scanne le carré sur le site avec l'appareil photo.",
   },
 ];
 
@@ -106,16 +101,21 @@ function restoreSettings() {
 function updateActionButtons() {
   const installButton = document.getElementById("install-ios");
   const exportPairingButton = document.getElementById("export-pairing");
-  const applyButton = document.getElementById("apply-gps");
-  const syncButton = document.getElementById("toggle-sync");
+  const fullSetupButton = document.getElementById("full-setup");
   const hasToken = Boolean(getTokenValue());
   const usbReady = Boolean(lastUsbState?.connected);
 
-  installButton.disabled = !usbReady || !lastUsbState?.installReady;
-  exportPairingButton.disabled = !usbReady || !hasToken;
-  applyButton.disabled = !usbReady || !hasToken;
-  syncButton.disabled = !usbReady || !hasToken;
-  syncButton.textContent = `Synchronisation auto : ${syncEnabled ? "on" : "off"}`;
+  if (installButton) {
+    installButton.disabled = !usbReady || !lastUsbState?.installReady;
+  }
+
+  if (exportPairingButton) {
+    exportPairingButton.disabled = !usbReady || !hasToken;
+  }
+
+  if (fullSetupButton) {
+    fullSetupButton.disabled = !usbReady || !hasToken || !lastUsbState?.installReady;
+  }
 }
 
 async function refreshUsbStatus() {
@@ -149,11 +149,40 @@ async function refreshUsbStatus() {
   updateActionButtons();
 }
 
+async function runFullSetup() {
+  if (!lastUsbState?.connected) {
+    setStatus("install-status", "Branche ton iPhone avec le câble d'abord.", "error");
+    return;
+  }
+
+  if (!getTokenValue()) {
+    setStatus(
+      "install-status",
+      "Ouvre Anyloc sur ton ordi depuis le site — ton mot de passe sera rempli tout seul.",
+      "error"
+    );
+    return;
+  }
+
+  setStatus("install-status", "Installation en cours…");
+  const installResult = await window.anylocSetup.installIos({
+    udid: lastUsbState.udid,
+  });
+
+  if (!installResult.ok) {
+    setStatus("install-status", installResult.message, "error");
+    return;
+  }
+
+  setStatus("install-status", installResult.message, "ok");
+  await exportPairing();
+}
+
 async function exportPairing() {
   if (!lastUsbState?.connected) {
     setStatus(
       "pairing-export-status",
-      "Branche un iPhone en USB avant d'envoyer le pairing.",
+      "Branche ton iPhone avec le câble d'abord.",
       "error"
     );
     return;
@@ -162,13 +191,13 @@ async function exportPairing() {
   if (!getTokenValue()) {
     setStatus(
       "pairing-export-status",
-      "Colle ton token appareil avant d'envoyer le pairing.",
+      "Ouvre Anyloc depuis le site pour remplir ton mot de passe automatiquement.",
       "error"
     );
     return;
   }
 
-  setStatus("pairing-export-status", "Pairing en cours...");
+  setStatus("pairing-export-status", "Connexion en cours…");
   document.getElementById("save-pairing-local").hidden = true;
   lastPairingSourcePath = null;
   lastPairingUdid = null;
@@ -186,7 +215,7 @@ async function exportPairing() {
     lastPairingUdid = result.udid;
     setStatus(
       "pairing-export-status",
-      "Pairing envoyé ! Ouvre Anyloc sur ton iPhone, il sera récupéré automatiquement.",
+      "C'est bon ! Scanne maintenant le carré sur le site avec l'appareil photo de ton iPhone.",
       "ok"
     );
     document.getElementById("save-pairing-local").hidden = false;
@@ -340,7 +369,7 @@ function applyLaunchConfig(config) {
   updateActionButtons();
   setStatus(
     "install-status",
-    "Code reçu depuis le dashboard — branche ton iPhone puis installe l'app.",
+    "Mot de passe reçu depuis le site — branche ton iPhone puis installe l'app.",
     "ok"
   );
 }
@@ -367,20 +396,16 @@ async function init() {
     void installIos();
   });
 
+  document.getElementById("full-setup").addEventListener("click", () => {
+    void runFullSetup();
+  });
+
   document.getElementById("export-pairing").addEventListener("click", () => {
     void exportPairing();
   });
 
   document.getElementById("save-pairing-local").addEventListener("click", () => {
     void savePairingLocalCopy();
-  });
-
-  document.getElementById("apply-gps").addEventListener("click", () => {
-    void applyGps();
-  });
-
-  document.getElementById("toggle-sync").addEventListener("click", () => {
-    toggleSync();
   });
 
   document.getElementById("device-token").addEventListener("input", () => {
