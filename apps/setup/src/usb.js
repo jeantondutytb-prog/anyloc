@@ -1,13 +1,48 @@
 const { spawn } = require("node:child_process");
+const fs = require("node:fs");
 const path = require("node:path");
 
-const SCRIPTS_DIR = path.join(__dirname, "..", "scripts");
+function getScriptsDir() {
+  try {
+    const { app } = require("electron");
+
+    if (app.isPackaged) {
+      return path.join(process.resourcesPath, "scripts");
+    }
+  } catch {
+    // electron not loaded yet — fall back to dev path
+  }
+
+  return path.join(__dirname, "..", "scripts");
+}
+
+function getIpaPath() {
+  try {
+    const { app } = require("electron");
+
+    if (app.isPackaged) {
+      const bundled = path.join(process.resourcesPath, "Anyloc.ipa");
+      if (fs.existsSync(bundled)) {
+        return bundled;
+      }
+
+      const cached = path.join(app.getPath("userData"), "Anyloc.ipa");
+      if (fs.existsSync(cached)) {
+        return cached;
+      }
+    }
+  } catch {
+    // fall through to dev path
+  }
+
+  return path.join(__dirname, "..", "..", "ios", "dist", "Anyloc.ipa");
+}
 
 function runPython(scriptName, args = []) {
   return new Promise((resolve) => {
-    const scriptPath = path.join(SCRIPTS_DIR, scriptName);
+    const scriptPath = path.join(getScriptsDir(), scriptName);
     const child = spawn("python3", [scriptPath, ...args], {
-      cwd: path.join(__dirname, ".."),
+      cwd: getScriptsDir(),
     });
 
     let stdout = "";
@@ -25,11 +60,12 @@ function runPython(scriptName, args = []) {
       if (code !== 0) {
         resolve({
           connected: false,
+          ok: false,
           udid: null,
           deviceName: null,
           message:
             stderr.trim() ||
-            "Impossible d'exécuter le script USB. Installe pymobiledevice3.",
+            "Impossible d'exécuter le script USB. Installe pymobiledevice3 : pip install pymobiledevice3",
         });
         return;
       }
@@ -39,6 +75,7 @@ function runPython(scriptName, args = []) {
       } catch {
         resolve({
           connected: false,
+          ok: false,
           udid: null,
           deviceName: null,
           message: "Réponse USB invalide.",
@@ -53,7 +90,7 @@ async function detectUsbDevice() {
 }
 
 async function installIosApp({ udid }) {
-  const ipaPath = path.join(__dirname, "..", "..", "ios", "dist", "Anyloc.ipa");
+  const ipaPath = getIpaPath();
   const args = ["--ipa", ipaPath];
 
   if (udid) {

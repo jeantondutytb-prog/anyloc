@@ -3,25 +3,47 @@
   "version": "0.1.0",
   "private": true,
   "description": "Anyloc Setup — installation iPhone via USB",
+  "author": "Anyloc <contact@anyloc.io>",
   "main": "src/main.js",
   "scripts": {
     "dev": "electron .",
     "start": "electron .",
     "build:mac": "electron-builder --mac dmg",
-    "build:win": "electron-builder --win nsis"
+    "build:win": "electron-builder --win nsis",
+    "build": "electron-builder"
   },
   "build": {
     "appId": "io.anyloc.setup",
     "productName": "Anyloc Setup",
+    "artifactName": "Anyloc-Setup.${ext}",
     "directories": {
       "output": "dist"
     },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "scripts",
+        "to": "scripts",
+        "filter": ["**/*"]
+      }
+    ],
     "mac": {
       "category": "public.app-category.utilities",
-      "target": ["dmg"]
+      "target": ["dmg"],
+      "identity": null
     },
     "win": {
-      "target": ["nsis"]
+      "target": ["nsis"],
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": null,
+      "uninstallerIcon": null
     }
   },
   "devDependencies": {

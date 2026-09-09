@@ -110,11 +110,35 @@ Voir les README dans chaque dossier pour build et dev.
 
 ## Release (APK / Setup)
 
+### Build local
+
 ```bash
-# Build APK
+# APK Android
 ./scripts/build-android.sh
 
-# Upload vers Vercel Blob (puis copie l'URL dans ANYLOC_DOWNLOAD_APK)
+# Anyloc Setup (Mac ou Windows selon ta machine)
+./scripts/build-setup.sh
+```
+
+### CI (recommandé)
+
+Le workflow `.github/workflows/build-setup.yml` build automatiquement :
+- **Mac** → `Anyloc-Setup.dmg`
+- **Windows** → `Anyloc-Setup.exe`
+
+Déclenchement : push sur `main` ou manuel dans GitHub Actions → **Build Anyloc Setup**.
+
+### Upload vers Vercel Blob
+
+1. Crée un store Blob sur [Vercel Dashboard](https://vercel.com/dashboard/stores)
+2. Ajoute `BLOB_READ_WRITE_TOKEN` dans les secrets GitHub du repo
+3. Relance le workflow — les fichiers sont uploadés automatiquement
+4. Copie les URLs affichées dans les variables Vercel :
+
+```bash
+# Manuel si besoin
+BLOB_READ_WRITE_TOKEN=xxx node scripts/upload-release.mjs setup-mac apps/setup/dist/Anyloc-Setup.dmg
+BLOB_READ_WRITE_TOKEN=xxx node scripts/upload-release.mjs setup-win apps/setup/dist/Anyloc-Setup.exe
 BLOB_READ_WRITE_TOKEN=xxx node scripts/upload-release.mjs android dist/android/Anyloc.apk
 ```
 
