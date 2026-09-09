@@ -1,0 +1,90 @@
+name: Build iOS IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - "cursor/**"
+    paths:
+      - "apps/ios/**"
+      - "scripts/build-ios-ipa.sh"
+      - ".github/workflows/build-ios.yml"
+
+jobs:
+  build:
+    if: ${{ secrets.APPLE_DEVELOPMENT_TEAM != '' }}
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Build signed IPA
+        env:
+          APPLE_DEVELOPMENT_TEAM: ${{ secrets.APPLE_DEVELOPMENT_TEAM }}
+        run: chmod +x scripts/build-ios-ipa.sh && ./scripts/build-ios-ipa.sh
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: anyloc-ios-ipa
+          path: apps/ios/dist/Anyloc.ipa
+          if-no-files-found: error
+
+      - name: Upload to Vercel Blob
+        env:
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+        run: |
+          if [ -n "$BLOB_READ_WRITE_TOKEN" ]; then
+            node scripts/upload-release.mjs ios apps/ios/dist/Anyloc.ipa
+          else
+            echo "BLOB_READ_WRITE_TOKEN absent — skip upload Blob"
+          fi
+
+      - name: Keep IPA for release
+        run: mkdir -p /tmp/ios-release && cp apps/ios/dist/Anyloc.ipa /tmp/ios-release/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-release-ipa
+          path: /tmp/ios-release/Anyloc.ipa
+          if-no-files-found: error
+
+  skip:
+    if: ${{ secrets.APPLE_DEVELOPMENT_TEAM == '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Skip iOS build
+        run: |
+          echo "APPLE_DEVELOPMENT_TEAM absent — build iOS ignoré."
+          echo "Configure le secret GitHub pour publier Anyloc.ipa automatiquement."
+
+  publish:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: ios-release-ipa
+          path: release-files
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ios-v0.1.${{ github.run_number }}
+          name: Anyloc iOS v0.1.${{ github.run_number }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: release-files/Anyloc.ipa
+
+      - name: Print download URL
+        run: |
+          TAG="ios-v0.1.${{ github.run_number }}"
+          BASE="https://github.com/${{ github.repository }}/releases/download/${TAG}"
+          echo "ANYLOC_DOWNLOAD_IPA=${BASE}/Anyloc.ipa" >> $GITHUB_STEP_SUMMARY

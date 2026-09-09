@@ -8,6 +8,11 @@ let cachedPython = null;
 const DEVICE_TOKEN_PREFIX = "anyloc_";
 
 const DEFAULT_API_BASE_URL = "https://www.anyloc.io";
+const GITHUB_REPO = "jeantondutytb-prog/anyloc";
+const IPA_FILENAME = "Anyloc.ipa";
+const MIN_IPA_BYTES = 100_000;
+
+let ipaDownloadPromise = null;
 
 function normalizeApiBaseUrl(raw) {
   let url = (raw || DEFAULT_API_BASE_URL).trim();
@@ -66,28 +71,161 @@ function getScriptsDir() {
   return path.join(__dirname, "..", "scripts");
 }
 
-function getIpaPath() {
+function getBundledIpaPath() {
   try {
     const { app } = require("electron");
 
     if (app.isPackaged) {
-      const bundled = path.join(process.resourcesPath, "Anyloc.ipa");
-      if (fs.existsSync(bundled)) {
-        return bundled;
-      }
-
-      const cached = path.join(app.getPath("userData"), "Anyloc.ipa");
-      if (fs.existsSync(cached)) {
-        return cached;
-      }
+      return path.join(process.resourcesPath, IPA_FILENAME);
     }
   } catch {
     // fall through to dev path
   }
 
-  return path.join(__dirname, "..", "..", "ios", "dist", "Anyloc.ipa");
+  return path.join(__dirname, "..", "build-resources", IPA_FILENAME);
 }
 
+function getCachedIpaPath() {
+  try {
+    const { app } = require("electron");
+    return path.join(app.getPath("userData"), IPA_FILENAME);
+  } catch {
+    return path.join(__dirname, "..", "..", "ios", "dist", IPA_FILENAME);
+  }
+}
+
+function getIpaPath() {
+  const bundled = getBundledIpaPath();
+  if (fs.existsSync(bundled) && fs.statSync(bundled).size >= MIN_IPA_BYTES) {
+    return bundled;
+  }
+
+  const cached = getCachedIpaPath();
+  if (fs.existsSync(cached) && fs.statSync(cached).size >= MIN_IPA_BYTES) {
+    return cached;
+  }
+
+  const devPath = path.join(__dirname, "..", "..", "ios", "dist", IPA_FILENAME);
+  if (fs.existsSync(devPath) && fs.statSync(devPath).size >= MIN_IPA_BYTES) {
+    return devPath;
+  }
+
+  return cached;
+}
+
+function isValidIpaFile(filePath) {
+  return fs.existsSync(filePath) && fs.statSync(filePath).size >= MIN_IPA_BYTES;
+}
+
+async function resolveIpaDownloadUrl() {
+  if (process.env.ANYLOC_IPA_URL?.trim()) {
+    return process.env.ANYLOC_IPA_URL.trim();
+  }
+
+  try {
+    const response = await fetch(
+      `https://api.github.com/repos/${GITHUB_REPO}/releases?per_page=20`,
+      {
+        headers: {
+          Accept: "application/vnd.github+json",
+          "User-Agent": "anyloc-setup",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const releases = await response.json();
+
+    for (const release of releases) {
+      const asset = release.assets?.find((item) => item.name === IPA_FILENAME);
+
+      if (asset?.browser_download_url) {
+        return asset.browser_download_url;
+      }
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+async function ensureIpaAvailable() {
+  const existingPath = getIpaPath();
+
+  if (isValidIpaFile(existingPath)) {
+    return {
+      ok: true,
+      path: existingPath,
+      source: "local",
+    };
+  }
+
+  if (ipaDownloadPromise) {
+    return ipaDownloadPromise;
+  }
+
+  ipaDownloadPromise = (async () => {
+    const downloadUrl = await resolveIpaDownloadUrl();
+
+    if (!downloadUrl) {
+      return {
+        ok: false,
+        message:
+          "L'app iPhone est en cours de publication. Réessaie dans quelques minutes.",
+      };
+    }
+
+    const targetPath = getCachedIpaPath();
+
+    try {
+      fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+
+      const response = await fetch(downloadUrl, {
+        headers: {
+          Accept: "application/octet-stream",
+          "User-Agent": "anyloc-setup",
+        },
+      });
+
+      if (!response.ok) {
+        return {
+          ok: false,
+          message: "Impossible de télécharger l'app iPhone. Réessaie dans un instant.",
+        };
+      }
+
+      const buffer = Buffer.from(await response.arrayBuffer());
+
+      if (buffer.length < MIN_IPA_BYTES) {
+        return {
+          ok: false,
+          message: "Le fichier iPhone téléchargé est invalide. Réessaie plus tard.",
+        };
+      }
+
+      fs.writeFileSync(targetPath, buffer);
+
+      return {
+        ok: true,
+        path: targetPath,
+        source: "download",
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        message: `Téléchargement interrompu : ${error.message}`,
+      };
+    } finally {
+      ipaDownloadPromise = null;
+    }
+  })();
+
+  return ipaDownloadPromise;
+}
 function getSpawnEnv() {
   const extraPaths = [
     "/Library/Frameworks/Python.framework/Versions/3.14/bin",
@@ -300,22 +438,44 @@ function runPython(scriptName, args = []) {
 function getInstallAvailability() {
   const ipaPath = getIpaPath();
 
-  if (fs.existsSync(ipaPath)) {
+  if (isValidIpaFile(ipaPath)) {
     return {
       installReady: true,
-      installHint: null,
+      installHint: "App iPhone prête — clique sur Installer l'app iPhone.",
     };
   }
 
   return {
     installReady: false,
     installHint:
-      "L'app iOS native n'est pas encore disponible. Utilise « Appliquer la position GPS » dans Anyloc Setup pour simuler ta position via USB.",
+      "Téléchargement de l'app iPhone au premier lancement… Clique sur Installer une fois prêt.",
+  };
+}
+
+async function getInstallAvailabilityAsync() {
+  const local = getInstallAvailability();
+
+  if (local.installReady) {
+    return local;
+  }
+
+  const ensured = await ensureIpaAvailable();
+
+  if (ensured.ok) {
+    return {
+      installReady: true,
+      installHint: "App iPhone prête — clique sur Installer l'app iPhone.",
+    };
+  }
+
+  return {
+    installReady: false,
+    installHint: ensured.message,
   };
 }
 
 async function detectUsbDevice() {
-  const installAvailability = getInstallAvailability();
+  const installAvailability = await getInstallAvailabilityAsync();
   const result = await runCli(["usbmux", "list"]);
 
   if (!result.ok) {
@@ -515,7 +675,7 @@ async function applyGpsLocation({ udid, token, apiBaseUrl }) {
       ok: true,
       action: "cleared",
       message:
-        "Le GPS du dashboard est désactivé. Active Marbella sur la carte puis réessaie.",
+        "Le GPS est en pause. Ouvre l'app Anyloc sur ton iPhone et choisis une destination.",
       location,
       device,
     };
@@ -527,7 +687,7 @@ async function applyGpsLocation({ udid, token, apiBaseUrl }) {
     return {
       ok: false,
       message:
-        "Aucune coordonnée GPS active. Va sur le dashboard, choisis Marbella et active le signal GPS.",
+        "Aucune coordonnée GPS active. Ouvre l'app Anyloc et choisis une destination.",
     };
   }
 
@@ -549,15 +709,16 @@ async function applyGpsLocation({ udid, token, apiBaseUrl }) {
 }
 
 async function installIosApp({ udid }) {
-  const ipaPath = getIpaPath();
+  const ensured = await ensureIpaAvailable();
 
-  if (!fs.existsSync(ipaPath)) {
+  if (!ensured.ok) {
     return {
       ok: false,
-      message:
-        "L'app iOS native n'est pas encore disponible. Utilise « Appliquer la position GPS » dans Anyloc Setup pour simuler ta position via USB.",
+      message: ensured.message,
     };
   }
+
+  const ipaPath = ensured.path;
 
   const args = ["apps", "install", ipaPath];
 
@@ -589,4 +750,5 @@ module.exports = {
   detectUsbDevice,
   installIosApp,
   applyGpsLocation,
+  ensureIpaAvailable,
 };

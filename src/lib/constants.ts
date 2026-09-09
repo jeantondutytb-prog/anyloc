@@ -1,3 +1,5 @@
+import { DESTINATION_SPOTS } from "@/lib/destination-spots";
+
 export const SITE = {
   name: "Anyloc",
   domain: "anyloc.io",
@@ -176,7 +178,12 @@ export const FAQ = [
   {
     q: "Ça passe sur iPhone et Android ?",
     a:
-      "Oui. Sur Android, tout se fait depuis le tel. Sur iPhone, faut une config initiale via Mac ou PC (limite Apple), puis tu gères tout depuis ton mobile.",
+      "Oui. Sur Android, tout se fait depuis le tel. Sur iPhone, une seule install via Mac ou PC (limite Apple), puis tu gères ta position et le renouvellement (~7 jours) depuis ton iPhone avec LocalDevVPN — sans repasser par l'ordi.",
+  },
+  {
+    q: "Faut-il rebrancher le Mac tous les 7 jours ?",
+    a:
+      "Non. Installe LocalDevVPN sur ton iPhone, connecte le VPN en Wi-Fi, puis ouvre Anyloc. Le renouvellement se fait depuis ton tel. Le Mac ne sert qu'une seule fois, à la première installation.",
   },
   {
     q: "Faut jailbreaker ou bidouiller le tel ?",
@@ -229,11 +236,8 @@ export const FEATURES = [
   },
 ];
 
-export const SAVED_LOCATIONS = [
-  { name: "Marbella — Puerto Banús", lat: 36.4848, lng: -4.9526 },
-  { name: "Ibiza — Playa d'en Bossa", lat: 38.8767, lng: 1.4024 },
-  { name: "Miami — South Beach", lat: 25.7907, lng: -80.13 },
-  { name: "Mykonos — Paradise Beach", lat: 37.4467, lng: 25.3289 },
-  { name: "Monaco — Port Hercule", lat: 43.7384, lng: 7.4246 },
-  { name: "Valencia — Ciudad de las Artes", lat: 39.4549, lng: -0.3523 },
-];
+export const SAVED_LOCATIONS = DESTINATION_SPOTS.map(({ name, lat, lng }) => ({
+  name,
+  lat,
+  lng,
+}));

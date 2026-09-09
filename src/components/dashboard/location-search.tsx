@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2, MapPin, Search } from "lucide-react";
 import type { GeocodeResult } from "@/lib/geocoding";
-import { SAVED_LOCATIONS } from "@/lib/constants";
+import { DESTINATION_SPOTS } from "@/lib/destination-spots";
+import { cn } from "@/lib/utils";
 
 type Location = {
   name: string;
@@ -13,8 +14,10 @@ type Location = {
 
 export function LocationSearch({
   onSelect,
+  variant = "default",
 }: {
   onSelect: (location: Location) => void;
+  variant?: "default" | "panel" | "top";
 }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<GeocodeResult[]>([]);
@@ -25,14 +28,14 @@ export function LocationSearch({
 
   const localMatches =
     query.trim().length >= 2
-      ? SAVED_LOCATIONS.filter((loc) =>
+      ? DESTINATION_SPOTS.filter((loc) =>
           loc.name.toLowerCase().includes(query.trim().toLowerCase())
         ).map((loc) => ({
           id: `local-${loc.name}`,
           name: loc.name,
           lat: loc.lat,
           lng: loc.lng,
-          subtitle: "Spot rapide",
+          subtitle: "Spot Anyloc",
         }))
       : [];
 
@@ -102,7 +105,7 @@ export function LocationSearch({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const suggestions = [...localMatches, ...results].slice(0, 8);
+  const suggestions = [...localMatches, ...results].slice(0, 10);
   const showDropdown = open && query.trim().length >= 2;
 
   function pickResult(result: GeocodeResult) {
@@ -118,7 +121,12 @@ export function LocationSearch({
 
   return (
     <div ref={containerRef} className="relative">
-      <Search className="pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+      <Search
+        className={cn(
+          "pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2",
+          variant === "panel" ? "text-zinc-400" : "text-zinc-400"
+        )}
+      />
       <input
         type="search"
         value={query}
@@ -127,13 +135,25 @@ export function LocationSearch({
           setOpen(true);
         }}
         onFocus={() => setOpen(true)}
-        placeholder="Recherche une ville ou un lieu…"
-        className="w-full rounded-2xl border border-zinc-200 bg-white py-3 pl-11 pr-4 text-sm text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-400 focus:border-pink-300 focus:ring-2 focus:ring-pink-200/50"
+        placeholder="Recherche une ville, plage, adresse…"
+        className={cn(
+          "w-full rounded-2xl border pl-11 pr-4 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-pink-300 focus:ring-2 focus:ring-pink-200/50",
+          variant === "top"
+            ? "border-zinc-200/80 bg-white/95 py-2.5 shadow-lg backdrop-blur-md"
+            : variant === "panel"
+              ? "border-zinc-200 bg-zinc-50 py-3 shadow-sm"
+              : "border-zinc-200 bg-white py-3 shadow-sm"
+        )}
         autoComplete="off"
       />
 
       {showDropdown && (
-        <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-lg">
+        <div
+          className={cn(
+            "absolute z-50 mt-2 w-full overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl",
+            (variant === "panel" || variant === "top") && "max-h-72"
+          )}
+        >
           {loading && (
             <div className="flex items-center gap-2 px-4 py-3 text-sm text-zinc-500">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -147,7 +167,7 @@ export function LocationSearch({
 
           {!loading && !error && suggestions.length === 0 && (
             <p className="px-4 py-3 text-sm text-zinc-500">
-              Aucune ville trouvée. Essaie un autre nom.
+              Aucun lieu trouvé. Essaie un autre nom.
             </p>
           )}
 

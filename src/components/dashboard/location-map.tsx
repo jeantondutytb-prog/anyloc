@@ -25,10 +25,14 @@ export default function LocationMap({
   selected,
   onSelect,
   active,
+  fullScreen = false,
+  layoutKey = 0,
 }: {
   selected: Location;
   onSelect: (loc: Location) => void;
   active: boolean;
+  fullScreen?: boolean;
+  layoutKey?: number;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -130,7 +134,7 @@ export default function LocationMap({
     innerCircle.setLatLng(position);
 
     if (hasCenteredRef.current) {
-      map.flyTo(position, map.getZoom(), { duration: 0.8 });
+      map.flyTo(position, Math.max(map.getZoom(), 11), { duration: 0.8 });
     } else {
       hasCenteredRef.current = true;
     }
@@ -155,9 +159,28 @@ export default function LocationMap({
     innerCircle.remove();
   }, [active]);
 
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      map.invalidateSize();
+    }, 320);
+
+    return () => window.clearTimeout(timeout);
+  }, [layoutKey, fullScreen]);
+
   return (
-    <div className="simple-map-shell h-[400px] w-full lg:h-[500px]">
-      <div ref={containerRef} className="simple-map h-full w-full rounded-xl" />
+    <div
+      className={
+        fullScreen
+          ? "simple-map-shell simple-map-shell--fullscreen h-full w-full"
+          : "simple-map-shell h-[400px] w-full lg:h-[500px]"
+      }
+    >
+      <div ref={containerRef} className="simple-map h-full w-full" />
     </div>
   );
 }

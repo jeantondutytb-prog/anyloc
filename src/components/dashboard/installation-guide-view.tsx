@@ -7,9 +7,9 @@ import {
   ArrowRight,
   Check,
   CheckCircle2,
+  ChevronDown,
   Copy,
   Download,
-  ExternalLink,
   Loader2,
   Lock,
   Monitor,
@@ -22,8 +22,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { DashboardNav } from "@/components/dashboard/dashboard-nav";
-import { Logo } from "@/components/ui/logo";
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 import { useDownloads } from "@/hooks/use-downloads";
 import { getCheckoutUrl } from "@/lib/constants";
 import { useDashboardOnboarding } from "@/hooks/use-dashboard-onboarding";
@@ -263,8 +262,8 @@ function DeviceTokenStep({ platform }: { platform: Platform }) {
           <code className="mt-3 block break-all rounded-lg bg-white px-3 py-2 text-xs text-zinc-800">
             {createdToken.token}
           </code>
-          <p className="mt-2 text-xs text-pink-600/90">
-            Colle ce code dans Anyloc Setup tel quel (commence par{" "}
+          <p className="text-xs text-pink-600/90">
+            Colle ce code dans l&apos;app Anyloc sur ton téléphone (commence par{" "}
             <strong>anyloc_</strong>, sans « Bearer »).
           </p>
           <Button size="sm" className="mt-3" onClick={() => void copyToken()}>
@@ -277,13 +276,42 @@ function DeviceTokenStep({ platform }: { platform: Platform }) {
   );
 }
 
+function TroubleshootingAccordion({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <details className="group rounded-xl border border-zinc-200 bg-zinc-50/80">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-medium text-zinc-700 [&::-webkit-details-marker]:hidden">
+        {title}
+        <ChevronDown className="h-4 w-4 shrink-0 text-zinc-400 transition-transform group-open:rotate-180" />
+      </summary>
+      <div className="border-t border-zinc-200 px-4 py-3 text-sm text-zinc-600">
+        {children}
+      </div>
+    </details>
+  );
+}
+
 function IosGuide({ hasAccess }: { hasAccess: boolean }) {
   return (
     <div className="space-y-4">
-      <StepCard number={1} title="Télécharge Anyloc Setup sur ton ordinateur">
+      <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-900">
+        <p className="font-semibold">Ordinateur une seule fois</p>
+        <p className="mt-1">
+          Le Mac ou PC sert uniquement à la première installation. Ensuite, tu changes
+          ta position et tu renouvelles l&apos;app depuis ton iPhone — avec LocalDevVPN,
+          sans repasser par l&apos;ordi.
+        </p>
+      </div>
+
+      <StepCard number={1} title="Télécharge Anyloc Setup">
         <p>
-          Choisis la version selon ton ordinateur. Anyloc Setup applique ta
-          position GPS (Marbella, Paris, etc.) sur ton iPhone via USB.
+          Sur ton Mac ou PC, télécharge Anyloc Setup — il installe l&apos;app
+          Anyloc sur ton iPhone via USB.
         </p>
         <DownloadButtons
           assetIds={["setup-mac", "setup-win"]}
@@ -293,117 +321,91 @@ function IosGuide({ hasAccess }: { hasAccess: boolean }) {
           Mac : Ventura ou plus récent · Windows : 10 ou plus récent
         </p>
 
-        <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-4 text-sm text-blue-950">
-          <p className="font-semibold">Mac : message « Anyloc Setup est endommagé » ?</p>
-          <p className="mt-2">
-            Ce n&apos;est pas un vrai problème — macOS bloque les apps téléchargées
-            depuis Chrome tant qu&apos;elles ne sont pas signées Apple. Deux solutions :
+        <TroubleshootingAccordion title="Mac : « Anyloc Setup est endommagé » ?">
+          <p className="mb-3">
+            macOS bloque les apps non signées Apple. Après avoir glissé l&apos;app
+            dans Applications, ouvre le Terminal et colle :
           </p>
-          <p className="mt-3 font-medium">Solution rapide (recommandée)</p>
-          <ol className="mt-1 list-decimal space-y-1 pl-5">
-            <li>Ouvre le fichier <strong>Anyloc-Setup.dmg</strong></li>
-            <li>Glisse <strong>Anyloc Setup</strong> dans le dossier Applications</li>
-            <li>Ouvre <strong>Terminal</strong> et colle cette commande :</li>
-          </ol>
-          <code className="mt-2 block break-all rounded-lg bg-white px-3 py-2 text-xs text-zinc-800">
+          <code className="block break-all rounded-lg bg-white px-3 py-2 text-xs text-zinc-800">
             xattr -cr &quot;/Applications/Anyloc Setup.app&quot;
           </code>
-          <p className="mt-2">Puis relance l&apos;app depuis Applications.</p>
-          <p className="mt-3 font-medium">Si ça bloque encore, colle aussi :</p>
-          <code className="mt-2 block break-all rounded-lg bg-white px-3 py-2 text-xs text-zinc-800">
-            xattr -dr com.apple.quarantine &quot;/Applications/Anyloc Setup.app&quot;
-          </code>
-          <p className="mt-3 font-medium">Sans Terminal</p>
-          <ol className="mt-1 list-decimal space-y-1 pl-5">
-            <li>Essaie d&apos;ouvrir l&apos;app (la popup « endommagé » s&apos;affiche)</li>
-            <li>Va dans <strong>Réglages Système → Confidentialité et sécurité</strong></li>
-            <li>Tout en bas : clique <strong>Ouvrir quand même</strong> à côté d&apos;Anyloc Setup</li>
-          </ol>
-          <p className="mt-2">
-            Ou : clic droit sur <strong>Anyloc Setup</strong> → <strong>Ouvrir</strong> →
-            confirme <strong>Ouvrir</strong> (pas un double-clic).
+          <p className="mt-3">
+            Sans Terminal : clic droit sur l&apos;app → <strong>Ouvrir</strong> →
+            confirme, ou va dans <strong>Réglages → Confidentialité et sécurité</strong>
+            et clique <strong>Ouvrir quand même</strong>.
           </p>
-        </div>
+        </TroubleshootingAccordion>
       </StepCard>
 
-      <StepCard number={2} title="Branche ton iPhone en USB">
+      <StepCard number={2} title="Branche ton iPhone et active le mode développeur">
         <div className="flex items-start gap-3 rounded-xl bg-zinc-50 p-4">
           <Usb className="mt-0.5 h-5 w-5 shrink-0 text-pink-600" />
-          <ul className="space-y-2">
-            <li>Connecte ton iPhone au Mac ou PC avec un câble USB</li>
-            <li>Sur l&apos;iPhone, appuie sur <strong>Faire confiance à cet ordinateur</strong></li>
-            <li>Ouvre <strong>Anyloc Setup</strong> sur l&apos;ordi et attends que l&apos;iPhone soit détecté</li>
-            <li>Laisse le câble branché pendant toute l&apos;installation</li>
-          </ul>
+          <ol className="list-decimal space-y-2 pl-5">
+            <li>Connecte ton iPhone en USB et appuie sur <strong>Faire confiance</strong></li>
+            <li>Ouvre <strong>Anyloc Setup</strong> — l&apos;iPhone doit être détecté</li>
+            <li>Sur l&apos;iPhone : <strong>Réglages → Confidentialité et sécurité → Mode développeur</strong></li>
+            <li>Active l&apos;interrupteur et redémarre si iOS te le demande</li>
+          </ol>
         </div>
-        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <strong>Le mode développeur n&apos;apparaît pas encore ?</strong> C&apos;est
-          normal. Apple ne l&apos;affiche qu&apos;après cette première connexion USB
-          avec Anyloc Setup (ou Xcode). Passe à l&apos;étape suivante une fois
-          l&apos;iPhone détecté.
-        </p>
-      </StepCard>
-
-      <StepCard number={3} title="Active le mode développeur sur ton iPhone">
-        <p>
-          Après la connexion USB, l&apos;option devient visible dans les réglages.
-        </p>
-        <ol className="list-decimal space-y-2 pl-5">
-          <li>Ouvre <strong>Réglages</strong> sur ton iPhone</li>
-          <li>Va dans <strong>Confidentialité et sécurité</strong></li>
-          <li>Descends tout en bas → <strong>Mode développeur</strong></li>
-          <li>Active l&apos;interrupteur</li>
-          <li>Redémarre l&apos;iPhone quand iOS te le demande</li>
-          <li>Après le redémarrage, appuie sur <strong>Activer</strong> et entre ton code</li>
-        </ol>
         <p className="text-xs text-zinc-500">
-          Toujours invisible ? Installe d&apos;abord les outils USB sur ton Mac
-          (<code className="text-xs">pip3 install pymobiledevice3</code>), puis
-          installe <strong>Xcode</strong> (App Store), ouvre-le et branche l&apos;iPhone
-          — le mode développeur apparaît ensuite en bas de Confidentialité et sécurité.
+          Le mode développeur n&apos;apparaît qu&apos;après la première connexion USB.
         </p>
+
+        <TroubleshootingAccordion title="iPhone non détecté ou mode dev invisible ?">
+          <p className="mb-2">
+            Sur Mac, installe les outils USB dans le Terminal :
+          </p>
+          <code className="block break-all rounded-lg bg-white px-3 py-2 text-xs text-zinc-800">
+            pip3 install pymobiledevice3
+          </code>
+          <p className="mt-3">
+            Puis relance Anyloc Setup. Si le mode développeur reste invisible,
+            installe <strong>Xcode</strong> (App Store), ouvre-le et rebranche l&apos;iPhone.
+          </p>
+        </TroubleshootingAccordion>
       </StepCard>
 
-      <StepCard number={4} title="Génère ton code de liaison">
+      <StepCard number={3} title="Génère ton code de liaison">
         <DeviceTokenStep platform="ios" />
       </StepCard>
 
-      <StepCard number={5} title="Choisis ta position sur la carte">
-        <p>
-          Sur le dashboard, place un point sur la carte (ex. Marbella) et
-          active le signal GPS.
-        </p>
-        <Link href="/dashboard">
-          <Button>
-            Aller à la carte
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-        </Link>
-      </StepCard>
-
-      <StepCard number={6} title="Applique la position GPS avec Anyloc Setup">
+      <StepCard number={4} title="Installe l'app et ouvre-la depuis l'écran d'accueil">
         <ol className="list-decimal space-y-2 pl-5">
-          <li>Ouvre <strong>Anyloc Setup</strong> sur ton ordinateur</li>
-          <li>Colle ton <strong>code de liaison</strong> généré à l&apos;étape 4</li>
-          <li>Attends que ton iPhone soit détecté en USB</li>
-          <li>Clique sur <strong>Appliquer la position GPS</strong></li>
-          <li>Active la <strong>synchronisation auto</strong> pour suivre les changements du dashboard</li>
+          <li>Dans <strong>Anyloc Setup</strong>, colle ton code et clique <strong>Installer l&apos;app iPhone</strong></li>
+          <li>Sur ton iPhone, l&apos;icône <strong>Anyloc</strong> apparaît sur l&apos;écran d&apos;accueil</li>
+          <li>Si besoin : Safari → ouvre Anyloc, appuie sur <strong>Partager</strong> (□↑), puis <strong>Sur l&apos;écran d&apos;accueil</strong></li>
+          <li>Ouvre <strong>Anyloc</strong>, colle ton code, cherche une ville et appuie dessus</li>
         </ol>
         <p className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-950">
-          L&apos;iPhone doit rester branché en USB pendant l&apos;utilisation.
-          La position s&apos;applique sur toutes les apps (Instagram, Plans, etc.).
+          Tu peux débrancher le câble USB. Plus besoin de ton ordinateur pour changer
+          de position.
         </p>
       </StepCard>
 
-      <StepCard number={7} title="Installe les outils USB sur ton Mac">
+      <StepCard number={5} title="Renouvelle sans Mac (toutes les ~7 jours)">
         <p>
-          Si Anyloc Setup ne détecte pas ton iPhone, ouvre le Terminal et lance :
+          Les apps sideloadées expirent environ tous les 7 jours. Le renouvellement
+          se fait depuis ton iPhone — pas besoin de rebrancher le Mac.
         </p>
-        <code className="block break-all rounded-lg bg-zinc-100 px-3 py-2 text-xs text-zinc-800">
-          pip3 install pymobiledevice3
-        </code>
-        <p className="mt-3 text-xs text-zinc-500">
-          Puis relance Anyloc Setup et clique sur Revérifier.
+        <ol className="list-decimal space-y-2 pl-5">
+          <li>
+            Installe <strong>LocalDevVPN</strong> depuis l&apos;App Store{" "}
+            <a
+              href="https://apps.apple.com/app/localdevvpn/id6755608044"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-pink-600 underline-offset-2 hover:underline"
+            >
+              (lien direct)
+            </a>
+          </li>
+          <li>Connecte-toi au <strong>Wi-Fi</strong></li>
+          <li>Ouvre <strong>LocalDevVPN</strong> → appuie sur <strong>Connect</strong></li>
+          <li>Ouvre <strong>Anyloc</strong> depuis ton écran d&apos;accueil — l&apos;app se recharge</li>
+        </ol>
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Garde LocalDevVPN connecté pendant le renouvellement. C&apos;est tout — ton Mac
+          n&apos;est plus nécessaire après la première installation.
         </p>
       </StepCard>
     </div>
@@ -413,61 +415,53 @@ function IosGuide({ hasAccess }: { hasAccess: boolean }) {
 function AndroidGuide({ hasAccess }: { hasAccess: boolean }) {
   return (
     <div className="space-y-4">
-      <StepCard number={1} title="Télécharge l'APK Anyloc sur ton téléphone">
+      <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-900">
+        <p className="font-semibold">100 % depuis ton téléphone</p>
+        <p className="mt-1">
+          Pas besoin d&apos;ordinateur. Installe l&apos;APK, configure une fois,
+          puis change ta position dans l&apos;app Anyloc.
+        </p>
+      </div>
+
+      <StepCard number={1} title="Télécharge et installe l'APK Anyloc">
         <p>
-          Depuis ton Android, clique sur le bouton ci-dessous. Le fichier se
-          télécharge directement — pas besoin d&apos;ordinateur.
+          Depuis ton Android, télécharge et installe l&apos;app — pas besoin
+          d&apos;ordinateur.
         </p>
         <DownloadButtons assetIds={["apk"]} hasAccess={hasAccess} />
-      </StepCard>
-
-      <StepCard number={2} title="Autorise l'installation de l'APK">
         <ol className="list-decimal space-y-2 pl-5">
           <li>Ouvre le fichier <strong>Anyloc.apk</strong> téléchargé</li>
-          <li>Si Android bloque, va dans <strong>Paramètres → Sécurité</strong></li>
-          <li>Autorise ton navigateur à <strong>installer des apps inconnues</strong></li>
-          <li>Relance l&apos;installation de l&apos;APK</li>
+          <li>Si Android bloque, autorise ton navigateur à <strong>installer des apps inconnues</strong></li>
         </ol>
       </StepCard>
 
-      <StepCard number={3} title="Active les options développeur">
+      <StepCard number={2} title="Configure le GPS fictif">
         <div className="flex items-start gap-3 rounded-xl bg-zinc-50 p-4">
           <Settings className="mt-0.5 h-5 w-5 shrink-0 text-pink-600" />
           <ol className="list-decimal space-y-2 pl-5">
-            <li><strong>Paramètres → À propos du téléphone</strong></li>
-            <li>Tape 7 fois sur <strong>Numéro de build</strong></li>
-            <li>Retourne dans <strong>Paramètres → Options pour les développeurs</strong></li>
-            <li>Active les options développeur</li>
+            <li><strong>Paramètres → À propos</strong> → tape 7 fois sur <strong>Numéro de build</strong></li>
+            <li><strong>Options pour les développeurs</strong> → active-les</li>
+            <li>Choisis <strong>Anyloc</strong> comme <strong>Application de localisation fictive</strong></li>
           </ol>
         </div>
-      </StepCard>
-
-      <StepCard number={4} title="Définis Anyloc comme source GPS">
         <div className="flex items-start gap-3 rounded-xl bg-zinc-50 p-4">
           <Shield className="mt-0.5 h-5 w-5 shrink-0 text-pink-600" />
-          <ol className="list-decimal space-y-2 pl-5">
-            <li>Dans les options développeur, cherche <strong>Application de localisation fictive</strong></li>
-            <li>Sélectionne <strong>Anyloc</strong> dans la liste</li>
-            <li>Autorise Anyloc à tourner en arrière-plan si Android le demande</li>
-          </ol>
+          <p className="text-sm">
+            Autorise Anyloc en arrière-plan si Android te le demande.
+          </p>
         </div>
       </StepCard>
 
-      <StepCard number={5} title="Lie ton Android à ton compte">
+      <StepCard number={3} title="Lie ton Android à ton compte">
         <DeviceTokenStep platform="android" />
       </StepCard>
 
-      <StepCard number={6} title="Ouvre l'app et active ta position">
+      <StepCard number={4} title="Choisis ta destination dans l'app">
         <p>
-          Lance Anyloc sur ton téléphone, colle le code de liaison, puis retourne
-          sur le dashboard pour choisir ta ville et activer le signal.
+          Ouvre Anyloc, colle ton code, cherche une ville (ex. Marbella) et
+          appuie dessus pour activer le GPS. Tu changes de spot quand tu veux —
+          tout se fait depuis l&apos;app.
         </p>
-        <Link href="/dashboard">
-          <Button>
-            Aller à la carte
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-        </Link>
       </StepCard>
     </div>
   );
@@ -512,14 +506,10 @@ export function InstallationGuideView() {
   const hasAccess = data?.hasAccess ?? false;
 
   return (
-    <div className="flex min-h-screen flex-col bg-background lg:flex-row">
-      <header className="sticky top-0 z-20 flex h-14 items-center border-b border-zinc-200 bg-logo-background px-4 lg:hidden">
-        <Logo />
-      </header>
+    <div className="min-h-screen bg-background">
+      <DashboardPageHeader title="Installation" />
 
-      <DashboardNav />
-
-      <main className="flex-1 p-4 pb-24 sm:p-6 lg:p-8 lg:pb-8">
+      <main className="p-4 pb-8 sm:p-6 lg:p-8">
         {paymentSuccess && (
           <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4 sm:px-5">
             <div className="flex items-start gap-3">
@@ -673,8 +663,6 @@ export function InstallationGuideView() {
           )}
         </div>
       </main>
-
-      <DashboardNav mobile />
     </div>
   );
 }

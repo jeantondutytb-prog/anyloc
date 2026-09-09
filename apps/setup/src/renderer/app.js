@@ -15,9 +15,9 @@ const STEPS = [
       "Réglages → Confidentialité et sécurité → tout en bas → Mode développeur.",
   },
   {
-    title: "Colle ton token et applique la position",
+    title: "Installe l'app et configure ton token",
     description:
-      "Choisis Marbella (ou autre) sur le dashboard, puis clique « Appliquer la position GPS ».",
+      "Installe l'app Anyloc via Setup, colle ton code dans l'app, puis choisis ta ville directement sur ton iPhone.",
   },
 ];
 
@@ -121,7 +121,7 @@ async function refreshUsbStatus() {
     status.textContent = `${result.deviceName} — ${result.message}`;
 
     if (result.installReady) {
-      setStatus("install-status", "Tu peux aussi installer l'app native Anyloc.", "ok");
+      setStatus("install-status", result.installHint || "App iPhone prête.", "ok");
     } else if (result.installHint) {
       setStatus("install-status", result.installHint, "");
     }
@@ -227,14 +227,32 @@ function toggleSync() {
   startSync();
   setStatus(
     "gps-status",
-    "Synchronisation auto activée. Change la position sur le dashboard, elle sera appliquée toutes les 10 secondes.",
+    "Synchronisation auto activée (mode USB avancé). Préfère l'app Anyloc sur ton iPhone pour changer de position.",
     "ok"
   );
+}
+
+async function prepareNativeApp() {
+  setStatus("install-status", "Préparation de l'app iPhone…");
+
+  const result = await window.anylocSetup.ensureIpa();
+
+  if (result.ok) {
+    setStatus(
+      "install-status",
+      "App iPhone prête. Branche ton iPhone puis clique sur Installer.",
+      "ok"
+    );
+    return;
+  }
+
+  setStatus("install-status", result.message || "App iPhone indisponible pour le moment.", "error");
 }
 
 async function init() {
   renderSteps();
   restoreSettings();
+  await prepareNativeApp();
   await refreshUsbStatus();
   updateActionButtons();
 

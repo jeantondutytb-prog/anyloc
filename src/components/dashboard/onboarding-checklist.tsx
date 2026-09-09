@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Check, Circle, Smartphone } from "lucide-react";
+import { ArrowRight, Check, Circle, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -95,24 +95,20 @@ export function OnboardingChecklist({
 
                 {item.id === "install" && !done && (
                   <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                    <Link href="/setup/ios" className="flex-1">
-                      <Button variant="secondary" size="sm" className="w-full">
+                    <Link href="/dashboard/installation" className="flex-1">
+                      <Button size="sm" className="w-full">
                         <Smartphone className="h-4 w-4" />
-                        Guide iOS
-                      </Button>
-                    </Link>
-                    <Link href="/setup/android" className="flex-1">
-                      <Button variant="secondary" size="sm" className="w-full">
-                        <Smartphone className="h-4 w-4" />
-                        Guide Android
+                        Voir le guide
+                        <ArrowRight className="h-4 w-4" />
                       </Button>
                     </Link>
                     <Button
+                      variant="secondary"
                       size="sm"
                       className="flex-1"
                       onClick={onMarkInstallComplete}
                     >
-                      J&apos;ai installé l&apos;app
+                      C&apos;est installé
                     </Button>
                   </div>
                 )}

@@ -1,6 +1,6 @@
 {
   "name": "anyloc-setup",
-  "version": "0.2.4",
+  "version": "0.3.0",
   "private": true,
   "description": "Anyloc Setup — installation iPhone via USB",
   "author": "Anyloc <contact@anyloc.io>",
@@ -8,44 +8,10 @@
   "scripts": {
     "dev": "electron .",
     "start": "electron .",
-    "build:mac": "electron-builder --mac dmg",
-    "build:win": "electron-builder --win nsis",
-    "build": "electron-builder"
-  },
-  "build": {
-    "appId": "io.anyloc.setup",
-    "productName": "Anyloc Setup",
-    "artifactName": "Anyloc-Setup.${ext}",
-    "directories": {
-      "output": "dist"
-    },
-    "files": [
-      "src/**/*",
-      "package.json"
-    ],
-    "extraResources": [
-      {
-        "from": "scripts",
-        "to": "scripts",
-        "filter": ["**/*"]
-      }
-    ],
-    "mac": {
-      "category": "public.app-category.utilities",
-      "target": ["dmg"],
-      "identity": "-",
-      "gatekeeperAssess": false
-    },
-    "win": {
-      "target": ["nsis"],
-      "signAndEditExecutable": false
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "installerIcon": null,
-      "uninstallerIcon": null
-    }
+    "prepare-bundle": "node scripts/prepare-bundle.js",
+    "build:mac": "npm run prepare-bundle && electron-builder --config electron-builder.config.js --mac dmg",
+    "build:win": "npm run prepare-bundle && electron-builder --config electron-builder.config.js --win nsis",
+    "build": "npm run prepare-bundle && electron-builder --config electron-builder.config.js"
   },
   "devDependencies": {
     "electron": "^35.0.0",
