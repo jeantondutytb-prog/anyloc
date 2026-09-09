@@ -43,7 +43,7 @@ ipcMain.handle("setup:install-ios", async (_event, payload) => {
 ipcMain.handle("setup:apply-gps", async (_event, payload) => {
   const udid = payload?.udid ?? null;
   const token = payload?.token ?? "";
-  const apiBaseUrl = payload?.apiBaseUrl ?? "https://anyloc.io";
+  const apiBaseUrl = payload?.apiBaseUrl ?? "https://www.anyloc.io";
 
   return applyGpsLocation({ udid, token, apiBaseUrl });
 });

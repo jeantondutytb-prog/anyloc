@@ -94,6 +94,6 @@ export async function POST(request: Request) {
       createdAt: data.created_at,
     },
     token,
-    apiBaseUrl: process.env.NEXT_PUBLIC_APP_URL ?? "https://anyloc.io",
+    apiBaseUrl: process.env.NEXT_PUBLIC_APP_URL ?? "https://www.anyloc.io",
   });
 }

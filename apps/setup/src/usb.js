@@ -7,11 +7,15 @@ let cachedPython = null;
 
 const DEVICE_TOKEN_PREFIX = "anyloc_";
 
+const DEFAULT_API_BASE_URL = "https://www.anyloc.io";
+
 function normalizeApiBaseUrl(raw) {
-  let url = (raw || "https://anyloc.io").trim();
+  let url = (raw || DEFAULT_API_BASE_URL).trim();
   url = url.replace(/\/api\/device\/location\/?$/i, "");
   url = url.replace(/\/$/, "");
-  return url || "https://anyloc.io";
+  // anyloc.io redirects to www and strips Authorization headers on redirect.
+  url = url.replace(/^https?:\/\/anyloc\.io$/i, DEFAULT_API_BASE_URL);
+  return url || DEFAULT_API_BASE_URL;
 }
 
 function normalizeDeviceToken(raw) {

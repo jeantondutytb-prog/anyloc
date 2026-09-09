@@ -65,9 +65,16 @@ function getTokenValue() {
   return normalizeDeviceToken(document.getElementById("device-token").value);
 }
 
+function normalizeApiBaseUrl(raw) {
+  let url = (raw || "https://www.anyloc.io").trim();
+  url = url.replace(/\/api\/device\/location\/?$/i, "");
+  url = url.replace(/\/$/, "");
+  url = url.replace(/^https?:\/\/anyloc\.io$/i, "https://www.anyloc.io");
+  return url || "https://www.anyloc.io";
+}
+
 function getApiBaseUrl() {
-  const value = document.getElementById("api-base-url").value.trim();
-  return value || "https://anyloc.io";
+  return normalizeApiBaseUrl(document.getElementById("api-base-url").value);
 }
 
 function persistSettings() {
@@ -84,7 +91,7 @@ function restoreSettings() {
   }
 
   if (savedApiBaseUrl) {
-    document.getElementById("api-base-url").value = savedApiBaseUrl;
+    document.getElementById("api-base-url").value = normalizeApiBaseUrl(savedApiBaseUrl);
   }
 }
 
