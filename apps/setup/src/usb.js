@@ -422,9 +422,15 @@ async function fetchDashboardLocation({ token, apiBaseUrl }) {
 function buildSimulateLocationArgs(action, udid, mode) {
   const args = ["developer", "dvt", "simulate-location"];
 
+  if (action.type === "clear") {
+    args.push("clear");
+  } else {
+    args.push("set");
+  }
+
   if (mode === "native") {
     args.push("--native");
-  } else {
+  } else if (mode === "userspace") {
     args.push("--userspace");
   }
 
@@ -432,18 +438,20 @@ function buildSimulateLocationArgs(action, udid, mode) {
     args.push("--udid", udid);
   }
 
-  if (action.type === "clear") {
-    args.push("clear", "--");
-    return args;
+  args.push("--");
+
+  if (action.type === "set") {
+    args.push(String(action.lat), String(action.lng));
   }
 
-  args.push("set", "--", String(action.lat), String(action.lng));
   return args;
 }
 
 async function runSimulateLocation(action, udid) {
   const modes =
-    process.platform === "darwin" ? ["native", "userspace"] : ["userspace"];
+    process.platform === "darwin"
+      ? ["default", "native", "userspace"]
+      : ["default", "userspace"];
 
   let lastError = "Impossible d'appliquer la position GPS sur l'iPhone.";
 

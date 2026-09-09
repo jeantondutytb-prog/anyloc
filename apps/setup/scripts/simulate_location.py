@@ -67,8 +67,14 @@ def run_pmd3(command: list[str]) -> dict:
     }
 
 
-def build_base_command(udid: str | None, userspace: bool) -> list[str]:
-    command = ["pymobiledevice3", "developer", "dvt", "simulate-location"]
+def build_location_command(
+    action: str,
+    udid: str | None,
+    userspace: bool,
+    latitude: float | None = None,
+    longitude: float | None = None,
+) -> list[str]:
+    command = ["pymobiledevice3", "developer", "dvt", "simulate-location", action]
 
     if userspace:
         command.append("--userspace")
@@ -76,13 +82,14 @@ def build_base_command(udid: str | None, userspace: bool) -> list[str]:
     if udid:
         command.extend(["--udid", udid])
 
+    if action == "set" and latitude is not None and longitude is not None:
+        command.extend(["--", str(latitude), str(longitude)])
+
     return command
 
 
 def clear_location(udid: str | None, userspace: bool) -> dict:
-    command = build_base_command(udid, userspace)
-    command.extend(["clear", "--"])
-    return run_pmd3(command)
+    return run_pmd3(build_location_command("clear", udid, userspace))
 
 
 def set_location(
@@ -91,9 +98,9 @@ def set_location(
     udid: str | None,
     userspace: bool,
 ) -> dict:
-    command = build_base_command(udid, userspace)
-    command.extend(["set", "--", str(latitude), str(longitude)])
-    return run_pmd3(command)
+    return run_pmd3(
+        build_location_command("set", udid, userspace, latitude, longitude)
+    )
 
 
 def main() -> int:
