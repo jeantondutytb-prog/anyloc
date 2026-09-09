@@ -1,64 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Download, Loader2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getCheckoutUrl } from "@/lib/constants";
-
-type DownloadAssetInfo = {
-  id: string;
-  label: string;
-  description: string;
-  filename: string;
-  available: boolean;
-  downloadPath: string;
-};
-
-type DownloadsResponse = {
-  hasAccess: boolean;
-  isAdmin?: boolean;
-  subscriptionStatus: string | null;
-  assets: DownloadAssetInfo[];
-};
+import { useDownloads } from "@/hooks/use-downloads";
 
 export function DownloadSection() {
-  const [data, setData] = useState<DownloadsResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function loadDownloads() {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response = await fetch("/api/downloads");
-
-        if (response.status === 401) {
-          setData(null);
-          return;
-        }
-
-        if (!response.ok) {
-          throw new Error("Impossible de charger les téléchargements.");
-        }
-
-        setData(await response.json());
-      } catch (loadError) {
-        setError(
-          loadError instanceof Error
-            ? loadError.message
-            : "Impossible de charger les téléchargements."
-        );
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    void loadDownloads();
-  }, []);
+  const { data, loading, error } = useDownloads();
 
   if (loading) {
     return (
