@@ -51,11 +51,11 @@ export function DestinationPanel({
 
       <aside
         className={cn(
-          "fixed z-40 flex flex-col border-zinc-200 bg-white shadow-2xl transition-transform duration-300 ease-out",
-          "inset-x-0 bottom-0 max-h-[85vh] rounded-t-3xl border-t lg:inset-y-0 lg:right-0 lg:left-auto lg:max-h-none lg:w-[380px] lg:rounded-none lg:border-l lg:border-t-0",
+          "fixed z-50 flex flex-col border-zinc-200 bg-white shadow-2xl transition-transform duration-300 ease-out",
+          "inset-x-0 bottom-0 max-h-[85vh] rounded-t-3xl border-t lg:inset-x-auto lg:bottom-4 lg:left-auto lg:right-4 lg:top-4 lg:max-h-none lg:w-[360px] lg:rounded-2xl lg:border lg:shadow-2xl",
           open
             ? "translate-y-0 lg:translate-x-0"
-            : "translate-y-full lg:translate-x-full"
+            : "translate-y-full lg:translate-x-[calc(100%+1.5rem)]"
         )}
       >
         <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-4">

@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, MapPin, Smartphone } from "lucide-react";
+import { MapPin, PanelRightOpen, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
@@ -35,6 +35,12 @@ export function DashboardView() {
 
   const [active, setActive] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
+
+  useEffect(() => {
+    if (window.matchMedia("(min-width: 1024px)").matches) {
+      setPanelOpen(true);
+    }
+  }, []);
   const [selected, setSelected] = useState({
     name: DEFAULT_LOCATION.name,
     lat: DEFAULT_LOCATION.lat,
@@ -115,7 +121,7 @@ export function DashboardView() {
         <div
           className={cn(
             "absolute inset-x-0 top-0 z-20 px-4 pt-3 lg:pt-4",
-            panelOpen && "lg:right-[380px]"
+            panelOpen && "lg:right-[392px]"
           )}
         >
           <div className="mx-auto flex max-w-2xl flex-col gap-2">
@@ -180,11 +186,12 @@ export function DashboardView() {
           <button
             type="button"
             onClick={() => setPanelOpen(true)}
-            className="absolute right-0 top-1/2 z-20 hidden -translate-y-1/2 lg:flex"
+            className="fixed right-0 top-1/2 z-50 flex -translate-y-1/2 flex-col items-center gap-1.5 rounded-l-2xl border border-r-0 border-pink-200/60 bg-white/95 px-2.5 py-4 text-pink-600 shadow-xl backdrop-blur-md transition-colors hover:bg-white hover:text-pink-700"
             aria-label="Ouvrir les destinations"
           >
-            <span className="flex h-14 w-7 items-center justify-center rounded-l-2xl border border-r-0 border-zinc-200 bg-white/95 text-zinc-500 shadow-lg backdrop-blur-sm transition-colors hover:bg-white hover:text-pink-600">
-              <ChevronLeft className="h-4 w-4" />
+            <PanelRightOpen className="h-5 w-5" />
+            <span className="text-[10px] font-semibold uppercase leading-tight tracking-wide [writing-mode:vertical-rl]">
+              Destinations
             </span>
           </button>
         )}
@@ -199,7 +206,7 @@ export function DashboardView() {
         <div
           className={cn(
             "absolute inset-x-0 bottom-0 z-20 px-4 pb-20 pt-3 lg:pb-4",
-            panelOpen && "lg:right-[380px]"
+            panelOpen && "lg:right-[392px]"
           )}
         >
           <div className="mx-auto max-w-2xl rounded-2xl border border-zinc-200/80 bg-white/95 p-4 shadow-xl backdrop-blur-md">
