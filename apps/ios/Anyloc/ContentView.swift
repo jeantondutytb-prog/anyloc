@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject private var appState: AppState
+    @ObservedObject private var gps = LocationSpoofService.shared
 
     var body: some View {
         NavigationStack {
@@ -52,6 +53,33 @@ struct ContentView: View {
                     }
                 }
 
+                Section("GPS sur ton iPhone") {
+                    Text(gps.gpsStatus)
+                        .font(.footnote)
+                        .foregroundStyle(gps.isConnected ? Color.green : Color.secondary)
+
+                    if !gps.hasPairingFile {
+                        Text(
+                            "Fichier pairing.plist manquant. Réinstalle via Anyloc Setup (Mac/PC une fois) "
+                            + "pour le copier automatiquement sur ton iPhone."
+                        )
+                        .font(.footnote)
+                        .foregroundStyle(.orange)
+                    }
+
+                    Text(
+                        "Avant d'ouvrir Anyloc : lance LocalDevVPN et appuie sur Connect. "
+                        + "Sans VPN local, la position ne peut pas être appliquée sur le système."
+                    )
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+
+                    Link(
+                        "Télécharger LocalDevVPN",
+                        destination: URL(string: "https://apps.apple.com/app/localdevvpn/id6755608044")!
+                    )
+                }
+
                 Section("Configuration (une seule fois)") {
                     TextField("URL API", text: $appState.apiBaseUrl)
                         .textInputAutocapitalization(.never)
@@ -88,15 +116,11 @@ struct ContentView: View {
 
                 Section("Renouvellement sans Mac") {
                     Text(
-                        "Toutes les ~7 jours : connecte-toi au Wi-Fi, ouvre LocalDevVPN et appuie sur Connect, puis relance Anyloc depuis ton écran d'accueil. Pas besoin de rebrancher ton Mac."
+                        "Toutes les ~7 jours : connecte-toi au Wi-Fi, ouvre LocalDevVPN et appuie sur Connect, "
+                        + "puis relance Anyloc depuis ton écran d'accueil. Pas besoin de rebrancher ton Mac."
                     )
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-
-                    Link(
-                        "Télécharger LocalDevVPN",
-                        destination: URL(string: "https://apps.apple.com/app/localdevvpn/id6755608044")!
-                    )
                 }
             }
             .navigationTitle("Anyloc")

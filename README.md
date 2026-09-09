@@ -61,7 +61,7 @@ Optimisé pour [Vercel](https://vercel.com). Configure le domaine `anyloc.io` da
 - [x] Scaffold app iOS SwiftUI (`apps/ios`) + xcodegen
 - [x] APK Android buildable + CI GitHub Actions
 - [x] Script upload Vercel Blob (`scripts/upload-release.mjs`)
-- [ ] Spoofing GPS système iOS (entitlements)
+- [x] Spoofing GPS système iOS (services développeur + LocalDevVPN)
 - [ ] Renouvellement signature via LocalDevVPN (iOS)
 
 ### Étape 4 — Options

@@ -708,6 +708,46 @@ async function applyGpsLocation({ udid, token, apiBaseUrl }) {
   };
 }
 
+async function deployPairingFile({ udid }) {
+  if (process.platform !== "darwin") {
+    return {
+      ok: true,
+      skipped: true,
+      message: "pairing.plist : copie automatique disponible uniquement sur macOS.",
+    };
+  }
+
+  const scriptPath = path.join(getScriptsDir(), "deploy_pairing.py");
+
+  if (!fs.existsSync(scriptPath)) {
+    return {
+      ok: false,
+      message: "Script deploy_pairing.py introuvable.",
+    };
+  }
+
+  const args = [scriptPath];
+  if (udid) {
+    args.push("--udid", udid);
+  }
+
+  const result = spawnSync(resolvePythonExecutable() || "python3", args, {
+    encoding: "utf8",
+    timeout: 120_000,
+  });
+
+  try {
+    return JSON.parse(result.stdout || "{}");
+  } catch {
+    return {
+      ok: false,
+      message:
+        (result.stderr || result.stdout || "").trim() ||
+        "Échec du déploiement pairing.plist.",
+    };
+  }
+}
+
 async function installIosApp({ udid }) {
   const ensured = await ensureIpaAvailable();
 
@@ -729,11 +769,17 @@ async function installIosApp({ udid }) {
   const result = await runCli(args);
 
   if (result.ok) {
+    const pairing = await deployPairingFile({ udid });
+    const pairingNote = pairing.ok
+      ? " pairing.plist installé."
+      : " Installe LocalDevVPN puis ouvre Anyloc — le GPS nécessite le VPN local.";
+
     return {
       ok: true,
-      message: "Anyloc installé sur ton iPhone. Ouvre l'app et colle ton token.",
+      message: `Anyloc installé sur ton iPhone.${pairingNote} Ouvre l'app, colle ton token, connecte LocalDevVPN puis choisis ta ville.`,
       udid,
       output: result.stdout.trim(),
+      pairing,
     };
   }
 

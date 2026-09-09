@@ -373,12 +373,16 @@ function IosGuide({ hasAccess }: { hasAccess: boolean }) {
         <ol className="list-decimal space-y-2 pl-5">
           <li>Dans <strong>Anyloc Setup</strong>, colle ton code et clique <strong>Installer l&apos;app iPhone</strong></li>
           <li>Sur ton iPhone, l&apos;icône <strong>Anyloc</strong> apparaît sur l&apos;écran d&apos;accueil</li>
-          <li>Si besoin : Safari → ouvre Anyloc, appuie sur <strong>Partager</strong> (□↑), puis <strong>Sur l&apos;écran d&apos;accueil</strong></li>
-          <li>Ouvre <strong>Anyloc</strong>, colle ton code, cherche une ville et appuie dessus</li>
+          <li>
+            Installe <strong>LocalDevVPN</strong> depuis l&apos;App Store, ouvre-le et appuie sur{" "}
+            <strong>Connect</strong> <em>avant</em> chaque session Anyloc
+          </li>
+          <li>Ouvre <strong>Anyloc</strong>, colle ton code, cherche une ville et appuie dessus — le GPS système change</li>
         </ol>
         <p className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-950">
-          Tu peux débrancher le câble USB. Plus besoin de ton ordinateur pour changer
-          de position.
+          Le signet Safari (anyloc.io) ne modifie que le navigateur. Pour Snapchat, Insta
+          et toutes les apps natives, utilise l&apos;icône <strong>Anyloc</strong> installée
+          via Setup — plus besoin de Mac après la première installation.
         </p>
       </StepCard>
 
