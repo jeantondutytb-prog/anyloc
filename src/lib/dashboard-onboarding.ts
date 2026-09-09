@@ -5,7 +5,6 @@ export type OnboardingSteps = {
   install: boolean;
   chooseSpot: boolean;
   activate: boolean;
-  sendPosition: boolean;
 };
 
 export type OnboardingState = {
@@ -19,7 +18,6 @@ export const DEFAULT_ONBOARDING_STATE: OnboardingState = {
     install: false,
     chooseSpot: false,
     activate: false,
-    sendPosition: false,
   },
 };
 
@@ -28,7 +26,7 @@ export const ONBOARDING_STEP_ITEMS = [
     id: "install" as const,
     title: "Installe Anyloc sur ton téléphone",
     description:
-      "iPhone : Anyloc Setup + USB une fois. Android : APK depuis le dashboard.",
+      "Suis le guide pas à pas — téléchargements et code de liaison inclus.",
     cta: "Voir le guide",
   },
   {
@@ -41,18 +39,24 @@ export const ONBOARDING_STEP_ITEMS = [
     id: "activate" as const,
     title: "Active ton signal GPS",
     description:
-      "Appuie sur « Activer » en haut à droite pour lancer le signal sur ton tel.",
-  },
-  {
-    id: "sendPosition" as const,
-    title: "Envoie la position",
-    description:
-      "Une fois le signal actif, clique sur « Envoyer cette position » pour synchroniser.",
+      "Un clic et ta position est synchronisée sur ton téléphone.",
   },
 ] as const;
 
 export function isOnboardingComplete(steps: OnboardingSteps) {
   return Object.values(steps).every(Boolean);
+}
+
+function migrateLegacySteps(
+  steps: Record<string, boolean | undefined>
+): OnboardingSteps {
+  const activate = steps.activate === true || steps.sendPosition === true;
+
+  return {
+    install: steps.install ?? false,
+    chooseSpot: steps.chooseSpot ?? false,
+    activate,
+  };
 }
 
 export function readOnboardingState(): OnboardingState {
@@ -66,13 +70,12 @@ export function readOnboardingState(): OnboardingState {
       return DEFAULT_ONBOARDING_STATE;
     }
 
-    const parsed = JSON.parse(raw) as Partial<OnboardingState>;
+    const parsed = JSON.parse(raw) as Partial<OnboardingState> & {
+      steps?: Record<string, boolean>;
+    };
     return {
       welcomeDismissed: parsed.welcomeDismissed ?? false,
-      steps: {
-        ...DEFAULT_ONBOARDING_STATE.steps,
-        ...parsed.steps,
-      },
+      steps: migrateLegacySteps(parsed.steps ?? {}),
     };
   } catch {
     return DEFAULT_ONBOARDING_STATE;

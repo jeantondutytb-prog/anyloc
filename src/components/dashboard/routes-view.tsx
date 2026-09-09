@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { Loader2, MapPin, Play, Trash2 } from "lucide-react";
 import dynamic from "next/dynamic";
+import { Loader2, MapPin, Play, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Logo } from "@/components/ui/logo";
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 import { useLocationSync } from "@/hooks/use-location-sync";
 import { SAVED_LOCATIONS } from "@/lib/constants";
 import type { Waypoint } from "@/lib/route-simulation";
@@ -74,19 +73,7 @@ export function RoutesView() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-20 border-b border-zinc-200 bg-logo-background px-4 py-4">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
-          <Logo />
-          <div className="flex gap-2">
-            <Link href="/dashboard">
-              <Button variant="secondary" size="sm">Carte</Button>
-            </Link>
-            <Link href="/web">
-              <Button variant="secondary" size="sm">Web spoof</Button>
-            </Link>
-          </div>
-        </div>
-      </header>
+      <DashboardPageHeader title="Trajets" />
 
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
         <h1 className="text-2xl font-bold text-zinc-900">Trajets simulés</h1>

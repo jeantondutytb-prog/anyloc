@@ -20,12 +20,12 @@ export function LoginForm({
 }) {
   const [state, formAction, pending] = useActionState(login, initialState);
   const [showPassword, setShowPassword] = useState(false);
-  const checkoutUrl = redirectTo ?? `/checkout?plan=${plan}`;
+  const destination = redirectTo ?? "/dashboard";
 
   return (
     <div>
       <form action={formAction} className="space-y-4">
-        <input type="hidden" name="redirectTo" value={checkoutUrl} />
+        <input type="hidden" name="redirectTo" value={destination} />
         {state.error ? (
           <div
             role="alert"
@@ -69,7 +69,7 @@ export function LoginForm({
       </form>
 
       <AuthDivider />
-      <GoogleAuthLink redirectTo={checkoutUrl} />
+      <GoogleAuthLink redirectTo={destination} />
 
       <p className="mt-4 text-center text-sm text-zinc-500">
         Pas encore de compte ?{" "}
