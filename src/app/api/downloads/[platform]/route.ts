@@ -1,7 +1,7 @@
 import {
   getDownloadAsset,
-  getDownloadUrl,
   isValidDownloadPlatform,
+  resolveDownloadUrl,
 } from "@/lib/downloads";
 import { requireActiveSubscription } from "@/lib/subscription";
 
@@ -26,7 +26,7 @@ export async function GET(_request: Request, context: RouteContext) {
   }
 
   const asset = getDownloadAsset(platform);
-  const downloadUrl = getDownloadUrl(platform);
+  const downloadUrl = await resolveDownloadUrl(platform);
 
   if (!asset || !downloadUrl) {
     return Response.json(
@@ -54,7 +54,7 @@ export async function HEAD(_request: Request, context: RouteContext) {
     return new Response(null, { status: 403 });
   }
 
-  const downloadUrl = getDownloadUrl(platform);
+  const downloadUrl = await resolveDownloadUrl(platform);
 
   if (!downloadUrl) {
     return new Response(null, { status: 503 });
