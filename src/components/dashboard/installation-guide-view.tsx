@@ -305,10 +305,19 @@ function IosGuide({ hasAccess }: { hasAccess: boolean }) {
             xattr -cr &quot;/Applications/Anyloc Setup.app&quot;
           </code>
           <p className="mt-2">Puis relance l&apos;app depuis Applications.</p>
+          <p className="mt-3 font-medium">Si ça bloque encore, colle aussi :</p>
+          <code className="mt-2 block break-all rounded-lg bg-white px-3 py-2 text-xs text-zinc-800">
+            xattr -dr com.apple.quarantine &quot;/Applications/Anyloc Setup.app&quot;
+          </code>
           <p className="mt-3 font-medium">Sans Terminal</p>
-          <p className="mt-1">
-            Clic droit sur <strong>Anyloc Setup</strong> → <strong>Ouvrir</strong> →
-            confirme <strong>Ouvrir</strong> (pas un double-clic classique).
+          <ol className="mt-1 list-decimal space-y-1 pl-5">
+            <li>Essaie d&apos;ouvrir l&apos;app (la popup « endommagé » s&apos;affiche)</li>
+            <li>Va dans <strong>Réglages Système → Confidentialité et sécurité</strong></li>
+            <li>Tout en bas : clique <strong>Ouvrir quand même</strong> à côté d&apos;Anyloc Setup</li>
+          </ol>
+          <p className="mt-2">
+            Ou : clic droit sur <strong>Anyloc Setup</strong> → <strong>Ouvrir</strong> →
+            confirme <strong>Ouvrir</strong> (pas un double-clic).
           </p>
         </div>
       </StepCard>
