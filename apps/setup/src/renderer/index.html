@@ -9,7 +9,7 @@
   <body>
     <main class="shell">
       <header class="hero">
-        <p class="badge">Anyloc Setup v0.2.1</p>
+        <p class="badge">Anyloc Setup v0.2.2</p>
         <h1>Applique ta position GPS sur iPhone</h1>
         <p class="subtitle">
           Branche ton iPhone en USB, colle ton token depuis le dashboard, puis
@@ -30,11 +30,15 @@
         <input
           id="device-token"
           class="text-input"
-          type="password"
+          type="text"
           placeholder="anyloc_..."
           autocomplete="off"
           spellcheck="false"
         />
+        <p class="field-hint">
+          Copie uniquement le code qui commence par <strong>anyloc_</strong>
+          (sans « Bearer »).
+        </p>
         <label class="field-label" for="api-base-url">URL API</label>
         <input
           id="api-base-url"

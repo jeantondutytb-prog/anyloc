@@ -263,6 +263,10 @@ function DeviceTokenStep({ platform }: { platform: Platform }) {
           <code className="mt-3 block break-all rounded-lg bg-white px-3 py-2 text-xs text-zinc-800">
             {createdToken.token}
           </code>
+          <p className="mt-2 text-xs text-pink-600/90">
+            Colle ce code dans Anyloc Setup tel quel (commence par{" "}
+            <strong>anyloc_</strong>, sans « Bearer »).
+          </p>
           <Button size="sm" className="mt-3" onClick={() => void copyToken()}>
             <Copy className="h-4 w-4" />
             {copied ? "Copié !" : "Copier le code"}

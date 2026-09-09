@@ -42,7 +42,13 @@ export function extractBearerToken(request: Request) {
     return null;
   }
 
-  const token = header.slice("Bearer ".length).trim();
+  let token = header.slice("Bearer ".length).trim();
+
+  if (/^bearer\s+/i.test(token)) {
+    token = token.replace(/^bearer\s+/i, "").trim();
+  }
+
+  token = token.replace(/^["'`]+|["'`]+$/g, "").trim();
 
   if (!token.startsWith(TOKEN_PREFIX)) {
     return null;

@@ -5,6 +5,49 @@ const path = require("node:path");
 let cachedCli = null;
 let cachedPython = null;
 
+const DEVICE_TOKEN_PREFIX = "anyloc_";
+
+function normalizeApiBaseUrl(raw) {
+  let url = (raw || "https://anyloc.io").trim();
+  url = url.replace(/\/api\/device\/location\/?$/i, "");
+  url = url.replace(/\/$/, "");
+  return url || "https://anyloc.io";
+}
+
+function normalizeDeviceToken(raw) {
+  if (!raw) {
+    return "";
+  }
+
+  let token = String(raw).trim();
+  token = token.replace(/^\uFEFF/, "").replace(/[\u200B-\u200D\uFEFF]/g, "");
+
+  if (/^bearer\s+/i.test(token)) {
+    token = token.replace(/^bearer\s+/i, "").trim();
+  }
+
+  return token.replace(/^["'`]+|["'`]+$/g, "").trim();
+}
+
+function validateDeviceToken(token) {
+  if (!token) {
+    return "Colle ton code de liaison depuis anyloc.io/dashboard/installation.";
+  }
+
+  if (!token.startsWith(DEVICE_TOKEN_PREFIX)) {
+    return (
+      "Code invalide : il doit commencer par anyloc_. " +
+      "Va sur le dashboard → Installation → Générer mon code de liaison, puis copie-le en entier."
+    );
+  }
+
+  if (token.length < 20) {
+    return "Code incomplet. Copie le code en entier depuis le dashboard.";
+  }
+
+  return null;
+}
+
 function getScriptsDir() {
   try {
     const { app } = require("electron");
@@ -318,13 +361,23 @@ async function detectUsbDevice() {
 }
 
 async function fetchDashboardLocation({ token, apiBaseUrl }) {
-  const baseUrl = (apiBaseUrl || "https://anyloc.io").replace(/\/$/, "");
+  const normalizedToken = normalizeDeviceToken(token);
+  const validationError = validateDeviceToken(normalizedToken);
+
+  if (validationError) {
+    return {
+      ok: false,
+      message: validationError,
+    };
+  }
+
+  const baseUrl = normalizeApiBaseUrl(apiBaseUrl);
   const url = `${baseUrl}/api/device/location`;
 
   try {
     const response = await fetch(url, {
       headers: {
-        Authorization: `Bearer ${token.trim()}`,
+        Authorization: `Bearer ${normalizedToken}`,
         Accept: "application/json",
       },
     });
@@ -332,10 +385,20 @@ async function fetchDashboardLocation({ token, apiBaseUrl }) {
     const payload = await response.json().catch(() => ({}));
 
     if (!response.ok) {
+      const apiError = payload.error;
+
+      if (apiError === "Authorization Bearer token requis.") {
+        return {
+          ok: false,
+          message:
+            "Code de liaison refusé par l'API. Regénère un nouveau code sur anyloc.io/dashboard/installation et colle uniquement la partie anyloc_...",
+        };
+      }
+
       return {
         ok: false,
         message:
-          payload.error ||
+          apiError ||
           `Erreur API Anyloc (${response.status}). Vérifie ton token et ton abonnement.`,
       };
     }
@@ -398,10 +461,13 @@ async function runSimulateLocation(action, udid) {
 }
 
 async function applyGpsLocation({ udid, token, apiBaseUrl }) {
-  if (!token?.trim()) {
+  const normalizedToken = normalizeDeviceToken(token);
+  const validationError = validateDeviceToken(normalizedToken);
+
+  if (validationError) {
     return {
       ok: false,
-      message: "Colle ton token appareil depuis le dashboard Anyloc.",
+      message: validationError,
     };
   }
 
@@ -415,7 +481,10 @@ async function applyGpsLocation({ udid, token, apiBaseUrl }) {
     };
   }
 
-  const locationResult = await fetchDashboardLocation({ token, apiBaseUrl });
+  const locationResult = await fetchDashboardLocation({
+    token: normalizedToken,
+    apiBaseUrl,
+  });
 
   if (!locationResult.ok) {
     return locationResult;
