@@ -2,6 +2,7 @@ const { spawn, spawnSync } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
 
+let cachedCli = null;
 let cachedPython = null;
 
 function getScriptsDir() {
@@ -40,23 +41,6 @@ function getIpaPath() {
   return path.join(__dirname, "..", "..", "ios", "dist", "Anyloc.ipa");
 }
 
-function getPythonCandidates() {
-  const home = process.env.HOME || "";
-  const candidates = [
-    process.env.ANYLOC_PYTHON,
-    "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3",
-    "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
-    "/Library/Frameworks/Python.framework/Versions/3.12/bin/python3",
-    "/Library/Frameworks/Python.framework/Versions/3.11/bin/python3",
-    "/opt/homebrew/bin/python3",
-    "/usr/local/bin/python3",
-    path.join(home, ".local", "bin", "python3"),
-    "python3",
-  ].filter(Boolean);
-
-  return [...new Set(candidates)];
-}
-
 function getSpawnEnv() {
   const extraPaths = [
     "/Library/Frameworks/Python.framework/Versions/3.14/bin",
@@ -75,6 +59,58 @@ function getSpawnEnv() {
   };
 }
 
+function getCliCandidates() {
+  const home = process.env.HOME || "";
+
+  return [
+    process.env.ANYLOC_PMD3,
+    "/Library/Frameworks/Python.framework/Versions/3.14/bin/pymobiledevice3",
+    "/Library/Frameworks/Python.framework/Versions/3.13/bin/pymobiledevice3",
+    "/Library/Frameworks/Python.framework/Versions/3.12/bin/pymobiledevice3",
+    "/opt/homebrew/bin/pymobiledevice3",
+    "/usr/local/bin/pymobiledevice3",
+    path.join(home, ".local", "bin", "pymobiledevice3"),
+    "pymobiledevice3",
+  ].filter(Boolean);
+}
+
+function resolvePymobiledevice3Cli() {
+  if (cachedCli) {
+    return cachedCli;
+  }
+
+  const env = getSpawnEnv();
+
+  for (const cli of getCliCandidates()) {
+    const result = spawnSync(cli, ["usbmux", "list"], {
+      env,
+      timeout: 8000,
+    });
+
+    if (result.status === 0) {
+      cachedCli = cli;
+      return cli;
+    }
+  }
+
+  return null;
+}
+
+function getPythonCandidates() {
+  const home = process.env.HOME || "";
+
+  return [
+    process.env.ANYLOC_PYTHON,
+    "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3",
+    "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+    "/Library/Frameworks/Python.framework/Versions/3.12/bin/python3",
+    "/opt/homebrew/bin/python3",
+    "/usr/local/bin/python3",
+    path.join(home, ".local", "bin", "python3"),
+    "python3",
+  ].filter(Boolean);
+}
+
 function resolvePythonExecutable() {
   if (cachedPython) {
     return cachedPython;
@@ -85,7 +121,7 @@ function resolvePythonExecutable() {
   for (const python of getPythonCandidates()) {
     const result = spawnSync(
       python,
-      ["-c", "from pymobiledevice3.usbmux import list_devices"],
+      ["-c", "import pymobiledevice3"],
       {
         env,
         timeout: 8000,
@@ -101,6 +137,45 @@ function resolvePythonExecutable() {
   return null;
 }
 
+function runCli(args) {
+  return new Promise((resolve) => {
+    const cli = resolvePymobiledevice3Cli();
+
+    if (!cli) {
+      resolve({
+        ok: false,
+        stdout: "",
+        stderr:
+          "pymobiledevice3 introuvable. Terminal : pip3 install pymobiledevice3",
+      });
+      return;
+    }
+
+    const child = spawn(cli, args, {
+      env: getSpawnEnv(),
+    });
+
+    let stdout = "";
+    let stderr = "";
+
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk.toString();
+    });
+
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+
+    child.on("close", (code) => {
+      resolve({
+        ok: code === 0,
+        stdout,
+        stderr,
+      });
+    });
+  });
+}
+
 function runPython(scriptName, args = []) {
   return new Promise((resolve) => {
     const python = resolvePythonExecutable();
@@ -112,7 +187,7 @@ function runPython(scriptName, args = []) {
         udid: null,
         deviceName: null,
         message:
-          "Python avec pymobiledevice3 introuvable. Dans Terminal : pip3 install pymobiledevice3 — puis relance Anyloc Setup avec : PATH=\"/Library/Frameworks/Python.framework/Versions/3.14/bin:$PATH\" open -a \"Anyloc Setup\"",
+          "Python avec pymobiledevice3 introuvable. Terminal : pip3 install pymobiledevice3",
       });
       return;
     }
@@ -164,18 +239,87 @@ function runPython(scriptName, args = []) {
 }
 
 async function detectUsbDevice() {
-  return runPython("detect_device.py");
+  const result = await runCli(["usbmux", "list"]);
+
+  if (!result.ok) {
+    return {
+      connected: false,
+      udid: null,
+      deviceName: null,
+      message:
+        result.stderr.trim() ||
+        "Impossible de lister les appareils USB. Vérifie pymobiledevice3.",
+    };
+  }
+
+  try {
+    const devices = JSON.parse(result.stdout || "[]");
+
+    if (!devices.length) {
+      return {
+        connected: false,
+        udid: null,
+        deviceName: null,
+        message:
+          "Aucun iPhone en USB. Déverrouille l'iPhone, branche-le, ouvre le Finder pour « Faire confiance », puis Revérifier.",
+      };
+    }
+
+    const device = devices[0];
+    const udid = device.UniqueDeviceID || device.Identifier;
+    const deviceName = device.DeviceName || `iPhone (${String(udid).slice(0, 8)}…)`;
+
+    return {
+      connected: true,
+      udid,
+      deviceName,
+      message: `${deviceName} — iPhone détecté, prêt pour l'installation.`,
+    };
+  } catch {
+    return {
+      connected: false,
+      udid: null,
+      deviceName: null,
+      message: "Réponse USB invalide depuis pymobiledevice3.",
+    };
+  }
 }
 
 async function installIosApp({ udid }) {
   const ipaPath = getIpaPath();
-  const args = ["--ipa", ipaPath];
+
+  if (!fs.existsSync(ipaPath)) {
+    return {
+      ok: false,
+      message:
+        "Fichier IPA introuvable. L'app iOS n'est pas encore disponible — on finalise le build.",
+    };
+  }
+
+  const args = ["apps", "install", ipaPath];
 
   if (udid) {
     args.push("--udid", udid);
   }
 
-  return runPython("install_ios.py", args);
+  const result = await runCli(args);
+
+  if (result.ok) {
+    return {
+      ok: true,
+      message: "Anyloc installé sur ton iPhone. Ouvre l'app et colle ton token.",
+      udid,
+      output: result.stdout.trim(),
+    };
+  }
+
+  return {
+    ok: false,
+    message:
+      (result.stderr || result.stdout || "").trim() ||
+      "Échec de l'installation. Vérifie le mode développeur et la confiance USB.",
+    udid,
+  };
 }
 
 module.exports = {
