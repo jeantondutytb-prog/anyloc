@@ -21,6 +21,12 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
 
+      - name: Install Rust
+        run: |
+          brew install rustup
+          rustup default stable
+          rustup target add aarch64-apple-ios
+
       - name: Build signed IPA
         env:
           APPLE_DEVELOPMENT_TEAM: ${{ secrets.APPLE_DEVELOPMENT_TEAM }}

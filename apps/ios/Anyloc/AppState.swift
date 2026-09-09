@@ -17,13 +17,30 @@ final class AppState: ObservableObject {
     private var searchTask: Task<Void, Never>?
 
     init() {
-        apiBaseUrl = defaults.string(forKey: "apiBaseUrl") ?? "https://anyloc.io"
+        apiBaseUrl = defaults.string(forKey: "apiBaseUrl") ?? "https://www.anyloc.io"
         deviceToken = defaults.string(forKey: "deviceToken") ?? ""
+
+        if !deviceToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            startSync()
+        }
     }
 
     func saveSettings() {
-        defaults.set(apiBaseUrl, forKey: "apiBaseUrl")
+        defaults.set(normalizedApiBaseUrl, forKey: "apiBaseUrl")
         defaults.set(deviceToken, forKey: "deviceToken")
+    }
+
+    private var normalizedApiBaseUrl: String {
+        var url = apiBaseUrl.trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+
+        url = url.replacingOccurrences(
+            of: #"^https?://anyloc\.io$"#,
+            with: "https://www.anyloc.io",
+            options: .regularExpression
+        )
+
+        return url.isEmpty ? "https://www.anyloc.io" : url
     }
 
     private var api: AnylocAPI? {
@@ -32,7 +49,7 @@ final class AppState: ObservableObject {
             return nil
         }
 
-        return AnylocAPI(baseURL: apiBaseUrl, token: token)
+        return AnylocAPI(baseURL: normalizedApiBaseUrl, token: token)
     }
 
     func testConnection() async {
@@ -76,7 +93,7 @@ final class AppState: ObservableObject {
             defer { isSearching = false }
 
             do {
-                let api = AnylocAPI(baseURL: apiBaseUrl, token: deviceToken)
+                let api = AnylocAPI(baseURL: normalizedApiBaseUrl, token: deviceToken)
                 let results = try await api.searchPlaces(query: query)
 
                 guard !Task.isCancelled else {
@@ -117,9 +134,10 @@ final class AppState: ObservableObject {
 
             if !isSyncing {
                 startSync()
-            } else {
-                await LocationSpoofService.shared.apply(location: location)
             }
+
+            await LocationSpoofService.shared.apply(location: location)
+            statusMessage = LocationSpoofService.shared.gpsStatus
         } catch {
             statusMessage = "Erreur : \(error.localizedDescription)"
         }
@@ -142,7 +160,8 @@ final class AppState: ObservableObject {
             )
 
             lastLocation = location
-            statusMessage = "Position en pause"
+            await LocationSpoofService.shared.clearAppliedLocation()
+            statusMessage = LocationSpoofService.shared.gpsStatus
         } catch {
             statusMessage = "Erreur : \(error.localizedDescription)"
         }
@@ -155,7 +174,7 @@ final class AppState: ObservableObject {
         statusMessage = "Synchronisation active"
 
         syncTask = Task {
-            let api = AnylocAPI(baseURL: apiBaseUrl, token: deviceToken)
+            let api = AnylocAPI(baseURL: normalizedApiBaseUrl, token: deviceToken)
 
             while !Task.isCancelled {
                 do {
@@ -164,8 +183,9 @@ final class AppState: ObservableObject {
 
                     if location.isActive {
                         await LocationSpoofService.shared.apply(location: location)
-                        statusMessage = "Actif · \(location.name)"
+                        statusMessage = LocationSpoofService.shared.gpsStatus
                     } else {
+                        await LocationSpoofService.shared.clearAppliedLocation()
                         statusMessage = "En pause"
                     }
                 } catch {
@@ -182,5 +202,9 @@ final class AppState: ObservableObject {
         syncTask = nil
         isSyncing = false
         statusMessage = "Synchronisation arrêtée"
+
+        Task {
+            await LocationSpoofService.shared.disconnect()
+        }
     }
 }

@@ -14,6 +14,9 @@ targets:
     platform: iOS
     sources:
       - Anyloc
+    dependencies:
+      - framework: Vendor/IDevice.xcframework
+        embed: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.anyloc.app
@@ -22,6 +25,8 @@ targets:
         INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription: Anyloc maintient ta position fictive en arrière-plan.
         INFOPLIST_KEY_UIBackgroundModes:
           - location
+        INFOPLIST_KEY_UIFileSharingEnabled: YES
+        INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace: YES
     info:
       path: Anyloc/Info.plist
       properties:

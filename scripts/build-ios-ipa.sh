@@ -22,6 +22,13 @@ fi
 
 mkdir -p "$DIST_DIR" "$IOS_DIR/build"
 
+cd "$ROOT"
+if [[ ! -d "$IOS_DIR/Vendor/IDevice.xcframework" ]]; then
+  echo "→ Build IDevice.xcframework (première fois)"
+  chmod +x scripts/build-idevice-xcframework.sh
+  ./scripts/build-idevice-xcframework.sh
+fi
+
 cd "$IOS_DIR"
 
 if command -v xcodegen >/dev/null 2>&1; then

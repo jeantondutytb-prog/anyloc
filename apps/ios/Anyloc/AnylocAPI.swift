@@ -54,7 +54,17 @@ struct AnylocAPI {
     let token: String
 
     private var trimmedBaseURL: String {
-        baseURL.trimmingCharacters(in: .whitespacesAndNewlines).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        var url = baseURL
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+
+        url = url.replacingOccurrences(
+            of: #"^https?://anyloc\.io$"#,
+            with: "https://www.anyloc.io",
+            options: .regularExpression
+        )
+
+        return url
     }
 
     func fetchLocation() async throws -> RemoteLocation {
