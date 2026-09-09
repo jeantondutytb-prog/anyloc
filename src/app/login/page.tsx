@@ -5,11 +5,11 @@ import { getCheckoutUrl, isValidPlanId } from "@/lib/constants";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ plan?: string; next?: string }>;
+  searchParams: Promise<{ plan?: string; next?: string; redirectTo?: string }>;
 }) {
-  const { plan, next } = await searchParams;
+  const { plan, next, redirectTo: redirectToParam } = await searchParams;
   const planId = isValidPlanId(plan) ? plan! : "annual";
-  const redirectTo = next ?? getCheckoutUrl(planId);
+  const redirectTo = next ?? redirectToParam ?? getCheckoutUrl(planId);
 
   return (
     <AuthShell

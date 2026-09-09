@@ -4,6 +4,7 @@ import { ensureStripeCustomerForUser } from "@/lib/billing";
 import { getCheckoutUrl, isValidPlanId } from "@/lib/constants";
 import { getStripePublishableKey } from "@/lib/stripe-client";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { getSubscriptionAccessForUser } from "@/lib/subscription";
 
 export default async function CheckoutPage({
   searchParams,
@@ -25,6 +26,12 @@ export default async function CheckoutPage({
 
     if (!user) {
       redirect(`/login?next=${encodeURIComponent(getCheckoutUrl(planId))}`);
+    }
+
+    const access = await getSubscriptionAccessForUser(user.id, user.email);
+
+    if (access.hasAccess) {
+      redirect("/dashboard");
     }
 
     if (user.email) {

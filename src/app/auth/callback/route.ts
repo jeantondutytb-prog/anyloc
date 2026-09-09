@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
+import { resolvePostAuthRedirect } from "@/lib/auth-redirect";
 import { ensureStripeCustomerForUser } from "@/lib/billing";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/dashboard";
+  const requestedNext = searchParams.get("next");
 
   if (code) {
     const supabase = await createClient();
@@ -27,7 +28,11 @@ export async function GET(request: Request) {
         }
       }
 
-      return NextResponse.redirect(new URL(next, origin));
+      const destination = user
+        ? await resolvePostAuthRedirect(user.id, user.email, requestedNext)
+        : requestedNext ?? "/dashboard";
+
+      return NextResponse.redirect(new URL(destination, origin));
     }
   }
 
