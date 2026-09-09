@@ -3,14 +3,7 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import {
-  ChevronLeft,
-  Loader2,
-  MapPin,
-  Navigation,
-  Power,
-  Smartphone,
-} from "lucide-react";
+import { ChevronLeft, MapPin, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
@@ -36,7 +29,7 @@ const LocationMap = dynamic(
 export function DashboardView() {
   const { hydrated, completeStep } = useDashboardOnboarding();
 
-  const { location, loading, saving, error, saveLocation } = useLocationSync({
+  const { location, error, saveLocation } = useLocationSync({
     onSynced: () => completeStep("activate"),
   });
 
@@ -88,40 +81,24 @@ export function DashboardView() {
     }
   }, [completeStep, hydrated, selected]);
 
-  const persistLocation = useCallback(
-    async (nextActive: boolean) => {
-      await saveLocation({
-        name: selected.name,
-        lat: selected.lat,
-        lng: selected.lng,
-        isActive: nextActive,
-      });
-    },
-    [saveLocation, selected]
-  );
-
-  const handleActivateSignal = async () => {
-    setActive(true);
-    await persistLocation(true);
-  };
-
-  const handleStopSignal = async () => {
-    setActive(false);
-
-    try {
-      await persistLocation(false);
-    } catch {
+  const handleSelectLocation = useCallback(
+    async (nextLocation: { name: string; lat: number; lng: number }) => {
+      setSelected(nextLocation);
       setActive(true);
-    }
-  };
 
-  const handleSelectLocation = (nextLocation: {
-    name: string;
-    lat: number;
-    lng: number;
-  }) => {
-    setSelected(nextLocation);
-  };
+      try {
+        await saveLocation({
+          name: nextLocation.name,
+          lat: nextLocation.lat,
+          lng: nextLocation.lng,
+          isActive: true,
+        });
+      } catch {
+        setActive(false);
+      }
+    },
+    [saveLocation]
+  );
 
   const lastSyncedLabel = location?.updatedAt
     ? new Date(location.updatedAt).toLocaleString("fr-FR", {
@@ -255,44 +232,13 @@ export function DashboardView() {
               </span>
             </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <Button
-                variant="secondary"
-                className="w-full"
-                onClick={() => setPanelOpen(true)}
-              >
-                <MapPin className="h-4 w-4" />
-                Changer ma loc
-              </Button>
-              {active ? (
-                <Button
-                  variant="secondary"
-                  className="w-full"
-                  disabled={saving || loading}
-                  onClick={() => void handleStopSignal()}
-                >
-                  {saving ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Power className="h-4 w-4" />
-                  )}
-                  Arrêter
-                </Button>
-              ) : (
-                <Button
-                  className="w-full"
-                  disabled={saving || loading}
-                  onClick={() => void handleActivateSignal()}
-                >
-                  {saving ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Navigation className="h-4 w-4" />
-                  )}
-                  Activer le signal
-                </Button>
-              )}
-            </div>
+            <Button
+              className="mt-4 w-full"
+              onClick={() => setPanelOpen(true)}
+            >
+              <MapPin className="h-4 w-4" />
+              Changer ma loc
+            </Button>
           </div>
         </div>
       </div>
