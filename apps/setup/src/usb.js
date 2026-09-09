@@ -238,7 +238,25 @@ function runPython(scriptName, args = []) {
   });
 }
 
+function getInstallAvailability() {
+  const ipaPath = getIpaPath();
+
+  if (fs.existsSync(ipaPath)) {
+    return {
+      installReady: true,
+      installHint: null,
+    };
+  }
+
+  return {
+    installReady: false,
+    installHint:
+      "L'app iOS n'est pas encore disponible (fichier IPA en cours de build). En attendant, ouvre https://anyloc.io/web sur ton iPhone depuis Safari.",
+  };
+}
+
 async function detectUsbDevice() {
+  const installAvailability = getInstallAvailability();
   const result = await runCli(["usbmux", "list"]);
 
   if (!result.ok) {
@@ -274,6 +292,8 @@ async function detectUsbDevice() {
       udid,
       deviceName,
       message: `${deviceName} — iPhone détecté, prêt pour l'installation.`,
+      installReady: installAvailability.installReady,
+      installHint: installAvailability.installHint,
     };
   } catch {
     return {
@@ -292,7 +312,7 @@ async function installIosApp({ udid }) {
     return {
       ok: false,
       message:
-        "Fichier IPA introuvable. L'app iOS n'est pas encore disponible — on finalise le build.",
+        "L'app iOS n'est pas encore disponible (IPA en cours de build). Utilise https://anyloc.io/web sur ton iPhone depuis Safari en attendant.",
     };
   }
 

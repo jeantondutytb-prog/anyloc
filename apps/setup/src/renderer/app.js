@@ -57,7 +57,14 @@ async function refreshUsbStatus() {
 
   if (result.connected && result.deviceName) {
     status.textContent = `${result.deviceName} — ${result.message}`;
-    installButton.disabled = false;
+    installButton.disabled = !result.installReady;
+
+    if (result.installReady) {
+      setInstallStatus("Tu peux installer Anyloc sur ton iPhone.", "ok");
+    } else if (result.installHint) {
+      setInstallStatus(result.installHint, "error");
+    }
+
     return;
   }
 
