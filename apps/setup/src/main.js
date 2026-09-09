@@ -1,6 +1,12 @@
-const { app, BrowserWindow, ipcMain } = require("electron");
+const { app, BrowserWindow, ipcMain, shell } = require("electron");
 const path = require("path");
-const { detectUsbDevice, installIosApp, applyGpsLocation, ensureIpaAvailable } = require("./usb");
+const {
+  detectUsbDevice,
+  installIosApp,
+  applyGpsLocation,
+  ensureIpaAvailable,
+  exportPairingFile,
+} = require("./usb");
 
 function createWindow() {
   const window = new BrowserWindow({
@@ -50,6 +56,22 @@ ipcMain.handle("setup:apply-gps", async (_event, payload) => {
   const apiBaseUrl = payload?.apiBaseUrl ?? "https://www.anyloc.io";
 
   return applyGpsLocation({ udid, token, apiBaseUrl });
+});
+
+ipcMain.handle("setup:export-pairing", async (_event, payload) => {
+  const udid = payload?.udid ?? null;
+  return exportPairingFile({ udid });
+});
+
+ipcMain.handle("setup:show-item-in-folder", async (_event, payload) => {
+  const filePath = payload?.path;
+
+  if (!filePath) {
+    return { ok: false, message: "Chemin de fichier manquant." };
+  }
+
+  shell.showItemInFolder(filePath);
+  return { ok: true };
 });
 
 app.whenReady().then(() => {
