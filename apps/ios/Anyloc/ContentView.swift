@@ -27,17 +27,37 @@ struct ContentView: View {
                         }
                     }
 
-                    HStack {
+                    HStack(alignment: .center) {
                         Circle()
-                            .fill(appState.pairingStore.hasPairing ? .green : .red)
+                            .fill(pairingStatusColor)
                             .frame(width: 10, height: 10)
-                        Text(appState.pairingStore.hasPairing ? "Pairing importé" : "Pairing manquant")
-                        Spacer()
-                        Button("Importer") {
-                            appState.showPairingPicker = true
+
+                        if appState.isDownloadingPairing {
+                            HStack(spacing: 8) {
+                                ProgressView()
+                                    .controlSize(.small)
+                                Text("Récupération du pairing...")
+                            }
+                        } else if appState.pairingStore.hasPairing {
+                            Text("Pairing importé")
+                        } else {
+                            Text("Pairing manquant")
                         }
-                        Button("Coller") {
-                            appState.importPairingFromClipboard()
+
+                        Spacer()
+
+                        if !appState.isDownloadingPairing && !appState.pairingStore.hasPairing {
+                            Button("Réessayer") {
+                                Task { await appState.retryPairingDownload() }
+                            }
+                            Button("Importer manuellement") {
+                                appState.showPairingPicker = true
+                            }
+                            Button("Coller") {
+                                appState.importPairingFromClipboard()
+                            }
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                         }
                     }
 
@@ -162,6 +182,14 @@ struct ContentView: View {
                 }
             }
         }
+    }
+
+    private var pairingStatusColor: Color {
+        if appState.isDownloadingPairing {
+            return .orange
+        }
+
+        return appState.pairingStore.hasPairing ? .green : .red
     }
 
     private var localDevVPNColor: Color {

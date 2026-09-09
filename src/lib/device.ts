@@ -8,6 +8,7 @@ export type DeviceTokenRow = {
   token_hash: string;
   platform: DevicePlatform;
   device_name: string;
+  pairing_data: string | null;
   last_seen_at: string | null;
   created_at: string;
 };

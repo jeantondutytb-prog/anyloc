@@ -76,25 +76,25 @@
       </section>
 
       <section class="panel highlight">
-        <h2>4. Exporter le fichier de pairing</h2>
+        <h2>4. Envoyer le pairing</h2>
         <p class="panel-copy">
-          Envoie ce fichier sur ton iPhone par AirDrop, puis ouvre Anyloc →
-          Importer le pairing.
+          Le pairing est envoyé au serveur Anyloc. Ouvre ensuite Anyloc sur ton
+          iPhone : il sera récupéré automatiquement.
         </p>
         <div class="actions">
           <button id="export-pairing" type="button" disabled>
-            Exporter le fichier de pairing
-          </button>
-          <button
-            id="show-pairing-in-finder"
-            type="button"
-            class="secondary"
-            hidden
-          >
-            Ouvrir dans le Finder
+            Envoyer le pairing à ton iPhone
           </button>
         </div>
         <p id="pairing-export-status" class="install-status"></p>
+        <button
+          id="save-pairing-local"
+          type="button"
+          class="link-button"
+          hidden
+        >
+          Sauvegarder une copie locale
+        </button>
       </section>
 
       <section class="panel muted">

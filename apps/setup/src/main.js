@@ -6,6 +6,7 @@ const {
   applyGpsLocation,
   ensureIpaAvailable,
   exportPairingFile,
+  savePairingLocalCopy,
 } = require("./usb");
 
 function createWindow() {
@@ -60,7 +61,17 @@ ipcMain.handle("setup:apply-gps", async (_event, payload) => {
 
 ipcMain.handle("setup:export-pairing", async (_event, payload) => {
   const udid = payload?.udid ?? null;
-  return exportPairingFile({ udid });
+  const token = payload?.token ?? "";
+  const apiBaseUrl = payload?.apiBaseUrl ?? "https://www.anyloc.io";
+
+  return exportPairingFile({ udid, token, apiBaseUrl });
+});
+
+ipcMain.handle("setup:save-pairing-local", async (_event, payload) => {
+  const sourcePath = payload?.sourcePath ?? null;
+  const udid = payload?.udid ?? null;
+
+  return savePairingLocalCopy({ sourcePath, udid });
 });
 
 ipcMain.handle("setup:show-item-in-folder", async (_event, payload) => {

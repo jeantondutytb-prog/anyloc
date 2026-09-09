@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 enum PairingStoreError: LocalizedError {
     case invalidPairingFile
     case noClipboardPairing
+    case noServerPairing
 
     var errorDescription: String? {
         switch self {
@@ -12,6 +13,8 @@ enum PairingStoreError: LocalizedError {
             return "Fichier de pairing invalide"
         case .noClipboardPairing:
             return "Aucun fichier de pairing dans le presse-papier"
+        case .noServerPairing:
+            return "Aucun pairing disponible sur le serveur. Lance Anyloc Setup sur ton ordi."
         }
     }
 }
@@ -72,6 +75,14 @@ final class PairingStore: ObservableObject {
             try? FileManager.default.removeItem(at: fileURL)
         }
         hasPairing = false
+    }
+
+    func downloadPairingFromServer(api: AnylocAPI) async throws {
+        guard let data = try await api.fetchPairing() else {
+            throw PairingStoreError.noServerPairing
+        }
+
+        try savePairingData(data)
     }
 
     private func savePairingData(_ data: Data) throws {
