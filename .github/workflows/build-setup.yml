@@ -42,10 +42,14 @@ jobs:
           if-no-files-found: error
 
       - name: Upload to Vercel Blob
-        if: ${{ secrets.BLOB_READ_WRITE_TOKEN != '' }}
         env:
           BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
-        run: node scripts/upload-release.mjs setup-mac apps/setup/dist/Anyloc-Setup.dmg
+        run: |
+          if [ -n "$BLOB_READ_WRITE_TOKEN" ]; then
+            node scripts/upload-release.mjs setup-mac apps/setup/dist/Anyloc-Setup.dmg
+          else
+            echo "BLOB_READ_WRITE_TOKEN absent — skip upload Blob"
+          fi
 
       - name: Keep DMG for release
         run: mkdir -p /tmp/setup-release && cp apps/setup/dist/Anyloc-Setup.dmg /tmp/setup-release/
@@ -85,13 +89,21 @@ jobs:
           if-no-files-found: error
 
       - name: Upload to Vercel Blob
-        if: ${{ secrets.BLOB_READ_WRITE_TOKEN != '' }}
         env:
           BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
-        run: node scripts/upload-release.mjs setup-win apps/setup/dist/Anyloc-Setup.exe
+        shell: bash
+        run: |
+          if [ -n "$BLOB_READ_WRITE_TOKEN" ]; then
+            node scripts/upload-release.mjs setup-win apps/setup/dist/Anyloc-Setup.exe
+          else
+            echo "BLOB_READ_WRITE_TOKEN absent — skip upload Blob"
+          fi
 
       - name: Keep EXE for release
-        run: mkdir -p $env:RUNNER_TEMP\setup-release; Copy-Item apps\setup\dist\Anyloc-Setup.exe $env:RUNNER_TEMP\setup-release\
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/setup-release"
+          cp apps/setup/dist/Anyloc-Setup.exe "$RUNNER_TEMP/setup-release/"
 
       - uses: actions/upload-artifact@v4
         with:
