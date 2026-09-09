@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
-const { detectUsbDevice, installIosApp, applyGpsLocation } = require("./usb");
+const { detectUsbDevice, installIosApp, applyGpsLocation, ensureIpaAvailable } = require("./usb");
 
 function createWindow() {
   const window = new BrowserWindow({
@@ -33,6 +33,10 @@ ipcMain.handle("setup:get-platform", () => {
 
 ipcMain.handle("setup:check-usb", async () => {
   return detectUsbDevice();
+});
+
+ipcMain.handle("setup:ensure-ipa", async () => {
+  return ensureIpaAvailable();
 });
 
 ipcMain.handle("setup:install-ios", async (_event, payload) => {

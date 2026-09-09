@@ -4,7 +4,8 @@ App iPhone sideloadée qui lit la position depuis l'API Anyloc (`GET /api/device
 
 ## Statut
 
-**v0.1 — scaffold** : UI SwiftUI + client API + sync périodique. Le spoofing GPS système nécessite des entitlements développeur et sera branché après le flux Anyloc Setup.
+**v0.2** : UI SwiftUI + recherche de ville + sync API. Installation via Anyloc Setup (`Anyloc.ipa`).
+Le spoofing GPS système reste à finaliser dans `LocationSpoofService.swift`.
 
 ## Prérequis
 
