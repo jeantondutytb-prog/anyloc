@@ -8,6 +8,7 @@ on:
       - "cursor/**"
     paths:
       - "apps/setup/**"
+      - "apps/ios/**"
       - "scripts/build-setup.sh"
       - "scripts/upload-release.mjs"
       - ".github/workflows/build-setup.yml"
@@ -27,6 +28,24 @@ jobs:
       - name: Install dependencies
         working-directory: apps/setup
         run: npm install
+
+      - name: Bundle latest Anyloc.ipa (if published)
+        shell: bash
+        run: |
+          mkdir -p apps/ios/dist
+          URL=$(curl -fsSL \
+            -H "Accept: application/vnd.github+json" \
+            -H "User-Agent: anyloc-setup-build" \
+            "https://api.github.com/repos/${{ github.repository }}/releases?per_page=20" \
+            | python3 -c "import json,sys; releases=json.load(sys.stdin); \
+          url=next((a['browser_download_url'] for r in releases for a in r.get('assets',[]) if a.get('name')=='Anyloc.ipa'), None); \
+          print(url or '')")
+          if [ -n "$URL" ]; then
+            curl -fsSL -o apps/ios/dist/Anyloc.ipa "$URL"
+            echo "Bundled Anyloc.ipa from $URL"
+          else
+            echo "No Anyloc.ipa in releases yet — Setup will download it at runtime."
+          fi
 
       - name: Build macOS DMG
         working-directory: apps/setup
@@ -135,6 +154,26 @@ jobs:
           files: |
             release-files/Anyloc-Setup.dmg
             release-files/Anyloc-Setup.exe
+
+      - name: Attach Anyloc.ipa to release (if available)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          URL=$(curl -fsSL \
+            -H "Accept: application/vnd.github+json" \
+            -H "User-Agent: anyloc-setup-build" \
+            "https://api.github.com/repos/${{ github.repository }}/releases?per_page=20" \
+            | python3 -c "import json,sys; releases=json.load(sys.stdin); \
+          url=next((a['browser_download_url'] for r in releases for a in r.get('assets',[]) if a.get('name')=='Anyloc.ipa'), None); \
+          print(url or '')")
+          if [ -z "$URL" ]; then
+            echo "No Anyloc.ipa to attach."
+            exit 0
+          fi
+          curl -fsSL -o /tmp/Anyloc.ipa "$URL"
+          TAG="setup-v0.1.${{ github.run_number }}"
+          gh release upload "$TAG" /tmp/Anyloc.ipa --clobber
 
       - name: Print Vercel env vars
         run: |

@@ -16,6 +16,10 @@ const TARGETS = {
     envKey: "ANYLOC_DOWNLOAD_APK",
     blobPath: "releases/Anyloc.apk",
   },
+  ios: {
+    envKey: "ANYLOC_DOWNLOAD_IPA",
+    blobPath: "releases/Anyloc.ipa",
+  },
   "setup-mac": {
     envKey: "ANYLOC_DOWNLOAD_SETUP_MAC",
     blobPath: "releases/Anyloc-Setup.dmg",
@@ -57,7 +61,7 @@ async function main() {
 
   if (!targetKey || !filePath) {
     console.error(
-      "Usage: BLOB_READ_WRITE_TOKEN=xxx node scripts/upload-release.mjs <android|setup-mac|setup-win> <file-path>"
+      "Usage: BLOB_READ_WRITE_TOKEN=xxx node scripts/upload-release.mjs <android|ios|setup-mac|setup-win> <file-path>"
     );
     process.exit(1);
   }

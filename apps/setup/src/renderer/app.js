@@ -121,7 +121,7 @@ async function refreshUsbStatus() {
     status.textContent = `${result.deviceName} — ${result.message}`;
 
     if (result.installReady) {
-      setStatus("install-status", "Tu peux aussi installer l'app native Anyloc.", "ok");
+      setStatus("install-status", result.installHint || "App iPhone prête.", "ok");
     } else if (result.installHint) {
       setStatus("install-status", result.installHint, "");
     }
@@ -232,9 +232,27 @@ function toggleSync() {
   );
 }
 
+async function prepareNativeApp() {
+  setStatus("install-status", "Préparation de l'app iPhone…");
+
+  const result = await window.anylocSetup.ensureIpa();
+
+  if (result.ok) {
+    setStatus(
+      "install-status",
+      "App iPhone prête. Branche ton iPhone puis clique sur Installer.",
+      "ok"
+    );
+    return;
+  }
+
+  setStatus("install-status", result.message || "App iPhone indisponible pour le moment.", "error");
+}
+
 async function init() {
   renderSteps();
   restoreSettings();
+  await prepareNativeApp();
   await refreshUsbStatus();
   updateActionButtons();
 
