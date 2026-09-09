@@ -16,9 +16,42 @@
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>0.1.0</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>io.anyloc.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>anyloc</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>localdevvpn</string>
+	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_remotepairing._tcp</string>
+		<string>_remotepairing-pairable-host._tcp</string>
+		<string>_remoted._tcp</string>
+	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Anyloc utilise le réseau local pour communiquer avec le tunnel développeur (LocalDevVPN).</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Anyloc maintient la position GPS simulée active en arrière-plan.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Anyloc utilise ta position réelle pour la carte.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+		<string>audio</string>
+		<string>processing</string>
+	</array>
 </dict>
 </plist>
