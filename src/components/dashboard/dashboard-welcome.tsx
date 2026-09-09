@@ -7,18 +7,18 @@ import { Card } from "@/components/ui/card";
 const previewSteps = [
   {
     icon: Smartphone,
-    title: "Installe l'app",
-    description: "Guide iOS ou Android depuis ton espace client.",
+    title: "Branche ton téléphone",
+    description: "Génère un code et installe l'app Anyloc — une seule fois.",
   },
   {
     icon: MapPin,
-    title: "Choisis ta destination",
-    description: "Un spot sur la carte ou un favori en un clic.",
+    title: "Choisis sur la carte",
+    description: "Cherche une ville ou clique sur la carte depuis ton dashboard.",
   },
   {
     icon: CheckCircle2,
-    title: "Active et envoie",
-    description: "Lance le signal GPS et synchronise avec ton tel.",
+    title: "Ta loc reste active",
+    description: "Ton iPhone suit la position du dashboard jusqu'à ce que tu arrêtes.",
   },
 ];
 
@@ -57,8 +57,8 @@ export function DashboardWelcome({
 
         <p className="mt-3 text-sm text-zinc-600 sm:text-base">
           {paymentSuccess
-            ? "Ton accès est actif. Suis ces 3 étapes pour envoyer ta première position sur ton téléphone."
-            : "Avant de choisir une ville, commence par installer l'app sur ton mobile — c'est indispensable."}
+            ? "Ton accès est actif. Branche ton téléphone, choisis une ville sur la carte — ta loc iPhone se met à jour toute seule."
+            : "Branche ton téléphone une fois, puis pilote ta position depuis la carte du dashboard."}
         </p>
 
         <div className="mt-6 space-y-3">

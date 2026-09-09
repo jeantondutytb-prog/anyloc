@@ -15,9 +15,9 @@ const steps = [
   },
   {
     icon: MapPin,
-    title: "Choisis ta destination",
+    title: "Choisis sur la carte",
     description:
-      "Sélectionne ta destination dans l'app Anyloc — toutes tes apps basculent au même endroit.",
+      "Depuis ton dashboard, cherche une ville ou clique sur la carte — ton téléphone suit en direct.",
   },
 ];
 

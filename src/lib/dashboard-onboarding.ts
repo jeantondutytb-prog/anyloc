@@ -24,22 +24,22 @@ export const DEFAULT_ONBOARDING_STATE: OnboardingState = {
 export const ONBOARDING_STEP_ITEMS = [
   {
     id: "install" as const,
-    title: "Installe Anyloc sur ton téléphone",
+    title: "Branche ton téléphone",
     description:
-      "iPhone : Setup + USB une fois, puis LocalDevVPN pour renouveler. Android : APK sur le téléphone.",
+      "Ton code se génère tout seul. Installe l'app, scanne le QR — plus de copier-coller.",
     cta: "Voir le guide",
   },
   {
     id: "chooseSpot" as const,
-    title: "Choisis ta destination",
+    title: "Choisis ta ville sur la carte",
     description:
-      "Ouvre l'app Anyloc et cherche ta ville (Marbella, Paris, Miami…).",
+      "Cherche Marbella, Paris, Miami… ou clique directement sur la carte du dashboard.",
   },
   {
     id: "activate" as const,
-    title: "Active ton signal GPS",
+    title: "Ta loc reste active",
     description:
-      "Appuie sur la destination dans l'app — le GPS se met à jour tout seul.",
+      "Ton iPhone reçoit la position automatiquement. Clique sur « Arrêter la loc » quand tu veux couper.",
   },
 ] as const;
 

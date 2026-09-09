@@ -9,6 +9,55 @@ const {
   savePairingLocalCopy,
 } = require("./usb");
 
+let pendingLaunchConfig = null;
+let mainWindowRef = null;
+
+function parseSetupUrl(rawUrl) {
+  try {
+    const url = new URL(rawUrl);
+    if (url.protocol !== "anyloc-setup:") {
+      return null;
+    }
+
+    const token = url.searchParams.get("token")?.trim();
+    const apiBaseUrl = url.searchParams.get("api")?.trim();
+
+    if (!token) {
+      return null;
+    }
+
+    return { token, apiBaseUrl };
+  } catch {
+    return null;
+  }
+}
+
+function deliverLaunchConfig(window) {
+  if (!window || !pendingLaunchConfig) {
+    return;
+  }
+
+  window.webContents.send("setup:launch-config", pendingLaunchConfig);
+  pendingLaunchConfig = null;
+}
+
+function handleSetupUrl(rawUrl) {
+  const config = parseSetupUrl(rawUrl);
+  if (!config) {
+    return;
+  }
+
+  pendingLaunchConfig = config;
+
+  if (mainWindowRef) {
+    if (mainWindowRef.isMinimized()) {
+      mainWindowRef.restore();
+    }
+    mainWindowRef.focus();
+    deliverLaunchConfig(mainWindowRef);
+  }
+}
+
 function createWindow() {
   const window = new BrowserWindow({
     width: 960,
@@ -23,7 +72,31 @@ function createWindow() {
     },
   });
 
+  mainWindowRef = window;
   window.loadFile(path.join(__dirname, "renderer", "index.html"));
+
+  window.webContents.on("did-finish-load", () => {
+    deliverLaunchConfig(window);
+  });
+
+  window.on("closed", () => {
+    if (mainWindowRef === window) {
+      mainWindowRef = null;
+    }
+  });
+}
+
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on("second-instance", (_event, commandLine) => {
+    const setupUrl = commandLine.find((entry) => entry.startsWith("anyloc-setup://"));
+    if (setupUrl) {
+      handleSetupUrl(setupUrl);
+    }
+  });
 }
 
 ipcMain.handle("setup:get-platform", () => {
@@ -36,6 +109,12 @@ ipcMain.handle("setup:get-platform", () => {
   }
 
   return process.platform;
+});
+
+ipcMain.handle("setup:get-launch-config", () => {
+  const config = pendingLaunchConfig;
+  pendingLaunchConfig = null;
+  return config;
 });
 
 ipcMain.handle("setup:check-usb", async () => {
@@ -86,6 +165,21 @@ ipcMain.handle("setup:show-item-in-folder", async (_event, payload) => {
 });
 
 app.whenReady().then(() => {
+  if (process.defaultApp || process.argv.length >= 2) {
+    const setupUrl = process.argv.find((entry) => entry.startsWith("anyloc-setup://"));
+    if (setupUrl) {
+      handleSetupUrl(setupUrl);
+    }
+  }
+
+  if (process.platform === "win32" || process.platform === "linux") {
+    app.setAsDefaultProtocolClient("anyloc-setup");
+  } else {
+    app.setAsDefaultProtocolClient("anyloc-setup", process.execPath, [
+      path.resolve(process.argv[1] ?? "."),
+    ]);
+  }
+
   createWindow();
 
   app.on("activate", () => {
@@ -93,6 +187,11 @@ app.whenReady().then(() => {
       createWindow();
     }
   });
+});
+
+app.on("open-url", (event, url) => {
+  event.preventDefault();
+  handleSetupUrl(url);
 });
 
 app.on("window-all-closed", () => {

@@ -8,6 +8,12 @@ struct AnylocApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(appState)
+                .task {
+                    appState.autoStartIfConfigured()
+                }
+                .onOpenURL { url in
+                    appState.handleDeepLink(url)
+                }
         }
     }
 }

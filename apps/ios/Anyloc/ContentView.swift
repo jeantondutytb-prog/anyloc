@@ -68,6 +68,28 @@ struct ContentView: View {
                     }
                 }
 
+                Section("Contrôle depuis le dashboard") {
+                    Text(
+                        "Choisis ta ville sur la carte Anyloc depuis ton ordinateur. Cette app applique la position sur ton iPhone automatiquement."
+                    )
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+
+                    if let location = appState.lastLocation {
+                        LabeledContent("Position") {
+                            Text(location.name)
+                        }
+
+                        if location.isActive {
+                            Text("GPS actif · piloté depuis le dashboard")
+                                .foregroundStyle(.green)
+                        } else {
+                            Text("En pause · sélectionne une ville sur le dashboard")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
                 Section("Où veux-tu apparaître ?") {
                     TextField("Marbella, Paris, Miami...", text: $appState.searchQuery)
                         .textInputAutocapitalization(.words)

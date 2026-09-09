@@ -5,7 +5,7 @@ import Foundation
 final class AppState: ObservableObject {
     @Published var apiBaseUrl: String
     @Published var deviceToken: String
-    @Published var statusMessage = "Configure ton token, puis choisis une ville."
+    @Published var statusMessage = "Colle ton code depuis le dashboard, puis laisse l'app ouverte."
     @Published var isSyncing = false
     @Published var lastLocation: RemoteLocation?
     @Published var searchQuery = ""
@@ -44,6 +44,48 @@ final class AppState: ObservableObject {
     func saveSettings() {
         defaults.set(apiBaseUrl, forKey: "apiBaseUrl")
         defaults.set(deviceToken, forKey: "deviceToken")
+        autoStartIfConfigured()
+    }
+
+    func autoStartIfConfigured() {
+        let token = deviceToken.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !token.isEmpty, !isSyncing else {
+            return
+        }
+
+        startSync()
+    }
+
+    func handleDeepLink(_ url: URL) {
+        guard url.scheme?.lowercased() == "anyloc" else {
+            return
+        }
+
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
+            return
+        }
+
+        let token = components.queryItems?
+            .first(where: { $0.name == "token" })?
+            .value?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard let token, !token.isEmpty else {
+            statusMessage = "Lien de configuration invalide."
+            return
+        }
+
+        if let api = components.queryItems?
+            .first(where: { $0.name == "api" })?
+            .value?
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+           !api.isEmpty {
+            apiBaseUrl = api
+        }
+
+        deviceToken = token
+        saveSettings()
+        statusMessage = "Configuré depuis le dashboard ✓"
     }
 
     func importPairing(from url: URL) {

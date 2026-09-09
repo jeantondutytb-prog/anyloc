@@ -325,9 +325,36 @@ async function prepareNativeApp() {
   setStatus("install-status", result.message || "App iPhone indisponible pour le moment.", "error");
 }
 
+function applyLaunchConfig(config) {
+  if (!config?.token) {
+    return;
+  }
+
+  document.getElementById("device-token").value = normalizeDeviceToken(config.token);
+
+  if (config.apiBaseUrl) {
+    document.getElementById("api-base-url").value = normalizeApiBaseUrl(config.apiBaseUrl);
+  }
+
+  persistSettings();
+  updateActionButtons();
+  setStatus(
+    "install-status",
+    "Code reçu depuis le dashboard — branche ton iPhone puis installe l'app.",
+    "ok"
+  );
+}
+
 async function init() {
   renderSteps();
   restoreSettings();
+
+  const launchConfig = await window.anylocSetup.getLaunchConfig();
+  if (launchConfig) {
+    applyLaunchConfig(launchConfig);
+  }
+
+  window.anylocSetup.onLaunchConfig(applyLaunchConfig);
   await prepareNativeApp();
   await refreshUsbStatus();
   updateActionButtons();
