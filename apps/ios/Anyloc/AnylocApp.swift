@@ -11,6 +11,9 @@ struct AnylocApp: App {
                 .task {
                     appState.autoStartIfConfigured()
                 }
+                .onOpenURL { url in
+                    appState.handleDeepLink(url)
+                }
         }
     }
 }

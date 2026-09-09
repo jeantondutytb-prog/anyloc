@@ -56,6 +56,38 @@ final class AppState: ObservableObject {
         startSync()
     }
 
+    func handleDeepLink(_ url: URL) {
+        guard url.scheme?.lowercased() == "anyloc" else {
+            return
+        }
+
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
+            return
+        }
+
+        let token = components.queryItems?
+            .first(where: { $0.name == "token" })?
+            .value?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard let token, !token.isEmpty else {
+            statusMessage = "Lien de configuration invalide."
+            return
+        }
+
+        if let api = components.queryItems?
+            .first(where: { $0.name == "api" })?
+            .value?
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+           !api.isEmpty {
+            apiBaseUrl = api
+        }
+
+        deviceToken = token
+        saveSettings()
+        statusMessage = "Configuré depuis le dashboard ✓"
+    }
+
     func importPairing(from url: URL) {
         do {
             try pairingStore.importPairing(from: url)

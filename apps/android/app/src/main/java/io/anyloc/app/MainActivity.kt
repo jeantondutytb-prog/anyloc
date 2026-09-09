@@ -1,6 +1,7 @@
 package io.anyloc.app
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Handler
@@ -74,8 +75,38 @@ class MainActivity : AppCompatActivity() {
         })
 
         requestLocationPermissionIfNeeded()
+        handleDeepLink(intent)
         refreshCurrentLocation()
         ensureSpoofingRunning()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleDeepLink(intent)
+    }
+
+    private fun handleDeepLink(intent: Intent?) {
+        val data = intent?.data ?: return
+        if (data.scheme != "anyloc") {
+            return
+        }
+
+        val token = data.getQueryParameter("token")?.trim().orEmpty()
+        if (token.isEmpty()) {
+            return
+        }
+
+        val api = data.getQueryParameter("api")?.trim().orEmpty().ifEmpty {
+            "https://anyloc.io"
+        }
+
+        apiBaseUrlInput.setText(api)
+        tokenInput.setText(token)
+        persistCredentials(api, token)
+        ensureSpoofingRunning()
+        statusText.text = "Configuré depuis le dashboard ✓"
+        Toast.makeText(this, "Anyloc configuré automatiquement", Toast.LENGTH_SHORT).show()
     }
 
     override fun onResume() {

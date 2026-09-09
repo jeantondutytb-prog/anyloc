@@ -41,4 +41,10 @@ module.exports = {
     installerIcon: null,
     uninstallerIcon: null,
   },
+  protocols: [
+    {
+      name: "Anyloc Setup",
+      schemes: ["anyloc-setup"],
+    },
+  ],
 };
