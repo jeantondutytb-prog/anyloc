@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import shutil
 import subprocess
@@ -13,31 +14,21 @@ def run_cli(args: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(args, capture_output=True, text=True, check=False)
 
 
-def detect_with_pymobiledevice3() -> dict | None:
-    try:
-        from pymobiledevice3.usbmux import list_devices
-        from pymobiledevice3.lockdown import create_using_usbmux
-        from pymobiledevice3.exceptions import NotPairedError
-    except ImportError:
+def detect_with_pymobiledevice3_cli() -> dict | None:
+    cli = shutil.which("pymobiledevice3")
+    if not cli:
         return None
 
-    devices = list_devices()
+    result = run_cli([cli, "usbmux", "list"])
+    if result.returncode != 0:
+        return None
+
+    try:
+        devices = json.loads(result.stdout or "[]")
+    except json.JSONDecodeError:
+        return None
 
     if not devices:
-        cli = shutil.which("pymobiledevice3")
-        if cli:
-            result = run_cli([cli, "usbmux", "list"])
-            if result.stdout.strip() and result.stdout.strip() not in ("[]", ""):
-                return {
-                    "connected": False,
-                    "udid": None,
-                    "deviceName": None,
-                    "message": (
-                        "iPhone branché mais pas appairé. Ouvre Xcode ou le Finder, "
-                        "puis dans Terminal : pymobiledevice3 lockdown pair"
-                    ),
-                }
-
         return {
             "connected": False,
             "udid": None,
@@ -49,26 +40,49 @@ def detect_with_pymobiledevice3() -> dict | None:
         }
 
     device = devices[0]
-
-    try:
-        create_using_usbmux(device.serial, autopair=True)
-    except NotPairedError:
-        return {
-            "connected": False,
-            "udid": device.serial,
-            "deviceName": f"iPhone ({device.serial[:8]}…)",
-            "message": (
-                "iPhone visible mais pas appairé. Lance : pymobiledevice3 lockdown pair "
-                "— accepte sur l'iPhone si demandé."
-            ),
-        }
-    except Exception:
-        pass
+    udid = device.get("UniqueDeviceID") or device.get("Identifier")
+    name = device.get("DeviceName") or f"iPhone ({str(udid)[:8]}…)"
 
     return {
         "connected": True,
-        "udid": device.serial,
-        "deviceName": f"iPhone ({device.serial[:8]}…)",
+        "udid": udid,
+        "deviceName": name,
+        "message": "iPhone détecté — prêt pour l'installation.",
+    }
+
+
+def detect_with_pymobiledevice3_api() -> dict | None:
+    try:
+        from pymobiledevice3.usbmux import list_devices
+    except ImportError:
+        return None
+
+    async def fetch_devices():
+        result = list_devices()
+        if asyncio.iscoroutine(result):
+            return await result
+        return result
+
+    try:
+        devices = asyncio.run(fetch_devices())
+    except Exception:
+        return None
+
+    if not devices:
+        return {
+            "connected": False,
+            "udid": None,
+            "deviceName": None,
+            "message": "Aucun iPhone détecté en USB.",
+        }
+
+    device = devices[0]
+    serial = getattr(device, "serial", None) or str(device)
+
+    return {
+        "connected": True,
+        "udid": serial,
+        "deviceName": f"iPhone ({serial[:8]}…)",
         "message": "iPhone détecté — prêt pour l'installation.",
     }
 
@@ -101,7 +115,11 @@ def detect_with_idevice_id() -> dict | None:
 
 
 def detect() -> dict:
-    for detector in (detect_with_pymobiledevice3, detect_with_idevice_id):
+    for detector in (
+        detect_with_pymobiledevice3_cli,
+        detect_with_pymobiledevice3_api,
+        detect_with_idevice_id,
+    ):
         result = detector()
         if result is not None:
             return result
