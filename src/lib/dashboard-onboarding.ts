@@ -26,7 +26,7 @@ export const ONBOARDING_STEP_ITEMS = [
     id: "install" as const,
     title: "Installe Anyloc sur ton téléphone",
     description:
-      "iPhone : Setup + USB une fois. Android : APK sur le téléphone.",
+      "iPhone : Setup + USB une fois, puis LocalDevVPN pour renouveler. Android : APK sur le téléphone.",
     cta: "Voir le guide",
   },
   {

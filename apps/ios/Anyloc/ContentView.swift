@@ -86,9 +86,9 @@ struct ContentView: View {
                     }
                 }
 
-                Section("Renouvellement (LocalDevVPN)") {
+                Section("Renouvellement sans Mac") {
                     Text(
-                        "Toutes les ~7 jours, ouvre LocalDevVPN et connecte le VPN pour garder l'app active."
+                        "Toutes les ~7 jours : connecte-toi au Wi-Fi, ouvre LocalDevVPN et appuie sur Connect, puis relance Anyloc depuis ton écran d'accueil. Pas besoin de rebrancher ton Mac."
                     )
                     .font(.footnote)
                     .foregroundStyle(.secondary)

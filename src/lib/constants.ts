@@ -178,7 +178,12 @@ export const FAQ = [
   {
     q: "Ça passe sur iPhone et Android ?",
     a:
-      "Oui. Sur Android, tout se fait depuis le tel. Sur iPhone, faut une config initiale via Mac ou PC (limite Apple), puis tu gères tout depuis ton mobile.",
+      "Oui. Sur Android, tout se fait depuis le tel. Sur iPhone, une seule install via Mac ou PC (limite Apple), puis tu gères ta position et le renouvellement (~7 jours) depuis ton iPhone avec LocalDevVPN — sans repasser par l'ordi.",
+  },
+  {
+    q: "Faut-il rebrancher le Mac tous les 7 jours ?",
+    a:
+      "Non. Installe LocalDevVPN sur ton iPhone, connecte le VPN en Wi-Fi, puis ouvre Anyloc. Le renouvellement se fait depuis ton tel. Le Mac ne sert qu'une seule fois, à la première installation.",
   },
   {
     q: "Faut jailbreaker ou bidouiller le tel ?",

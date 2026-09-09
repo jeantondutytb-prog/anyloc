@@ -22,8 +22,8 @@ export function InstallPrompt({ onMarkComplete }: InstallPromptProps) {
         </h2>
         <p className="mt-3 text-sm text-zinc-600 sm:text-base">
           Sur iPhone, branche ton tel à un Mac ou PC une seule fois pour installer
-          l&apos;app. Sur Android, installe l&apos;APK directement. Ensuite,
-          change ta position depuis l&apos;app — sans repasser par ton ordi.
+          l&apos;app. Ensuite, change ta position et renouvelle l&apos;app depuis ton
+          iPhone avec LocalDevVPN — sans repasser par ton ordi.
         </p>
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
