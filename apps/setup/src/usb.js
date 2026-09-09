@@ -751,7 +751,7 @@ function resolvePairingSourcePath(udid, stdout) {
   return findPairingFileFromStdout(stdout);
 }
 
-async function exportPairingFile({ udid }) {
+async function exportPairingFile({ udid, token, apiBaseUrl }) {
   let resolvedUdid = udid;
 
   if (!resolvedUdid) {
@@ -760,11 +760,21 @@ async function exportPairingFile({ udid }) {
     if (!device.connected || !device.udid) {
       return {
         ok: false,
-        message: "Branche un iPhone en USB pour exporter le fichier de pairing.",
+        message: "Branche un iPhone en USB pour envoyer le pairing.",
       };
     }
 
     resolvedUdid = device.udid;
+  }
+
+  const normalizedToken = normalizeDeviceToken(token);
+  const validationError = validateDeviceToken(normalizedToken);
+
+  if (validationError) {
+    return {
+      ok: false,
+      message: validationError,
+    };
   }
 
   const args = ["remote", "pair", ...(resolvedUdid ? ["--udid", resolvedUdid] : [])];
@@ -790,10 +800,57 @@ async function exportPairingFile({ udid }) {
   }
 
   try {
+    const pairingBase64 = fs.readFileSync(sourcePath).toString("base64");
+    const baseUrl = normalizeApiBaseUrl(apiBaseUrl);
+    const response = await fetch(`${baseUrl}/api/device/pairing`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${normalizedToken}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ pairing: pairingBase64 }),
+    });
+
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        message:
+          payload.error ||
+          `Impossible d'envoyer le pairing au serveur (${response.status}).`,
+      };
+    }
+
+    return {
+      ok: true,
+      sourcePath,
+      udid: resolvedUdid,
+      message:
+        "Pairing envoyé au serveur. Ouvre Anyloc sur ton iPhone, le pairing sera téléchargé automatiquement.",
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message: `Impossible d'envoyer le pairing : ${error.message}`,
+    };
+  }
+}
+
+async function savePairingLocalCopy({ sourcePath, udid }) {
+  if (!sourcePath || !fs.existsSync(sourcePath)) {
+    return {
+      ok: false,
+      message: "Aucun fichier de pairing à sauvegarder.",
+    };
+  }
+
+  try {
     const { app } = require("electron");
     const destPath = path.join(
       app.getPath("documents"),
-      `Anyloc-Pairing-${resolvedUdid}.plist`
+      `Anyloc-Pairing-${udid || "device"}.plist`
     );
 
     fs.copyFileSync(sourcePath, destPath);
@@ -801,12 +858,12 @@ async function exportPairingFile({ udid }) {
     return {
       ok: true,
       path: destPath,
-      message: "Fichier de pairing exporté. Envoie-le sur ton iPhone par AirDrop.",
+      message: "Copie locale enregistrée dans Documents.",
     };
   } catch (error) {
     return {
       ok: false,
-      message: `Impossible de copier le fichier de pairing : ${error.message}`,
+      message: `Impossible de sauvegarder la copie locale : ${error.message}`,
     };
   }
 }
@@ -855,4 +912,5 @@ module.exports = {
   applyGpsLocation,
   ensureIpaAvailable,
   exportPairingFile,
+  savePairingLocalCopy,
 };

@@ -32,6 +32,11 @@ struct GeocodeResponse: Codable {
     let results: [GeocodeResult]
 }
 
+struct PairingResponse: Codable {
+    let ok: Bool
+    let pairing: String?
+}
+
 enum AnylocAPIError: LocalizedError {
     case invalidURL
     case unauthorized
@@ -74,6 +79,21 @@ struct AnylocAPI {
         let body = try JSONSerialization.data(withJSONObject: payload)
         let data = try await sendRequest(path: "/api/device/location", method: "PUT", body: body)
         return try decodeLocation(from: data)
+    }
+
+    func fetchPairing() async throws -> Data? {
+        let data = try await sendRequest(path: "/api/device/pairing", method: "GET")
+        let decoded = try JSONDecoder().decode(PairingResponse.self, from: data)
+
+        guard let base64 = decoded.pairing else {
+            return nil
+        }
+
+        guard let pairingData = Data(base64Encoded: base64) else {
+            return nil
+        }
+
+        return pairingData
     }
 
     func searchPlaces(query: String) async throws -> [GeocodeResult] {

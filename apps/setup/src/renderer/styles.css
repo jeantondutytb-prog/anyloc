@@ -199,3 +199,18 @@ button.secondary:hover:not(:disabled) {
 code {
   font-size: 12px;
 }
+
+.link-button {
+  margin-top: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #71717a;
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.link-button:hover {
+  color: #18181b;
+}

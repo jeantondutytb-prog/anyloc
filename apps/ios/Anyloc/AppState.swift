@@ -14,6 +14,7 @@ final class AppState: ObservableObject {
     @Published var isUpdatingLocation = false
     @Published var showPairingPicker = false
     @Published var pairingError: String?
+    @Published var isDownloadingPairing = false
 
     let pairingStore = PairingStore()
 
@@ -64,6 +65,24 @@ final class AppState: ObservableObject {
         }
     }
 
+    func retryPairingDownload() async {
+        guard let api else {
+            pairingError = "Colle ton token appareil d'abord."
+            return
+        }
+
+        isDownloadingPairing = true
+        pairingError = nil
+        defer { isDownloadingPairing = false }
+
+        do {
+            try await pairingStore.downloadPairingFromServer(api: api)
+            statusMessage = "Pairing récupéré automatiquement ✓"
+        } catch {
+            pairingError = error.localizedDescription
+        }
+    }
+
     func toggleSpoof() {
         if LocationSpoofService.shared.spoofSession.isSpoofing {
             LocationSpoofService.shared.spoofSession.stop()
@@ -96,11 +115,34 @@ final class AppState: ObservableObject {
         do {
             let location = try await api.fetchLocation()
             lastLocation = location
-            statusMessage = location.isActive
-                ? "Connecté · \(location.name)"
-                : "Connecté · position en pause"
+
+            if await downloadPairingIfNeeded(using: api) {
+                statusMessage = "Pairing récupéré automatiquement ✓"
+            } else {
+                statusMessage = location.isActive
+                    ? "Connecté · \(location.name)"
+                    : "Connecté · position en pause"
+            }
         } catch {
             statusMessage = "Échec : \(error.localizedDescription)"
+        }
+    }
+
+    @discardableResult
+    private func downloadPairingIfNeeded(using api: AnylocAPI) async -> Bool {
+        guard !pairingStore.hasPairing else {
+            return false
+        }
+
+        isDownloadingPairing = true
+        defer { isDownloadingPairing = false }
+
+        do {
+            try await pairingStore.downloadPairingFromServer(api: api)
+            pairingError = nil
+            return true
+        } catch {
+            return false
         }
     }
 
@@ -218,7 +260,9 @@ final class AppState: ObservableObject {
                     let location = try await api.fetchLocation()
                     lastLocation = location
 
-                    if location.isActive {
+                    if await downloadPairingIfNeeded(using: api) {
+                        statusMessage = "Pairing récupéré automatiquement ✓"
+                    } else if location.isActive {
                         LocationSpoofService.shared.apply(
                             location: location,
                             pairingPath: pairingStore.pairingPath
