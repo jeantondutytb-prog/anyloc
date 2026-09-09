@@ -3,9 +3,51 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject private var appState: AppState
 
+    private var wantsActivateGPS: Bool {
+        switch appState.spoofStatus {
+        case .idle, .dropped, .connecting:
+            return true
+        case .active, .reconnecting:
+            return false
+        }
+    }
+
     var body: some View {
         NavigationStack {
             Form {
+                Section("Prérequis") {
+                    HStack {
+                        Circle()
+                            .fill(localDevVPNColor)
+                            .frame(width: 10, height: 10)
+                        Text(localDevVPNStatusText)
+                        Spacer()
+                        Button(localDevVPNButtonTitle) {
+                            LocalDevVPNHelper.openOrInstall()
+                        }
+                    }
+
+                    HStack {
+                        Circle()
+                            .fill(appState.pairingStore.hasPairing ? .green : .red)
+                            .frame(width: 10, height: 10)
+                        Text(appState.pairingStore.hasPairing ? "Pairing importé" : "Pairing manquant")
+                        Spacer()
+                        Button("Importer") {
+                            appState.showPairingPicker = true
+                        }
+                        Button("Coller") {
+                            appState.importPairingFromClipboard()
+                        }
+                    }
+
+                    if let pairingError = appState.pairingError {
+                        Text(pairingError)
+                            .foregroundStyle(.red)
+                            .font(.footnote)
+                    }
+                }
+
                 Section("Où veux-tu apparaître ?") {
                     TextField("Marbella, Paris, Miami...", text: $appState.searchQuery)
                         .textInputAutocapitalization(.words)
@@ -52,7 +94,23 @@ struct ContentView: View {
                     }
                 }
 
-                Section("Configuration (une seule fois)") {
+                Section("GPS Spoofing") {
+                    Text(spoofStatusLabel)
+                        .foregroundStyle(spoofStatusColor)
+
+                    Button(gpsToggleTitle) {
+                        appState.toggleSpoof()
+                    }
+                    .disabled(wantsActivateGPS && !appState.canSpoof)
+
+                    if !appState.canSpoof {
+                        Text("Connecte LocalDevVPN et importe ton pairing d'abord.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Section("Configuration") {
                     TextField("URL API", text: $appState.apiBaseUrl)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
@@ -60,7 +118,7 @@ struct ContentView: View {
                     SecureField("Token appareil", text: $appState.deviceToken)
                 }
 
-                Section("Statut") {
+                Section {
                     Text(appState.statusMessage)
 
                     if let location = appState.lastLocation {
@@ -68,9 +126,7 @@ struct ContentView: View {
                             Text("\(location.lat, specifier: "%.4f"), \(location.lng, specifier: "%.4f")")
                         }
                     }
-                }
 
-                Section {
                     Button("Tester la connexion") {
                         Task { await appState.testConnection() }
                     }
@@ -100,7 +156,59 @@ struct ContentView: View {
                 }
             }
             .navigationTitle("Anyloc")
+            .sheet(isPresented: $appState.showPairingPicker) {
+                PairingDocumentPicker { url in
+                    appState.importPairing(from: url)
+                }
+            }
         }
+    }
+
+    private var localDevVPNColor: Color {
+        if appState.isLocalDevVPNConnected {
+            return .green
+        }
+        if appState.isLocalDevVPNInstalled {
+            return .orange
+        }
+        return .red
+    }
+
+    private var localDevVPNStatusText: String {
+        if appState.isLocalDevVPNConnected {
+            return "Connecté"
+        }
+        if appState.isLocalDevVPNInstalled {
+            return "Installé · non connecté"
+        }
+        return "Non installé"
+    }
+
+    private var localDevVPNButtonTitle: String {
+        appState.isLocalDevVPNInstalled ? "Ouvrir" : "Installer"
+    }
+
+    private var spoofStatusLabel: String {
+        switch appState.spoofStatus {
+        case .idle:
+            return "Inactif"
+        case .connecting:
+            return "Connexion au tunnel..."
+        case .active:
+            return "GPS actif"
+        case .reconnecting:
+            return "Reconnexion..."
+        case .dropped(let message):
+            return message
+        }
+    }
+
+    private var spoofStatusColor: Color {
+        appState.spoofStatus == .active ? .green : .primary
+    }
+
+    private var gpsToggleTitle: String {
+        wantsActivateGPS ? "Activer le GPS" : "Désactiver le GPS"
     }
 }
 

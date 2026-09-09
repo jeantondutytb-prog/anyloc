@@ -17,11 +17,8 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.anyloc.app
+        CODE_SIGN_ENTITLEMENTS: Anyloc/Anyloc.entitlements
         INFOPLIST_KEY_CFBundleDisplayName: Anyloc
-        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: Anyloc utilise ta position pour synchroniser le spoofing GPS.
-        INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription: Anyloc maintient ta position fictive en arrière-plan.
-        INFOPLIST_KEY_UIBackgroundModes:
-          - location
     info:
       path: Anyloc/Info.plist
       properties:
