@@ -75,8 +75,8 @@ def detect() -> dict:
         "udid": None,
         "deviceName": None,
         "message": (
-            "Outils USB non installés. Installe pymobiledevice3 : "
-            "pip install -r apps/setup/scripts/requirements.txt"
+            "Outils USB non installés sur ton Mac. Ouvre Terminal et lance : "
+            "pip3 install pymobiledevice3 — puis clique Revérifier."
         ),
     }
 
