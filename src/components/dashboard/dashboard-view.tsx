@@ -6,7 +6,10 @@ import { MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DashboardMenu } from "@/components/dashboard/dashboard-menu";
 import { DestinationSheet } from "@/components/dashboard/destination-sheet";
-import { LocationSearch } from "@/components/dashboard/location-search";
+import {
+  LocationSearch,
+  type LocationSearchHandle,
+} from "@/components/dashboard/location-search";
 import { useDashboardOnboarding } from "@/hooks/use-dashboard-onboarding";
 import { useLocationSync } from "@/hooks/use-location-sync";
 import { DEFAULT_LOCATION } from "@/lib/location";
@@ -40,6 +43,7 @@ export function DashboardView() {
   });
   const initialLocationRef = useRef(selected);
   const hasHydratedLocationRef = useRef(false);
+  const locationSearchRef = useRef<LocationSearchHandle>(null);
 
   useEffect(() => {
     if (!location || hasHydratedLocationRef.current) {
@@ -79,6 +83,15 @@ export function DashboardView() {
     }
   }, [completeStep, hydrated, selected]);
 
+  const handleChangeLocation = useCallback(async () => {
+    if (locationSearchRef.current?.hasQuery()) {
+      await locationSearchRef.current.submitQuery();
+      return;
+    }
+
+    setSheetOpen(true);
+  }, []);
+
   const handleSelectLocation = useCallback(
     async (nextLocation: { name: string; lat: number; lng: number }) => {
       setSelected(nextLocation);
@@ -111,7 +124,11 @@ export function DashboardView() {
         <div className="mx-auto flex max-w-2xl items-center gap-2">
           <DashboardMenu />
           <div className="min-w-0 flex-1">
-            <LocationSearch variant="top" onSelect={handleSelectLocation} />
+            <LocationSearch
+              ref={locationSearchRef}
+              variant="top"
+              onSelect={handleSelectLocation}
+            />
           </div>
           <div
             className={cn(
@@ -184,7 +201,7 @@ export function DashboardView() {
             </span>
           </div>
 
-          <Button className="mt-4 w-full" onClick={() => setSheetOpen(true)}>
+          <Button className="mt-4 w-full" onClick={() => void handleChangeLocation()}>
             <MapPin className="h-4 w-4" />
             Changer ma loc
           </Button>
