@@ -7,11 +7,23 @@ import {
 } from "@/lib/device-server";
 
 export async function GET(request: Request) {
+  const authHeader = request.headers.get("authorization");
+
+  if (!authHeader?.startsWith("Bearer ")) {
+    return Response.json(
+      { error: "Authorization Bearer token requis." },
+      { status: 401 }
+    );
+  }
+
   const token = extractBearerToken(request);
 
   if (!token) {
     return Response.json(
-      { error: "Authorization Bearer token requis." },
+      {
+        error:
+          "Token appareil invalide. Génère un code sur le dashboard (commence par anyloc_).",
+      },
       { status: 401 }
     );
   }

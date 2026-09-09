@@ -51,8 +51,18 @@ function setStatus(elementId, message, type = "") {
   status.className = `${elementId === "gps-status" ? "install-status gps-status" : "install-status"} ${type}`.trim();
 }
 
+function normalizeDeviceToken(raw) {
+  let token = String(raw || "").trim();
+
+  if (/^bearer\s+/i.test(token)) {
+    token = token.replace(/^bearer\s+/i, "").trim();
+  }
+
+  return token.replace(/^["'`]+|["'`]+$/g, "").trim();
+}
+
 function getTokenValue() {
-  return document.getElementById("device-token").value.trim();
+  return normalizeDeviceToken(document.getElementById("device-token").value);
 }
 
 function getApiBaseUrl() {
