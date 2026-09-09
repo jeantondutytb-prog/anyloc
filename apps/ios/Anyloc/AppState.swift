@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 
 @MainActor
@@ -11,19 +12,67 @@ final class AppState: ObservableObject {
     @Published var searchResults: [GeocodeResult] = []
     @Published var isSearching = false
     @Published var isUpdatingLocation = false
+    @Published var showPairingPicker = false
+    @Published var pairingError: String?
+
+    let pairingStore = PairingStore()
+
+    var isLocalDevVPNInstalled: Bool { LocalDevVPNHelper.isInstalled }
+    var isLocalDevVPNConnected: Bool { LocalDevVPNHelper.isConnected }
+    var canSpoof: Bool { pairingStore.hasPairing && isLocalDevVPNConnected }
+    var spoofStatus: SpoofStatus { LocationSpoofService.shared.spoofSession.status }
 
     private let defaults = UserDefaults.standard
     private var syncTask: Task<Void, Never>?
     private var searchTask: Task<Void, Never>?
+    private var cancellables = Set<AnyCancellable>()
 
     init() {
         apiBaseUrl = defaults.string(forKey: "apiBaseUrl") ?? "https://anyloc.io"
         deviceToken = defaults.string(forKey: "deviceToken") ?? ""
+
+        pairingStore.objectWillChange
+            .sink { [weak self] _ in self?.objectWillChange.send() }
+            .store(in: &cancellables)
+
+        LocationSpoofService.shared.spoofSession.objectWillChange
+            .sink { [weak self] _ in self?.objectWillChange.send() }
+            .store(in: &cancellables)
     }
 
     func saveSettings() {
         defaults.set(apiBaseUrl, forKey: "apiBaseUrl")
         defaults.set(deviceToken, forKey: "deviceToken")
+    }
+
+    func importPairing(from url: URL) {
+        do {
+            try pairingStore.importPairing(from: url)
+            pairingError = nil
+            showPairingPicker = false
+        } catch {
+            pairingError = error.localizedDescription
+        }
+    }
+
+    func importPairingFromClipboard() {
+        do {
+            try pairingStore.importPairingFromClipboard()
+            pairingError = nil
+        } catch {
+            pairingError = error.localizedDescription
+        }
+    }
+
+    func toggleSpoof() {
+        if LocationSpoofService.shared.spoofSession.isSpoofing {
+            LocationSpoofService.shared.spoofSession.stop()
+        } else if lastLocation?.isActive == true, canSpoof, let location = lastLocation {
+            LocationSpoofService.shared.apply(
+                location: location,
+                pairingPath: pairingStore.pairingPath
+            )
+        }
     }
 
     private var api: AnylocAPI? {
@@ -118,7 +167,10 @@ final class AppState: ObservableObject {
             if !isSyncing {
                 startSync()
             } else {
-                LocationSpoofService.shared.apply(location: location, pairingPath: nil)
+                LocationSpoofService.shared.apply(
+                    location: location,
+                    pairingPath: pairingStore.pairingPath
+                )
             }
         } catch {
             statusMessage = "Erreur : \(error.localizedDescription)"
@@ -143,6 +195,10 @@ final class AppState: ObservableObject {
 
             lastLocation = location
             statusMessage = "Position en pause"
+            LocationSpoofService.shared.apply(
+                location: location,
+                pairingPath: pairingStore.pairingPath
+            )
         } catch {
             statusMessage = "Erreur : \(error.localizedDescription)"
         }
@@ -163,9 +219,16 @@ final class AppState: ObservableObject {
                     lastLocation = location
 
                     if location.isActive {
-                        LocationSpoofService.shared.apply(location: location, pairingPath: nil)
+                        LocationSpoofService.shared.apply(
+                            location: location,
+                            pairingPath: pairingStore.pairingPath
+                        )
                         statusMessage = "Actif · \(location.name)"
                     } else {
+                        LocationSpoofService.shared.apply(
+                            location: location,
+                            pairingPath: pairingStore.pairingPath
+                        )
                         statusMessage = "En pause"
                     }
                 } catch {
