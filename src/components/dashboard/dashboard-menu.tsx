@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  CreditCard,
   HelpCircle,
   MapPin,
   Menu,
@@ -31,7 +30,6 @@ const MENU_SECTIONS: { items: MenuItem[] }[] = [
   {
     items: [
       { icon: Settings, label: "Paramètres", href: "/dashboard/settings" },
-      { icon: CreditCard, label: "Mon abonnement", href: "/dashboard/settings#abonnement" },
       { icon: HelpCircle, label: "Aide", href: "/#faq" },
     ],
   },
