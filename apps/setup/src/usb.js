@@ -708,6 +708,109 @@ async function applyGpsLocation({ udid, token, apiBaseUrl }) {
   };
 }
 
+function expandHome(filePath) {
+  const home = process.env.HOME || "";
+
+  if (filePath.startsWith("~/")) {
+    return path.join(home, filePath.slice(2));
+  }
+
+  return filePath;
+}
+
+function findPairingFileFromStdout(stdout) {
+  const output = stdout || "";
+  const matches = output.match(/(?:~\/|\/)[^\s'"]+\.plist/g) || [];
+
+  for (const match of matches) {
+    const candidate = expandHome(match.replace(/['",]+$/g, ""));
+
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+function resolvePairingSourcePath(udid, stdout) {
+  if (udid) {
+    const home = process.env.HOME || "";
+    const candidates = [
+      path.join(home, ".pymobiledevice3", "pair_records", `${udid}.plist`),
+      path.join(home, ".pymobiledevice3", "remote_pair_records", `${udid}.plist`),
+    ];
+
+    for (const candidate of candidates) {
+      if (fs.existsSync(candidate)) {
+        return candidate;
+      }
+    }
+  }
+
+  return findPairingFileFromStdout(stdout);
+}
+
+async function exportPairingFile({ udid }) {
+  let resolvedUdid = udid;
+
+  if (!resolvedUdid) {
+    const device = await detectUsbDevice();
+
+    if (!device.connected || !device.udid) {
+      return {
+        ok: false,
+        message: "Branche un iPhone en USB pour exporter le fichier de pairing.",
+      };
+    }
+
+    resolvedUdid = device.udid;
+  }
+
+  const args = ["remote", "pair", ...(resolvedUdid ? ["--udid", resolvedUdid] : [])];
+  const result = await runCli(args);
+
+  if (!result.ok) {
+    return {
+      ok: false,
+      message:
+        (result.stderr || result.stdout || "").trim() ||
+        "Échec du pairing distant. Vérifie le mode développeur sur l'iPhone.",
+    };
+  }
+
+  const sourcePath = resolvePairingSourcePath(resolvedUdid, result.stdout);
+
+  if (!sourcePath) {
+    return {
+      ok: false,
+      message:
+        "Pairing réussi mais fichier RPPairing introuvable. Consulte la sortie pymobiledevice3.",
+    };
+  }
+
+  try {
+    const { app } = require("electron");
+    const destPath = path.join(
+      app.getPath("documents"),
+      `Anyloc-Pairing-${resolvedUdid}.plist`
+    );
+
+    fs.copyFileSync(sourcePath, destPath);
+
+    return {
+      ok: true,
+      path: destPath,
+      message: "Fichier de pairing exporté. Envoie-le sur ton iPhone par AirDrop.",
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message: `Impossible de copier le fichier de pairing : ${error.message}`,
+    };
+  }
+}
+
 async function installIosApp({ udid }) {
   const ensured = await ensureIpaAvailable();
 
@@ -751,4 +854,5 @@ module.exports = {
   installIosApp,
   applyGpsLocation,
   ensureIpaAvailable,
+  exportPairingFile,
 };

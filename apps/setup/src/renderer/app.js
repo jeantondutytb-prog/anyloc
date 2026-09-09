@@ -19,7 +19,14 @@ const STEPS = [
     description:
       "Installe l'app Anyloc via Setup, colle ton code dans l'app, puis choisis ta ville directement sur ton iPhone.",
   },
+  {
+    title: "Exporte le fichier de pairing",
+    description:
+      "Exporte le RPPairing depuis Setup, envoie-le sur ton iPhone par AirDrop, puis importe-le dans Anyloc.",
+  },
 ];
+
+let lastPairingExportPath = null;
 
 const TOKEN_STORAGE_KEY = "anyloc.deviceToken";
 const API_STORAGE_KEY = "anyloc.apiBaseUrl";
@@ -97,12 +104,14 @@ function restoreSettings() {
 
 function updateActionButtons() {
   const installButton = document.getElementById("install-ios");
+  const exportPairingButton = document.getElementById("export-pairing");
   const applyButton = document.getElementById("apply-gps");
   const syncButton = document.getElementById("toggle-sync");
   const hasToken = Boolean(getTokenValue());
   const usbReady = Boolean(lastUsbState?.connected);
 
   installButton.disabled = !usbReady || !lastUsbState?.installReady;
+  exportPairingButton.disabled = !usbReady;
   applyButton.disabled = !usbReady || !hasToken;
   syncButton.disabled = !usbReady || !hasToken;
   syncButton.textContent = `Synchronisation auto : ${syncEnabled ? "on" : "off"}`;
@@ -137,6 +146,42 @@ async function refreshUsbStatus() {
 
   status.textContent = result.message;
   updateActionButtons();
+}
+
+async function exportPairing() {
+  if (!lastUsbState?.connected) {
+    setStatus(
+      "pairing-export-status",
+      "Branche un iPhone en USB avant d'exporter le pairing.",
+      "error"
+    );
+    return;
+  }
+
+  setStatus("pairing-export-status", "Pairing en cours...");
+  document.getElementById("show-pairing-in-finder").hidden = true;
+  lastPairingExportPath = null;
+
+  const result = await window.anylocSetup.exportPairing({
+    udid: lastUsbState.udid,
+  });
+
+  if (result.ok) {
+    lastPairingExportPath = result.path;
+    setStatus("pairing-export-status", result.message, "ok");
+    document.getElementById("show-pairing-in-finder").hidden = false;
+    return;
+  }
+
+  setStatus("pairing-export-status", result.message, "error");
+}
+
+function showPairingInFinder() {
+  if (!lastPairingExportPath) {
+    return;
+  }
+
+  void window.anylocSetup.showItemInFolder({ path: lastPairingExportPath });
 }
 
 async function installIos() {
@@ -262,6 +307,14 @@ async function init() {
 
   document.getElementById("install-ios").addEventListener("click", () => {
     void installIos();
+  });
+
+  document.getElementById("export-pairing").addEventListener("click", () => {
+    void exportPairing();
+  });
+
+  document.getElementById("show-pairing-in-finder").addEventListener("click", () => {
+    showPairingInFinder();
   });
 
   document.getElementById("apply-gps").addEventListener("click", () => {
