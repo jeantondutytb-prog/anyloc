@@ -5,11 +5,11 @@ import { isValidPlanId } from "@/lib/constants";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ plan?: string; next?: string }>;
+  searchParams: Promise<{ plan?: string; next?: string; redirectTo?: string }>;
 }) {
-  const { plan, next } = await searchParams;
+  const { plan, next, redirectTo: redirectToParam } = await searchParams;
   const planId = isValidPlanId(plan) ? plan! : "annual";
-  const redirectTo = next ?? "/dashboard";
+  const redirectTo = next ?? redirectToParam ?? "/dashboard";
 
   return (
     <AuthShell

@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { resolvePostAuthRedirect } from "@/lib/auth-redirect";
 import { ensureStripeCustomerForUser } from "@/lib/billing";
 import { getCheckoutUrl } from "@/lib/constants";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
@@ -66,8 +67,18 @@ export async function login(
     return { error: translateAuthError(error.message) };
   }
 
-  if (data.user?.email) {
-    await linkStripeCustomer(data.user.id, data.user.email);
+  if (data.user) {
+    if (data.user.email) {
+      await linkStripeCustomer(data.user.id, data.user.email);
+    }
+
+    redirect(
+      await resolvePostAuthRedirect(
+        data.user.id,
+        data.user.email,
+        getRedirectTo(formData)
+      )
+    );
   }
 
   redirect(getRedirectTo(formData));
@@ -99,8 +110,18 @@ export async function signup(
     return { error: translateAuthError(error.message) };
   }
 
-  if (data.user?.email) {
-    await linkStripeCustomer(data.user.id, data.user.email);
+  if (data.user) {
+    if (data.user.email) {
+      await linkStripeCustomer(data.user.id, data.user.email);
+    }
+
+    redirect(
+      await resolvePostAuthRedirect(
+        data.user.id,
+        data.user.email,
+        getRedirectTo(formData)
+      )
+    );
   }
 
   redirect(getRedirectTo(formData));
