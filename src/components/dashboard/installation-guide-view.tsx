@@ -288,6 +288,29 @@ function IosGuide({ hasAccess }: { hasAccess: boolean }) {
         <p className="text-xs text-zinc-500">
           Mac : Ventura ou plus récent · Windows : 10 ou plus récent
         </p>
+
+        <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-4 text-sm text-blue-950">
+          <p className="font-semibold">Mac : message « Anyloc Setup est endommagé » ?</p>
+          <p className="mt-2">
+            Ce n&apos;est pas un vrai problème — macOS bloque les apps téléchargées
+            depuis Chrome tant qu&apos;elles ne sont pas signées Apple. Deux solutions :
+          </p>
+          <p className="mt-3 font-medium">Solution rapide (recommandée)</p>
+          <ol className="mt-1 list-decimal space-y-1 pl-5">
+            <li>Ouvre le fichier <strong>Anyloc-Setup.dmg</strong></li>
+            <li>Glisse <strong>Anyloc Setup</strong> dans le dossier Applications</li>
+            <li>Ouvre <strong>Terminal</strong> et colle cette commande :</li>
+          </ol>
+          <code className="mt-2 block break-all rounded-lg bg-white px-3 py-2 text-xs text-zinc-800">
+            xattr -cr &quot;/Applications/Anyloc Setup.app&quot;
+          </code>
+          <p className="mt-2">Puis relance l&apos;app depuis Applications.</p>
+          <p className="mt-3 font-medium">Sans Terminal</p>
+          <p className="mt-1">
+            Clic droit sur <strong>Anyloc Setup</strong> → <strong>Ouvrir</strong> →
+            confirme <strong>Ouvrir</strong> (pas un double-clic classique).
+          </p>
+        </div>
       </StepCard>
 
       <StepCard number={2} title="Branche ton iPhone en USB">
