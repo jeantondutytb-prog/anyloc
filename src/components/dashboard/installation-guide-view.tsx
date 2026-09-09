@@ -497,7 +497,7 @@ export function InstallationGuideView() {
       <main
         className={cn(
           "p-4 pb-8 sm:p-6 lg:p-8",
-          sidebar.open && "lg:mr-[392px]"
+          sidebar.open && "lg:ml-[392px]"
         )}
       >
         {paymentSuccess && (

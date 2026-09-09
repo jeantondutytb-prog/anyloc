@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MapPin, PanelRightOpen, Route, Smartphone, X } from "lucide-react";
+import { MapPin, PanelLeftOpen, Route, Smartphone, X } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import {
   filterSpotsByCategory,
@@ -66,10 +66,10 @@ export function DashboardSidebarToggle({
     <button
       type="button"
       onClick={onOpen}
-      className="fixed right-0 top-1/2 z-50 flex -translate-y-1/2 flex-col items-center gap-1.5 rounded-l-2xl border border-r-0 border-pink-200/60 bg-white/95 px-2.5 py-4 text-pink-600 shadow-xl backdrop-blur-md transition-colors hover:bg-white hover:text-pink-700"
+      className="fixed left-0 top-1/2 z-50 flex -translate-y-1/2 flex-col items-center gap-1.5 rounded-r-2xl border border-l-0 border-pink-200/60 bg-white/95 px-2.5 py-4 text-pink-600 shadow-xl backdrop-blur-md transition-colors hover:bg-white hover:text-pink-700"
       aria-label="Ouvrir le menu"
     >
-      <PanelRightOpen className="h-5 w-5" />
+      <PanelLeftOpen className="h-5 w-5" />
       <span className="text-[10px] font-semibold uppercase leading-tight tracking-wide [writing-mode:vertical-rl]">
         Menu
       </span>
@@ -112,10 +112,10 @@ export function DashboardSidebar({
       <aside
         className={cn(
           "fixed z-50 flex flex-col border-zinc-200 bg-white shadow-2xl transition-transform duration-300 ease-out",
-          "inset-x-0 bottom-0 max-h-[90vh] rounded-t-3xl border-t lg:inset-x-auto lg:bottom-4 lg:left-auto lg:right-4 lg:top-4 lg:max-h-none lg:w-[360px] lg:rounded-2xl lg:border",
+          "inset-x-0 bottom-0 max-h-[90vh] rounded-t-3xl border-t lg:inset-x-auto lg:bottom-4 lg:left-4 lg:right-auto lg:top-4 lg:max-h-none lg:w-[360px] lg:rounded-2xl lg:border",
           open
             ? "translate-y-0 lg:translate-x-0"
-            : "translate-y-full lg:translate-x-[calc(100%+1.5rem)]"
+            : "translate-y-full lg:-translate-x-[calc(100%+1.5rem)]"
         )}
       >
         <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-4">

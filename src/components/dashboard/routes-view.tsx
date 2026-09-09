@@ -90,7 +90,7 @@ export function RoutesView() {
       <main
         className={cn(
           "mx-auto max-w-5xl px-4 py-8 sm:px-6",
-          sidebar.open && "lg:mr-[392px]"
+          sidebar.open && "lg:ml-[392px]"
         )}
       >
         <h1 className="text-2xl font-bold text-zinc-900">Trajets simulés</h1>

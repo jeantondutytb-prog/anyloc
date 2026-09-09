@@ -114,7 +114,7 @@ export function DashboardView() {
       <div
         className={cn(
           "absolute inset-x-0 top-0 z-20 px-4 pt-3 lg:pt-4",
-          sidebar.open && "lg:right-[392px]"
+          sidebar.open && "lg:left-[392px]"
         )}
       >
         <div className="mx-auto flex max-w-2xl flex-col gap-2">
@@ -158,7 +158,7 @@ export function DashboardView() {
         <div
           className={cn(
             "absolute left-4 right-4 top-28 z-20 rounded-xl border border-red-200 bg-red-50/95 px-4 py-3 text-sm text-red-700 shadow-sm backdrop-blur-sm lg:top-20 lg:left-auto lg:max-w-sm",
-            sidebar.open && "lg:right-[calc(392px+1rem)]"
+            sidebar.open && "lg:left-[calc(392px+1rem)]"
           )}
         >
           {error}
@@ -178,7 +178,7 @@ export function DashboardView() {
       <div
         className={cn(
           "absolute inset-x-0 bottom-0 z-20 px-4 pb-4 pt-3",
-          sidebar.open && "lg:right-[392px]"
+          sidebar.open && "lg:left-[392px]"
         )}
       >
         <div className="mx-auto max-w-2xl rounded-2xl border border-zinc-200/80 bg-white/95 p-4 shadow-xl backdrop-blur-md">
