@@ -1,6 +1,8 @@
-const { spawn } = require("node:child_process");
+const { spawn, spawnSync } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
+
+let cachedPython = null;
 
 function getScriptsDir() {
   try {
@@ -38,11 +40,87 @@ function getIpaPath() {
   return path.join(__dirname, "..", "..", "ios", "dist", "Anyloc.ipa");
 }
 
+function getPythonCandidates() {
+  const home = process.env.HOME || "";
+  const candidates = [
+    process.env.ANYLOC_PYTHON,
+    "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3",
+    "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+    "/Library/Frameworks/Python.framework/Versions/3.12/bin/python3",
+    "/Library/Frameworks/Python.framework/Versions/3.11/bin/python3",
+    "/opt/homebrew/bin/python3",
+    "/usr/local/bin/python3",
+    path.join(home, ".local", "bin", "python3"),
+    "python3",
+  ].filter(Boolean);
+
+  return [...new Set(candidates)];
+}
+
+function getSpawnEnv() {
+  const extraPaths = [
+    "/Library/Frameworks/Python.framework/Versions/3.14/bin",
+    "/Library/Frameworks/Python.framework/Versions/3.13/bin",
+    "/Library/Frameworks/Python.framework/Versions/3.12/bin",
+    "/opt/homebrew/bin",
+    "/usr/local/bin",
+  ];
+
+  const currentPath = process.env.PATH || "";
+  const mergedPath = [...extraPaths, currentPath].join(":");
+
+  return {
+    ...process.env,
+    PATH: mergedPath,
+  };
+}
+
+function resolvePythonExecutable() {
+  if (cachedPython) {
+    return cachedPython;
+  }
+
+  const env = getSpawnEnv();
+
+  for (const python of getPythonCandidates()) {
+    const result = spawnSync(
+      python,
+      ["-c", "from pymobiledevice3.usbmux import list_devices"],
+      {
+        env,
+        timeout: 8000,
+      }
+    );
+
+    if (result.status === 0) {
+      cachedPython = python;
+      return python;
+    }
+  }
+
+  return null;
+}
+
 function runPython(scriptName, args = []) {
   return new Promise((resolve) => {
+    const python = resolvePythonExecutable();
+
+    if (!python) {
+      resolve({
+        connected: false,
+        ok: false,
+        udid: null,
+        deviceName: null,
+        message:
+          "Python avec pymobiledevice3 introuvable. Dans Terminal : pip3 install pymobiledevice3 — puis relance Anyloc Setup avec : PATH=\"/Library/Frameworks/Python.framework/Versions/3.14/bin:$PATH\" open -a \"Anyloc Setup\"",
+      });
+      return;
+    }
+
     const scriptPath = path.join(getScriptsDir(), scriptName);
-    const child = spawn("python3", [scriptPath, ...args], {
+    const child = spawn(python, [scriptPath, ...args], {
       cwd: getScriptsDir(),
+      env: getSpawnEnv(),
     });
 
     let stdout = "";
@@ -65,7 +143,7 @@ function runPython(scriptName, args = []) {
           deviceName: null,
           message:
             stderr.trim() ||
-            "Impossible d'exécuter le script USB. Installe pymobiledevice3 : pip install pymobiledevice3",
+            "Impossible d'exécuter le script USB. Vérifie que pymobiledevice3 est installé.",
         });
         return;
       }
