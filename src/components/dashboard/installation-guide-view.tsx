@@ -302,8 +302,9 @@ function IosGuide({ hasAccess }: { hasAccess: boolean }) {
       <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-900">
         <p className="font-semibold">Ordinateur une seule fois</p>
         <p className="mt-1">
-          Tu utilises ton Mac ou PC uniquement pour installer l&apos;app. Ensuite,
-          tu changes ta position directement depuis l&apos;app Anyloc.
+          Le Mac ou PC sert uniquement à la première installation. Ensuite, tu changes
+          ta position et tu renouvelles l&apos;app depuis ton iPhone — avec LocalDevVPN,
+          sans repasser par l&apos;ordi.
         </p>
       </div>
 
@@ -368,15 +369,43 @@ function IosGuide({ hasAccess }: { hasAccess: boolean }) {
         <DeviceTokenStep platform="ios" />
       </StepCard>
 
-      <StepCard number={4} title="Installe l'app et choisis ta destination">
+      <StepCard number={4} title="Installe l'app et ouvre-la depuis l'écran d'accueil">
         <ol className="list-decimal space-y-2 pl-5">
           <li>Dans <strong>Anyloc Setup</strong>, colle ton code et clique <strong>Installer l&apos;app iPhone</strong></li>
-          <li>Ouvre <strong>Anyloc</strong> sur ton iPhone, colle le même code</li>
-          <li>Cherche une ville (ex. Marbella) et appuie dessus — c&apos;est tout</li>
+          <li>Sur ton iPhone, l&apos;icône <strong>Anyloc</strong> apparaît sur l&apos;écran d&apos;accueil</li>
+          <li>Si besoin : Safari → ouvre Anyloc, appuie sur <strong>Partager</strong> (□↑), puis <strong>Sur l&apos;écran d&apos;accueil</strong></li>
+          <li>Ouvre <strong>Anyloc</strong>, colle ton code, cherche une ville et appuie dessus</li>
         </ol>
         <p className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-950">
-          Tu peux débrancher le câble USB. Plus besoin de ton ordinateur pour
-          changer de position.
+          Tu peux débrancher le câble USB. Plus besoin de ton ordinateur pour changer
+          de position.
+        </p>
+      </StepCard>
+
+      <StepCard number={5} title="Renouvelle sans Mac (toutes les ~7 jours)">
+        <p>
+          Les apps sideloadées expirent environ tous les 7 jours. Le renouvellement
+          se fait depuis ton iPhone — pas besoin de rebrancher le Mac.
+        </p>
+        <ol className="list-decimal space-y-2 pl-5">
+          <li>
+            Installe <strong>LocalDevVPN</strong> depuis l&apos;App Store{" "}
+            <a
+              href="https://apps.apple.com/app/localdevvpn/id6755608044"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-pink-600 underline-offset-2 hover:underline"
+            >
+              (lien direct)
+            </a>
+          </li>
+          <li>Connecte-toi au <strong>Wi-Fi</strong></li>
+          <li>Ouvre <strong>LocalDevVPN</strong> → appuie sur <strong>Connect</strong></li>
+          <li>Ouvre <strong>Anyloc</strong> depuis ton écran d&apos;accueil — l&apos;app se recharge</li>
+        </ol>
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Garde LocalDevVPN connecté pendant le renouvellement. C&apos;est tout — ton Mac
+          n&apos;est plus nécessaire après la première installation.
         </p>
       </StepCard>
     </div>
