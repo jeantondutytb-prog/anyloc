@@ -24,22 +24,22 @@ export const DEFAULT_ONBOARDING_STATE: OnboardingState = {
 export const ONBOARDING_STEP_ITEMS = [
   {
     id: "install" as const,
-    title: "Branche ton téléphone",
+    title: "Installe l'app sur ton téléphone",
     description:
-      "Ton code se génère tout seul. Installe l'app, scanne le QR — plus de copier-coller.",
+      "Suis les étapes en bas de la carte. Ton mot de passe est déjà prêt — scanne le carré avec l'appareil photo.",
     cta: "Voir le guide",
   },
   {
     id: "chooseSpot" as const,
-    title: "Choisis ta ville sur la carte",
+    title: "Choisis une ville",
     description:
-      "Cherche Marbella, Paris, Miami… ou clique directement sur la carte du dashboard.",
+      "Clique sur Marbella, Paris, Miami… à gauche, ou cherche une adresse en haut, ou tape sur la carte.",
   },
   {
     id: "activate" as const,
-    title: "Ta loc reste active",
+    title: "Allume ta fausse position",
     description:
-      "Ton iPhone reçoit la position automatiquement. Clique sur « Arrêter la loc » quand tu veux couper.",
+      "Appuie sur le gros bouton en bas. Pour t'arrêter, appuie sur « Revenir à ma vraie position ».",
   },
 ] as const;
 

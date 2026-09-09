@@ -5,7 +5,7 @@ import Foundation
 final class AppState: ObservableObject {
     @Published var apiBaseUrl: String
     @Published var deviceToken: String
-    @Published var statusMessage = "Colle ton code depuis le dashboard, puis laisse l'app ouverte."
+    @Published var statusMessage = "Laisse cette app ouverte. Choisis ta ville sur le site anyloc.io."
     @Published var isSyncing = false
     @Published var lastLocation: RemoteLocation?
     @Published var searchQuery = ""
@@ -85,7 +85,7 @@ final class AppState: ObservableObject {
 
         deviceToken = token
         saveSettings()
-        statusMessage = "Configuré depuis le dashboard ✓"
+        statusMessage = "Configuré depuis le site ✓"
     }
 
     func importPairing(from url: URL) {

@@ -5,12 +5,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
   CheckCircle2,
+  ChevronDown,
   Copy,
   Download,
   ExternalLink,
   Loader2,
   Monitor,
-  QrCode,
   Smartphone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,48 @@ type DashboardPhoneSetupProps = {
   compact?: boolean;
 };
 
+function detectPlatform(): Platform {
+  if (typeof navigator === "undefined") {
+    return "ios";
+  }
+
+  return /android/i.test(navigator.userAgent) ? "android" : "ios";
+}
+
+function detectIsMac() {
+  if (typeof navigator === "undefined") {
+    return true;
+  }
+
+  return /Mac|iPhone|iPad|iPod/.test(navigator.platform);
+}
+
+function StepBox({
+  number,
+  title,
+  children,
+}: {
+  number: number;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <li className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-4">
+      <div className="flex items-start gap-3">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-pink-500 text-sm font-bold text-white">
+          {number}
+        </span>
+        <div className="min-w-0 flex-1 space-y-3">
+          <p className="font-semibold text-zinc-900">{title}</p>
+          <div className="space-y-2 text-sm leading-relaxed text-zinc-600">
+            {children}
+          </div>
+        </div>
+      </div>
+    </li>
+  );
+}
+
 export function DashboardPhoneSetup({
   devices,
   phoneOnline,
@@ -53,7 +95,12 @@ export function DashboardPhoneSetup({
   const [copied, setCopied] = useState(false);
   const { data: downloads, loading: downloadsLoading } = useDownloads();
 
+  useEffect(() => {
+    setPlatform(detectPlatform());
+  }, []);
+
   const linkedForPlatform = devices.find((device) => device.platform === platform);
+  const isMac = detectIsMac();
 
   const createToken = useCallback(async () => {
     setCreating(true);
@@ -72,7 +119,7 @@ export function DashboardPhoneSetup({
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error ?? "Impossible de créer le code.");
+        throw new Error(data.error ?? "Impossible de préparer ton téléphone.");
       }
 
       const nextToken: CreatedToken = {
@@ -91,7 +138,7 @@ export function DashboardPhoneSetup({
       setError(
         createError instanceof Error
           ? createError.message
-          : "Impossible de créer le code."
+          : "Impossible de préparer ton téléphone."
       );
     } finally {
       setCreating(false);
@@ -138,7 +185,7 @@ export function DashboardPhoneSetup({
 
   const setupDownload = downloads?.assets.find((asset) =>
     platform === "ios"
-      ? asset.id === "setup-mac" || asset.id === "setup-win"
+      ? asset.id === (isMac ? "setup-mac" : "setup-win")
       : asset.id === "apk"
   );
 
@@ -158,11 +205,11 @@ export function DashboardPhoneSetup({
         <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
         <div className="min-w-0">
           <p className="text-sm font-medium text-emerald-900">
-            Téléphone connecté
+            C&apos;est bon, ton téléphone est prêt
           </p>
-          <p className="text-xs text-emerald-700/90">
-            Choisis une ville ou clique sur la carte — ta loc se met à jour toute
-            seule.
+          <p className="text-xs leading-relaxed text-emerald-700/90">
+            Clique sur une ville à gauche, ou cherche une adresse en haut, ou tape
+            sur la carte. Ta fausse position se met sur ton téléphone toute seule.
           </p>
         </div>
       </div>
@@ -173,17 +220,18 @@ export function DashboardPhoneSetup({
     return (
       <div className="space-y-3">
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <p className="font-medium">Ouvre Anyloc sur ton téléphone</p>
-          <p className="mt-1 text-xs text-amber-800/90">
-            {linkedForPlatform.deviceName} est déjà configuré. Lance l&apos;app sur
-            ton tel
-            {platform === "ios" ? " (LocalDevVPN connecté)" : ""} pour recevoir ta
-            position depuis le dashboard.
+          <p className="font-medium">Il ne reste qu&apos;à ouvrir l&apos;app Anyloc</p>
+          <p className="mt-1 text-xs leading-relaxed text-amber-800/90">
+            Ton téléphone est déjà enregistré. Ouvre simplement l&apos;app{" "}
+            <strong>Anyloc</strong> sur ton tel et laisse-la ouverte.
+            {platform === "ios"
+              ? " Sur iPhone, vérifie aussi que l'app LocalDevVPN est bien connectée (bouton vert)."
+              : null}
           </p>
         </div>
         <Link href={`/dashboard/installation?platform=${platform}`}>
           <Button variant="secondary" size="sm" className="w-full">
-            Besoin d&apos;aide ?
+            Je bloque, montre-moi les étapes en détail
             <ArrowRight className="h-4 w-4" />
           </Button>
         </Link>
@@ -195,11 +243,11 @@ export function DashboardPhoneSetup({
     <div className={cn("space-y-4", compact && "space-y-3")}>
       <div>
         <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-          Configuration automatique
+          Avant de choisir une ville
         </p>
-        <p className="mt-1 text-sm text-zinc-600">
-          Ton code est généré tout seul. Installe l&apos;app, scanne le QR — plus
-          besoin de copier-coller.
+        <p className="mt-1 text-sm leading-relaxed text-zinc-600">
+          On prépare ton téléphone. Suis les étapes dans l&apos;ordre — ton mot de
+          passe est déjà créé, tu n&apos;as presque rien à taper toi-même.
         </p>
       </div>
 
@@ -229,7 +277,7 @@ export function DashboardPhoneSetup({
                 : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"
             )}
           >
-            {value === "ios" ? "iPhone" : "Android"}
+            {value === "ios" ? "J'ai un iPhone" : "J'ai un Android"}
           </button>
         ))}
       </div>
@@ -239,29 +287,30 @@ export function DashboardPhoneSetup({
       {creating || !createdToken ? (
         <div className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Génération de ton code de liaison…
+          Préparation de ton téléphone…
         </div>
       ) : (
         <div className="space-y-4">
           {platform === "ios" ? (
-            <ol className="space-y-3 text-sm text-zinc-600">
-              <li className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-3">
-                <p className="font-medium text-zinc-900">
-                  1. Installe via Anyloc Setup (Mac/PC)
+            <ol className="space-y-3">
+              <StepBox number={1} title="Sur ton ordinateur (Mac ou PC)">
+                <p>
+                  Télécharge le programme <strong>Anyloc Setup</strong> — c&apos;est
+                  lui qui met l&apos;app sur ton iPhone. Une seule fois.
                 </p>
-                <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                <div className="flex flex-col gap-2 sm:flex-row">
                   {setupDownload?.available ? (
                     <a href={setupDownload.downloadPath} className="flex-1">
                       <Button size="sm" className="w-full">
                         <Download className="h-4 w-4" />
-                        Télécharger Setup
+                        Télécharger pour {isMac ? "Mac" : "Windows"}
                       </Button>
                     </a>
                   ) : (
                     <Link href="/dashboard/installation?platform=ios" className="flex-1">
                       <Button size="sm" variant="secondary" className="w-full">
                         <Download className="h-4 w-4" />
-                        {downloadsLoading ? "Chargement…" : "Télécharger Setup"}
+                        {downloadsLoading ? "Chargement…" : "Télécharger le programme"}
                       </Button>
                     </Link>
                   )}
@@ -269,124 +318,145 @@ export function DashboardPhoneSetup({
                     <a href={setupDesktopLink} className="flex-1">
                       <Button size="sm" variant="secondary" className="w-full">
                         <Monitor className="h-4 w-4" />
-                        Ouvrir Setup (code prérempli)
+                        Ouvrir le programme (déjà configuré)
                       </Button>
                     </a>
                   ) : null}
                 </div>
-                <p className="mt-2 text-xs text-zinc-500">
-                  Branche ton iPhone en USB → Installe l&apos;app → Envoie le
-                  pairing. Setup reçoit ton code automatiquement.
-                </p>
-              </li>
+                <ol className="list-decimal space-y-1.5 pl-5 text-xs text-zinc-500">
+                  <li>Branche ton iPhone avec ton câble de charge</li>
+                  <li>Sur l&apos;iPhone, appuie sur <strong>Faire confiance</strong></li>
+                  <li>
+                    Dans le programme : <strong>Installer l&apos;app sur mon iPhone</strong>
+                  </li>
+                  <li>
+                    Puis : <strong>Connecter mon iPhone à Anyloc</strong> (un seul bouton)
+                  </li>
+                </ol>
+              </StepBox>
 
-              <li className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-3">
-                <p className="font-medium text-zinc-900">
-                  2. Scanne ce QR avec ton iPhone
-                </p>
-                <p className="mt-1 text-xs text-zinc-500">
-                  Ouvre l&apos;app Anyloc après l&apos;installation — le code se
-                  configure tout seul.
+              <StepBox number={2} title="Sur ton iPhone — lie l'app à ton compte">
+                <p>
+                  Ouvre l&apos;appareil photo et pointe vers le carré ci-dessous.
+                  Appuie sur la notification → l&apos;app Anyloc s&apos;ouvre et c&apos;est
+                  réglé.
                 </p>
                 {mobileSetupLink ? (
-                  <div className="mt-3 flex items-center gap-4">
+                  <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-start">
                     <SetupQrCode
                       value={mobileSetupLink}
-                      label="Appareil photo → ouvre Anyloc"
+                      label="Scanne avec l'appareil photo"
                     />
-                    <div className="min-w-0 flex-1 space-y-2">
-                      <p className="text-xs text-zinc-500">
-                        Ou copie le code manuellement si besoin :
-                      </p>
-                      <code className="block break-all rounded-lg bg-white px-2 py-1.5 text-[10px] text-zinc-700">
-                        {createdToken.token}
-                      </code>
-                      <Button size="sm" variant="secondary" onClick={() => void copyToken()}>
-                        <Copy className="h-4 w-4" />
-                        {copied ? "Copié" : "Copier"}
-                      </Button>
-                    </div>
+                    <p className="text-xs text-zinc-500 sm:max-w-[200px]">
+                      Ensuite, laisse l&apos;app <strong>Anyloc</strong> ouverte sur ton
+                      iPhone. Tu peux débrancher le câble.
+                    </p>
                   </div>
                 ) : null}
-              </li>
+              </StepBox>
+
+              <StepBox number={3} title="Une fois par semaine sur iPhone (2 min)">
+                <p className="text-xs text-zinc-500">
+                  Apple fait expirer l&apos;app environ tous les 7 jours. C&apos;est normal.
+                </p>
+                <ol className="list-decimal space-y-1.5 pl-5 text-xs text-zinc-500">
+                  <li>
+                    Installe <strong>LocalDevVPN</strong> depuis l&apos;App Store (gratuit)
+                  </li>
+                  <li>Connecte-toi au Wi-Fi</li>
+                  <li>Ouvre LocalDevVPN → appuie sur <strong>Connect</strong></li>
+                  <li>Relance Anyloc depuis ton écran d&apos;accueil</li>
+                </ol>
+              </StepBox>
             </ol>
           ) : (
-            <ol className="space-y-3 text-sm text-zinc-600">
-              <li className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-3">
-                <p className="font-medium text-zinc-900">1. Installe l&apos;APK</p>
-                <div className="mt-3">
-                  {setupDownload?.available ? (
-                    <a href={setupDownload.downloadPath}>
-                      <Button size="sm">
-                        <Download className="h-4 w-4" />
-                        Télécharger Anyloc Android
-                      </Button>
-                    </a>
-                  ) : (
-                    <Link href="/dashboard/installation?platform=android">
-                      <Button size="sm" variant="secondary">
-                        <Download className="h-4 w-4" />
-                        {downloadsLoading ? "Chargement…" : "Télécharger l'APK"}
-                      </Button>
-                    </Link>
-                  )}
-                </div>
-              </li>
-
-              <li className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-3">
-                <p className="font-medium text-zinc-900">
-                  2. Scanne ce QR depuis ton Android
+            <ol className="space-y-3">
+              <StepBox number={1} title="Installe l'app Anyloc sur ton téléphone">
+                {setupDownload?.available ? (
+                  <a href={setupDownload.downloadPath}>
+                    <Button size="sm">
+                      <Download className="h-4 w-4" />
+                      Télécharger l&apos;app Anyloc
+                    </Button>
+                  </a>
+                ) : (
+                  <Link href="/dashboard/installation?platform=android">
+                    <Button size="sm" variant="secondary">
+                      <Download className="h-4 w-4" />
+                      {downloadsLoading ? "Chargement…" : "Télécharger l'app"}
+                    </Button>
+                  </Link>
+                )}
+                <p className="text-xs text-zinc-500">
+                  Ouvre le fichier téléchargé et accepte l&apos;installation si Android
+                  te le demande.
                 </p>
-                <p className="mt-1 text-xs text-zinc-500">
-                  L&apos;app s&apos;ouvre avec ton code déjà configuré.
+              </StepBox>
+
+              <StepBox number={2} title="Lie l'app à ton compte">
+                <p>
+                  Scanne le carré avec ton appareil photo, ou appuie sur le bouton
+                  ci-dessous.
                 </p>
                 {mobileSetupLink ? (
-                  <div className="mt-3 flex items-center gap-4">
+                  <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-start">
                     <SetupQrCode
                       value={mobileSetupLink}
-                      label="Caméra → ouvre Anyloc"
+                      label="Scanne avec l'appareil photo"
                     />
-                    <div className="min-w-0 flex-1 space-y-2">
-                      <a href={mobileSetupLink}>
-                        <Button size="sm" className="w-full">
-                          <Smartphone className="h-4 w-4" />
-                          Ouvrir Anyloc
-                        </Button>
-                      </a>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="w-full"
-                        onClick={() => void copyToken()}
-                      >
-                        <Copy className="h-4 w-4" />
-                        {copied ? "Copié" : "Copier le code"}
+                    <a href={mobileSetupLink} className="w-full sm:w-auto">
+                      <Button size="sm" className="w-full">
+                        <Smartphone className="h-4 w-4" />
+                        Ouvrir Anyloc sur mon tel
                       </Button>
-                    </div>
+                    </a>
                   </div>
                 ) : null}
-              </li>
+              </StepBox>
+
+              <StepBox number={3} title="Autorise la fausse position (1 fois)">
+                <p className="text-xs text-zinc-500">
+                  Android te demande de choisir quelle app peut changer ta position.
+                </p>
+                <ol className="list-decimal space-y-1.5 pl-5 text-xs text-zinc-500">
+                  <li>
+                    <strong>Paramètres → À propos du téléphone</strong> → tape 7 fois sur{" "}
+                    <strong>Numéro de build</strong>
+                  </li>
+                  <li>
+                    <strong>Options pour les développeurs</strong> → active-les
+                  </li>
+                  <li>
+                    Cherche <strong>Application de localisation fictive</strong> → choisis{" "}
+                    <strong>Anyloc</strong>
+                  </li>
+                </ol>
+              </StepBox>
             </ol>
           )}
 
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Link href={`/dashboard/installation?platform=${platform}`} className="flex-1">
-              <Button variant="secondary" size="sm" className="w-full">
-                <ExternalLink className="h-4 w-4" />
-                Guide complet
+          <details className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm">
+            <summary className="flex cursor-pointer list-none items-center gap-2 font-medium text-zinc-700 [&::-webkit-details-marker]:hidden">
+              <ChevronDown className="h-4 w-4 text-zinc-400" />
+              Ça ne marche pas ? Copie le mot de passe à la main
+            </summary>
+            <div className="mt-3 space-y-2 border-t border-zinc-100 pt-3">
+              <code className="block break-all rounded-lg bg-zinc-50 px-2 py-1.5 text-[10px] text-zinc-700">
+                {createdToken.token}
+              </code>
+              <Button size="sm" variant="secondary" onClick={() => void copyToken()}>
+                <Copy className="h-4 w-4" />
+                {copied ? "Copié" : "Copier le mot de passe"}
               </Button>
-            </Link>
-            <Button
-              variant="secondary"
-              size="sm"
-              className="flex-1"
-              onClick={() => void createToken()}
-              disabled={creating}
-            >
-              <QrCode className="h-4 w-4" />
-              Nouveau code
+            </div>
+          </details>
+
+          <Link href={`/dashboard/installation?platform=${platform}`}>
+            <Button variant="secondary" size="sm" className="w-full">
+              <ExternalLink className="h-4 w-4" />
+              Guide complet avec photos et dépannage
             </Button>
-          </div>
+          </Link>
         </div>
       )}
     </div>
