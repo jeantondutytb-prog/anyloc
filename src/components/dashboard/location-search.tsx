@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import { Loader2, MapPin, Search } from "lucide-react";
 import type { GeocodeResult } from "@/lib/geocoding";
 import { DESTINATION_SPOTS } from "@/lib/destination-spots";
@@ -12,32 +18,45 @@ type Location = {
   lng: number;
 };
 
-export function LocationSearch({
-  onSelect,
-  variant = "default",
-}: {
+export type LocationSearchHandle = {
+  hasQuery: () => boolean;
+  submitQuery: () => Promise<boolean>;
+};
+
+type LocationSearchProps = {
   onSelect: (location: Location) => void;
   variant?: "default" | "panel" | "top";
-}) {
+};
+
+function getLocalMatches(search: string) {
+  const trimmed = search.trim();
+
+  if (trimmed.length < 2) {
+    return [];
+  }
+
+  return DESTINATION_SPOTS.filter((loc) =>
+    loc.name.toLowerCase().includes(trimmed.toLowerCase())
+  ).map((loc) => ({
+    id: `local-${loc.name}`,
+    name: loc.name,
+    lat: loc.lat,
+    lng: loc.lng,
+    subtitle: "Spot Anyloc",
+  }));
+}
+
+export const LocationSearch = forwardRef<LocationSearchHandle, LocationSearchProps>(
+  function LocationSearch({ onSelect, variant = "default" }, ref) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<GeocodeResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const localMatches =
-    query.trim().length >= 2
-      ? DESTINATION_SPOTS.filter((loc) =>
-          loc.name.toLowerCase().includes(query.trim().toLowerCase())
-        ).map((loc) => ({
-          id: `local-${loc.name}`,
-          name: loc.name,
-          lat: loc.lat,
-          lng: loc.lng,
-          subtitle: "Spot Anyloc",
-        }))
-      : [];
+  const localMatches = getLocalMatches(query);
 
   useEffect(() => {
     const trimmed = query.trim();
@@ -119,6 +138,57 @@ export function LocationSearch({
     setOpen(false);
   }
 
+  useImperativeHandle(ref, () => ({
+    hasQuery: () => query.trim().length > 0,
+    submitQuery: async () => {
+      const trimmed = query.trim();
+
+      if (!trimmed) {
+        return false;
+      }
+
+      const localMatches = getLocalMatches(trimmed);
+
+      if (localMatches.length > 0) {
+        pickResult(localMatches[0]);
+        return true;
+      }
+
+      if (trimmed.length < 2) {
+        setOpen(true);
+        inputRef.current?.focus();
+        return true;
+      }
+
+      try {
+        const response = await fetch(`/api/geocode?q=${encodeURIComponent(trimmed)}`);
+        const data = (await response.json()) as {
+          results?: GeocodeResult[];
+          error?: string;
+        };
+
+        if (!response.ok) {
+          throw new Error(data.error ?? "Recherche indisponible.");
+        }
+
+        const geocodeResults = data.results ?? [];
+
+        if (geocodeResults.length > 0) {
+          pickResult(geocodeResults[0]);
+          return true;
+        }
+
+        setOpen(true);
+        inputRef.current?.focus();
+        return true;
+      } catch {
+        setOpen(true);
+        inputRef.current?.focus();
+        return true;
+      }
+    },
+  }));
+
   return (
     <div ref={containerRef} className="relative">
       <Search
@@ -128,6 +198,7 @@ export function LocationSearch({
         )}
       />
       <input
+        ref={inputRef}
         type="search"
         value={query}
         onChange={(event) => {
@@ -200,4 +271,4 @@ export function LocationSearch({
       )}
     </div>
   );
-}
+});
