@@ -26,7 +26,7 @@ export const ONBOARDING_STEP_ITEMS = [
     id: "install" as const,
     title: "Branche ton téléphone",
     description:
-      "Génère un code, installe l'app Anyloc et colle-le dedans. Une seule fois.",
+      "Ton code se génère tout seul. Installe l'app, scanne le QR — plus de copier-coller.",
     cta: "Voir le guide",
   },
   {
