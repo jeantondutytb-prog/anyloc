@@ -22,7 +22,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { DashboardNav } from "@/components/dashboard/dashboard-nav";
+import {
+  DashboardSidebar,
+  DashboardSidebarToggle,
+  useDashboardSidebar,
+} from "@/components/dashboard/dashboard-sidebar";
 import { Logo } from "@/components/ui/logo";
 import { useDownloads } from "@/hooks/use-downloads";
 import { getCheckoutUrl } from "@/lib/constants";
@@ -446,6 +450,7 @@ export function InstallationGuideView() {
   const searchParams = useSearchParams();
   const { data, loading } = useDownloads();
   const { completeStep, state } = useDashboardOnboarding();
+  const sidebar = useDashboardSidebar();
   const [platform, setPlatform] = useState<Platform>("ios");
   const [paymentSuccess, setPaymentSuccess] = useState(false);
 
@@ -481,14 +486,20 @@ export function InstallationGuideView() {
   const hasAccess = data?.hasAccess ?? false;
 
   return (
-    <div className="flex min-h-screen flex-col bg-background lg:flex-row">
+    <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-20 flex h-14 items-center border-b border-zinc-200 bg-logo-background px-4 lg:hidden">
         <Logo />
       </header>
 
-      <DashboardNav />
+      <DashboardSidebarToggle open={sidebar.open} onOpen={sidebar.onOpen} />
+      <DashboardSidebar open={sidebar.open} onClose={sidebar.onClose} />
 
-      <main className="flex-1 p-4 pb-24 sm:p-6 lg:p-8 lg:pb-8">
+      <main
+        className={cn(
+          "p-4 pb-8 sm:p-6 lg:p-8",
+          sidebar.open && "lg:mr-[392px]"
+        )}
+      >
         {paymentSuccess && (
           <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4 sm:px-5">
             <div className="flex items-start gap-3">
@@ -642,8 +653,6 @@ export function InstallationGuideView() {
           )}
         </div>
       </main>
-
-      <DashboardNav mobile />
     </div>
   );
 }
