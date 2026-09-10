@@ -4,7 +4,7 @@ const path = require("node:path");
 /** @type {import('electron-builder').Configuration} */
 module.exports = {
   appId: "io.anyloc.setup",
-  productName: "Anyloc Setup",
+  productName: "Anyloc",
   artifactName: "Anyloc-Setup.${ext}",
   directories: {
     output: "dist",

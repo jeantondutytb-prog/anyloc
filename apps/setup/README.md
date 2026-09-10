@@ -1,18 +1,17 @@
-# Anyloc Setup (Desktop)
+# Anyloc Setup (Desktop Mac)
 
-Logiciel desktop Mac/Windows pour la mise en route iPhone : branchement USB, mode développeur, installation de l'app iOS sideloadée.
+App Mac qui fait le lien entre l'iPhone et le GPS. L'utilisateur branche son iPhone, Anyloc Setup applique le spoof GPS via `pymobiledevice3`. L'app iPhone sert de telecommande : l'utilisateur choisit sa position depuis l'iPhone, le Mac l'applique.
 
 ## Statut
 
-**v0.2** : détection USB réelle via `pymobiledevice3` ou `idevice_id`. Bouton d'installation branché (IPA à placer dans `apps/ios/dist/Anyloc.ipa`).
+**v0.3** : auth Supabase, auto-sync position, GPS persistant (re-apply toutes les 5s), auto-launch au demarrage Mac, mode tray, installation app iOS via USB, interface identique a l'app iPhone (3 onglets : Carte, Decouvrir, Profil).
 
-## Prérequis USB (Mac)
+## Prerequis
 
-```bash
-pip install -r apps/setup/scripts/requirements.txt
-```
+- macOS Ventura ou plus recent
+- `pymobiledevice3` : `pip3 install pymobiledevice3`
 
-## Développement
+## Developpement
 
 ```bash
 cd apps/setup
@@ -23,21 +22,16 @@ npm run dev
 ## Build
 
 ```bash
-# Depuis la racine du repo
-./scripts/build-setup.sh
-
-# Ou ici directement
 npm run build:mac   # dist/Anyloc-Setup.dmg
-npm run build:win   # dist/Anyloc-Setup.exe
 ```
-
-CI : GitHub Actions **Build Anyloc Setup** publie les binaires en release GitHub.
-Configure ensuite `ANYLOC_DOWNLOAD_SETUP_MAC` et `ANYLOC_DOWNLOAD_SETUP_WIN` sur Vercel avec les URLs de la release.
 
 ## Flow utilisateur
 
-1. Télécharger Anyloc Setup depuis le dashboard
-2. Se connecter avec son compte Anyloc (à venir)
-3. Brancher l'iPhone en USB
-4. Activer le mode développeur
-5. Installer l'app Anyloc sur l'iPhone
+1. Telecharger Anyloc Setup depuis anyloc.io
+2. Ouvrir l'app, se connecter avec son compte Anyloc
+3. Brancher l'iPhone en USB, activer le mode developpeur
+4. Cliquer "Installer l'app iPhone"
+5. Ouvrir l'app Anyloc sur iPhone, se connecter
+6. Choisir un lieu — la position GPS change instantanement
+
+L'app Mac reste dans la barre de menus et se relance au demarrage. L'iPhone reste branche et sert de telecommande.

@@ -906,11 +906,54 @@ async function installIosApp({ udid }) {
   };
 }
 
+async function applyGpsDirect({ udid, lat, lng }) {
+  if (lat == null || lng == null) {
+    return { ok: false, message: "Coordonnées manquantes." };
+  }
+
+  const cli = resolvePymobiledevice3Cli();
+  if (!cli) {
+    return {
+      ok: false,
+      message: "pymobiledevice3 introuvable. Terminal : pip3 install pymobiledevice3",
+    };
+  }
+
+  const result = await runSimulateLocation({ type: "set", lat, lng }, udid);
+
+  if (result.ok) {
+    return {
+      ok: true,
+      message: `GPS appliqué : ${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+    };
+  }
+
+  return result;
+}
+
+async function clearGpsLocation({ udid }) {
+  const cli = resolvePymobiledevice3Cli();
+  if (!cli) {
+    return {
+      ok: false,
+      message: "pymobiledevice3 introuvable. Terminal : pip3 install pymobiledevice3",
+    };
+  }
+
+  return runSimulateLocation({ type: "clear" }, udid);
+}
+
 module.exports = {
   detectUsbDevice,
   installIosApp,
   applyGpsLocation,
+  applyGpsDirect,
+  clearGpsLocation,
   ensureIpaAvailable,
   exportPairingFile,
   savePairingLocalCopy,
+  resolvePythonExecutable,
+  resolvePymobiledevice3Cli,
+  getSpawnEnv,
+  getScriptsDir,
 };

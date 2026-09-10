@@ -7,7 +7,7 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.10"
-    DEVELOPMENT_TEAM: ""
+    DEVELOPMENT_TEAM: "U284BGAVKL"
 targets:
   Anyloc:
     type: application
@@ -19,7 +19,12 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: io.anyloc.app
         CODE_SIGN_ENTITLEMENTS: Anyloc/Anyloc.entitlements
         INFOPLIST_KEY_CFBundleDisplayName: Anyloc
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     info:
       path: Anyloc/Info.plist
       properties:
         UILaunchScreen: {}
+        CFBundleURLTypes:
+          - CFBundleURLName: io.anyloc.app
+            CFBundleURLSchemes:
+              - anyloc

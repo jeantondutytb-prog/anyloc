@@ -2,18 +2,19 @@ import SwiftUI
 
 @main
 struct AnylocApp: App {
-    @StateObject private var appState = AppState()
+    @ObservedObject private var auth = AuthService.shared
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environmentObject(appState)
-                .task {
-                    appState.autoStartIfConfigured()
+            Group {
+                if auth.isLoggedIn {
+                    MainTabView()
+                } else {
+                    LoginView()
                 }
-                .onOpenURL { url in
-                    appState.handleDeepLink(url)
-                }
+            }
+            .animation(.easeInOut, value: auth.isLoggedIn)
+            .task { await auth.verifySession() }
         }
     }
 }

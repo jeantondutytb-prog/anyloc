@@ -3,112 +3,251 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Anyloc Setup</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src https://*.supabase.co https://nominatim.openstreetmap.org https://www.anyloc.io https://anyloc.io https://api.github.com" />
+    <title>Anyloc</title>
     <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./leaflet.css" />
   </head>
   <body>
-    <main class="shell">
-      <header class="hero">
-        <p class="badge">Anyloc Setup</p>
-        <h1>Installe Anyloc sur ton iPhone</h1>
-        <p class="subtitle">
-          Une seule fois avec ton ordinateur. Après, tu changes ta position
-          directement sur le site — plus besoin de rebrancher le câble.
-        </p>
-      </header>
 
-      <section class="steps" id="steps"></section>
+    <!-- ── Login Screen ── -->
+    <div id="login-screen" class="screen login-screen active">
+      <div class="login-card">
+        <div class="logo-big">Any<span>loc</span></div>
+        <p class="tagline">Change ta position. Partout dans le monde.</p>
 
-      <section class="panel highlight">
-        <h2>Tout faire d&apos;un coup</h2>
-        <p class="panel-copy">
-          Branche ton iPhone, puis clique ci-dessous. Le programme installe
-          l&apos;app et connecte ton téléphone à ton compte.
-        </p>
-        <div class="actions">
-          <button id="full-setup" type="button">
-            Installer et connecter mon iPhone
+        <div class="oauth-buttons">
+          <button class="oauth-btn" id="login-google">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09a6.97 6.97 0 0 1 0-4.17V7.07H2.18a11.97 11.97 0 0 0 0 9.86l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+            Continuer avec Google
           </button>
         </div>
-        <p id="install-status" class="install-status"></p>
-      </section>
 
-      <section class="panel">
-        <h2>Ton mot de passe (rempli tout seul)</h2>
-        <p class="panel-copy">
-          Clique « Ouvrir le programme » sur le site anyloc.io — ce champ se
-          remplit automatiquement. Tu n&apos;as normalement rien à copier.
+        <div class="divider">ou</div>
+
+        <form id="login-form">
+          <div class="form-group">
+            <input id="login-email" class="form-input" type="email" placeholder="Email" required autocomplete="email" />
+          </div>
+          <div class="form-group">
+            <input id="login-password" class="form-input" type="password" placeholder="Mot de passe" required autocomplete="current-password" />
+          </div>
+          <p id="login-error" class="login-error"></p>
+          <button type="submit" class="btn-primary" id="login-submit">Se connecter</button>
+        </form>
+
+        <p class="login-toggle">
+          Pas encore de compte ? <a id="toggle-signup">Créer un compte</a>
         </p>
-        <label class="field-label" for="device-token">Mot de passe Anyloc</label>
-        <input
-          id="device-token"
-          class="text-input"
-          type="text"
-          placeholder="anyloc_..."
-          autocomplete="off"
-          spellcheck="false"
-        />
-        <label class="field-label" for="api-base-url">Adresse du site</label>
-        <input
-          id="api-base-url"
-          class="text-input"
-          type="url"
-          value="https://www.anyloc.io"
-          spellcheck="false"
-        />
-      </section>
+      </div>
+    </div>
 
-      <section class="panel">
-        <h2>Mon iPhone est-il branché ?</h2>
-        <p id="usb-status" class="usb-status">Vérification en cours...</p>
-        <div class="actions">
-          <button id="refresh-usb" type="button" class="secondary">
-            Revérifier
-          </button>
-        </div>
-      </section>
+    <!-- ── Main App (3 tabs like iOS) ── -->
+    <div id="main-screen" class="screen main-screen">
 
-      <section class="panel highlight">
-        <h2>Étape par étape (si besoin)</h2>
-        <p class="panel-copy">
-          Si le bouton du haut ne marche pas, fais les deux étapes séparément.
-        </p>
-        <div class="actions">
-          <button id="install-ios" type="button" disabled>
-            Installer l&apos;app sur mon iPhone
-          </button>
-          <button id="export-pairing" type="button" disabled>
-            Connecter mon iPhone à Anyloc
-          </button>
+      <!-- Tab: Carte -->
+      <div id="tab-carte" class="tab-content active">
+        <div class="map-container">
+          <div class="map-search">
+            <div class="search-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            </div>
+            <input id="search-input" type="text" placeholder="Rechercher un lieu..." autocomplete="off" spellcheck="false" />
+            <button id="search-clear" class="search-clear" hidden>&times;</button>
+          </div>
+          <div id="search-results" class="search-results" hidden></div>
+          <div id="map"></div>
+
+          <!-- Bottom sheet -->
+          <div id="bottom-sheet" class="bottom-sheet">
+            <div id="sheet-content">
+              <p class="sheet-placeholder">Clique sur la carte ou cherche un lieu</p>
+            </div>
+          </div>
+
+          <div id="status-toast" class="status-toast" hidden></div>
         </div>
-        <p id="pairing-export-status" class="install-status"></p>
-        <button
-          id="save-pairing-local"
-          type="button"
-          class="link-button"
-          hidden
-        >
-          Sauvegarder une copie locale
+      </div>
+
+      <!-- Tab: Découvrir -->
+      <div id="tab-spots" class="tab-content">
+        <div class="spots-page">
+          <div class="spots-header">
+            <h2>Découvrir</h2>
+          </div>
+
+          <div class="category-pills" id="category-pills"></div>
+
+          <div class="spots-grid" id="spots-grid"></div>
+
+          <div id="spots-status" class="spots-status" hidden></div>
+        </div>
+      </div>
+
+      <!-- Tab: Profil -->
+      <div id="tab-profil" class="tab-content">
+        <div class="profil-page">
+          <div class="profil-header">
+            <h2>Mon Profil</h2>
+            <p>Gérez vos informations et préférences.</p>
+          </div>
+
+          <div class="profil-sections">
+            <!-- Infos personnelles -->
+            <div class="settings-section">
+              <div class="section-label">INFORMATIONS PERSONNELLES</div>
+              <div class="settings-card">
+                <div class="info-row">
+                  <span class="info-label">Email</span>
+                  <span class="info-value" id="profil-email">—</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Rôle</span>
+                  <span class="info-value">Utilisateur</span>
+                </div>
+                <div class="info-row no-border">
+                  <span class="info-label">Mode</span>
+                  <span class="info-value">Télécommande iOS</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Abonnement -->
+            <div class="settings-section">
+              <div class="section-label">ABONNEMENT</div>
+              <div class="settings-card">
+                <div class="plan-current">
+                  <span class="plan-icon">👑</span>
+                  <div>
+                    <div class="plan-sublabel">Plan actuel</div>
+                    <div class="plan-name">Gratuit</div>
+                  </div>
+                </div>
+                <div class="plan-divider"></div>
+                <div class="plans-list">
+                  <div class="plan-card">
+                    <div class="plan-card-header">
+                      <div>
+                        <div class="plan-card-name">Mensuel</div>
+                        <div class="plan-card-price"><strong>8€</strong><span>/mois</span></div>
+                      </div>
+                      <button class="plan-btn">Choisir</button>
+                    </div>
+                    <div class="plan-features">
+                      <span>✓ Changements illimités</span>
+                      <span>✓ iOS + Android</span>
+                      <span>✓ Support mail</span>
+                    </div>
+                  </div>
+                  <div class="plan-card popular">
+                    <div class="plan-card-header">
+                      <div>
+                        <div class="plan-card-name">6 mois <span class="badge-popular">POPULAIRE</span></div>
+                        <div class="plan-card-price"><strong>29€</strong><span>/6 mois</span></div>
+                      </div>
+                      <button class="plan-btn accent">Choisir</button>
+                    </div>
+                    <div class="plan-features">
+                      <span>✓ ≈ 4,83€/mois</span>
+                      <span>✓ Tout le Mensuel</span>
+                      <span>✓ Trajets simulés</span>
+                    </div>
+                  </div>
+                  <div class="plan-card">
+                    <div class="plan-card-header">
+                      <div>
+                        <div class="plan-card-name">Annuel</div>
+                        <div class="plan-card-price"><strong>49€</strong><span>/an</span></div>
+                      </div>
+                      <button class="plan-btn">Choisir</button>
+                    </div>
+                    <div class="plan-features">
+                      <span>✓ ≈ 4,08€/mois</span>
+                      <span>✓ App iPhone sans ordi</span>
+                      <span>✓ Support prioritaire</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Sécurité -->
+            <div class="settings-section">
+              <div class="section-label">GESTION SÉCURISÉE</div>
+              <div class="settings-card">
+                <div class="security-info">
+                  <span class="security-icon">🔒</span>
+                  <strong>Paiements sécurisés par Stripe</strong>
+                  <p>Vous pouvez annuler votre abonnement ou modifier vos informations de paiement à tout moment via le portail client.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- App -->
+            <div class="settings-section">
+              <div class="section-label">APPLICATION</div>
+              <div class="settings-card">
+                <div class="info-row">
+                  <span class="info-label">Version</span>
+                  <span class="info-value">0.3.0</span>
+                </div>
+                <div class="info-row no-border">
+                  <span class="info-label">Appareil</span>
+                  <span class="info-value">Mac</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Déconnexion -->
+            <div class="settings-section">
+              <div class="section-label">ACTIONS</div>
+              <div class="settings-card">
+                <button class="logout-row" id="logout-btn">
+                  <span class="logout-icon">↗</span>
+                  <span>Déconnexion</span>
+                  <span class="chevron">›</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Bar (bottom) -->
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="carte">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>
+          <span>Carte</span>
         </button>
-      </section>
+        <button class="tab-btn" data-tab="spots">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+          <span>Découvrir</span>
+        </button>
+        <button class="tab-btn" data-tab="profil">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+          <span>Profil</span>
+        </button>
+      </div>
+    </div>
 
-      <section class="panel muted">
-        <h2>Ça bloque ?</h2>
-        <ul class="checklist">
-          <li>iPhone branché avec le câble + « Faire confiance » accepté</li>
-          <li>
-            Mode développeur activé : Réglages → Confidentialité et sécurité →
-            Mode développeur
-          </li>
-          <li>
-            Sur Mac seulement, si l&apos;iPhone n&apos;est pas détecté, ouvre le
-            Terminal et tape : <code>pip3 install pymobiledevice3</code>
-          </li>
-          <li>Tu as cliqué « Ouvrir le programme » sur le site avant</li>
-        </ul>
-      </section>
-    </main>
+    <!-- ── Setup Modal ── -->
+    <div id="setup-overlay" class="setup-overlay" hidden>
+      <div class="setup-modal">
+        <h2>Configurer un iPhone</h2>
+        <p class="setup-subtitle">Branche ton iPhone en USB.</p>
+        <div class="setup-step"><div class="setup-step-num">1</div><div><h3>Branche ton iPhone</h3><p>Avec le câble USB. Appuie sur « Faire confiance ».</p></div></div>
+        <div class="setup-step"><div class="setup-step-num">2</div><div><h3>Active le mode développeur</h3><p>Réglages → Confidentialité → Mode développeur → ON.</p></div></div>
+        <div class="setup-step"><div class="setup-step-num">3</div><div><h3>Installe l'app Anyloc</h3><p>Clique ci-dessous.</p></div></div>
+        <p id="setup-usb-status" class="setup-status info">Vérification USB...</p>
+        <div class="setup-actions">
+          <button class="btn btn-accent" id="setup-install-btn" disabled style="flex:1">Installer l'app iPhone</button>
+          <button class="btn btn-ghost" id="setup-close-btn" style="flex:0 0 auto">Fermer</button>
+        </div>
+        <p id="setup-install-status" class="setup-status"></p>
+      </div>
+    </div>
 
+    <script src="./leaflet.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>

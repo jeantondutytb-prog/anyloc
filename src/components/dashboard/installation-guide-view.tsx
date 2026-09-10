@@ -300,25 +300,24 @@ function IosGuide({ hasAccess }: { hasAccess: boolean }) {
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-900">
-        <p className="font-semibold">Ordinateur une seule fois</p>
+        <p className="font-semibold">Mains libres, 100 % depuis l&apos;iPhone</p>
         <p className="mt-1">
-          Le Mac ou PC sert uniquement à la première installation. Ensuite, tu changes
-          ta position et tu renouvelles l&apos;app depuis ton iPhone — avec LocalDevVPN,
-          sans repasser par l&apos;ordi.
+          Branche ton iPhone une seule fois. Ensuite, Anyloc Setup reste en tâche de fond
+          sur ton Mac et tu contrôles ta position depuis l&apos;app iPhone — sans toucher l&apos;ordi.
         </p>
       </div>
 
-      <StepCard number={1} title="Télécharge Anyloc Setup">
+      <StepCard number={1} title="Télécharge Anyloc Setup sur Mac">
         <p>
-          Sur ton Mac ou PC, télécharge Anyloc Setup — il installe l&apos;app
-          Anyloc sur ton iPhone via USB.
+          Anyloc Setup est l&apos;app Mac qui fait le lien entre ton iPhone et le GPS.
+          Elle se lance automatiquement au démarrage et reste dans la barre de menus.
         </p>
         <DownloadButtons
-          assetIds={["setup-mac", "setup-win"]}
+          assetIds={["setup-mac"]}
           hasAccess={hasAccess}
         />
         <p className="text-xs text-zinc-500">
-          Mac : Ventura ou plus récent · Windows : 10 ou plus récent
+          Mac : Ventura ou plus récent · Apple Silicon ou Intel
         </p>
 
         <TroubleshootingAccordion title="Mac : « Anyloc Setup est endommagé » ?">
@@ -337,18 +336,28 @@ function IosGuide({ hasAccess }: { hasAccess: boolean }) {
         </TroubleshootingAccordion>
       </StepCard>
 
-      <StepCard number={2} title="Branche ton iPhone et active le mode développeur">
+      <StepCard number={2} title="Ouvre l'app et connecte-toi">
+        <ol className="list-decimal space-y-2 pl-5">
+          <li>Ouvre <strong>Anyloc Setup</strong></li>
+          <li>Connecte-toi avec ton <strong>compte Anyloc</strong> (email ou Google)</li>
+        </ol>
+        <p className="text-xs text-zinc-500">
+          Utilise le même compte que sur anyloc.io — tes positions seront synchronisées.
+        </p>
+      </StepCard>
+
+      <StepCard number={3} title="Branche ton iPhone et installe l'app">
         <div className="flex items-start gap-3 rounded-xl bg-zinc-50 p-4">
           <Usb className="mt-0.5 h-5 w-5 shrink-0 text-pink-600" />
           <ol className="list-decimal space-y-2 pl-5">
             <li>Connecte ton iPhone en USB et appuie sur <strong>Faire confiance</strong></li>
-            <li>Ouvre <strong>Anyloc Setup</strong> — l&apos;iPhone doit être détecté</li>
-            <li>Sur l&apos;iPhone : <strong>Réglages → Confidentialité et sécurité → Mode développeur</strong></li>
-            <li>Active l&apos;interrupteur et redémarre si iOS te le demande</li>
+            <li>Sur l&apos;iPhone : <strong>Réglages → Confidentialité et sécurité → Mode développeur → ON</strong></li>
+            <li>Dans Anyloc Setup, clique <strong>Installer l&apos;app iPhone</strong></li>
           </ol>
         </div>
         <p className="text-xs text-zinc-500">
           Le mode développeur n&apos;apparaît qu&apos;après la première connexion USB.
+          Redémarre si iOS te le demande.
         </p>
 
         <TroubleshootingAccordion title="iPhone non détecté ou mode dev invisible ?">
@@ -365,47 +374,17 @@ function IosGuide({ hasAccess }: { hasAccess: boolean }) {
         </TroubleshootingAccordion>
       </StepCard>
 
-      <StepCard number={3} title="Génère ton code de liaison">
-        <DeviceTokenStep platform="ios" />
-      </StepCard>
-
-      <StepCard number={4} title="Installe l'app et ouvre-la depuis l'écran d'accueil">
+      <StepCard number={4} title="Ouvre l'app iPhone et change ta position">
         <ol className="list-decimal space-y-2 pl-5">
-          <li>Dans <strong>Anyloc Setup</strong>, colle ton code et clique <strong>Installer l&apos;app iPhone</strong></li>
-          <li>Sur ton iPhone, l&apos;icône <strong>Anyloc</strong> apparaît sur l&apos;écran d&apos;accueil</li>
-          <li>Si besoin : Safari → ouvre Anyloc, appuie sur <strong>Partager</strong> (□↑), puis <strong>Sur l&apos;écran d&apos;accueil</strong></li>
-          <li>Ouvre <strong>Anyloc</strong>, colle ton code, cherche une ville et appuie dessus</li>
+          <li>Ouvre <strong>Anyloc</strong> sur ton iPhone</li>
+          <li>Connecte-toi avec le <strong>même compte</strong></li>
+          <li>Choisis un lieu sur la carte ou dans <strong>Découvrir</strong></li>
+          <li>Ta position GPS change instantanément</li>
         </ol>
         <p className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-950">
-          Tu peux débrancher le câble USB. Plus besoin de ton ordinateur pour changer
-          de position.
-        </p>
-      </StepCard>
-
-      <StepCard number={5} title="Renouvelle sans Mac (toutes les ~7 jours)">
-        <p>
-          Les apps sideloadées expirent environ tous les 7 jours. Le renouvellement
-          se fait depuis ton iPhone — pas besoin de rebrancher le Mac.
-        </p>
-        <ol className="list-decimal space-y-2 pl-5">
-          <li>
-            Installe <strong>LocalDevVPN</strong> depuis l&apos;App Store{" "}
-            <a
-              href="https://apps.apple.com/app/localdevvpn/id6755608044"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-pink-600 underline-offset-2 hover:underline"
-            >
-              (lien direct)
-            </a>
-          </li>
-          <li>Connecte-toi au <strong>Wi-Fi</strong></li>
-          <li>Ouvre <strong>LocalDevVPN</strong> → appuie sur <strong>Connect</strong></li>
-          <li>Ouvre <strong>Anyloc</strong> depuis ton écran d&apos;accueil — l&apos;app se recharge</li>
-        </ol>
-        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          Garde LocalDevVPN connecté pendant le renouvellement. C&apos;est tout — ton Mac
-          n&apos;est plus nécessaire après la première installation.
+          Ton iPhone sert de télécommande. Tant que le Mac est allumé avec l&apos;iPhone
+          branché, tu peux changer de position autant que tu veux depuis l&apos;app.
+          Anyloc Setup se relance automatiquement au démarrage du Mac.
         </p>
       </StepCard>
     </div>
@@ -580,7 +559,7 @@ export function InstallationGuideView() {
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="h-4 w-4 text-pink-600" />
-                    Mac ou PC Windows
+                    Un Mac (l&apos;iPhone reste branché en USB)
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="h-4 w-4 text-pink-600" />
@@ -589,10 +568,6 @@ export function InstallationGuideView() {
                   <li className="flex items-center gap-2">
                     <Check className="h-4 w-4 text-pink-600" />
                     Abonnement Anyloc actif
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-pink-600" />
-                    Mode développeur (visible après branchement USB)
                   </li>
                 </>
               ) : (

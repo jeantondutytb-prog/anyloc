@@ -51,11 +51,14 @@ Optimisé pour [Vercel](https://vercel.com). Configure le domaine `anyloc.io` da
 - [x] API device tokens (`/api/device`, `/api/device/location`)
 - [x] Auth obligatoire sur le dashboard
 
-### Étape 2 — Anyloc Setup (desktop)
-- [x] Shell Electron Mac + Windows (`apps/setup`)
-- [x] Détection USB iPhone (`pymobiledevice3` / `idevice_id`)
-- [x] Install IPA iOS via USB (`pymobiledevice3 apps install`)
-- [ ] Hébergement des `.dmg` / `.exe` (variables `ANYLOC_DOWNLOAD_*`)
+### Étape 2 — Anyloc Setup (Mac)
+- [x] App Electron Mac avec auth Supabase
+- [x] Détection USB iPhone + install app via `pymobiledevice3`
+- [x] Auto-sync position depuis Supabase (l'iPhone sert de télécommande)
+- [x] GPS persistant (re-apply toutes les 5s)
+- [x] Auto-launch au démarrage Mac + mode tray
+- [x] Interface identique à l'app iPhone (3 onglets)
+- [ ] Hébergement du `.dmg` (variable `ANYLOC_DOWNLOAD_SETUP_MAC`)
 
 ### Étape 3 — Apps mobiles
 - [x] Scaffold app iOS SwiftUI (`apps/ios`) + xcodegen
@@ -89,12 +92,12 @@ Optimisé pour [Vercel](https://vercel.com). Configure le domaine `anyloc.io` da
 
 Au checkout, l'email Supabase est prérempli et le compte est lié via `client_reference_id`. Le client Stripe est créé au paiement et enregistré dans `public.profiles`.
 
-## Sync position (dashboard ↔ apps)
+## Sync position (iPhone ↔ Mac)
 
-1. Applique les migrations dans `supabase/migrations/`.
-2. Le dashboard lit/écrit via `GET` et `PUT` `/api/location` (auth Supabase requise).
-3. Lie un appareil depuis le dashboard → token `anyloc_...`.
-4. L'app mobile lit la position via `GET /api/device/location` avec `Authorization: Bearer <token>`.
+1. L'utilisateur choisit un lieu sur l'app iPhone (ou le dashboard web).
+2. L'app écrit dans la table `location_settings` via Supabase (auth JWT).
+3. Anyloc Setup (Mac) lit `location_settings` en temps réel et applique le spoof GPS via `pymobiledevice3`.
+4. Le GPS est ré-appliqué toutes les 5s pour rester actif.
 5. **Trajets simulés** : `/dashboard/routes` — la position avance automatiquement le long du tracé.
 6. **Web spoofing** : `/web` — override `navigator.geolocation` pour Snapchat Web, Insta Web, etc.
 
@@ -104,7 +107,7 @@ Au checkout, l'email Supabase est prérempli et le compte est lié via `client_r
 |--------|--------|--------|
 | APK Android | `apps/android/` | Buildable — `./scripts/build-android.sh` |
 | App iOS | `apps/ios/` | Scaffold SwiftUI + xcodegen |
-| Anyloc Setup | `apps/setup/` | Electron + détection USB |
+| Anyloc Setup | `apps/setup/` | Electron Mac — auto-sync GPS via USB |
 
 Voir les README dans chaque dossier pour build et dev.
 
@@ -116,15 +119,14 @@ Voir les README dans chaque dossier pour build et dev.
 # APK Android
 ./scripts/build-android.sh
 
-# Anyloc Setup (Mac ou Windows selon ta machine)
-./scripts/build-setup.sh
+# Anyloc Setup (Mac uniquement)
+cd apps/setup && npm run build:mac
 ```
 
 ### CI (recommandé)
 
 Le workflow `.github/workflows/build-setup.yml` build automatiquement :
 - **Mac** → `Anyloc-Setup.dmg`
-- **Windows** → `Anyloc-Setup.exe`
 
 Déclenchement : push sur `main` ou manuel dans GitHub Actions → **Build Anyloc Setup**.
 
@@ -138,7 +140,6 @@ Déclenchement : push sur `main` ou manuel dans GitHub Actions → **Build Anylo
 ```bash
 # Manuel si besoin
 BLOB_READ_WRITE_TOKEN=xxx node scripts/upload-release.mjs setup-mac apps/setup/dist/Anyloc-Setup.dmg
-BLOB_READ_WRITE_TOKEN=xxx node scripts/upload-release.mjs setup-win apps/setup/dist/Anyloc-Setup.exe
 BLOB_READ_WRITE_TOKEN=xxx node scripts/upload-release.mjs android dist/android/Anyloc.apk
 ```
 
@@ -147,7 +148,6 @@ BLOB_READ_WRITE_TOKEN=xxx node scripts/upload-release.mjs android dist/android/A
 Configure les URLs des binaires dans `.env.local` :
 
 - `ANYLOC_DOWNLOAD_SETUP_MAC` — Anyloc Setup `.dmg`
-- `ANYLOC_DOWNLOAD_SETUP_WIN` — Anyloc Setup `.exe`
 - `ANYLOC_DOWNLOAD_APK` — APK Android
 
 Les liens `/api/downloads/{platform}` redirigent vers ces URLs si l'abonnement est actif (`subscription_status` = `active` ou `trialing`), ou si le compte est admin (`ANYLOC_ADMIN_EMAILS`).
