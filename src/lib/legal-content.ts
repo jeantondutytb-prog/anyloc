@@ -1,6 +1,13 @@
+export type LegalPageField = {
+  label: string;
+  value?: string;
+  pending?: boolean;
+};
+
 export type LegalPageSection = {
   title: string;
-  paragraphs: string[];
+  paragraphs?: string[];
+  fields?: LegalPageField[];
   list?: string[];
 };
 
@@ -131,21 +138,28 @@ export const LEGAL_PAGES: Record<string, LegalPageContent> = {
   },
   "attestation-legale": {
     title: "Attestation légale",
-    description: "Informations légales relatives à l'éditeur du site anyloc.io.",
+    description:
+      "Informations légales relatives à l'éditeur du site anyloc.io. Certaines mentions sont en cours de complétion.",
     path: "/attestation-legale",
     lastUpdated: LAST_UPDATED,
     sections: [
       {
         title: "Éditeur du site",
-        paragraphs: [
-          "Site : anyloc.io",
-          "Service : Anyloc",
-          "Contact : support@anyloc.io",
-          "Email administratif : anyloc.contact@gmail.com",
+        fields: [
+          { label: "Raison sociale", pending: true },
+          { label: "Forme juridique", pending: true },
+          { label: "SIRET", pending: true },
+          { label: "Siège social", pending: true },
+          { label: "Capital social", pending: true },
+          { label: "Site", value: "anyloc.io" },
+          { label: "Service", value: "Anyloc" },
+          { label: "Contact", value: "support@anyloc.io" },
+          { label: "Email administratif", value: "anyloc.contact@gmail.com" },
         ],
       },
       {
         title: "Directeur de la publication",
+        fields: [{ label: "Nom", pending: true }],
         paragraphs: [
           "Le directeur de la publication est le représentant légal de l'éditeur du service Anyloc.",
         ],
@@ -179,8 +193,12 @@ export const LEGAL_PAGES: Record<string, LegalPageContent> = {
     sections: [
       {
         title: "1. Responsable du traitement",
+        fields: [
+          { label: "Raison sociale", pending: true },
+          { label: "Contact", value: "support@anyloc.io" },
+        ],
         paragraphs: [
-          "Le responsable du traitement des données personnelles est l'éditeur du service Anyloc, joignable à support@anyloc.io.",
+          "Le responsable du traitement des données personnelles est l'éditeur du service Anyloc.",
         ],
       },
       {

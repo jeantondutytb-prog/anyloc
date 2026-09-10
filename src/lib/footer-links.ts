@@ -8,6 +8,13 @@ export type FooterLinkGroup = {
   links: FooterLink[];
 };
 
+export type SocialLink = {
+  label: string;
+  href?: string;
+  available: boolean;
+  description: string;
+};
+
 export const FOOTER_LINK_GROUPS: FooterLinkGroup[] = [
   {
     title: "Aide",
@@ -38,13 +45,15 @@ export const FOOTER_LINK_GROUPS: FooterLinkGroup[] = [
   },
 ];
 
-export const SOCIAL_LINKS = [
+export const SOCIAL_LINKS: SocialLink[] = [
   {
     label: "Discord",
-    href: "https://discord.gg/anyloc",
+    available: false,
+    description: "Chat en direct, support communautaire et annonces.",
   },
   {
     label: "Instagram",
-    href: "https://instagram.com/anyloc",
+    available: false,
+    description: "Contenus, tutos et coulisses du produit.",
   },
-] as const;
+];

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/ui/logo";
+import { PendingBadge } from "@/components/ui/pending-info";
 import { SITE } from "@/lib/constants";
 import { FOOTER_LINK_GROUPS, SOCIAL_LINKS } from "@/lib/footer-links";
 
@@ -13,18 +14,28 @@ export function Footer() {
             <p className="mt-4 max-w-sm text-sm text-zinc-500">
               {SITE.description}
             </p>
-            <div className="mt-4 flex items-center gap-4">
-              {SOCIAL_LINKS.map((social) => (
-                <Link
-                  key={social.label}
-                  href={social.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-zinc-500 transition-colors hover:text-pink-600"
-                >
-                  {social.label}
-                </Link>
-              ))}
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              {SOCIAL_LINKS.map((social) =>
+                social.available && social.href ? (
+                  <Link
+                    key={social.label}
+                    href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-zinc-500 transition-colors hover:text-pink-600"
+                  >
+                    {social.label}
+                  </Link>
+                ) : (
+                  <span
+                    key={social.label}
+                    className="inline-flex items-center gap-1.5 text-sm text-zinc-400"
+                  >
+                    {social.label}
+                    <PendingBadge className="px-2 py-0.5 text-[10px]" />
+                  </span>
+                )
+              )}
             </div>
           </div>
 

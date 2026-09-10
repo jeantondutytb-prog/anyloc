@@ -4,13 +4,14 @@ import { MarketingShell } from "@/components/layout/marketing-shell";
 import { StaticPage, StaticSection } from "@/components/layout/static-page";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { PendingNotice } from "@/components/ui/pending-notice";
 import { SITE } from "@/lib/constants";
 import { createPageMetadata } from "@/lib/seo";
 
 export const metadata = createPageMetadata({
   title: `Programme d'affiliation — ${SITE.name}`,
   description:
-    "Rejoins le programme d'affiliation Anyloc et gagne une commission sur chaque abonnement généré.",
+    "Le programme d'affiliation Anyloc arrive bientôt. Inscris-toi sur liste d'attente pour être informé du lancement.",
   path: "/affiliation",
 });
 
@@ -19,7 +20,7 @@ const AFFILIATION_STEPS = [
     icon: Share2,
     title: "Inscris-toi",
     description:
-      "Envoie-nous ta candidature avec ton audience et tes canaux de promotion.",
+      "Présente ton audience et tes canaux de promotion lors de l'ouverture du programme.",
   },
   {
     icon: Percent,
@@ -42,7 +43,12 @@ export default function AffiliationPage() {
         title="Affiliation"
         description="Recommande Anyloc à ton audience et génère des revenus récurrents sur chaque abonnement."
       >
-        <StaticSection title="Comment ça marche ?">
+        <PendingNotice
+          title="Programme en cours de lancement"
+          description="Les conditions, commissions et modalités d'inscription sont en cours de finalisation. Tu peux déjà nous contacter pour manifester ton intérêt."
+        />
+
+        <StaticSection title="Comment ça va marcher ?">
           <p>
             Le programme d&apos;affiliation {SITE.name} s&apos;adresse aux
             créateurs de contenu, influenceurs et partenaires qui souhaitent
@@ -62,14 +68,14 @@ export default function AffiliationPage() {
           ))}
         </div>
 
-        <StaticSection title="Rejoindre le programme">
+        <StaticSection title="Manifester ton intérêt">
           <p>
-            Le programme est ouvert sur candidature. Envoie-nous une présentation
-            de ton audience et de tes canaux, et nous te répondrons avec les
-            conditions et ton lien affilié.
+            Le programme n&apos;est pas encore ouvert, mais tu peux nous écrire
+            dès maintenant pour être informé en priorité du lancement et des
+            conditions affiliées.
           </p>
-          <Link href="mailto:support@anyloc.io?subject=Programme%20affiliation%20Anyloc">
-            <Button className="mt-4">Postuler au programme</Button>
+          <Link href="mailto:support@anyloc.io?subject=Liste%20d'attente%20affiliation%20Anyloc">
+            <Button className="mt-4">Rejoindre la liste d&apos;attente</Button>
           </Link>
         </StaticSection>
       </StaticPage>

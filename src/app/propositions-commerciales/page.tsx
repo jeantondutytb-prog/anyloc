@@ -4,13 +4,14 @@ import { MarketingShell } from "@/components/layout/marketing-shell";
 import { StaticPage, StaticSection } from "@/components/layout/static-page";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { PendingNotice } from "@/components/ui/pending-notice";
 import { SITE } from "@/lib/constants";
 import { createPageMetadata } from "@/lib/seo";
 
 export const metadata = createPageMetadata({
   title: `Propositions commerciales — ${SITE.name}`,
   description:
-    "Offres entreprise et volumes pour équipes, agences et partenaires. Contacte Anyloc pour une proposition sur mesure.",
+    "Offres entreprise et volumes pour équipes, agences et partenaires. Grille tarifaire en cours de finalisation.",
   path: "/propositions-commerciales",
 });
 
@@ -29,6 +30,11 @@ export default function PropositionsCommercialesPage() {
         title="Propositions commerciales"
         description="Des solutions adaptées aux équipes, agences et partenaires qui ont besoin de plusieurs accès ou d'un accompagnement dédié."
       >
+        <PendingNotice
+          title="Grille tarifaire entreprise en cours de finalisation"
+          description="Les offres volume et les conditions commerciales sont en cours de préparation. Envoie-nous ton besoin et nous te répondrons avec une proposition adaptée."
+        />
+
         <StaticSection title="Pour qui ?">
           <p>
             Que tu gères une équipe, une agence ou un réseau de revendeurs,
@@ -62,7 +68,8 @@ export default function PropositionsCommercialesPage() {
         <StaticSection title="Demander un devis">
           <p>
             Décris ton besoin (nombre de licences, usage prévu, délai) et
-            notre équipe te répond avec une proposition personnalisée.
+            notre équipe te répond avec une proposition personnalisée dès que
+            la grille sera disponible.
           </p>
           <Link href="mailto:support@anyloc.io?subject=Demande%20entreprise%20Anyloc">
             <Button className="mt-4">Demander une proposition</Button>
