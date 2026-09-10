@@ -494,13 +494,19 @@ export function CheckoutView({
                   SSL · chiffrement 256 bits · Stripe
                 </div>
                 <p className="max-w-md text-xs leading-relaxed text-zinc-500">
-                  En validant, tu acceptes nos conditions. Gère ton abonnement
-                  depuis ton espace client —{" "}
+                  En validant, tu acceptes nos{" "}
                   <Link
-                    href="/#faq"
+                    href="/conditions-generales"
                     className="text-pink-600 hover:underline"
                   >
-                    questions fréquentes
+                    conditions générales
+                  </Link>
+                  . Gère ton abonnement depuis ton espace client —{" "}
+                  <Link
+                    href="/politique-d-annulation"
+                    className="text-pink-600 hover:underline"
+                  >
+                    politique d&apos;annulation
                   </Link>
                   .
                 </p>
