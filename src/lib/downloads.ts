@@ -102,10 +102,19 @@ async function fetchGithubReleaseAssets() {
   }
 }
 
+async function resolvePrivateBlobUrl(url: string): Promise<string> {
+  if (!url.includes(".private.blob.vercel-storage.com")) {
+    return url;
+  }
+
+  const { getDownloadUrl: getBlobDownloadUrl } = await import("@vercel/blob");
+  return getBlobDownloadUrl(url);
+}
+
 export async function resolveDownloadUrl(platform: DownloadPlatform) {
   const envUrl = getDownloadUrl(platform);
   if (envUrl) {
-    return envUrl;
+    return resolvePrivateBlobUrl(envUrl);
   }
 
   const asset = getDownloadAsset(platform);
