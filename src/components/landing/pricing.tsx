@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PLANS } from "@/lib/constants";
 import { PlanPrice } from "@/components/pricing/plan-price";
+import { RefundGuaranteeNotice } from "@/components/pricing/refund-guarantee-notice";
 
 export function Pricing() {
   return (
@@ -15,7 +16,7 @@ export function Pricing() {
             Choisis ton plan
           </h2>
           <p className="mt-4 text-zinc-600">
-            Tu résilies quand tu veux, sans paperasse.
+            Garantie 48 h si le GPS ne fonctionne pas après installation.
           </p>
         </div>
 
@@ -68,7 +69,9 @@ export function Pricing() {
           ))}
         </div>
 
-        <p className="mt-8 text-center text-sm text-zinc-600">
+        <RefundGuaranteeNotice className="mt-8 text-center text-sm text-zinc-600" />
+
+        <p className="mt-4 text-center text-sm text-zinc-600">
           Besoin d&apos;un plan entreprise ?{" "}
           <Link href="mailto:support@anyloc.io" className="text-pink-600 hover:underline">
             Contacte-nous

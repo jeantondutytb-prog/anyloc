@@ -51,7 +51,8 @@ export const LEGAL_PAGES: Record<string, LegalPageContent> = {
       {
         title: "4. Abonnements et paiement",
         paragraphs: [
-          "Les tarifs en vigueur sont affichés sur la page Tarification. Les paiements sont traités de manière sécurisée par Stripe. L'abonnement est renouvelé automatiquement à chaque échéance, sauf résiliation préalable depuis ton espace client.",
+          "Les tarifs en vigueur sont affichés sur la page Tarification. Les paiements sont traités de manière sécurisée par Stripe. L'abonnement est renouvelé automatiquement à chaque échéance, sauf résiliation depuis ton espace client.",
+          "En cas de résiliation, l'abonnement prend fin immédiatement et l'accès au service est coupé sans délai.",
         ],
       },
       {
@@ -80,7 +81,8 @@ export const LEGAL_PAGES: Record<string, LegalPageContent> = {
       {
         title: "8. Résiliation",
         paragraphs: [
-          "Tu peux résilier ton abonnement à tout moment depuis ton espace client. Nous pouvons suspendre ou résilier un compte en cas de violation des présentes CGU.",
+          "Tu peux résilier ton abonnement à tout moment depuis ton espace client. La résiliation prend effet immédiatement : tu perds l'accès au dashboard, aux guides et aux téléchargements dès confirmation.",
+          "Nous pouvons suspendre ou résilier un compte en cas de violation des présentes CGU.",
         ],
       },
       {
@@ -154,7 +156,6 @@ export const LEGAL_PAGES: Record<string, LegalPageContent> = {
           { label: "Site", value: "anyloc.io" },
           { label: "Service", value: "Anyloc" },
           { label: "Contact", value: "support@anyloc.io" },
-          { label: "Email administratif", value: "anyloc.contact@gmail.com" },
         ],
       },
       {
@@ -255,43 +256,67 @@ export const LEGAL_PAGES: Record<string, LegalPageContent> = {
   "politique-de-remboursement": {
     title: "Politique de remboursement",
     description:
-      "Conditions de remboursement des abonnements Anyloc.",
+      "Conditions de remboursement et garantie commerciale Anyloc.",
     path: "/politique-de-remboursement",
     lastUpdated: LAST_UPDATED,
     sections: [
       {
-        title: "1. Principe général",
+        title: "1. La garantie « pas de résultat en 48 h »",
         paragraphs: [
-          "Anyloc est un service numérique à accès immédiat. Conformément à la réglementation applicable aux contenus numériques, l'accès au service commence dès la validation du paiement.",
+          "Anyloc s'engage à te rembourser l'intégralité de la somme payée si, après avoir suivi la méthode d'installation et testé le service pendant 48 heures, tu n'as pas réussi à modifier ta localisation GPS sur au moins une application compatible (Snapchat, Instagram, Tinder, jeu mobile, etc.).",
+          "Cette garantie est un engagement commercial volontaire. Elle s'ajoute à tes droits légaux, elle ne les remplace pas — voir le point 5.",
         ],
       },
       {
-        title: "2. Droit de rétractation",
+        title: "2. Conditions à remplir",
         paragraphs: [
-          "En tant que consommateur, tu disposes d'un délai de 14 jours pour te rétracter. Toutefois, si tu demandes l'activation immédiate du service et que tu commences à l'utiliser, tu reconnais perdre ton droit de rétractation conformément à l'article L221-28 du Code de la consommation.",
-        ],
-      },
-      {
-        title: "3. Remboursements exceptionnels",
-        paragraphs: [
-          "Nous examinons les demandes de remboursement au cas par cas, notamment en cas de dysfonctionnement majeur non résolu par notre support dans un délai raisonnable.",
+          "Les trois conditions suivantes sont cumulatives. Elles sont affichées sur la page de tarifs, avant l'achat.",
         ],
         list: [
-          "Problème technique empêchant l'accès au service",
-          "Double facturation",
-          "Erreur de facturation avérée",
+          "Installation complète : tu dois avoir suivi l'intégralité du guide d'installation correspondant à ton appareil (iOS ou Android), disponible dans ton espace client, et appliqué chaque étape requise.",
+          "Délai : la demande doit être faite dans les 48 heures suivant ton achat. Passé ce délai, la garantie ne s'applique plus.",
+          "Abonnement actif : tu ne dois pas avoir résilié ton abonnement avant d'avoir fait la demande. Une résiliation vaut renoncement à cette garantie.",
         ],
       },
       {
-        title: "4. Procédure",
+        title: "3. Comment faire la demande",
         paragraphs: [
-          "Pour toute demande de remboursement, contacte support@anyloc.io en indiquant ton adresse email de compte, la date de paiement et le motif de ta demande. Nous répondons sous 5 jours ouvrés.",
+          "Envoie un message à support@anyloc.io depuis l'adresse email de ton compte, en précisant ton appareil (iOS / Android, modèle si possible), les applications testées et l'étape à laquelle tu es bloqué.",
+          "Notre équipe peut te demander des captures d'écran pour vérifier que l'installation a bien été suivie. Nous répondons sous 72 heures.",
         ],
       },
       {
-        title: "5. Modalités",
+        title: "4. Ce qui n'ouvre pas droit au remboursement",
         paragraphs: [
-          "Les remboursements approuvés sont effectués via le même moyen de paiement que celui utilisé lors de l'achat, dans un délai de 5 à 10 jours ouvrés selon ta banque.",
+          "Les cas suivants n'ouvrent pas droit au remboursement au titre de la garantie commerciale :",
+        ],
+        list: [
+          "Une demande faite après le délai de 48 heures (hors droit de rétractation légal, voir point 5).",
+          "Un abonnement résilié avant la demande.",
+          "Une installation incomplète ou non conforme au guide (mode développeur non activé, VPN non configuré sur iOS, etc.).",
+          "Un blocage lié à une restriction de l'appareil ou de l'application tierce indépendant d'Anyloc.",
+          "Une simple insatisfaction après utilisation réussie du service (localisation modifiée et fonctionnelle).",
+        ],
+      },
+      {
+        title: "5. Ton droit de rétractation légal",
+        paragraphs: [
+          "Indépendamment de la garantie ci-dessus, le droit français t'accorde un délai de rétractation de 14 jours pour les achats à distance (art. L221-18 du code de la consommation).",
+          "Pour un contenu numérique fourni immédiatement, ce droit s'éteint uniquement si tu as expressément consenti à l'exécution immédiate et renoncé à ta rétractation. En l'absence d'un tel consentement, tu conserves ces 14 jours sans condition — les conditions du point 2 ne s'y appliquent pas.",
+          "Autrement dit : la garantie « 48 h » est un bonus commercial plus rapide mais conditionné ; le droit de rétractation reste ton filet de sécurité inconditionnel.",
+        ],
+      },
+      {
+        title: "6. Modalités de remboursement",
+        paragraphs: [
+          "Les paiements sont encaissés par Stripe. Le remboursement est effectué sur le moyen de paiement d'origine, sous 14 jours à compter de l'acceptation de la demande.",
+        ],
+      },
+      {
+        title: "7. Résiliation de l'abonnement",
+        paragraphs: [
+          "Ton abonnement se renouvelle automatiquement au prix indiqué avant l'achat. Tu peux le résilier à tout moment depuis ton espace client (Paramètres → Résilier mon abonnement), sans frais.",
+          "Attention : la résiliation prend effet immédiatement. Tu perds l'accès au service, au dashboard et aux téléchargements dès confirmation. Aucun remboursement au prorata n'est effectué pour la période en cours.",
         ],
       },
     ],
@@ -299,38 +324,50 @@ export const LEGAL_PAGES: Record<string, LegalPageContent> = {
   "politique-d-annulation": {
     title: "Politique d'annulation",
     description:
-      "Comment résilier ton abonnement Anyloc à tout moment.",
+      "Comment résilier ton abonnement Anyloc et ce qui se passe ensuite.",
     path: "/politique-d-annulation",
     lastUpdated: LAST_UPDATED,
     sections: [
       {
         title: "1. Résiliation libre",
         paragraphs: [
-          "Tu peux annuler ton abonnement à tout moment, sans justification ni frais de résiliation. L'annulation prend effet à la fin de la période de facturation en cours : tu conserves l'accès jusqu'à cette date.",
+          "Tu peux annuler ton abonnement à tout moment, sans justification ni frais de résiliation.",
+          "Important : l'annulation prend effet immédiatement. Tu n'as plus accès au service, au dashboard, aux guides d'installation ni aux téléchargements dès que tu confirmes la résiliation.",
         ],
       },
       {
-        title: "2. Comment annuler",
+        title: "2. Avant de résilier",
         paragraphs: [
-          "Connecte-toi à ton espace client, rends-toi dans Paramètres, puis clique sur « Gérer mon abonnement ». Tu seras redirigé vers le portail Stripe pour confirmer l'annulation en un clic.",
+          "Assure-toi d'avoir bien compris les conséquences avant de confirmer :",
+        ],
+        list: [
+          "Ton accès est coupé sur-le-champ, pas à la fin de la période payée.",
+          "Tu perds l'accès aux fonctionnalités GPS, au dashboard et aux téléchargements.",
+          "Si tu envisages une demande de remboursement au titre de la garantie « 48 h », fais-la avant de résilier — une résiliation vaut renoncement à cette garantie.",
         ],
       },
       {
-        title: "3. Effet de l'annulation",
+        title: "3. Comment annuler",
         paragraphs: [
-          "Une fois l'annulation confirmée, aucun nouveau prélèvement ne sera effectué. Ton accès reste actif jusqu'à la fin de la période déjà payée.",
+          "Connecte-toi à ton espace client, rends-toi dans Paramètres, puis clique sur « Résilier mon abonnement ». Un rappel des conséquences s'affiche avant redirection vers le portail Stripe pour confirmer.",
         ],
       },
       {
-        title: "4. Réabonnement",
+        title: "4. Effet de l'annulation",
         paragraphs: [
-          "Tu peux te réabonner à tout moment depuis la page Tarification ou ton espace client. Ton historique et tes paramètres sont conservés tant que ton compte existe.",
+          "Une fois l'annulation confirmée, aucun nouveau prélèvement ne sera effectué et ton accès est immédiatement révoqué. Aucun remboursement au prorata n'est effectué pour la période en cours.",
         ],
       },
       {
-        title: "5. Besoin d'aide ?",
+        title: "5. Réabonnement",
         paragraphs: [
-          "Si tu rencontres un problème pour annuler, écris-nous à support@anyloc.io. Nous traitons les demandes sous 48 heures ouvrées.",
+          "Tu peux te réabonner à tout moment depuis la page Tarification ou ton espace client. Ton compte est conservé, mais tu devras souscrire à nouveau pour retrouver l'accès.",
+        ],
+      },
+      {
+        title: "6. Besoin d'aide ?",
+        paragraphs: [
+          "Si tu rencontres un problème technique, contacte support@anyloc.io avant de résilier — notre équipe peut t'aider à finaliser l'installation.",
         ],
       },
     ],
