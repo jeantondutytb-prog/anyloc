@@ -272,18 +272,23 @@ export async function refineLocationPayload<
     return payload;
   }
 
+  const shouldReplaceName =
+    !payload.name || looksLikeRawCoordinates(payload.name);
+
+  if (!shouldReplaceName) {
+    return payload;
+  }
+
   const refined = await refineCoordinates(payload.lat, payload.lng, {
     name: payload.name,
   });
 
-  if (!refined.refined) {
+  if (!refined.refined || !refined.name) {
     return payload;
   }
 
   return {
     ...payload,
-    lat: refined.lat,
-    lng: refined.lng,
-    name: refined.name ?? payload.name,
+    name: refined.name,
   };
 }
