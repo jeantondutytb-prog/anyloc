@@ -1,5 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { CrispChat } from "@/components/crisp/crisp-chat";
 import { rootMetadata, SITE_URL } from "@/lib/seo";
 
 const geistSans = Geist({
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col bg-background text-zinc-900">
         {children}
+        <CrispChat />
       </body>
     </html>
   );

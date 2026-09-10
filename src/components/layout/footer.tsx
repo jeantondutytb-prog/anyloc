@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CrispContactLink } from "@/components/crisp/crisp-contact-link";
 import { Logo } from "@/components/ui/logo";
 import { SITE } from "@/lib/constants";
 
@@ -41,8 +42,13 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="text-sm font-medium text-zinc-900">Installation</h4>
+            <h4 className="text-sm font-medium text-zinc-900">Support</h4>
             <ul className="mt-4 space-y-2 text-sm text-zinc-500">
+              <li>
+                <CrispContactLink className="hover:text-zinc-900">
+                  Nous contacter
+                </CrispContactLink>
+              </li>
               <li>
                 <Link href="/dashboard/installation" className="hover:text-zinc-900">
                   Guide d&apos;installation
