@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mail, MessageSquare } from "lucide-react";
+import { Mail } from "lucide-react";
 import { MarketingShell } from "@/components/layout/marketing-shell";
 import { StaticPage } from "@/components/layout/static-page";
 import { Card } from "@/components/ui/card";
@@ -10,7 +10,7 @@ import { createPageMetadata } from "@/lib/seo";
 export const metadata = createPageMetadata({
   title: `Nous contacter — ${SITE.name}`,
   description:
-    "Contacte l'équipe Anyloc pour toute question sur ton compte, ton abonnement ou une demande commerciale.",
+    "Contacte l'équipe Anyloc pour toute question sur ton compte, ton installation ou ton abonnement.",
   path: "/contact",
 });
 
@@ -23,39 +23,20 @@ export default function ContactPage() {
         title="Nous contacter"
         description="Notre équipe est disponible pour t'aider. On répond généralement sous 48 heures ouvrées."
       >
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Card className="p-6">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-pink-500/10">
-              <Mail className="h-5 w-5 text-pink-600" />
-            </div>
-            <h3 className="mt-4 font-semibold text-zinc-900">Support client</h3>
-            <p className="mt-2 text-sm text-zinc-500">
-              Questions sur ton compte, ton installation ou ton abonnement.
-            </p>
-            <Link href={`mailto:${CONTACT_EMAIL}`} className="mt-4 block">
-              <Button variant="secondary" className="w-full">
-                {CONTACT_EMAIL}
-              </Button>
-            </Link>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10">
-              <MessageSquare className="h-5 w-5 text-violet-600" />
-            </div>
-            <h3 className="mt-4 font-semibold text-zinc-900">
-              Propositions commerciales
-            </h3>
-            <p className="mt-2 text-sm text-zinc-500">
-              Partenariats, volumes importants ou offres entreprise.
-            </p>
-            <Link href="/propositions-commerciales" className="mt-4 block">
-              <Button variant="secondary" className="w-full">
-                Voir les offres entreprise
-              </Button>
-            </Link>
-          </Card>
-        </div>
+        <Card className="p-6">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-pink-500/10">
+            <Mail className="h-5 w-5 text-pink-600" />
+          </div>
+          <h3 className="mt-4 font-semibold text-zinc-900">Support client</h3>
+          <p className="mt-2 text-sm text-zinc-500">
+            Questions sur ton compte, ton installation ou ton abonnement.
+          </p>
+          <Link href={`mailto:${CONTACT_EMAIL}`} className="mt-4 block">
+            <Button variant="secondary" className="w-full sm:w-auto">
+              {CONTACT_EMAIL}
+            </Button>
+          </Link>
+        </Card>
 
         <p className="text-sm text-zinc-500">
           Avant de nous écrire, consulte la{" "}

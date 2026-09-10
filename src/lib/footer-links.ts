@@ -26,7 +26,6 @@ export const FOOTER_LINK_GROUPS: FooterLinkGroup[] = [
   {
     title: "Entreprise",
     links: [
-      { label: "Propositions commerciales", href: "/propositions-commerciales" },
       { label: "Affiliation", href: "/affiliation" },
       { label: "À propos", href: "/a-propos" },
       { label: "Tarification", href: "/pricing" },

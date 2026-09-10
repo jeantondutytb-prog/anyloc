@@ -70,13 +70,6 @@ export function Pricing() {
         </div>
 
         <RefundGuaranteeNotice className="mt-8 text-center text-sm text-zinc-600" />
-
-        <p className="mt-4 text-center text-sm text-zinc-600">
-          Besoin d&apos;un plan entreprise ?{" "}
-          <Link href="mailto:support@anyloc.io" className="text-pink-600 hover:underline">
-            Contacte-nous
-          </Link>
-        </p>
       </div>
     </section>
   );
