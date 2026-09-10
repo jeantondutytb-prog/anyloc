@@ -1,4 +1,4 @@
-import { searchGooglePlaces } from "@/lib/google-places";
+import { searchNominatimPlaces } from "@/lib/nominatim-geocoding";
 import { searchPhotonPlaces } from "@/lib/photon-geocoding";
 
 export async function GET(request: Request) {
@@ -10,17 +10,14 @@ export async function GET(request: Request) {
   }
 
   try {
-    const googleResults = await searchGooglePlaces(query);
+    const nominatimResults = await searchNominatimPlaces(query);
 
-    if (googleResults.length > 0) {
-      return Response.json({ results: googleResults, source: "google" });
+    if (nominatimResults.length > 0) {
+      return Response.json({ results: nominatimResults, source: "nominatim" });
     }
 
     const photonResults = await searchPhotonPlaces(query);
-    return Response.json({
-      results: photonResults,
-      source: process.env.GOOGLE_MAPS_API_KEY ? "photon-fallback" : "photon",
-    });
+    return Response.json({ results: photonResults, source: "photon-fallback" });
   } catch (error) {
     console.error("[geocode] Search failed:", error);
     return Response.json(
