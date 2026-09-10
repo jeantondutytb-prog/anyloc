@@ -215,7 +215,7 @@ export const LocationSearch = forwardRef<LocationSearchHandle, LocationSearchPro
           placeholder={
             disabled
               ? "D'abord installe l'app sur ton téléphone (instructions en bas)…"
-              : "Tape une ville : Marbella, Paris, Miami…"
+              : "Recherche un lieu, une adresse ou une ville…"
           }
           className={cn(
             "w-full rounded-2xl border pl-11 pr-4 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-pink-300 focus:ring-2 focus:ring-pink-200/50",

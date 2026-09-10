@@ -1,4 +1,5 @@
-import { parsePhotonResponse } from "@/lib/geocoding";
+import { searchGooglePlaces } from "@/lib/google-places";
+import { searchPhotonPlaces } from "@/lib/photon-geocoding";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -8,61 +9,18 @@ export async function GET(request: Request) {
     return Response.json({ results: [] });
   }
 
-  const url = new URL("https://photon.komoot.io/api/");
-  url.searchParams.set("q", query);
-  url.searchParams.set("limit", "12");
-  url.searchParams.set("lang", "fr");
-  url.searchParams.set("layer", "house");
-  url.searchParams.append("layer", "street");
-  url.searchParams.append("layer", "locality");
-  url.searchParams.append("layer", "district");
-  url.searchParams.append("layer", "city");
-  url.searchParams.append("layer", "county");
-
   try {
-    const response = await fetch(url, {
-      headers: {
-        Accept: "application/json",
-      },
-      next: { revalidate: 300 },
+    const googleResults = await searchGooglePlaces(query);
+
+    if (googleResults.length > 0) {
+      return Response.json({ results: googleResults, source: "google" });
+    }
+
+    const photonResults = await searchPhotonPlaces(query);
+    return Response.json({
+      results: photonResults,
+      source: process.env.GOOGLE_MAPS_API_KEY ? "photon-fallback" : "photon",
     });
-
-    if (!response.ok) {
-      return Response.json(
-        { error: "Service de recherche indisponible." },
-        { status: 502 }
-      );
-    }
-
-    const data = await response.json();
-    const results = parsePhotonResponse(data);
-
-    if (results.length > 0) {
-      return Response.json({ results });
-    }
-
-    const fallbackUrl = new URL("https://photon.komoot.io/api/");
-    fallbackUrl.searchParams.set("q", query);
-    fallbackUrl.searchParams.set("limit", "8");
-    fallbackUrl.searchParams.set("lang", "fr");
-
-    const fallbackResponse = await fetch(fallbackUrl, {
-      headers: {
-        Accept: "application/json",
-      },
-      next: { revalidate: 300 },
-    });
-
-    if (!fallbackResponse.ok) {
-      return Response.json(
-        { error: "Service de recherche indisponible." },
-        { status: 502 }
-      );
-    }
-
-    const fallbackData = await fallbackResponse.json();
-
-    return Response.json({ results: parsePhotonResponse(fallbackData) });
   } catch (error) {
     console.error("[geocode] Search failed:", error);
     return Response.json(
