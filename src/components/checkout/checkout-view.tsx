@@ -53,7 +53,7 @@ const SIDEBAR_FAQ = FAQ.slice(0, 2);
 const TRUST_ITEMS = [
   "Paiement chiffré via Stripe",
   "Accès instantané après validation",
-  "Résiliation en 1 clic",
+  "Garantie 48 h si le GPS ne fonctionne pas",
 ];
 
 export function CheckoutView({
@@ -342,7 +342,7 @@ export function CheckoutView({
                   Choisis ton plan
                 </h2>
                 <p className="mt-1 text-sm text-zinc-500">
-                  Tu résilies quand tu veux, sans paperasse.
+                  Garantie 48 h si le GPS ne fonctionne pas après installation.
                 </p>
               </div>
 
@@ -494,13 +494,19 @@ export function CheckoutView({
                   SSL · chiffrement 256 bits · Stripe
                 </div>
                 <p className="max-w-md text-xs leading-relaxed text-zinc-500">
-                  En validant, tu acceptes nos conditions. Gère ton abonnement
-                  depuis ton espace client —{" "}
+                  En validant, tu acceptes nos{" "}
                   <Link
-                    href="/#faq"
+                    href="/conditions-generales"
                     className="text-pink-600 hover:underline"
                   >
-                    questions fréquentes
+                    conditions générales
+                  </Link>
+                  . Gère ton abonnement depuis ton espace client —{" "}
+                  <Link
+                    href="/politique-d-annulation"
+                    className="text-pink-600 hover:underline"
+                  >
+                    politique d&apos;annulation
                   </Link>
                   .
                 </p>

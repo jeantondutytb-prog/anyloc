@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AuthPasswordInput } from "@/components/auth/auth-input";
 import { useAccount } from "@/hooks/use-account";
-import { PLANS, getCheckoutUrl } from "@/lib/constants";
+import { CANCELLATION_WARNING, PLANS, getCheckoutUrl } from "@/lib/constants";
 import {
   deleteAccount,
   updatePassword,
@@ -140,6 +140,7 @@ export function SettingsView() {
   const { data, loading, error } = useAccount();
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [showDeleteForm, setShowDeleteForm] = useState(false);
+  const [showCancelForm, setShowCancelForm] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordState, passwordAction, passwordPending] = useActionState(
@@ -406,6 +407,90 @@ export function SettingsView() {
               </div>
             </div>
           </Card>
+
+          {data?.hasActiveSubscription && data?.canManageBilling ? (
+            <Card className="border-amber-200 p-5">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/10">
+                  <AlertTriangle className="h-5 w-5 text-amber-600" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-zinc-900">
+                    Résilier mon abonnement
+                  </p>
+                  <p className="mt-1 text-sm text-zinc-500">
+                    {CANCELLATION_WARNING}
+                  </p>
+                  <p className="mt-2 text-sm text-zinc-500">
+                    Si tu envisages une demande de remboursement au titre de la
+                    garantie 48 h, fais-la{" "}
+                    <strong>avant</strong> de résilier.
+                  </p>
+
+                  {!showCancelForm ? (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className="mt-4 border-amber-200 text-amber-800 hover:border-amber-300 hover:bg-amber-50"
+                      onClick={() => setShowCancelForm(true)}
+                    >
+                      Résilier mon abonnement
+                    </Button>
+                  ) : (
+                    <div className="mt-4 space-y-4">
+                      <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                        <p className="font-medium">
+                          Tu vas perdre l&apos;accès immédiatement
+                        </p>
+                        <p className="mt-1">
+                          Dashboard, guides, téléchargements et modification GPS
+                          : tout sera coupé dès confirmation sur Stripe.
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        <BillingPortalButton
+                          flow="subscription"
+                          variant="secondary"
+                          size="sm"
+                          className="border-amber-200 text-amber-800 hover:border-amber-300 hover:bg-amber-50"
+                        >
+                          Confirmer et résilier
+                        </BillingPortalButton>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowCancelForm(false)}
+                        >
+                          Annuler
+                        </Button>
+                      </div>
+
+                      <p className="text-xs text-zinc-500">
+                        Consulte la{" "}
+                        <Link
+                          href="/politique-d-annulation"
+                          className="text-pink-600 hover:underline"
+                        >
+                          politique d&apos;annulation
+                        </Link>{" "}
+                        et la{" "}
+                        <Link
+                          href="/politique-de-remboursement"
+                          className="text-pink-600 hover:underline"
+                        >
+                          politique de remboursement
+                        </Link>
+                        .
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Card>
+          ) : null}
         </SettingsSection>
 
         <SettingsSection title="Facturation">

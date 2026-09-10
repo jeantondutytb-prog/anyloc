@@ -34,8 +34,14 @@ export const CHECKOUT_PERKS = [
   "Signal GPS réel — pas un screenshot ni un montage",
   "Snap, Insta, Tinder, jeux : une loc pour tout le tel",
   "Installation guidée pas à pas pour ton modèle",
-  "Résiliation en 1 clic, sans justificatif",
+  "Garantie 48 h si le GPS ne fonctionne pas",
 ];
+
+export const REFUND_GUARANTEE_SUMMARY =
+  "Garantie 48 h : installation complète + test du service. Demande sous 48 h après l'achat, abonnement actif. Voir la politique de remboursement.";
+
+export const CANCELLATION_WARNING =
+  "La résiliation prend effet immédiatement. Tu perds l'accès au service, au dashboard et aux téléchargements dès confirmation. Aucun remboursement au prorata.";
 
 export const PLANS = [
   {
@@ -45,7 +51,7 @@ export const PLANS = [
     period: "/mois",
     perMonth: "8 €",
     perMonthLabel: "/mois",
-    billedNote: "Facturé 8 € chaque mois. Résilie quand tu veux.",
+    billedNote: "Facturé 8 € chaque mois. Résiliation immédiate — perte d'accès instantanée.",
     compare: "Flexible si tu testes encore",
     description: "Sans engagement, tu paies mois par mois.",
     features: [
@@ -65,7 +71,7 @@ export const PLANS = [
     period: "/6 mois",
     perMonth: "≈ 4,83 €",
     perMonthLabel: "/mois",
-    billedNote: "Facturé 29 € tous les 6 mois. Résilie quand tu veux.",
+    billedNote: "Facturé 29 € tous les 6 mois. Résiliation immédiate — perte d'accès instantanée.",
     compare: "Soit 58 € sur l'année si tu reprends",
     description: "Le sweet spot si tu l'utilises souvent.",
     features: [

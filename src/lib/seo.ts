@@ -22,6 +22,17 @@ export const PUBLIC_ROUTES = [
   { path: "/setup/ios", changeFrequency: "monthly" as const, priority: 0.7 },
   { path: "/setup/android", changeFrequency: "monthly" as const, priority: 0.7 },
   { path: "/web", changeFrequency: "monthly" as const, priority: 0.8 },
+  { path: "/communaute", changeFrequency: "monthly" as const, priority: 0.6 },
+  { path: "/contact", changeFrequency: "monthly" as const, priority: 0.6 },
+  { path: "/propositions-commerciales", changeFrequency: "monthly" as const, priority: 0.6 },
+  { path: "/affiliation", changeFrequency: "monthly" as const, priority: 0.6 },
+  { path: "/a-propos", changeFrequency: "monthly" as const, priority: 0.6 },
+  { path: "/conditions-generales", changeFrequency: "yearly" as const, priority: 0.4 },
+  { path: "/politique-de-livraison", changeFrequency: "yearly" as const, priority: 0.4 },
+  { path: "/attestation-legale", changeFrequency: "yearly" as const, priority: 0.4 },
+  { path: "/politique-de-confidentialite", changeFrequency: "yearly" as const, priority: 0.4 },
+  { path: "/politique-de-remboursement", changeFrequency: "yearly" as const, priority: 0.4 },
+  { path: "/politique-d-annulation", changeFrequency: "yearly" as const, priority: 0.4 },
 ];
 
 export function absoluteUrl(path: string) {

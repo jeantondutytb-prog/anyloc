@@ -64,7 +64,7 @@ export function SignupForm({ plan = "annual" }: { plan?: string }) {
 
         <p className="text-center text-xs leading-relaxed text-zinc-500">
           En créant un compte, tu acceptes nos{" "}
-          <Link href="/#faq" className="text-pink-600 hover:underline">
+          <Link href="/conditions-generales" className="text-pink-600 hover:underline">
             conditions d&apos;utilisation
           </Link>
           .
