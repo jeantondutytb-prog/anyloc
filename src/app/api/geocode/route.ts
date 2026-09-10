@@ -1,4 +1,13 @@
-import { searchNominatimPlaces } from "@/lib/nominatim-geocoding";
+import {
+  formatCoordinateLabel,
+  parseCoordinatesFromQuery,
+  stripCoordinatesFromQuery,
+} from "@/lib/coordinate-query";
+import {
+  mergeGeocodeResults,
+  reverseNominatimPlace,
+  searchNominatimPlaces,
+} from "@/lib/nominatim-geocoding";
 import { searchPhotonPlaces } from "@/lib/photon-geocoding";
 
 export async function GET(request: Request) {
@@ -10,13 +19,41 @@ export async function GET(request: Request) {
   }
 
   try {
-    const nominatimResults = await searchNominatimPlaces(query);
+    const coordinates = parseCoordinatesFromQuery(query);
+    const textQuery = stripCoordinatesFromQuery(query);
+    let results: Awaited<ReturnType<typeof searchNominatimPlaces>> = [];
 
-    if (nominatimResults.length > 0) {
-      return Response.json({ results: nominatimResults, source: "nominatim" });
+    if (coordinates) {
+      const exactPlace = await reverseNominatimPlace(
+        coordinates.lat,
+        coordinates.lng
+      );
+
+      results.push(
+        exactPlace ?? {
+          id: `coords-${coordinates.lat}-${coordinates.lng}`,
+          name: formatCoordinateLabel(coordinates.lat, coordinates.lng),
+          lat: coordinates.lat,
+          lng: coordinates.lng,
+          subtitle: "Coordonnées GPS",
+        }
+      );
     }
 
-    const photonResults = await searchPhotonPlaces(query);
+    if (textQuery.length >= 2) {
+      const nominatimResults = await searchNominatimPlaces(textQuery);
+      results = mergeGeocodeResults(results, nominatimResults);
+    }
+
+    if (results.length > 0) {
+      return Response.json({
+        results,
+        source: coordinates ? "coordinates+nominatim" : "nominatim",
+      });
+    }
+
+    const photonQuery = textQuery.length >= 2 ? textQuery : query;
+    const photonResults = await searchPhotonPlaces(photonQuery);
     return Response.json({ results: photonResults, source: "photon-fallback" });
   } catch (error) {
     console.error("[geocode] Search failed:", error);

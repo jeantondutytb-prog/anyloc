@@ -1,6 +1,7 @@
 import type { GeocodeResult } from "@/lib/geocoding";
 
 type NominatimAddress = {
+  house_number?: string;
   road?: string;
   pedestrian?: string;
   neighbourhood?: string;
@@ -107,8 +108,47 @@ function scoreNominatimResult(result: NominatimResult) {
   return typeScore + importanceBoost + rankBoost;
 }
 
+function formatPlaceName(result: NominatimResult) {
+  const explicitName = result.name?.trim();
+
+  if (explicitName) {
+    return explicitName;
+  }
+
+  const address = result.address;
+
+  if (address) {
+    const street = [address.house_number, address.road ?? address.pedestrian]
+      .filter(Boolean)
+      .join(" ");
+
+    if (street) {
+      return street;
+    }
+
+    const locality =
+      address.neighbourhood ??
+      address.suburb ??
+      address.city ??
+      address.town ??
+      address.village;
+
+    if (locality) {
+      return locality;
+    }
+  }
+
+  const display = result.display_name?.trim();
+
+  if (display) {
+    return display.split(",")[0]?.trim() ?? display;
+  }
+
+  return null;
+}
+
 function parseNominatimResult(result: NominatimResult): GeocodeResult | null {
-  const name = result.name?.trim();
+  const name = formatPlaceName(result);
   const lat = Number(result.lat);
   const lng = Number(result.lon);
 
@@ -152,6 +192,70 @@ export function parseNominatimResponse(data: NominatimResult[]): GeocodeResult[]
     });
 }
 
+function dedupeGeocodeResults(results: GeocodeResult[]) {
+  const seen = new Set<string>();
+
+  return results.filter((result) => {
+    const key = `${result.lat.toFixed(5)}:${result.lng.toFixed(5)}`;
+
+    if (seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
+}
+
+export async function reverseNominatimPlace(
+  lat: number,
+  lng: number
+): Promise<GeocodeResult | null> {
+  const url = new URL("https://nominatim.openstreetmap.org/reverse");
+  url.searchParams.set("lat", String(lat));
+  url.searchParams.set("lon", String(lng));
+  url.searchParams.set("format", "json");
+  url.searchParams.set("addressdetails", "1");
+  url.searchParams.set("zoom", "18");
+  url.searchParams.set("accept-language", "fr");
+
+  const response = await fetch(url, {
+    headers: {
+      Accept: "application/json",
+      "User-Agent": "Anyloc/1.0 (https://anyloc.io)",
+    },
+    next: { revalidate: 3600 },
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const data = (await response.json()) as NominatimResult & { error?: string };
+
+  if (data.error) {
+    return null;
+  }
+
+  const parsed = parseNominatimResult(data);
+
+  if (!parsed) {
+    return {
+      id: `coords-${lat}-${lng}`,
+      name: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+      lat,
+      lng,
+      subtitle: "Coordonnées GPS",
+    };
+  }
+
+  return {
+    ...parsed,
+    id: `coords-${lat}-${lng}`,
+    subtitle: parsed.subtitle || "Coordonnées GPS",
+  };
+}
+
 export async function searchNominatimPlaces(query: string): Promise<GeocodeResult[]> {
   const url = new URL("https://nominatim.openstreetmap.org/search");
   url.searchParams.set("q", query);
@@ -174,4 +278,11 @@ export async function searchNominatimPlaces(query: string): Promise<GeocodeResul
 
   const data = (await response.json()) as NominatimResult[];
   return parseNominatimResponse(data);
+}
+
+export function mergeGeocodeResults(
+  primary: GeocodeResult[],
+  secondary: GeocodeResult[]
+) {
+  return dedupeGeocodeResults([...primary, ...secondary]);
 }
