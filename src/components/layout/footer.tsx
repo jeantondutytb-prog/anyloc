@@ -1,8 +1,29 @@
 import Link from "next/link";
+import { CrispContactLink } from "@/components/crisp/crisp-contact-link";
 import { Logo } from "@/components/ui/logo";
 import { PendingBadge } from "@/components/ui/pending-info";
 import { SITE } from "@/lib/constants";
 import { FOOTER_LINK_GROUPS, SOCIAL_LINKS } from "@/lib/footer-links";
+
+function FooterLink({
+  href,
+  label,
+}: {
+  href: string;
+  label: string;
+}) {
+  if (href === "/contact") {
+    return (
+      <CrispContactLink className="hover:text-zinc-900">{label}</CrispContactLink>
+    );
+  }
+
+  return (
+    <Link href={href} className="hover:text-zinc-900">
+      {label}
+    </Link>
+  );
+}
 
 export function Footer() {
   return (
@@ -45,9 +66,7 @@ export function Footer() {
               <ul className="mt-4 space-y-2 text-sm text-zinc-500">
                 {group.links.map((link) => (
                   <li key={link.href}>
-                    <Link href={link.href} className="hover:text-zinc-900">
-                      {link.label}
-                    </Link>
+                    <FooterLink href={link.href} label={link.label} />
                   </li>
                 ))}
               </ul>
