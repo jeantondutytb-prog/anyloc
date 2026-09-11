@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { resolvePostAuthRedirect } from "@/lib/auth-redirect";
 import { ensureStripeCustomerForUser } from "@/lib/billing";
+import { sanitizeRedirectPath } from "@/lib/safe-redirect";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
@@ -30,7 +31,7 @@ export async function GET(request: Request) {
 
       const destination = user
         ? await resolvePostAuthRedirect(user.id, user.email, requestedNext)
-        : requestedNext ?? "/dashboard";
+        : sanitizeRedirectPath(requestedNext, "/dashboard");
 
       return NextResponse.redirect(new URL(destination, origin));
     }

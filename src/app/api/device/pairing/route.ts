@@ -2,6 +2,8 @@ import { extractBearerToken } from "@/lib/device";
 import { getDeviceContext, touchDeviceLastSeen } from "@/lib/device-server";
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 
+const MAX_PAIRING_DATA_BYTES = 64 * 1024;
+
 function parsePairingBody(body: unknown) {
   if (!body || typeof body !== "object") {
     return null;
@@ -18,7 +20,7 @@ function parsePairingBody(body: unknown) {
   try {
     const decoded = Buffer.from(trimmed, "base64");
 
-    if (!decoded.length) {
+    if (!decoded.length || decoded.length > MAX_PAIRING_DATA_BYTES) {
       return null;
     }
   } catch {
@@ -101,7 +103,10 @@ export async function PUT(request: Request) {
 
   if (!pairing) {
     return Response.json(
-      { error: "Pairing invalide. Envoie un fichier encodé en base64." },
+      {
+        error:
+          "Pairing invalide. Envoie un fichier base64 de moins de 64 Ko.",
+      },
       { status: 400 }
     );
   }

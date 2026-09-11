@@ -8,19 +8,52 @@ let cachedPython = null;
 const DEVICE_TOKEN_PREFIX = "anyloc_";
 
 const DEFAULT_API_BASE_URL = "https://www.anyloc.io";
+const ALLOWED_API_HOSTS = new Set([
+  "anyloc.io",
+  "www.anyloc.io",
+  "localhost",
+  "127.0.0.1",
+]);
 const GITHUB_REPO = "jeantondutytb-prog/anyloc";
 const IPA_FILENAME = "Anyloc.ipa";
 const MIN_IPA_BYTES = 100_000;
 
 let ipaDownloadPromise = null;
 
+function normalizeHost(hostname) {
+  return String(hostname || "").trim().toLowerCase().replace(/\.$/, "");
+}
+
+function isAllowedApiHost(hostname) {
+  const host = normalizeHost(hostname);
+
+  if (ALLOWED_API_HOSTS.has(host)) {
+    return true;
+  }
+
+  return host.endsWith(".vercel.app");
+}
+
 function normalizeApiBaseUrl(raw) {
   let url = (raw || DEFAULT_API_BASE_URL).trim();
   url = url.replace(/\/api\/device\/location\/?$/i, "");
   url = url.replace(/\/$/, "");
-  // anyloc.io redirects to www and strips Authorization headers on redirect.
-  url = url.replace(/^https?:\/\/anyloc\.io$/i, DEFAULT_API_BASE_URL);
-  return url || DEFAULT_API_BASE_URL;
+
+  try {
+    const parsed = new URL(url.includes("://") ? url : `https://${url}`);
+
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return DEFAULT_API_BASE_URL;
+    }
+
+    if (!isAllowedApiHost(parsed.hostname)) {
+      return DEFAULT_API_BASE_URL;
+    }
+
+    return parsed.origin.replace(/\/$/, "");
+  } catch {
+    return DEFAULT_API_BASE_URL;
+  }
 }
 
 function normalizeDeviceToken(raw) {

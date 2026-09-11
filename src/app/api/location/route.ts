@@ -8,13 +8,18 @@ import {
   parseLocationRequestBody,
   upsertLocationForUser,
 } from "@/lib/location-server";
-import { requireAuthenticatedUser } from "@/lib/subscription";
+import { rejectCrossSiteMutation } from "@/lib/csrf";
+import { requireActiveSubscription } from "@/lib/subscription";
 
 export async function GET() {
-  const { user, error } = await requireAuthenticatedUser();
+  const { user, error, access } = await requireActiveSubscription();
 
   if (!user) {
     return Response.json({ error }, { status: 401 });
+  }
+
+  if (!access?.hasAccess) {
+    return Response.json({ error }, { status: 403 });
   }
 
   const supabase = await createClient();
@@ -54,10 +59,20 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
-  const { user, error } = await requireAuthenticatedUser();
+  const crossSiteResponse = rejectCrossSiteMutation(request);
+
+  if (crossSiteResponse) {
+    return crossSiteResponse;
+  }
+
+  const { user, error, access } = await requireActiveSubscription();
 
   if (!user) {
     return Response.json({ error }, { status: 401 });
+  }
+
+  if (!access?.hasAccess) {
+    return Response.json({ error }, { status: 403 });
   }
 
   let body: unknown;

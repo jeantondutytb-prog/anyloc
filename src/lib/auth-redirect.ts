@@ -1,4 +1,5 @@
 import { getCheckoutUrl } from "@/lib/constants";
+import { sanitizeRedirectPath } from "@/lib/safe-redirect";
 import { getSubscriptionAccessForUser } from "@/lib/subscription";
 
 const DEFAULT_SUBSCRIBED_DESTINATION = "/dashboard";
@@ -14,7 +15,7 @@ export async function resolvePostAuthRedirect(
   requestedRedirect?: string | null
 ) {
   const access = await getSubscriptionAccessForUser(userId, email);
-  const redirect = requestedRedirect?.trim() ?? "";
+  const redirect = sanitizeRedirectPath(requestedRedirect, "");
 
   if (access.hasAccess) {
     if (!redirect || isCheckoutPath(redirect)) {
@@ -24,5 +25,9 @@ export async function resolvePostAuthRedirect(
     return redirect;
   }
 
-  return redirect || getCheckoutUrl("annual");
+  if (redirect && isCheckoutPath(redirect)) {
+    return redirect;
+  }
+
+  return getCheckoutUrl("annual");
 }

@@ -46,7 +46,9 @@ class MainActivity : AppCompatActivity() {
         statusText = findViewById(R.id.statusText)
 
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        apiBaseUrlInput.setText(prefs.getString(KEY_API_BASE_URL, "https://anyloc.io"))
+        apiBaseUrlInput.setText(
+            ApiBaseUrl.sanitize(prefs.getString(KEY_API_BASE_URL, "https://www.anyloc.io"))
+        )
         tokenInput.setText(prefs.getString(KEY_DEVICE_TOKEN, ""))
 
         findViewById<Button>(R.id.testButton).setOnClickListener {
@@ -97,9 +99,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        val api = data.getQueryParameter("api")?.trim().orEmpty().ifEmpty {
-            "https://anyloc.io"
-        }
+        val api = ApiBaseUrl.sanitize(data.getQueryParameter("api"))
 
         apiBaseUrlInput.setText(api)
         tokenInput.setText(token)
@@ -263,10 +263,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun readCredentials(): Pair<String, String>? {
-        val apiBaseUrl = apiBaseUrlInput.text.toString().trim()
+        val apiBaseUrl = ApiBaseUrl.sanitize(apiBaseUrlInput.text.toString())
         val token = tokenInput.text.toString().trim()
 
-        if (apiBaseUrl.isEmpty() || token.isEmpty()) {
+        if (token.isEmpty()) {
             return null
         }
 
@@ -274,9 +274,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun persistCredentials(apiBaseUrl: String, token: String) {
+        val safeApiBaseUrl = ApiBaseUrl.sanitize(apiBaseUrl)
+
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             .edit()
-            .putString(KEY_API_BASE_URL, apiBaseUrl)
+            .putString(KEY_API_BASE_URL, safeApiBaseUrl)
             .putString(KEY_DEVICE_TOKEN, token)
             .apply()
     }
