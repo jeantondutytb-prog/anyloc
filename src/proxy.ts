@@ -1,7 +1,14 @@
 import { type NextRequest } from "next/server";
+import { enforceApiRateLimit } from "@/lib/rate-limit";
 import { updateSession } from "@/lib/supabase/proxy";
 
 export async function proxy(request: NextRequest) {
+  const rateLimitResponse = enforceApiRateLimit(request);
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   if (
     !process.env.NEXT_PUBLIC_SUPABASE_URL ||
     !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
