@@ -65,23 +65,23 @@ struct SettingsView: View {
                                 VStack(spacing: 8) {
                                     planCard(
                                         name: "Mensuel",
-                                        price: "9,90€",
-                                        period: "/mois",
+                                        perDay: "0,33€",
+                                        billedPrice: "9,90€/mois",
                                         features: ["Changements illimités", "iOS + Android", "Support mail"],
                                         popular: false
                                     )
                                     planCard(
                                         name: "6 mois",
-                                        price: "34,90€",
-                                        period: "/6 mois",
-                                        features: ["≈ 5,82€/mois", "Tout le Mensuel", "Trajets simulés"],
+                                        perDay: "≈ 0,19€",
+                                        billedPrice: "34,90€/6 mois",
+                                        features: ["Tout le Mensuel", "Trajets simulés", "Support mail"],
                                         popular: true
                                     )
                                     planCard(
                                         name: "Annuel",
-                                        price: "49,90€",
-                                        period: "/an",
-                                        features: ["≈ 4,16€/mois", "App iPhone sans ordi", "Support prioritaire"],
+                                        perDay: "≈ 0,14€",
+                                        billedPrice: "49,90€/an",
+                                        features: ["App iPhone sans ordi", "Support prioritaire", "3 profils web"],
                                         popular: false
                                     )
                                 }
@@ -179,7 +179,7 @@ struct SettingsView: View {
         .padding(12)
     }
 
-    private func planCard(name: String, price: String, period: String, features: [String], popular: Bool) -> some View {
+    private func planCard(name: String, perDay: String, billedPrice: String, features: [String], popular: Bool) -> some View {
         VStack(spacing: 8) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
@@ -198,13 +198,16 @@ struct SettingsView: View {
                         }
                     }
                     HStack(alignment: .firstTextBaseline, spacing: 2) {
-                        Text(price)
-                            .font(.title3.bold())
+                        Text(perDay)
+                            .font(.title2.bold())
                             .foregroundColor(Theme.accent)
-                        Text(period)
+                        Text("/jour")
                             .font(.caption)
                             .foregroundColor(Theme.textDim)
                     }
+                    Text(billedPrice)
+                        .font(.caption)
+                        .foregroundColor(Theme.textDim)
                 }
                 Spacer()
                 Button {} label: {
