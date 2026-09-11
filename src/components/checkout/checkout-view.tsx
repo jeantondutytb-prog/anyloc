@@ -301,7 +301,7 @@ export function CheckoutView({
               </div>
             </aside>
 
-            <div className="lg:hidden">
+            <div className="mb-10 lg:hidden">
               <Badge className="mb-5">GPS spoofé · toutes tes apps</Badge>
 
               <h1 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
@@ -329,7 +329,7 @@ export function CheckoutView({
               </ul>
             </div>
 
-            <div>
+            <div className="border-t border-zinc-100 pt-10 lg:border-0 lg:pt-0">
               {canceled && (
                 <p className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                   Paiement annulé. Reprends quand tu veux — ta formule reste
@@ -337,7 +337,7 @@ export function CheckoutView({
                 </p>
               )}
 
-              <div className="mb-6">
+              <div className="mb-8">
                 <h2 className="text-xl font-bold tracking-tight text-zinc-900 sm:text-2xl">
                   Choisis ton plan
                 </h2>
