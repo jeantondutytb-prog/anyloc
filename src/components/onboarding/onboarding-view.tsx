@@ -403,7 +403,7 @@ function OnboardingViewContent({
     TRENDING_DESTINATIONS[0]
   );
   const [selectedPlanId, setSelectedPlanId] = useState(() => {
-    const plan = searchParams.get("plan");
+    const plan = searchParams.get("plan") ?? undefined;
     return isValidPlanId(plan) ? plan! : "annual";
   });
 
