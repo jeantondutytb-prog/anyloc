@@ -215,8 +215,11 @@ struct SettingsView: View {
                 Spacer()
                 Button {} label: {
                     Text(ctaLabel)
-                        .font(.caption.bold())
-                        .padding(.horizontal, 14)
+                        .font(.caption2.bold())
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                        .frame(maxWidth: 110)
+                        .padding(.horizontal, 10)
                         .padding(.vertical, 7)
                         .background(popular ? Theme.accent : Theme.bgSurfaceHover)
                         .foregroundColor(popular ? .white : Theme.text)
