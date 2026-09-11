@@ -417,8 +417,8 @@ function AndroidGuide({ hasAccess }: { hasAccess: boolean }) {
         <div className="flex items-start gap-3 rounded-xl bg-zinc-50 p-4">
           <Settings className="mt-0.5 h-5 w-5 shrink-0 text-pink-600" />
           <ol className="list-decimal space-y-2 pl-5">
-            <li><strong>Paramètres → À propos</strong> → tape 7 fois sur <strong>Numéro de build</strong></li>
-            <li><strong>Options pour les développeurs</strong> → active-les</li>
+            <li><strong>Paramètres → À propos du téléphone</strong> → tape 7 fois sur <strong>Numéro de build</strong></li>
+            <li><strong>Options pour les développeurs</strong> → Active-les</li>
             <li>Choisis <strong>Anyloc</strong> comme <strong>Application de localisation fictive</strong></li>
           </ol>
         </div>

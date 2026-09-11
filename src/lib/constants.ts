@@ -233,7 +233,7 @@ export const FEATURES = [
   {
     title: "Spots enregistrés",
     description:
-      "Garde tes destinations fav — Marbella, Ibiza, Miami — et reviens y en un tap.",
+      "Garde tes destinations fav — Marbella, Ibiza, Miami — et reviens-y en un tap.",
     icon: "Bookmark",
   },
   {
