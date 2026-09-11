@@ -28,7 +28,7 @@ module.exports = {
   mac: {
     category: "public.app-category.utilities",
     target: ["dmg"],
-    identity: "-",
+    identity: null,
     gatekeeperAssess: false,
   },
   win: {

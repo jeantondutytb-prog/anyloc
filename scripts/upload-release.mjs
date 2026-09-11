@@ -60,6 +60,7 @@ async function main() {
     access: "private",
     token,
     addRandomSuffix: false,
+    allowOverwrite: true,
     cacheControlMaxAge: 31536000,
   });
 
