@@ -2,20 +2,19 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   HelpCircle,
-  MapPin,
   Menu,
-  Settings,
   Smartphone,
+  User,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type MenuItem = {
-  icon: typeof MapPin;
+  icon: typeof Smartphone;
   label: string;
   href: string;
 };
@@ -23,13 +22,12 @@ type MenuItem = {
 const MENU_SECTIONS: { items: MenuItem[] }[] = [
   {
     items: [
-      { icon: MapPin, label: "Carte", href: "/dashboard" },
-      { icon: Smartphone, label: "Installation", href: "/dashboard/installation" },
+      { icon: Smartphone, label: "Installation", href: "/dashboard" },
+      { icon: User, label: "Mon compte", href: "/dashboard?tab=account" },
     ],
   },
   {
     items: [
-      { icon: Settings, label: "Paramètres", href: "/dashboard/settings" },
       { icon: HelpCircle, label: "Aide", href: "/#faq" },
     ],
   },
@@ -65,22 +63,27 @@ const menuItem = {
   },
 };
 
-function isActive(pathname: string, href: string) {
-  const path = href.split("#")[0];
+function isActive(pathname: string, currentTab: string | null, href: string) {
+  const [path, query] = href.split("?");
+  const hrefPath = path.split("#")[0];
 
-  if (path === "/dashboard") {
-    return pathname === "/dashboard";
+  if (hrefPath === "/dashboard" && pathname === "/dashboard") {
+    const hrefTab = new URLSearchParams(query ?? "").get("tab");
+    if (!hrefTab) return !currentTab || currentTab === "installation";
+    return currentTab === hrefTab;
   }
 
-  if (!path.startsWith("/dashboard")) {
+  if (!hrefPath.startsWith("/dashboard")) {
     return false;
   }
 
-  return pathname.startsWith(path);
+  return pathname.startsWith(hrefPath);
 }
 
 export function DashboardMenu() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentTab = searchParams.get("tab");
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -151,7 +154,7 @@ export function DashboardMenu() {
                 variants={menuPanel}
               >
                 {section.items.map((item) => {
-                  const active = isActive(pathname, item.href);
+                  const active = isActive(pathname, currentTab, item.href);
 
                   return (
                     <motion.li key={item.href} variants={menuItem}>

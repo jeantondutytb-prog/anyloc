@@ -1,8 +1,5 @@
-import { SettingsView } from "@/components/dashboard/settings-view";
-import { noIndexMetadata } from "@/lib/seo";
-
-export const metadata = noIndexMetadata;
+import { redirect } from "next/navigation";
 
 export default function DashboardSettingsPage() {
-  return <SettingsView />;
+  redirect("/dashboard?tab=account");
 }
