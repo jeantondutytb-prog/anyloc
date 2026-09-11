@@ -458,27 +458,50 @@ export function InstallationGuideView({ embedded = false }: { embedded?: boolean
       setPlatform(urlPlatform);
     }
 
-    const urlSuccess =
-      searchParams.get("success") === "true" ||
-      new URLSearchParams(window.location.search).get("success") === "true";
+    const sessionId = searchParams.get("session_id");
+    const urlSuccess = searchParams.get("success") === "true";
     const sessionSuccess =
       window.sessionStorage.getItem(PAYMENT_SUCCESS_SESSION_KEY) === "true";
-    const success = urlSuccess || sessionSuccess;
 
-    if (urlSuccess) {
-      window.sessionStorage.setItem(PAYMENT_SUCCESS_SESSION_KEY, "true");
+    const clearPaymentParams = () => {
       const url = new URL(window.location.href);
       url.searchParams.delete("success");
       url.searchParams.delete("session_id");
       window.history.replaceState({}, "", url.pathname + url.search);
-    }
+    };
 
-    setPaymentSuccess(success);
-
-    if (success) {
+    const markPaymentSuccess = () => {
+      window.sessionStorage.setItem(PAYMENT_SUCCESS_SESSION_KEY, "true");
+      setPaymentSuccess(true);
       const stored = readOnboardingState();
       writeOnboardingState({ ...stored, welcomeDismissed: true });
+      clearPaymentParams();
+    };
+
+    if (urlSuccess && sessionId) {
+      void fetch(`/api/stripe/verify-session?session_id=${encodeURIComponent(sessionId)}`)
+        .then(async (response) => {
+          if (!response.ok) {
+            return;
+          }
+
+          const data = await response.json();
+          if (data.verified) {
+            markPaymentSuccess();
+          }
+        })
+        .catch(() => {
+          // Ignore verification errors and keep the dashboard usable.
+        });
+      return;
     }
+
+    if (sessionSuccess) {
+      setPaymentSuccess(true);
+      return;
+    }
+
+    setPaymentSuccess(false);
   }, [searchParams]);
 
   const hasAccess = data?.hasAccess ?? false;

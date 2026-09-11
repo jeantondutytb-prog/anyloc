@@ -1,18 +1,17 @@
+import { getDefaultApiBaseUrl, sanitizeApiBaseUrl } from "@/lib/api-base-url";
+
 export function getPublicApiBaseUrl() {
   if (typeof window !== "undefined") {
-    return window.location.origin.replace(/\/$/, "");
+    return sanitizeApiBaseUrl(window.location.origin);
   }
 
-  return (process.env.NEXT_PUBLIC_APP_URL ?? "https://www.anyloc.io").replace(
-    /\/$/,
-    ""
-  );
+  return getDefaultApiBaseUrl();
 }
 
 export function buildMobileSetupLink(token: string, apiBaseUrl?: string) {
   const params = new URLSearchParams({
     token,
-    api: apiBaseUrl ?? getPublicApiBaseUrl(),
+    api: sanitizeApiBaseUrl(apiBaseUrl ?? getPublicApiBaseUrl()),
   });
 
   return `anyloc://setup?${params.toString()}`;
@@ -21,7 +20,7 @@ export function buildMobileSetupLink(token: string, apiBaseUrl?: string) {
 export function buildSetupDesktopLink(token: string, apiBaseUrl?: string) {
   const params = new URLSearchParams({
     token,
-    api: apiBaseUrl ?? getPublicApiBaseUrl(),
+    api: sanitizeApiBaseUrl(apiBaseUrl ?? getPublicApiBaseUrl()),
   });
 
   return `anyloc-setup://configure?${params.toString()}`;

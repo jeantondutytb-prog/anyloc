@@ -85,6 +85,17 @@ export async function syncProfileFromCheckoutSession(
     return;
   }
 
+  if (
+    session.payment_status &&
+    session.payment_status !== "paid" &&
+    session.payment_status !== "no_payment_required"
+  ) {
+    console.warn(
+      `[billing] Checkout session ${session.id} ignored: payment_status=${session.payment_status}`
+    );
+    return;
+  }
+
   const userId =
     session.client_reference_id ?? session.metadata?.supabase_user_id;
 

@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { resolvePostAuthRedirect } from "@/lib/auth-redirect";
 import { ensureStripeCustomerForUser } from "@/lib/billing";
 import { getCheckoutUrl } from "@/lib/constants";
+import { validatePassword } from "@/lib/password-policy";
+import { sanitizeRedirectPath } from "@/lib/safe-redirect";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
 export type AuthState = {
@@ -20,7 +22,7 @@ function translateAuthError(message: string) {
     return "Un compte existe déjà avec cet email.";
   }
   if (normalized.includes("password should be at least")) {
-    return "Le mot de passe doit contenir au moins 6 caractères.";
+    return "Le mot de passe ne respecte pas les critères minimaux.";
   }
   if (normalized.includes("valid email")) {
     return "Adresse email invalide.";
@@ -31,7 +33,7 @@ function translateAuthError(message: string) {
 
 function getRedirectTo(formData: FormData) {
   const redirectTo = String(formData.get("redirectTo") ?? "").trim();
-  return redirectTo || getCheckoutUrl("annual");
+  return sanitizeRedirectPath(redirectTo, getCheckoutUrl("annual"));
 }
 
 async function linkStripeCustomer(userId: string, email: string) {
@@ -54,7 +56,7 @@ export async function login(
   }
 
   if (!isSupabaseConfigured()) {
-    redirect(getRedirectTo(formData));
+    return { error: "L'authentification n'est pas configurée." };
   }
 
   const supabase = await createClient();
@@ -95,12 +97,14 @@ export async function signup(
     return { error: "Renseigne ton email et ton mot de passe." };
   }
 
-  if (password.length < 6) {
-    return { error: "Le mot de passe doit contenir au moins 6 caractères." };
+  const passwordError = validatePassword(password);
+
+  if (passwordError) {
+    return { error: passwordError };
   }
 
   if (!isSupabaseConfigured()) {
-    redirect(getRedirectTo(formData));
+    return { error: "L'authentification n'est pas configurée." };
   }
 
   const supabase = await createClient();

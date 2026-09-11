@@ -42,6 +42,13 @@ export function useLocationSync({
         return;
       }
 
+      if (response.status === 403) {
+        const data = await response.json().catch(() => null);
+        throw new Error(
+          data?.error ?? "Un abonnement actif est requis pour cette action."
+        );
+      }
+
       if (!response.ok) {
         throw new Error("Impossible de charger ta position.");
       }
@@ -94,6 +101,12 @@ export function useLocationSync({
         }
 
         const data = await response.json();
+
+        if (response.status === 403) {
+          throw new Error(
+            data.error ?? "Un abonnement actif est requis pour cette action."
+          );
+        }
 
         if (!response.ok) {
           throw new Error(data.error ?? "Impossible d'enregistrer ta position.");

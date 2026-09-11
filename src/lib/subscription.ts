@@ -49,7 +49,7 @@ export async function getSubscriptionAccessForUser(
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("profiles")
-    .select("subscription_status, plan_id, email")
+    .select("subscription_status, plan_id, email, is_admin")
     .eq("id", userId)
     .maybeSingle();
 
@@ -57,7 +57,7 @@ export async function getSubscriptionAccessForUser(
     return { hasAccess: false, status: null, planId: null, isAdmin: false };
   }
 
-  if (isAdminEmail(data.email)) {
+  if (data.is_admin || isAdminEmail(data.email)) {
     return {
       hasAccess: true,
       status: "admin",

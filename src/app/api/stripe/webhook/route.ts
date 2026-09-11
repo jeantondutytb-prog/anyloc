@@ -5,6 +5,10 @@ import {
   syncProfileFromSubscription,
 } from "@/lib/billing";
 import { stripe } from "@/lib/stripe";
+import {
+  hasProcessedStripeEvent,
+  markStripeEventProcessed,
+} from "@/lib/webhook-idempotency";
 
 export const runtime = "nodejs";
 
@@ -45,6 +49,10 @@ export async function POST(request: Request) {
   }
 
   try {
+    if (await hasProcessedStripeEvent(event.id)) {
+      return NextResponse.json({ received: true, duplicate: true });
+    }
+
     switch (event.type) {
       case "checkout.session.completed":
         await syncProfileFromCheckoutSession(
@@ -61,6 +69,8 @@ export async function POST(request: Request) {
       default:
         break;
     }
+
+    await markStripeEventProcessed(event.id, event.type);
   } catch (error) {
     console.error(`[stripe-webhook] ${event.type}`, error);
     return NextResponse.json(

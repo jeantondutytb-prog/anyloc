@@ -8,6 +8,7 @@ import { AuthDivider } from "@/components/auth/auth-divider";
 import { AuthInput, AuthPasswordInput } from "@/components/auth/auth-input";
 import { GoogleAuthLink } from "@/components/auth/google-auth-link";
 import { Button } from "@/components/ui/button";
+import { MIN_PASSWORD_LENGTH } from "@/lib/password-policy";
 
 const initialState: AuthState = {};
 
@@ -45,8 +46,8 @@ export function SignupForm({ plan = "annual" }: { plan?: string }) {
           label="Mot de passe"
           autoComplete="new-password"
           required
-          minLength={6}
-          placeholder="Au moins 6 caractères"
+          minLength={MIN_PASSWORD_LENGTH}
+          placeholder={`Au moins ${MIN_PASSWORD_LENGTH} caractères`}
           showPassword={showPassword}
           onToggle={() => setShowPassword((value) => !value)}
         />
