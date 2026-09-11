@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   ArrowRight,
   Check,
@@ -15,10 +15,11 @@ import {
 } from "lucide-react";
 import type { GeocodeResult } from "@/lib/geocoding";
 import { OnboardingAhaMoment } from "@/components/onboarding/onboarding-aha-moment";
+import { OnboardingPaywallStripe } from "@/components/onboarding/onboarding-paywall-stripe";
 import { PlanPrice } from "@/components/pricing/plan-price";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
-import { getCheckoutUrl, PLANS, type Plan } from "@/lib/constants";
+import { PLANS, type Plan } from "@/lib/constants";
 import {
   mergeOnboardingSearchResults,
   ONBOARDING_DESTINATION_KEY,
@@ -317,17 +318,18 @@ function StepPaywall({
   selectedPlanId,
   onPlanChange,
   onBack,
+  stripePublishableKey,
 }: {
   destination: OnboardingDestination;
   selectedPlanId: string;
   onPlanChange: (planId: string) => void;
   onBack: () => void;
+  stripePublishableKey: string;
 }) {
-  const checkoutHref = getCheckoutUrl(selectedPlanId);
   const socialProof = getDestinationSocialProof(destination);
 
   return (
-    <div className="mx-auto w-full max-w-xl">
+    <div className="mx-auto w-full max-w-2xl">
       <div className="mb-8 text-center">
         <span className="inline-flex items-center gap-2 rounded-full border border-pink-200 bg-pink-50 px-4 py-1.5 text-sm font-medium text-pink-700">
           {destination.emoji} {destination.city} sélectionné
@@ -371,17 +373,15 @@ function StepPaywall({
         </span>
       </div>
 
-      <Link href={checkoutHref} className="mt-6 block">
-        <Button className="h-14 w-full text-base">
-          Continuer vers le paiement
-          <ArrowRight className="h-5 w-5" />
-        </Button>
-      </Link>
+      <OnboardingPaywallStripe
+        planId={selectedPlanId}
+        stripePublishableKey={stripePublishableKey}
+      />
 
       <button
         type="button"
         onClick={onBack}
-        className="mt-4 w-full text-center text-sm text-zinc-500 transition-colors hover:text-zinc-800"
+        className="mt-6 w-full text-center text-sm text-zinc-500 transition-colors hover:text-zinc-800"
       >
         Changer de destination
       </button>
@@ -389,13 +389,40 @@ function StepPaywall({
   );
 }
 
-export function OnboardingView() {
-  const [step, setStep] = useState(1);
+function OnboardingViewContent({
+  stripePublishableKey,
+}: {
+  stripePublishableKey: string;
+}) {
+  const searchParams = useSearchParams();
+  const [step, setStep] = useState(() =>
+    searchParams.get("step") === "3" ? 3 : 1
+  );
   const [query, setQuery] = useState("");
   const [destination, setDestination] = useState<OnboardingDestination>(
     TRENDING_DESTINATIONS[0]
   );
   const [selectedPlanId, setSelectedPlanId] = useState("annual");
+
+  useEffect(() => {
+    if (searchParams.get("step") !== "3") {
+      return;
+    }
+
+    setStep(3);
+
+    try {
+      const stored = window.sessionStorage.getItem(ONBOARDING_DESTINATION_KEY);
+      if (!stored) {
+        return;
+      }
+
+      const parsed = JSON.parse(stored) as OnboardingDestination;
+      setDestination(parsed);
+    } catch {
+      // Ignore invalid stored destination.
+    }
+  }, [searchParams]);
 
   function selectDestination(next: OnboardingDestination) {
     setDestination(next);
@@ -440,9 +467,29 @@ export function OnboardingView() {
             selectedPlanId={selectedPlanId}
             onPlanChange={setSelectedPlanId}
             onBack={() => setStep(1)}
+            stripePublishableKey={stripePublishableKey}
           />
         )}
       </main>
     </div>
+  );
+}
+
+export function OnboardingView({
+  stripePublishableKey,
+}: {
+  stripePublishableKey: string;
+}) {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center text-sm text-zinc-500">
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Chargement…
+        </div>
+      }
+    >
+      <OnboardingViewContent stripePublishableKey={stripePublishableKey} />
+    </Suspense>
   );
 }

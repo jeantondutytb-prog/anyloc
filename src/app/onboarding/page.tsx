@@ -1,4 +1,5 @@
 import { OnboardingView } from "@/components/onboarding/onboarding-view";
+import { getStripePublishableKey } from "@/lib/stripe-client";
 
 export const metadata = {
   title: "Onboarding — Anyloc",
@@ -7,5 +8,7 @@ export const metadata = {
 };
 
 export default function OnboardingPage() {
-  return <OnboardingView />;
+  return (
+    <OnboardingView stripePublishableKey={getStripePublishableKey()} />
+  );
 }
