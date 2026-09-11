@@ -1,4 +1,5 @@
 import { DESTINATION_SPOTS } from "@/lib/destination-spots";
+import type { GeocodeResult } from "@/lib/geocoding";
 
 export type OnboardingDestination = {
   id: string;
@@ -54,6 +55,60 @@ export const TRENDING_DESTINATIONS: OnboardingDestination[] = TRENDING_NAMES.map
 
 export const ALL_ONBOARDING_DESTINATIONS: OnboardingDestination[] =
   DESTINATION_SPOTS.map(toOnboardingDestination);
+
+export function geocodeResultToOnboardingDestination(
+  result: GeocodeResult
+): OnboardingDestination {
+  const localMatch = ALL_ONBOARDING_DESTINATIONS.find(
+    (destination) =>
+      destination.city.toLowerCase() === result.name.toLowerCase() ||
+      destination.id.toLowerCase().startsWith(`${result.name.toLowerCase()} —`)
+  );
+
+  if (localMatch) {
+    return {
+      ...localMatch,
+      lat: result.lat,
+      lng: result.lng,
+    };
+  }
+
+  return {
+    id: result.id,
+    city: result.name,
+    area: result.subtitle,
+    emoji: "📍",
+    lat: result.lat,
+    lng: result.lng,
+  };
+}
+
+export function mergeOnboardingSearchResults(
+  local: OnboardingDestination[],
+  remote: GeocodeResult[]
+) {
+  const seen = new Set(local.map((destination) => destination.id.toLowerCase()));
+  const seenCities = new Set(
+    local.map((destination) => destination.city.toLowerCase())
+  );
+
+  const merged = [...local];
+
+  for (const result of remote) {
+    const destination = geocodeResultToOnboardingDestination(result);
+    const cityKey = destination.city.toLowerCase();
+
+    if (seen.has(destination.id.toLowerCase()) || seenCities.has(cityKey)) {
+      continue;
+    }
+
+    seen.add(destination.id.toLowerCase());
+    seenCities.add(cityKey);
+    merged.push(destination);
+  }
+
+  return merged.slice(0, 10);
+}
 
 export function searchOnboardingDestinations(query: string) {
   const trimmed = query.trim().toLowerCase();

@@ -1,22 +1,25 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
   Check,
   ChevronRight,
+  Loader2,
   Search,
   Shield,
   Sparkles,
   Star,
   Zap,
 } from "lucide-react";
+import type { GeocodeResult } from "@/lib/geocoding";
 import { OnboardingAhaMoment } from "@/components/onboarding/onboarding-aha-moment";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import { PLANS, type Plan } from "@/lib/constants";
 import {
+  mergeOnboardingSearchResults,
   ONBOARDING_DESTINATION_KEY,
   searchOnboardingDestinations,
   TRENDING_DESTINATIONS,
@@ -73,7 +76,73 @@ function StepDestination({
   onQueryChange: (value: string) => void;
   onSelect: (destination: OnboardingDestination) => void;
 }) {
-  const results = useMemo(() => searchOnboardingDestinations(query), [query]);
+  const [apiResults, setApiResults] = useState<GeocodeResult[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const trimmedQuery = query.trim();
+  const isSearching = trimmedQuery.length >= 2;
+  const localResults = useMemo(
+    () => searchOnboardingDestinations(query),
+    [query]
+  );
+  const results = useMemo(
+    () => mergeOnboardingSearchResults(localResults, apiResults),
+    [apiResults, localResults]
+  );
+
+  useEffect(() => {
+    if (!isSearching) {
+      setApiResults([]);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => {
+      void fetch(`/api/geocode?q=${encodeURIComponent(trimmedQuery)}`, {
+        signal: controller.signal,
+      })
+        .then(async (response) => {
+          const data = (await response.json()) as {
+            results?: GeocodeResult[];
+            error?: string;
+          };
+
+          if (!response.ok) {
+            throw new Error(data.error ?? "Recherche indisponible.");
+          }
+
+          setApiResults(data.results ?? []);
+        })
+        .catch((fetchError) => {
+          if (controller.signal.aborted) {
+            return;
+          }
+
+          setApiResults([]);
+          setError(
+            fetchError instanceof Error
+              ? fetchError.message
+              : "Recherche indisponible."
+          );
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) {
+            setLoading(false);
+          }
+        });
+    }, 350);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeout);
+    };
+  }, [isSearching, trimmedQuery]);
 
   return (
     <div className="mx-auto w-full max-w-2xl">
@@ -98,19 +167,39 @@ function StepDestination({
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
           placeholder="Recherche une ville..."
-          className="h-14 w-full rounded-2xl border border-zinc-200 bg-white pl-12 pr-4 text-base shadow-sm outline-none transition-colors placeholder:text-zinc-400 focus:border-pink-300 focus:ring-2 focus:ring-pink-200"
+          autoComplete="off"
+          className="h-14 w-full rounded-2xl border border-zinc-200 bg-white pl-12 pr-12 text-base shadow-sm outline-none transition-colors placeholder:text-zinc-400 focus:border-pink-300 focus:ring-2 focus:ring-pink-200"
         />
+        {loading && (
+          <Loader2 className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 animate-spin text-pink-500" />
+        )}
       </div>
 
-      {results.length > 0 ? (
-        <div className="mt-4 space-y-2">
-          {results.map((destination) => (
-            <DestinationCard
-              key={destination.id}
-              destination={destination}
-              onSelect={onSelect}
-            />
-          ))}
+      {isSearching ? (
+        <div className="mt-4">
+          {error && (
+            <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error}
+            </p>
+          )}
+
+          {!error && !loading && results.length === 0 && (
+            <p className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-500">
+              Aucun lieu trouvé. Essaie un autre nom ou des coordonnées GPS.
+            </p>
+          )}
+
+          {results.length > 0 && (
+            <div className="space-y-2">
+              {results.map((destination) => (
+                <DestinationCard
+                  key={destination.id}
+                  destination={destination}
+                  onSelect={onSelect}
+                />
+              ))}
+            </div>
+          )}
         </div>
       ) : (
         <div className="mt-10">
