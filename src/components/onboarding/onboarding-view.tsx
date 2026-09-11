@@ -158,11 +158,11 @@ function StepPreview({
           Étape 2
         </p>
         <h1 className="mt-3 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
-          Ta loc est à{" "}
+          On téléporte ta loc à{" "}
           <span className="gradient-text">{destination.city}</span>
         </h1>
         <p className="mt-3 text-zinc-500">
-          Voilà ce que tes potes voient sur Snap, Insta et toutes tes apps.
+          Regarde le signal GPS se mettre à jour en direct sur tes apps.
         </p>
       </div>
 
