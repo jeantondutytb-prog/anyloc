@@ -65,23 +65,23 @@ struct SettingsView: View {
                                 VStack(spacing: 8) {
                                     planCard(
                                         name: "Mensuel",
-                                        price: "8€",
+                                        price: "9,90€",
                                         period: "/mois",
                                         features: ["Changements illimités", "iOS + Android", "Support mail"],
                                         popular: false
                                     )
                                     planCard(
                                         name: "6 mois",
-                                        price: "29€",
+                                        price: "34,90€",
                                         period: "/6 mois",
-                                        features: ["≈ 4,83€/mois", "Tout le Mensuel", "Trajets simulés"],
+                                        features: ["≈ 5,82€/mois", "Tout le Mensuel", "Trajets simulés"],
                                         popular: true
                                     )
                                     planCard(
                                         name: "Annuel",
-                                        price: "49€",
+                                        price: "49,90€",
                                         period: "/an",
-                                        features: ["≈ 4,08€/mois", "App iPhone sans ordi", "Support prioritaire"],
+                                        features: ["≈ 4,16€/mois", "App iPhone sans ordi", "Support prioritaire"],
                                         popular: false
                                     )
                                 }
