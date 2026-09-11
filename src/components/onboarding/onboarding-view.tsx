@@ -15,9 +15,10 @@ import {
 } from "lucide-react";
 import type { GeocodeResult } from "@/lib/geocoding";
 import { OnboardingAhaMoment } from "@/components/onboarding/onboarding-aha-moment";
+import { PlanPrice } from "@/components/pricing/plan-price";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
-import { PLANS, type Plan } from "@/lib/constants";
+import { getCheckoutUrl, PLANS, type Plan } from "@/lib/constants";
 import {
   mergeOnboardingSearchResults,
   ONBOARDING_DESTINATION_KEY,
@@ -298,9 +299,6 @@ function PlanOption({
           </div>
           <div className="min-w-0">
             <p className="font-semibold text-zinc-900">{plan.name}</p>
-            <p className="text-sm text-zinc-500">
-              {plan.perDay} {plan.perDayLabel}
-            </p>
             {plan.savings && (
               <p className="mt-0.5 text-xs font-medium text-pink-600">
                 {plan.savings}
@@ -308,10 +306,7 @@ function PlanOption({
             )}
           </div>
         </div>
-        <div className="shrink-0 text-right">
-          <p className="text-2xl font-bold text-zinc-900">{plan.price}</p>
-          <p className="text-xs text-zinc-500">{plan.period}</p>
-        </div>
+        <PlanPrice plan={plan} size="card" align="right" className="shrink-0" />
       </div>
     </button>
   );
@@ -328,9 +323,8 @@ function StepPaywall({
   onPlanChange: (planId: string) => void;
   onBack: () => void;
 }) {
-  const checkoutHref = `/signup?plan=${selectedPlanId}`;
+  const checkoutHref = getCheckoutUrl(selectedPlanId);
   const socialProof = getDestinationSocialProof(destination);
-  const selectedPlan = PLANS.find((plan) => plan.id === selectedPlanId) ?? PLANS[2];
 
   return (
     <div className="mx-auto w-full max-w-xl">
@@ -379,7 +373,7 @@ function StepPaywall({
 
       <Link href={checkoutHref} className="mt-6 block">
         <Button className="h-14 w-full text-base">
-          Débloquer {destination.city} — {selectedPlan.perDay} {selectedPlan.perDayLabel}
+          Continuer vers le paiement
           <ArrowRight className="h-5 w-5" />
         </Button>
       </Link>
