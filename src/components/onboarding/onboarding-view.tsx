@@ -9,11 +9,12 @@ import {
   MapPin,
   Search,
   Shield,
-  Smartphone,
   Sparkles,
   Star,
+  Users,
   Zap,
 } from "lucide-react";
+import { OnboardingAhaMoment } from "@/components/onboarding/onboarding-aha-moment";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import { PLANS, type Plan } from "@/lib/constants";
@@ -23,14 +24,8 @@ import {
   TRENDING_DESTINATIONS,
   type OnboardingDestination,
 } from "@/lib/onboarding-destinations";
+import { getDestinationSocialProof } from "@/lib/onboarding-social-proof";
 import { cn } from "@/lib/utils";
-
-const APP_PREVIEW = [
-  { label: "SNAP MAP", color: "text-yellow-500" },
-  { label: "INSTAGRAM", color: "text-pink-500" },
-  { label: "TINDER", color: "text-rose-500" },
-  { label: "LIFE360", color: "text-emerald-500" },
-];
 
 function ProgressBar({ step }: { step: number }) {
   return (
@@ -59,14 +54,24 @@ function DestinationCard({
     <button
       type="button"
       onClick={() => onSelect(destination)}
-      className="flex w-full items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3.5 text-left shadow-sm transition-all hover:border-pink-300 hover:shadow-md"
+      className="group overflow-hidden rounded-2xl border border-zinc-200 bg-white text-left shadow-sm transition-all hover:border-pink-300 hover:shadow-md"
     >
-      <span className="text-2xl">{destination.emoji}</span>
-      <div className="min-w-0 flex-1">
-        <p className="truncate font-semibold text-zinc-900">{destination.city}</p>
-        <p className="truncate text-sm text-zinc-500">{destination.area}</p>
+      <div
+        className={cn(
+          "relative flex h-24 items-end bg-gradient-to-br p-4",
+          destination.imageGradient
+        )}
+      >
+        <span className="text-3xl drop-shadow-sm">{destination.emoji}</span>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
       </div>
-      <ChevronRight className="h-4 w-4 shrink-0 text-zinc-300" />
+      <div className="flex items-center gap-3 px-4 py-3.5">
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-semibold text-zinc-900">{destination.city}</p>
+          <p className="truncate text-sm text-zinc-500">{destination.area}</p>
+        </div>
+        <ChevronRight className="h-4 w-4 shrink-0 text-zinc-300 transition-transform group-hover:translate-x-0.5" />
+      </div>
     </button>
   );
 }
@@ -146,69 +151,38 @@ function StepPreview({
   destination: OnboardingDestination;
   onContinue: () => void;
 }) {
+  const socialProof = getDestinationSocialProof(destination);
+
   return (
-    <div className="mx-auto w-full max-w-xl">
+    <div className="mx-auto w-full max-w-3xl">
       <div className="mb-8 text-center">
         <p className="inline-flex items-center gap-1.5 text-sm font-medium text-pink-600">
           <Sparkles className="h-4 w-4" />
-          Étape 2
+          Étape 2 — le aha moment
         </p>
         <h1 className="mt-3 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
-          Ta loc est à{" "}
+          Regarde ta loc passer à{" "}
           <span className="gradient-text">{destination.city}</span>
         </h1>
         <p className="mt-3 text-zinc-500">
-          Voilà ce que tes potes voient sur Snap, Insta et toutes tes apps.
+          C&apos;est exactement ce que tes potes verront sur Snap, Insta et toutes
+          tes apps.
         </p>
       </div>
 
-      <div className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-xl">
-        <div className="bg-gradient-to-r from-pink-500 to-violet-500 px-5 py-3 text-center text-sm font-medium text-white">
-          <span className="inline-flex items-center gap-2">
-            <Smartphone className="h-4 w-4" />
-            Signal GPS actif
-          </span>
-        </div>
+      <OnboardingAhaMoment destination={destination} />
 
-        <div className="p-6">
-          <div className="flex items-center gap-3 rounded-2xl border border-zinc-100 bg-zinc-50 px-4 py-3">
-            <span className="text-3xl">{destination.emoji}</span>
-            <div>
-              <p className="font-semibold text-zinc-900">{destination.city}</p>
-              <p className="text-sm text-zinc-500">{destination.area}</p>
-            </div>
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            {APP_PREVIEW.map((app) => (
-              <div
-                key={app.label}
-                className="rounded-xl border border-zinc-100 bg-zinc-50 px-3 py-3"
-              >
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400">
-                  {app.label}
-                </p>
-                <p className="mt-1 flex items-center gap-1 text-sm font-medium text-zinc-800">
-                  <MapPin className={cn("h-3.5 w-3.5", app.color)} />
-                  {destination.city}
-                </p>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-emerald-50 px-4 py-2.5 text-sm text-emerald-700">
-            <span className="h-2 w-2 rounded-full bg-emerald-500" />
-            Coordonnées GPS mises à jour en temps réel
-          </div>
-        </div>
-      </div>
-
-      <p className="mt-6 text-center text-sm text-zinc-500">
+      <p className="mt-5 text-center text-sm text-zinc-500">
         Même signal que si ton tel était vraiment sur place.
       </p>
 
+      <p className="mt-2 flex items-center justify-center gap-1.5 text-center text-xs text-pink-600">
+        <Users className="h-3.5 w-3.5" />
+        {socialProof.todayLabel}
+      </p>
+
       <Button className="mt-6 h-14 w-full text-base" onClick={onContinue}>
-        Activer cette loc
+        Je veux cette loc
         <ArrowRight className="h-5 w-5" />
       </Button>
     </div>
@@ -224,13 +198,6 @@ function PlanOption({
   selected: boolean;
   onSelect: () => void;
 }) {
-  const monthlyEquivalent =
-    plan.id === "monthly"
-      ? `${plan.price}/mois`
-      : plan.id === "6months"
-        ? "≈ 5,82 €/mois"
-        : "≈ 4,16 €/mois";
-
   return (
     <button
       type="button"
@@ -242,7 +209,7 @@ function PlanOption({
           : "border-zinc-200 bg-white hover:border-pink-200"
       )}
     >
-      {plan.id === "6months" && (
+      {plan.popular && (
         <span className="absolute -top-2.5 right-4 rounded-full bg-pink-500 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
           Le plus populaire
         </span>
@@ -262,7 +229,9 @@ function PlanOption({
           </div>
           <div className="min-w-0">
             <p className="font-semibold text-zinc-900">{plan.name}</p>
-            <p className="text-sm text-zinc-500">{monthlyEquivalent}</p>
+            <p className="text-sm text-zinc-500">
+              {plan.perDay} {plan.perDayLabel}
+            </p>
             {plan.savings && (
               <p className="mt-0.5 text-xs font-medium text-pink-600">
                 {plan.savings}
@@ -291,6 +260,8 @@ function StepPaywall({
   onBack: () => void;
 }) {
   const checkoutHref = `/signup?plan=${selectedPlanId}`;
+  const socialProof = getDestinationSocialProof(destination);
+  const selectedPlan = PLANS.find((plan) => plan.id === selectedPlanId) ?? PLANS[2];
 
   return (
     <div className="mx-auto w-full max-w-xl">
@@ -299,12 +270,33 @@ function StepPaywall({
           {destination.emoji} {destination.city} sélectionné
         </span>
         <h1 className="mt-4 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
-          Active ta loc à{" "}
+          Débloque ta loc à{" "}
           <span className="gradient-text">{destination.city}</span>
         </h1>
         <p className="mt-3 text-zinc-500">
           Plus que le paiement — ta position change dès l&apos;installation.
         </p>
+      </div>
+
+      <div
+        className={cn(
+          "mb-5 overflow-hidden rounded-2xl border border-zinc-200 bg-gradient-to-br p-4",
+          destination.imageGradient
+        )}
+      >
+        <div className="flex items-center justify-between rounded-xl bg-white/85 px-4 py-3 backdrop-blur-sm">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">{destination.emoji}</span>
+            <div>
+              <p className="font-semibold text-zinc-900">{destination.city}</p>
+              <p className="text-sm text-zinc-500">{destination.area}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 text-sm font-medium text-pink-600">
+            <MapPin className="h-4 w-4" />
+            Prête
+          </div>
+        </div>
       </div>
 
       <div className="space-y-3">
@@ -317,6 +309,10 @@ function StepPaywall({
           />
         ))}
       </div>
+
+      <p className="mt-4 text-center text-xs text-zinc-500">
+        {socialProof.weeklyLabel}
+      </p>
 
       <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-zinc-500">
         <span className="inline-flex items-center gap-1.5">
@@ -335,7 +331,7 @@ function StepPaywall({
 
       <Link href={checkoutHref} className="mt-6 block">
         <Button className="h-14 w-full text-base">
-          Continuer vers le paiement
+          Débloquer {destination.city} — {selectedPlan.perDay} {selectedPlan.perDayLabel}
           <ArrowRight className="h-5 w-5" />
         </Button>
       </Link>
@@ -357,7 +353,7 @@ export function OnboardingView() {
   const [destination, setDestination] = useState<OnboardingDestination>(
     TRENDING_DESTINATIONS[0]
   );
-  const [selectedPlanId, setSelectedPlanId] = useState("6months");
+  const [selectedPlanId, setSelectedPlanId] = useState("annual");
 
   function selectDestination(next: OnboardingDestination) {
     setDestination(next);
