@@ -65,30 +65,27 @@ struct SettingsView: View {
                                 VStack(spacing: 8) {
                                     planCard(
                                         name: "Mensuel",
-                                        perDay: "≈ 0,27 €",
-                                        perDayLabel: "/jour",
-                                        perMonth: "8 €",
-                                        perMonthLabel: "/mois",
+                                        perDay: "0,33€",
+                                        billedPrice: "9,90€/mois",
+                                        ctaLabel: "Commencer maintenant",
                                         features: ["Changements illimités", "iOS + Android", "Support mail"],
                                         popular: false
                                     )
                                     planCard(
                                         name: "6 mois",
-                                        perDay: "≈ 0,16 €",
-                                        perDayLabel: "/jour",
-                                        perMonth: "≈ 4,83 €",
-                                        perMonthLabel: "/mois",
+                                        perDay: "≈ 0,19€",
+                                        billedPrice: "34,90€/6 mois",
+                                        ctaLabel: "Économiser 40%",
                                         features: ["Tout le Mensuel", "Trajets simulés", "Support mail"],
-                                        popular: true
+                                        popular: false
                                     )
                                     planCard(
                                         name: "Annuel",
-                                        perDay: "≈ 0,13 €",
-                                        perDayLabel: "/jour",
-                                        perMonth: "≈ 4,08 €",
-                                        perMonthLabel: "/mois",
-                                        features: ["App iPhone sans ordi", "Support prioritaire", "Updates à vie"],
-                                        popular: false
+                                        perDay: "≈ 0,14€",
+                                        billedPrice: "49,90€/an",
+                                        ctaLabel: "Débloquer le meilleur prix",
+                                        features: ["App iPhone sans ordi", "Support prioritaire", "3 profils web"],
+                                        popular: true
                                     )
                                 }
                                 .padding(.horizontal, 12)
@@ -185,7 +182,7 @@ struct SettingsView: View {
         .padding(12)
     }
 
-    private func planCard(name: String, perDay: String, perDayLabel: String, perMonth: String, perMonthLabel: String, features: [String], popular: Bool) -> some View {
+    private func planCard(name: String, perDay: String, billedPrice: String, ctaLabel: String, features: [String], popular: Bool) -> some View {
         VStack(spacing: 8) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
@@ -205,21 +202,24 @@ struct SettingsView: View {
                     }
                     HStack(alignment: .firstTextBaseline, spacing: 2) {
                         Text(perDay)
-                            .font(.title3.bold())
+                            .font(.title2.bold())
                             .foregroundColor(Theme.accent)
-                        Text(perDayLabel)
+                        Text("/jour")
                             .font(.caption)
                             .foregroundColor(Theme.textDim)
                     }
-                    Text("\(perMonth)\(perMonthLabel)")
-                        .font(.caption2)
+                    Text(billedPrice)
+                        .font(.caption)
                         .foregroundColor(Theme.textDim)
                 }
                 Spacer()
                 Button {} label: {
-                    Text("Choisir")
-                        .font(.caption.bold())
-                        .padding(.horizontal, 14)
+                    Text(ctaLabel)
+                        .font(.caption2.bold())
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                        .frame(maxWidth: 110)
+                        .padding(.horizontal, 10)
                         .padding(.vertical, 7)
                         .background(popular ? Theme.accent : Theme.bgSurfaceHover)
                         .foregroundColor(popular ? .white : Theme.text)

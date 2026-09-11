@@ -62,7 +62,7 @@ export function Pricing() {
                   className="w-full"
                   variant={plan.popular ? "default" : "secondary"}
                 >
-                  Je prends ce plan
+                  {plan.ctaLabel}
                 </Button>
               </Link>
             </Card>

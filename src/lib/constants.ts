@@ -43,17 +43,20 @@ export const REFUND_GUARANTEE_SUMMARY =
 export const CANCELLATION_WARNING =
   "La résiliation prend effet immédiatement. Tu perds l'accès au service, au dashboard et aux téléchargements dès confirmation. Aucun remboursement au prorata.";
 
+/** Anciens price IDs Stripe — abonnés existants conservent leur tarif (ne pas migrer). */
+export const LEGACY_STRIPE_PRICE_IDS = [
+  "price_1UDMpbENC8ag2ECjNc7JAw5O", // Mensuel 8 € (grandfathered)
+] as const;
+
 export const PLANS = [
   {
     id: "monthly",
     name: "Mensuel",
-    price: "8€",
+    price: "9,90€",
     period: "/mois",
-    perDay: "≈ 0,27 €",
+    perDay: "0,33 €",
     perDayLabel: "/jour",
-    perMonth: "8 €",
-    perMonthLabel: "/mois",
-    billedNote: "Facturé 8 € chaque mois. Résiliation immédiate — perte d'accès instantanée.",
+    billedNote: "Facturé 9,90 € chaque mois. Résiliation immédiate — perte d'accès instantanée.",
     compare: "Flexible si tu testes encore",
     description: "Sans engagement, tu paies mois par mois.",
     features: [
@@ -64,19 +67,18 @@ export const PLANS = [
       "Nouvelles features en avant-première",
     ],
     popular: false,
+    ctaLabel: "Commencer maintenant",
     stripePriceId: process.env.STRIPE_PRICE_MONTHLY,
   },
   {
     id: "6months",
     name: "6 mois",
-    price: "29€",
+    price: "34,90€",
     period: "/6 mois",
-    perDay: "≈ 0,16 €",
+    perDay: "≈ 0,19 €",
     perDayLabel: "/jour",
-    perMonth: "≈ 4,83 €",
-    perMonthLabel: "/mois",
-    billedNote: "Facturé 29 € tous les 6 mois. Résiliation immédiate — perte d'accès instantanée.",
-    compare: "Soit 58 € sur l'année si tu reprends",
+    billedNote: "Facturé 34,90 € tous les 6 mois. Résiliation immédiate — perte d'accès instantanée.",
+    compare: "Soit 69,80 € sur l'année si tu reprends",
     description: "Le sweet spot si tu l'utilises souvent.",
     features: [
       "Changements de loc illimités",
@@ -84,23 +86,22 @@ export const PLANS = [
       "iOS et Android",
       "Support par mail",
     ],
-    popular: true,
+    popular: false,
+    ctaLabel: "Économiser 40%",
     stripePriceId: process.env.STRIPE_PRICE_6MONTHS,
   },
   {
     id: "annual",
     name: "Annuel",
-    price: "49€",
+    price: "49,90€",
     period: "/an",
-    perDay: "≈ 0,13 €",
+    perDay: "≈ 0,14 €",
     perDayLabel: "/jour",
-    perMonth: "≈ 4,08 €",
-    perMonthLabel: "/mois",
-    billedNote: "Facturé 49 € une fois par an.",
-    compare: "Tu gardes 47 € sur l'année",
+    billedNote: "Facturé 49,90 € une fois par an.",
+    compare: "Tu gardes 69 € sur l'année",
     badge: "App iPhone incluse",
     description: "Le meilleur deal si t'es un habitué.",
-    savings: "Tu gardes 47€ sur l'année",
+    savings: "Tu gardes 69€ sur l'année",
     features: [
       "Tout le plan Mensuel",
       "App iPhone sans ordi",
@@ -108,7 +109,8 @@ export const PLANS = [
       "Support prioritaire",
       "Updates à vie incluses",
     ],
-    popular: false,
+    popular: true,
+    ctaLabel: "Débloquer le meilleur prix",
     stripePriceId: process.env.STRIPE_PRICE_ANNUAL,
   },
 ];
