@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { CrispChat } from "@/components/crisp/crisp-chat";
+import { ScrollToTop } from "@/components/scroll-to-top";
 import { rootMetadata, SITE_URL } from "@/lib/seo";
 
 const geistSans = Geist({
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-zinc-900">
+        <ScrollToTop />
         {children}
         <CrispChat />
       </body>
