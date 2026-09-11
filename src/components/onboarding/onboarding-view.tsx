@@ -408,6 +408,10 @@ function OnboardingViewContent({
   });
 
   useEffect(() => {
+    window.scrollTo({ top: 0, left: 0 });
+  }, [step]);
+
+  useEffect(() => {
     if (searchParams.get("step") !== "3") {
       return;
     }
