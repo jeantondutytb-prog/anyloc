@@ -74,7 +74,7 @@ export function LoginForm({
       <p className="mt-4 text-center text-sm text-zinc-500">
         Pas encore de compte ?{" "}
         <Link
-          href={`/signup?plan=${plan}`}
+          href={`/signup?plan=${plan}&next=${encodeURIComponent(destination)}`}
           className="font-medium text-pink-600 hover:underline"
         >
           Créer un compte

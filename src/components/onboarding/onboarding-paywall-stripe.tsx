@@ -93,8 +93,9 @@ export function OnboardingPaywallStripe({
     return () => requestRef.current?.abort();
   }, [planId]);
 
-  const loginNext = encodeURIComponent("/onboarding?step=3");
-  const signupHref = `/signup?plan=${planId}`;
+  const onboardingReturn = `/onboarding?step=3`;
+  const loginNext = encodeURIComponent(onboardingReturn);
+  const signupHref = `/signup?plan=${planId}&next=${encodeURIComponent(onboardingReturn)}`;
 
   return (
     <div className="relative mt-8">

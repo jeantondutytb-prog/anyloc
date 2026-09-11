@@ -1,6 +1,7 @@
 const ALLOWED_REDIRECT_PREFIXES = [
   "/dashboard",
   "/checkout",
+  "/onboarding",
   "/web",
   "/pricing",
   "/contact",
