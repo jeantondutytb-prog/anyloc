@@ -23,7 +23,13 @@ function GoogleIcon() {
   );
 }
 
-export function GoogleAuthLink({ redirectTo = "/checkout?plan=annual" }: { redirectTo?: string }) {
+import { ONBOARDING_ENTRY_URL } from "@/lib/constants";
+
+export function GoogleAuthLink({
+  redirectTo = ONBOARDING_ENTRY_URL,
+}: {
+  redirectTo?: string;
+}) {
   return (
     <Link
       href={`/auth/google?next=${encodeURIComponent(redirectTo)}`}

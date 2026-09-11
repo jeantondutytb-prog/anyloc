@@ -123,6 +123,13 @@ export function isValidPlanId(plan: string | undefined) {
   return plan !== undefined && PLAN_IDS.includes(plan as (typeof PLAN_IDS)[number]);
 }
 
+export const ONBOARDING_ENTRY_URL = "/onboarding";
+
+export function getOnboardingUrl(plan?: string) {
+  const planId = isValidPlanId(plan) ? plan! : null;
+  return planId ? `${ONBOARDING_ENTRY_URL}?plan=${planId}` : ONBOARDING_ENTRY_URL;
+}
+
 export function getCheckoutUrl(plan: string = "annual") {
   const planId = isValidPlanId(plan) ? plan : "annual";
   return `/checkout?plan=${planId}`;

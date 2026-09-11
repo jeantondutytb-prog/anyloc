@@ -3,7 +3,7 @@ import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { PLANS } from "@/lib/constants";
+import { getOnboardingUrl, PLANS } from "@/lib/constants";
 import { PlanPrice } from "@/components/pricing/plan-price";
 import { RefundGuaranteeNotice } from "@/components/pricing/refund-guarantee-notice";
 
@@ -57,7 +57,10 @@ export function Pricing() {
                 ))}
               </ul>
 
-              <Link href={`/signup?plan=${plan.id}`} className="mt-8 block">
+              <Link
+                href={`/signup?plan=${plan.id}&next=${encodeURIComponent(getOnboardingUrl(plan.id))}`}
+                className="mt-8 block"
+              >
                 <Button
                   className="w-full"
                   variant={plan.popular ? "default" : "secondary"}

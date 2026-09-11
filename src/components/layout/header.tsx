@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
+import { getOnboardingUrl } from "@/lib/constants";
 
 export function Header() {
   return (
@@ -33,7 +34,9 @@ export function Header() {
           <Link href="/login" className="hidden sm:block">
             <Button variant="ghost" size="sm">Connexion</Button>
           </Link>
-          <Link href="/signup?plan=annual">
+          <Link
+            href={`/signup?plan=annual&next=${encodeURIComponent(getOnboardingUrl("annual"))}`}
+          >
             <Button size="sm">Fake ma loc</Button>
           </Link>
         </div>

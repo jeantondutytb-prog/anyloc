@@ -8,19 +8,26 @@ import { AuthDivider } from "@/components/auth/auth-divider";
 import { AuthInput, AuthPasswordInput } from "@/components/auth/auth-input";
 import { GoogleAuthLink } from "@/components/auth/google-auth-link";
 import { Button } from "@/components/ui/button";
+import { getOnboardingUrl } from "@/lib/constants";
 import { MIN_PASSWORD_LENGTH } from "@/lib/password-policy";
 
 const initialState: AuthState = {};
 
-export function SignupForm({ plan = "annual" }: { plan?: string }) {
+export function SignupForm({
+  plan = "annual",
+  redirectTo,
+}: {
+  plan?: string;
+  redirectTo?: string;
+}) {
   const [state, formAction, pending] = useActionState(signup, initialState);
   const [showPassword, setShowPassword] = useState(false);
-  const checkoutUrl = `/checkout?plan=${plan}`;
+  const destination = redirectTo ?? getOnboardingUrl(plan);
 
   return (
     <div>
       <form action={formAction} className="space-y-4">
-        <input type="hidden" name="redirectTo" value={checkoutUrl} />
+        <input type="hidden" name="redirectTo" value={destination} />
         {state.error ? (
           <div
             role="alert"
@@ -73,12 +80,12 @@ export function SignupForm({ plan = "annual" }: { plan?: string }) {
       </form>
 
       <AuthDivider />
-      <GoogleAuthLink redirectTo={checkoutUrl} />
+      <GoogleAuthLink redirectTo={destination} />
 
       <p className="mt-4 text-center text-sm text-zinc-500">
         Déjà un compte ?{" "}
         <Link
-          href={`/login?plan=${plan}`}
+          href={`/login?plan=${plan}&next=${encodeURIComponent(destination)}`}
           className="font-medium text-pink-600 hover:underline"
         >
           Se connecter

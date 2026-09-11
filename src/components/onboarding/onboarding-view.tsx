@@ -19,7 +19,7 @@ import { OnboardingPaywallStripe } from "@/components/onboarding/onboarding-payw
 import { PlanPrice } from "@/components/pricing/plan-price";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
-import { PLANS, type Plan } from "@/lib/constants";
+import { isValidPlanId, PLANS, type Plan } from "@/lib/constants";
 import {
   mergeOnboardingSearchResults,
   ONBOARDING_DESTINATION_KEY,
@@ -402,7 +402,10 @@ function OnboardingViewContent({
   const [destination, setDestination] = useState<OnboardingDestination>(
     TRENDING_DESTINATIONS[0]
   );
-  const [selectedPlanId, setSelectedPlanId] = useState("annual");
+  const [selectedPlanId, setSelectedPlanId] = useState(() => {
+    const plan = searchParams.get("plan");
+    return isValidPlanId(plan) ? plan! : "annual";
+  });
 
   useEffect(() => {
     if (searchParams.get("step") !== "3") {

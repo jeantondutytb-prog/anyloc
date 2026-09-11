@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
-import { getCheckoutUrl } from "@/lib/constants";
+import { ONBOARDING_ENTRY_URL } from "@/lib/constants";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import {
   getAuthenticatedUser,
@@ -25,7 +25,7 @@ export default async function DashboardLayout({
   const access = await getSubscriptionAccessForUser(user.id, user.email);
 
   if (!access.hasAccess) {
-    redirect(getCheckoutUrl("annual"));
+    redirect(ONBOARDING_ENTRY_URL);
   }
 
   return children;
