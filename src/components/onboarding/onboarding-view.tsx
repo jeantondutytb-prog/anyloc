@@ -11,7 +11,6 @@ import {
   Shield,
   Sparkles,
   Star,
-  Users,
   Zap,
 } from "lucide-react";
 import { OnboardingAhaMoment } from "@/components/onboarding/onboarding-aha-moment";
@@ -151,38 +150,30 @@ function StepPreview({
   destination: OnboardingDestination;
   onContinue: () => void;
 }) {
-  const socialProof = getDestinationSocialProof(destination);
-
   return (
-    <div className="mx-auto w-full max-w-3xl">
+    <div className="mx-auto w-full max-w-xl">
       <div className="mb-8 text-center">
         <p className="inline-flex items-center gap-1.5 text-sm font-medium text-pink-600">
           <Sparkles className="h-4 w-4" />
-          Étape 2 — le aha moment
+          Étape 2
         </p>
         <h1 className="mt-3 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
-          Regarde ta loc passer à{" "}
+          Ta loc est à{" "}
           <span className="gradient-text">{destination.city}</span>
         </h1>
         <p className="mt-3 text-zinc-500">
-          C&apos;est exactement ce que tes potes verront sur Snap, Insta et toutes
-          tes apps.
+          Voilà ce que tes potes voient sur Snap, Insta et toutes tes apps.
         </p>
       </div>
 
       <OnboardingAhaMoment destination={destination} />
 
-      <p className="mt-5 text-center text-sm text-zinc-500">
+      <p className="mt-6 text-center text-sm text-zinc-500">
         Même signal que si ton tel était vraiment sur place.
       </p>
 
-      <p className="mt-2 flex items-center justify-center gap-1.5 text-center text-xs text-pink-600">
-        <Users className="h-3.5 w-3.5" />
-        {socialProof.todayLabel}
-      </p>
-
       <Button className="mt-6 h-14 w-full text-base" onClick={onContinue}>
-        Je veux cette loc
+        Activer cette loc
         <ArrowRight className="h-5 w-5" />
       </Button>
     </div>
