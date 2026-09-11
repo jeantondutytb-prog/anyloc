@@ -1,8 +1,14 @@
+import { redirect } from "next/navigation";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { WebSpoofView } from "@/components/web-spoof/web-spoof-view";
+import { getCheckoutUrl, SITE } from "@/lib/constants";
 import { createPageMetadata } from "@/lib/seo";
-import { SITE } from "@/lib/constants";
+import { isSupabaseConfigured } from "@/lib/supabase/server";
+import {
+  getAuthenticatedUser,
+  getSubscriptionAccessForUser,
+} from "@/lib/subscription";
 
 export const metadata = createPageMetadata({
   title: `Web Spoofing — ${SITE.name}`,
@@ -11,7 +17,21 @@ export const metadata = createPageMetadata({
   path: "/web",
 });
 
-export default function WebSpoofPage() {
+export default async function WebSpoofPage() {
+  if (isSupabaseConfigured()) {
+    const user = await getAuthenticatedUser();
+
+    if (!user) {
+      redirect("/login?next=/web");
+    }
+
+    const access = await getSubscriptionAccessForUser(user.id, user.email);
+
+    if (!access.hasAccess) {
+      redirect(getCheckoutUrl("annual"));
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Header />

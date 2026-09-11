@@ -1,6 +1,7 @@
 import { AuthShell } from "@/components/auth/auth-shell";
 import { LoginForm } from "@/components/auth/login-form";
-import { isValidPlanId } from "@/lib/constants";
+import { getCheckoutUrl, isValidPlanId } from "@/lib/constants";
+import { sanitizeRedirectPath } from "@/lib/safe-redirect";
 
 export default async function LoginPage({
   searchParams,
@@ -9,7 +10,10 @@ export default async function LoginPage({
 }) {
   const { plan, next, redirectTo: redirectToParam } = await searchParams;
   const planId = isValidPlanId(plan) ? plan! : "annual";
-  const redirectTo = next ?? redirectToParam ?? "/dashboard";
+  const redirectTo = sanitizeRedirectPath(
+    next ?? redirectToParam,
+    "/dashboard"
+  );
 
   return (
     <AuthShell

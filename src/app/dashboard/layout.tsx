@@ -1,7 +1,11 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
+import { getCheckoutUrl } from "@/lib/constants";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
-import { getAuthenticatedUser } from "@/lib/subscription";
+import {
+  getAuthenticatedUser,
+  getSubscriptionAccessForUser,
+} from "@/lib/subscription";
 
 export default async function DashboardLayout({
   children,
@@ -13,6 +17,12 @@ export default async function DashboardLayout({
 
     if (!user) {
       redirect("/login?next=/dashboard");
+    }
+
+    const access = await getSubscriptionAccessForUser(user.id, user.email);
+
+    if (!access.hasAccess) {
+      redirect(getCheckoutUrl("annual"));
     }
   }
 

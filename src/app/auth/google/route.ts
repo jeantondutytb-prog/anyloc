@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
+import { getCheckoutUrl } from "@/lib/constants";
+import { sanitizeRedirectPath } from "@/lib/safe-redirect";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
-  const next = searchParams.get("next") ?? "/checkout?plan=annual";
+  const next = sanitizeRedirectPath(
+    searchParams.get("next"),
+    getCheckoutUrl("annual")
+  );
 
   if (!isSupabaseConfigured()) {
     return NextResponse.redirect(new URL(next, origin));

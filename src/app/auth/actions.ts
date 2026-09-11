@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { resolvePostAuthRedirect } from "@/lib/auth-redirect";
 import { ensureStripeCustomerForUser } from "@/lib/billing";
 import { getCheckoutUrl } from "@/lib/constants";
+import { sanitizeRedirectPath } from "@/lib/safe-redirect";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
 export type AuthState = {
@@ -31,7 +32,7 @@ function translateAuthError(message: string) {
 
 function getRedirectTo(formData: FormData) {
   const redirectTo = String(formData.get("redirectTo") ?? "").trim();
-  return redirectTo || getCheckoutUrl("annual");
+  return sanitizeRedirectPath(redirectTo, getCheckoutUrl("annual"));
 }
 
 async function linkStripeCustomer(userId: string, email: string) {
