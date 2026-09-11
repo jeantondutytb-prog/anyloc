@@ -146,9 +146,8 @@ body {
 
 #map { flex: 1; width: 100%; z-index: 1; }
 
-/* Leaflet dark */
-.leaflet-container { background: var(--bg); }
-.leaflet-tile-pane img { filter: invert(1) hue-rotate(200deg) brightness(0.75) contrast(1.1) saturate(0.15) grayscale(0.2); }
+/* Leaflet */
+.leaflet-container { background: #1a1a2e; }
 .leaflet-control-zoom a { background: var(--bg-surface) !important; color: var(--text) !important; border-color: var(--border) !important; }
 .leaflet-control-attribution { background: rgba(10, 10, 15, 0.7) !important; color: var(--text-dim) !important; font-size: 10px !important; }
 .leaflet-control-attribution a { color: var(--text-dim) !important; }

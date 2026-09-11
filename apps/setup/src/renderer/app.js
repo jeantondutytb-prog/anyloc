@@ -211,7 +211,7 @@ function initMap() {
   });
 
   L.tileLayer(TILE_URL, {
-    attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
+    attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>',
     maxZoom: 19,
   }).addTo(map);
 
