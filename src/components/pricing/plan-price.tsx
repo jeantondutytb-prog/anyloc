@@ -1,8 +1,8 @@
 import type { Plan } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
-export function formatPlanBillingTotal(plan: Plan) {
-  return `${plan.price}${plan.period}`;
+export function formatPlanMonthlyPrice(plan: Plan) {
+  return `${plan.perMonth}${plan.perMonthLabel}`;
 }
 
 export function PlanPrice({
@@ -37,14 +37,14 @@ export function PlanPrice({
         )}
       >
         <span className={cn(headlineSize, "font-bold text-zinc-900")}>
-          {plan.perMonth}
+          {plan.perDay}
         </span>
         <span className={cn(sublineSize, "text-zinc-500")}>
-          {plan.perMonthLabel}
+          {plan.perDayLabel}
         </span>
       </div>
       <p className={cn("mt-1", sublineSize, "text-zinc-500")}>
-        {formatPlanBillingTotal(plan)}
+        {formatPlanMonthlyPrice(plan)}
       </p>
     </div>
   );

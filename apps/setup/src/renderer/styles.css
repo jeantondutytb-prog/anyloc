@@ -423,6 +423,7 @@ body {
 .plan-card-price { margin-top: 2px; }
 .plan-card-price strong { font-size: 18px; color: var(--accent); }
 .plan-card-price span { font-size: 12px; color: var(--text-dim); }
+.plan-card-price-sub { margin-top: 2px; font-size: 11px; color: var(--text-dim); }
 
 .badge-popular {
   font-size: 9px; font-weight: 800;
