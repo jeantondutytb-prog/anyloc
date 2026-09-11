@@ -26,11 +26,7 @@ import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-heade
 import { useDownloads } from "@/hooks/use-downloads";
 import { getCheckoutUrl } from "@/lib/constants";
 import { useDashboardOnboarding } from "@/hooks/use-dashboard-onboarding";
-import {
-  PAYMENT_SUCCESS_SESSION_KEY,
-  writeOnboardingState,
-  readOnboardingState,
-} from "@/lib/dashboard-onboarding";
+import { PAYMENT_SUCCESS_SESSION_KEY } from "@/lib/dashboard-onboarding";
 import { cn } from "@/lib/utils";
 
 type Platform = "ios" | "android";
@@ -475,11 +471,6 @@ export function InstallationGuideView() {
     }
 
     setPaymentSuccess(success);
-
-    if (success) {
-      const stored = readOnboardingState();
-      writeOnboardingState({ ...stored, welcomeDismissed: true });
-    }
   }, [searchParams]);
 
   const hasAccess = data?.hasAccess ?? false;

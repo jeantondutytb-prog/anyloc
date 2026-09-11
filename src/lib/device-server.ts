@@ -126,7 +126,3 @@ export async function getDeviceContext(token: string) {
 
   return { device, access, error: null };
 }
-
-export function formatSubscriptionStatus(status: string | null) {
-  return isActiveSubscriptionStatus(status) ? "active" : status;
-}

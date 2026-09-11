@@ -8,40 +8,16 @@ export type OnboardingSteps = {
 };
 
 export type OnboardingState = {
-  welcomeDismissed: boolean;
   steps: OnboardingSteps;
 };
 
 export const DEFAULT_ONBOARDING_STATE: OnboardingState = {
-  welcomeDismissed: false,
   steps: {
     install: false,
     chooseSpot: false,
     activate: false,
   },
 };
-
-export const ONBOARDING_STEP_ITEMS = [
-  {
-    id: "install" as const,
-    title: "Installe l'app sur ton téléphone",
-    description:
-      "Suis les étapes en bas de la carte. Ton mot de passe est déjà prêt — scanne le carré avec l'appareil photo.",
-    cta: "Voir le guide",
-  },
-  {
-    id: "chooseSpot" as const,
-    title: "Choisis une ville",
-    description:
-      "Clique sur Marbella, Paris, Miami… à gauche, ou cherche une adresse en haut, ou tape sur la carte.",
-  },
-  {
-    id: "activate" as const,
-    title: "Allume ta fausse position",
-    description:
-      "Appuie sur le gros bouton en bas. Pour t'arrêter, appuie sur « Revenir à ma vraie position ».",
-  },
-] as const;
 
 export function isOnboardingComplete(steps: OnboardingSteps) {
   return Object.values(steps).every(Boolean);
@@ -72,9 +48,9 @@ export function readOnboardingState(): OnboardingState {
 
     const parsed = JSON.parse(raw) as Partial<OnboardingState> & {
       steps?: Record<string, boolean>;
+      welcomeDismissed?: boolean;
     };
     return {
-      welcomeDismissed: parsed.welcomeDismissed ?? false,
       steps: migrateLegacySteps(parsed.steps ?? {}),
     };
   } catch {
