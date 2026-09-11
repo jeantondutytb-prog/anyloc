@@ -65,23 +65,29 @@ struct SettingsView: View {
                                 VStack(spacing: 8) {
                                     planCard(
                                         name: "Mensuel",
-                                        price: "8€",
-                                        period: "/mois",
+                                        perDay: "≈ 0,27 €",
+                                        perDayLabel: "/jour",
+                                        perMonth: "8 €",
+                                        perMonthLabel: "/mois",
                                         features: ["Changements illimités", "iOS + Android", "Support mail"],
                                         popular: false
                                     )
                                     planCard(
                                         name: "6 mois",
-                                        price: "29€",
-                                        period: "/6 mois",
-                                        features: ["≈ 4,83€/mois", "Tout le Mensuel", "Trajets simulés"],
+                                        perDay: "≈ 0,16 €",
+                                        perDayLabel: "/jour",
+                                        perMonth: "≈ 4,83 €",
+                                        perMonthLabel: "/mois",
+                                        features: ["Tout le Mensuel", "Trajets simulés", "Support mail"],
                                         popular: true
                                     )
                                     planCard(
                                         name: "Annuel",
-                                        price: "49€",
-                                        period: "/an",
-                                        features: ["≈ 4,08€/mois", "App iPhone sans ordi", "Support prioritaire"],
+                                        perDay: "≈ 0,13 €",
+                                        perDayLabel: "/jour",
+                                        perMonth: "≈ 4,08 €",
+                                        perMonthLabel: "/mois",
+                                        features: ["App iPhone sans ordi", "Support prioritaire", "Updates à vie"],
                                         popular: false
                                     )
                                 }
@@ -179,7 +185,7 @@ struct SettingsView: View {
         .padding(12)
     }
 
-    private func planCard(name: String, price: String, period: String, features: [String], popular: Bool) -> some View {
+    private func planCard(name: String, perDay: String, perDayLabel: String, perMonth: String, perMonthLabel: String, features: [String], popular: Bool) -> some View {
         VStack(spacing: 8) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
@@ -198,13 +204,16 @@ struct SettingsView: View {
                         }
                     }
                     HStack(alignment: .firstTextBaseline, spacing: 2) {
-                        Text(price)
+                        Text(perDay)
                             .font(.title3.bold())
                             .foregroundColor(Theme.accent)
-                        Text(period)
+                        Text(perDayLabel)
                             .font(.caption)
                             .foregroundColor(Theme.textDim)
                     }
+                    Text("\(perMonth)\(perMonthLabel)")
+                        .font(.caption2)
+                        .foregroundColor(Theme.textDim)
                 }
                 Spacer()
                 Button {} label: {
