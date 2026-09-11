@@ -86,7 +86,7 @@ Optimisé pour [Vercel](https://vercel.com). Configure le domaine `anyloc.io` da
 1. Applique la migration `supabase/migrations/20250908140000_profiles_stripe.sql` dans Supabase (SQL Editor ou CLI).
 2. Ajoute `SUPABASE_SERVICE_ROLE_KEY` et `STRIPE_WEBHOOK_SECRET` sur Vercel.
 3. Dans Stripe Dashboard → Developers → Webhooks, crée un endpoint :
-   - URL : `https://anyloc.io/api/stripe/webhook`
+   - URL : `https://www.anyloc.io/api/stripe/webhook` (avec `www` — `anyloc.io` renvoie une 308 et Stripe ne suit pas les redirections)
    - Events : `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`
 4. Copie le signing secret dans `STRIPE_WEBHOOK_SECRET`.
 
