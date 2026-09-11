@@ -85,7 +85,7 @@ export const PLANS = [
       "iOS et Android",
       "Support par mail",
     ],
-    popular: true,
+    popular: false,
     stripePriceId: process.env.STRIPE_PRICE_6MONTHS,
   },
   {
@@ -107,7 +107,7 @@ export const PLANS = [
       "Support prioritaire",
       "Updates à vie incluses",
     ],
-    popular: false,
+    popular: true,
     stripePriceId: process.env.STRIPE_PRICE_ANNUAL,
   },
 ];

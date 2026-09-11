@@ -75,14 +75,14 @@ struct SettingsView: View {
                                         perDay: "≈ 0,19€",
                                         billedPrice: "34,90€/6 mois",
                                         features: ["Tout le Mensuel", "Trajets simulés", "Support mail"],
-                                        popular: true
+                                        popular: false
                                     )
                                     planCard(
                                         name: "Annuel",
                                         perDay: "≈ 0,14€",
                                         billedPrice: "49,90€/an",
                                         features: ["App iPhone sans ordi", "Support prioritaire", "3 profils web"],
-                                        popular: false
+                                        popular: true
                                     )
                                 }
                                 .padding(.horizontal, 12)
