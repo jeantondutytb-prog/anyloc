@@ -16,10 +16,16 @@ export function PlanPrice({
   align?: "left" | "right";
   className?: string;
 }) {
-  const headlineSize = {
-    card: "text-3xl",
+  const amountSize = {
+    card: "text-2xl",
     summary: "text-2xl",
-    landing: "text-5xl",
+    landing: "text-4xl sm:text-5xl",
+  }[size];
+
+  const unitSize = {
+    card: "text-sm",
+    summary: "text-xs",
+    landing: "text-base",
   }[size];
 
   const sublineSize = {
@@ -28,24 +34,23 @@ export function PlanPrice({
     landing: "text-sm",
   }[size];
 
-  const periodSize = {
-    card: "text-sm",
-    summary: "text-xs",
-    landing: "text-base",
-  }[size];
-
   return (
     <div className={cn(align === "right" && "text-right", className)}>
       <div
         className={cn(
-          "flex items-baseline gap-1",
+          "flex items-baseline gap-1 whitespace-nowrap",
           align === "right" && "justify-end"
         )}
       >
-        <span className={cn(headlineSize, "font-bold text-zinc-900")}>
+        <span
+          className={cn(
+            amountSize,
+            "font-bold tabular-nums tracking-tight text-zinc-900"
+          )}
+        >
           {plan.perDay}
         </span>
-        <span className={cn(periodSize, "font-medium text-zinc-500")}>
+        <span className={cn(unitSize, "font-medium text-zinc-500")}>
           {plan.perDayLabel}
         </span>
       </div>
