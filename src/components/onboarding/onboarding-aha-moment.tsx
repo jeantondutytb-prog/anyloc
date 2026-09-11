@@ -83,11 +83,7 @@ function usePhaseTimeline(destinationId: string) {
 
 function getPointOnMapPath(path: SVGPathElement, progress: number) {
   const length = path.getTotalLength();
-  const point = path.getPointAtLength(progress * length);
-  return {
-    x: (point.x / MAP_VIEWBOX.width) * 100,
-    y: (point.y / MAP_VIEWBOX.height) * 100,
-  };
+  return path.getPointAtLength(progress * length);
 }
 
 function AnimatedMap({
@@ -99,7 +95,9 @@ function AnimatedMap({
 }) {
   const pathRef = useRef<SVGPathElement>(null);
   const travelProgress = useMotionValue(0);
-  const [pinPosition, setPinPosition] = useState({ x: 14, y: 73.9 });
+  const pinX = useMotionValue(56);
+  const pinY = useMotionValue(130);
+  const [labelPoint, setLabelPoint] = useState({ x: 56, y: 130 });
   const traveling = phase === "travel";
   const arrived = phase === "lock" || phase === "sync" || phase === "done";
 
@@ -109,20 +107,18 @@ function AnimatedMap({
       return;
     }
 
-    setPinPosition(getPointOnMapPath(path, progress));
+    const point = getPointOnMapPath(path, progress);
+    pinX.set(point.x);
+    pinY.set(point.y);
+    setLabelPoint({ x: point.x, y: point.y });
   };
 
   useMotionValueEvent(travelProgress, "change", updatePinPosition);
 
   useEffect(() => {
-    const path = pathRef.current;
-    if (!path) {
-      return;
-    }
-
     if (phase === "travel") {
       travelProgress.set(0);
-      updatePinPosition(0);
+      requestAnimationFrame(() => updatePinPosition(0));
 
       const controls = animate(travelProgress, 1, {
         duration: TRAVEL_DURATION,
@@ -134,12 +130,12 @@ function AnimatedMap({
 
     if (phase === "lock" || phase === "sync" || phase === "done") {
       travelProgress.set(1);
-      updatePinPosition(1);
+      requestAnimationFrame(() => updatePinPosition(1));
     }
-  }, [phase, destination.id, travelProgress]);
+  }, [phase, destination.id, travelProgress, pinX, pinY]);
 
   return (
-    <div className="relative h-44 overflow-hidden rounded-2xl bg-gradient-to-br from-sky-100 via-emerald-50 to-amber-50">
+    <div className="relative aspect-[400/176] w-full overflow-hidden rounded-2xl bg-gradient-to-br from-sky-100 via-emerald-50 to-amber-50">
       {phase === "connect" && (
         <motion.div
           className="absolute inset-0 flex items-center justify-center"
@@ -174,61 +170,81 @@ function AnimatedMap({
           <svg
             className="absolute inset-0 h-full w-full"
             viewBox={`0 0 ${MAP_VIEWBOX.width} ${MAP_VIEWBOX.height}`}
-            preserveAspectRatio="none"
           >
+            <path ref={pathRef} d={MAP_PATH} fill="none" stroke="none" />
             <motion.path
-              ref={pathRef}
               d={MAP_PATH}
               fill="none"
               stroke="#ec4899"
               strokeWidth="3"
+              vectorEffect="non-scaling-stroke"
               strokeDasharray="10 8"
               strokeLinecap="round"
               initial={{ opacity: 0 }}
               animate={{ opacity: traveling || arrived ? 0.75 : 0 }}
               style={{ pathLength: travelProgress }}
             />
-          </svg>
 
-          <motion.div
-            className="absolute flex flex-col items-center"
-            style={{
-              left: `${pinPosition.x}%`,
-              top: `${pinPosition.y}%`,
-              transform: "translate(-50%, -50%)",
-            }}
-          >
-            <motion.div
-              animate={
-                arrived
-                  ? { scale: [1, 1.35, 1], boxShadow: "0 0 0 0 rgba(236,72,153,0)" }
-                  : traveling
-                    ? { y: [0, -4, 0] }
-                    : {}
-              }
-              transition={
-                arrived
-                  ? { duration: 0.55 }
-                  : traveling
-                    ? { duration: 0.8, repeat: Infinity }
-                    : {}
-              }
-              className="rounded-full bg-pink-500 p-2.5 shadow-lg shadow-pink-500/40"
-            >
-              <MapPin className="h-4 w-4 text-white" />
-            </motion.div>
+            <motion.g style={{ x: pinX, y: pinY }}>
+              <motion.g
+                animate={
+                  arrived
+                    ? { scale: [1, 1.2, 1] }
+                    : traveling
+                      ? { y: [0, -2, 0] }
+                      : {}
+                }
+                transition={
+                  arrived
+                    ? { duration: 0.55 }
+                    : traveling
+                      ? { duration: 0.8, repeat: Infinity }
+                      : {}
+                }
+              >
+                <circle
+                  cx="0"
+                  cy="0"
+                  r="11"
+                  fill="#ec4899"
+                  stroke="#ffffff"
+                  strokeWidth="2"
+                />
+                <path
+                  d="M0 -4.5 L3.2 2.2 H-3.2 Z"
+                  fill="#ffffff"
+                  transform="translate(0, 1)"
+                />
+              </motion.g>
+            </motion.g>
 
             {arrived && (
-              <motion.span
-                initial={{ opacity: 0, y: 8, scale: 0.8 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
+              <motion.g
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ type: "spring", stiffness: 320, damping: 20 }}
-                className="mt-1.5 rounded-full bg-white px-2.5 py-0.5 text-[10px] font-semibold text-pink-600 shadow-md"
               >
-                {destination.emoji} {destination.city}
-              </motion.span>
+                <rect
+                  x={labelPoint.x - 42}
+                  y={labelPoint.y + 14}
+                  width="84"
+                  height="20"
+                  rx="10"
+                  fill="#ffffff"
+                />
+                <text
+                  x={labelPoint.x}
+                  y={labelPoint.y + 27}
+                  textAnchor="middle"
+                  fontSize="10"
+                  fontWeight="600"
+                  fill="#db2777"
+                >
+                  {destination.emoji} {destination.city}
+                </text>
+              </motion.g>
             )}
-          </motion.div>
+          </svg>
 
           {traveling && (
             <motion.p
