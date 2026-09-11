@@ -146,8 +146,9 @@ body {
 
 #map { flex: 1; width: 100%; z-index: 1; }
 
-/* Leaflet */
+/* Leaflet dark mode */
 .leaflet-container { background: #1a1a2e; }
+.leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.8) contrast(1.1) saturate(0.4); }
 .leaflet-control-zoom a { background: var(--bg-surface) !important; color: var(--text) !important; border-color: var(--border) !important; }
 .leaflet-control-attribution { background: rgba(10, 10, 15, 0.7) !important; color: var(--text-dim) !important; font-size: 10px !important; }
 .leaflet-control-attribution a { color: var(--text-dim) !important; }
