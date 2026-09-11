@@ -136,7 +136,7 @@ function BillingPortalButton({
   );
 }
 
-export function SettingsView() {
+export function SettingsView({ embedded = false }: { embedded?: boolean } = {}) {
   const { data, loading, error } = useAccount();
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [showDeleteForm, setShowDeleteForm] = useState(false);
@@ -156,10 +156,10 @@ export function SettingsView() {
   const alternativePlans = PLANS.filter((plan) => plan.id !== data?.planId);
 
   return (
-    <div className="min-h-screen bg-background">
-      <DashboardPageHeader title="Paramètres" />
+    <div className={embedded ? "" : "min-h-screen bg-background"}>
+      {!embedded && <DashboardPageHeader title="Paramètres" />}
 
-      <main className="mx-auto max-w-2xl space-y-8 px-4 py-8 sm:px-6">
+      <main className={embedded ? "mx-auto max-w-2xl space-y-8" : "mx-auto max-w-2xl space-y-8 px-4 py-8 sm:px-6"}>
         {loading ? (
           <div className="flex items-center gap-2 text-sm text-zinc-500">
             <Loader2 className="h-4 w-4 animate-spin" />

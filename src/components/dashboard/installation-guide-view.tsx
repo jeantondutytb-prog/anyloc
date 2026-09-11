@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
-  ArrowRight,
   Check,
   CheckCircle2,
   ChevronDown,
@@ -446,7 +445,7 @@ function AndroidGuide({ hasAccess }: { hasAccess: boolean }) {
   );
 }
 
-export function InstallationGuideView() {
+export function InstallationGuideView({ embedded = false }: { embedded?: boolean } = {}) {
   const searchParams = useSearchParams();
   const { data, loading } = useDownloads();
   const { completeStep, state } = useDashboardOnboarding();
@@ -485,10 +484,10 @@ export function InstallationGuideView() {
   const hasAccess = data?.hasAccess ?? false;
 
   return (
-    <div className="min-h-screen bg-background">
-      <DashboardPageHeader title="Installation" />
+    <div className={embedded ? "" : "min-h-screen bg-background"}>
+      {!embedded && <DashboardPageHeader title="Installation" />}
 
-      <main className="p-4 pb-8 sm:p-6 lg:p-8">
+      <main className={embedded ? "" : "p-4 pb-8 sm:p-6 lg:p-8"}>
         {paymentSuccess && (
           <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4 sm:px-5">
             <div className="flex items-start gap-3">
@@ -513,8 +512,7 @@ export function InstallationGuideView() {
           </h1>
           <p className="mt-3 text-zinc-600">
             Suis les étapes une par une, dans l&apos;ordre. Chaque bouton est sur
-            cette page. Si tu bloques, reviens sur la carte — les instructions
-            simples sont aussi en bas.
+            cette page.
           </p>
 
           <div className="mt-8 flex gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 p-1.5">
@@ -620,20 +618,13 @@ export function InstallationGuideView() {
                 Tu as terminé toutes les étapes ?
               </h3>
               <p className="mt-2 text-sm text-zinc-600">
-                Confirme quand ton téléphone est installé et lié. Le bandeau sur
-                la carte disparaîtra.
+                Confirme quand ton téléphone est installé et lié.
               </p>
-              <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+              <div className="mt-4">
                 <Button onClick={() => completeStep("install")}>
                   <CheckCircle2 className="h-4 w-4" />
                   Oui, c&apos;est installé
                 </Button>
-                <Link href="/dashboard">
-                  <Button variant="secondary" className="w-full sm:w-auto">
-                    Aller à la carte
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </Link>
               </div>
             </Card>
           )}
