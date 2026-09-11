@@ -1,12 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import {
+  AnimatePresence,
+  animate,
+  motion,
+  useMotionValue,
+  useMotionValueEvent,
+} from "framer-motion";
 import { Check, Loader2, MapPin, Smartphone } from "lucide-react";
 import type { OnboardingDestination } from "@/lib/onboarding-destinations";
 import { cn } from "@/lib/utils";
 
 type Phase = "connect" | "travel" | "lock" | "sync" | "done";
+
+const MAP_PATH = "M 56 130 Q 140 50 220 90 T 340 70";
+const MAP_VIEWBOX = { width: 400, height: 176 };
+const TRAVEL_DURATION = 1.5;
 
 const APPS = [
   { label: "SNAP MAP", pinClass: "text-yellow-500" },
@@ -71,6 +81,15 @@ function usePhaseTimeline(destinationId: string) {
   return { phase, syncedApps };
 }
 
+function getPointOnMapPath(path: SVGPathElement, progress: number) {
+  const length = path.getTotalLength();
+  const point = path.getPointAtLength(progress * length);
+  return {
+    x: (point.x / MAP_VIEWBOX.width) * 100,
+    y: (point.y / MAP_VIEWBOX.height) * 100,
+  };
+}
+
 function AnimatedMap({
   destination,
   phase,
@@ -78,8 +97,46 @@ function AnimatedMap({
   destination: OnboardingDestination;
   phase: Phase;
 }) {
+  const pathRef = useRef<SVGPathElement>(null);
+  const travelProgress = useMotionValue(0);
+  const [pinPosition, setPinPosition] = useState({ x: 14, y: 73.9 });
   const traveling = phase === "travel";
   const arrived = phase === "lock" || phase === "sync" || phase === "done";
+
+  const updatePinPosition = (progress: number) => {
+    const path = pathRef.current;
+    if (!path) {
+      return;
+    }
+
+    setPinPosition(getPointOnMapPath(path, progress));
+  };
+
+  useMotionValueEvent(travelProgress, "change", updatePinPosition);
+
+  useEffect(() => {
+    const path = pathRef.current;
+    if (!path) {
+      return;
+    }
+
+    if (phase === "travel") {
+      travelProgress.set(0);
+      updatePinPosition(0);
+
+      const controls = animate(travelProgress, 1, {
+        duration: TRAVEL_DURATION,
+        ease: "easeInOut",
+      });
+
+      return () => controls.stop();
+    }
+
+    if (phase === "lock" || phase === "sync" || phase === "done") {
+      travelProgress.set(1);
+      updatePinPosition(1);
+    }
+  }, [phase, destination.id, travelProgress]);
 
   return (
     <div className="relative h-44 overflow-hidden rounded-2xl bg-gradient-to-br from-sky-100 via-emerald-50 to-amber-50">
@@ -114,32 +171,31 @@ function AnimatedMap({
 
       {(traveling || arrived) && (
         <>
-          <svg className="absolute inset-0 h-full w-full" viewBox="0 0 400 176">
+          <svg
+            className="absolute inset-0 h-full w-full"
+            viewBox={`0 0 ${MAP_VIEWBOX.width} ${MAP_VIEWBOX.height}`}
+            preserveAspectRatio="none"
+          >
             <motion.path
-              d="M 56 130 Q 140 50 220 90 T 340 70"
+              ref={pathRef}
+              d={MAP_PATH}
               fill="none"
               stroke="#ec4899"
               strokeWidth="3"
               strokeDasharray="10 8"
-              initial={{ pathLength: 0, opacity: 0 }}
-              animate={{
-                pathLength: traveling || arrived ? 1 : 0,
-                opacity: traveling || arrived ? 0.75 : 0,
-              }}
-              transition={{ duration: 1.4, ease: "easeInOut" }}
+              strokeLinecap="round"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: traveling || arrived ? 0.75 : 0 }}
+              style={{ pathLength: travelProgress }}
             />
           </svg>
 
           <motion.div
             className="absolute flex flex-col items-center"
-            initial={{ left: "12%", top: "68%" }}
-            animate={{
-              left: arrived ? "78%" : traveling ? "52%" : "12%",
-              top: arrived ? "32%" : traveling ? "48%" : "68%",
-            }}
-            transition={{
-              duration: traveling ? 1.3 : 0.35,
-              ease: "easeInOut",
+            style={{
+              left: `${pinPosition.x}%`,
+              top: `${pinPosition.y}%`,
+              transform: "translate(-50%, -50%)",
             }}
           >
             <motion.div
