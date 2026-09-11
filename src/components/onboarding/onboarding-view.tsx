@@ -6,7 +6,6 @@ import {
   ArrowRight,
   Check,
   ChevronRight,
-  MapPin,
   Search,
   Shield,
   Sparkles,
@@ -53,24 +52,14 @@ function DestinationCard({
     <button
       type="button"
       onClick={() => onSelect(destination)}
-      className="group overflow-hidden rounded-2xl border border-zinc-200 bg-white text-left shadow-sm transition-all hover:border-pink-300 hover:shadow-md"
+      className="group flex w-full items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3.5 text-left shadow-sm transition-all hover:border-pink-300 hover:shadow-md"
     >
-      <div
-        className={cn(
-          "relative flex h-24 items-end bg-gradient-to-br p-4",
-          destination.imageGradient
-        )}
-      >
-        <span className="text-3xl drop-shadow-sm">{destination.emoji}</span>
-        <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
+      <span className="text-2xl">{destination.emoji}</span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-semibold text-zinc-900">{destination.city}</p>
+        <p className="truncate text-sm text-zinc-500">{destination.area}</p>
       </div>
-      <div className="flex items-center gap-3 px-4 py-3.5">
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold text-zinc-900">{destination.city}</p>
-          <p className="truncate text-sm text-zinc-500">{destination.area}</p>
-        </div>
-        <ChevronRight className="h-4 w-4 shrink-0 text-zinc-300 transition-transform group-hover:translate-x-0.5" />
-      </div>
+      <ChevronRight className="h-4 w-4 shrink-0 text-zinc-300 transition-transform group-hover:translate-x-0.5" />
     </button>
   );
 }
@@ -267,27 +256,6 @@ function StepPaywall({
         <p className="mt-3 text-zinc-500">
           Plus que le paiement — ta position change dès l&apos;installation.
         </p>
-      </div>
-
-      <div
-        className={cn(
-          "mb-5 overflow-hidden rounded-2xl border border-zinc-200 bg-gradient-to-br p-4",
-          destination.imageGradient
-        )}
-      >
-        <div className="flex items-center justify-between rounded-xl bg-white/85 px-4 py-3 backdrop-blur-sm">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">{destination.emoji}</span>
-            <div>
-              <p className="font-semibold text-zinc-900">{destination.city}</p>
-              <p className="text-sm text-zinc-500">{destination.area}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5 text-sm font-medium text-pink-600">
-            <MapPin className="h-4 w-4" />
-            Prête
-          </div>
-        </div>
       </div>
 
       <div className="space-y-3">

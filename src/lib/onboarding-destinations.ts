@@ -7,22 +7,6 @@ export type OnboardingDestination = {
   emoji: string;
   lat: number;
   lng: number;
-  imageGradient: string;
-};
-
-const DESTINATION_GRADIENTS: Record<string, string> = {
-  Dubai: "from-amber-200 via-orange-300 to-rose-400",
-  Marbella: "from-sky-300 via-cyan-300 to-emerald-300",
-  Ibiza: "from-fuchsia-300 via-pink-400 to-orange-300",
-  Miami: "from-cyan-300 via-sky-400 to-pink-300",
-  Bali: "from-emerald-300 via-teal-300 to-amber-200",
-  Tulum: "from-teal-300 via-emerald-300 to-lime-200",
-  Mykonos: "from-sky-200 via-blue-300 to-indigo-300",
-  Barcelone: "from-orange-300 via-rose-300 to-red-300",
-  Cancún: "from-cyan-300 via-blue-400 to-indigo-400",
-  Bangkok: "from-violet-300 via-fuchsia-400 to-pink-400",
-  "Las Vegas": "from-purple-400 via-fuchsia-500 to-pink-500",
-  Tokyo: "from-rose-300 via-pink-400 to-violet-400",
 };
 
 function toOnboardingDestination(spot: {
@@ -40,9 +24,6 @@ function toOnboardingDestination(spot: {
     emoji: spot.emoji ?? "📍",
     lat: spot.lat,
     lng: spot.lng,
-    imageGradient:
-      DESTINATION_GRADIENTS[city] ??
-      "from-pink-300 via-violet-300 to-indigo-300",
   };
 }
 
