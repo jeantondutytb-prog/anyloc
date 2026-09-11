@@ -67,6 +67,7 @@ export const PLANS = [
       "Nouvelles features en avant-première",
     ],
     popular: false,
+    ctaLabel: "Commencer maintenant",
     stripePriceId: process.env.STRIPE_PRICE_MONTHLY,
   },
   {
@@ -86,6 +87,7 @@ export const PLANS = [
       "Support par mail",
     ],
     popular: false,
+    ctaLabel: "Économiser 40%",
     stripePriceId: process.env.STRIPE_PRICE_6MONTHS,
   },
   {
@@ -108,6 +110,7 @@ export const PLANS = [
       "Updates à vie incluses",
     ],
     popular: true,
+    ctaLabel: "Débloquer le meilleur prix",
     stripePriceId: process.env.STRIPE_PRICE_ANNUAL,
   },
 ];

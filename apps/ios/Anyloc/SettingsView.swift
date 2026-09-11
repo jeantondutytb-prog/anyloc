@@ -67,6 +67,7 @@ struct SettingsView: View {
                                         name: "Mensuel",
                                         perDay: "0,33€",
                                         billedPrice: "9,90€/mois",
+                                        ctaLabel: "Commencer maintenant",
                                         features: ["Changements illimités", "iOS + Android", "Support mail"],
                                         popular: false
                                     )
@@ -74,6 +75,7 @@ struct SettingsView: View {
                                         name: "6 mois",
                                         perDay: "≈ 0,19€",
                                         billedPrice: "34,90€/6 mois",
+                                        ctaLabel: "Économiser 40%",
                                         features: ["Tout le Mensuel", "Trajets simulés", "Support mail"],
                                         popular: false
                                     )
@@ -81,6 +83,7 @@ struct SettingsView: View {
                                         name: "Annuel",
                                         perDay: "≈ 0,14€",
                                         billedPrice: "49,90€/an",
+                                        ctaLabel: "Débloquer le meilleur prix",
                                         features: ["App iPhone sans ordi", "Support prioritaire", "3 profils web"],
                                         popular: true
                                     )
@@ -179,7 +182,7 @@ struct SettingsView: View {
         .padding(12)
     }
 
-    private func planCard(name: String, perDay: String, billedPrice: String, features: [String], popular: Bool) -> some View {
+    private func planCard(name: String, perDay: String, billedPrice: String, ctaLabel: String, features: [String], popular: Bool) -> some View {
         VStack(spacing: 8) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
@@ -211,7 +214,7 @@ struct SettingsView: View {
                 }
                 Spacer()
                 Button {} label: {
-                    Text("Choisir")
+                    Text(ctaLabel)
                         .font(.caption.bold())
                         .padding(.horizontal, 14)
                         .padding(.vertical, 7)
