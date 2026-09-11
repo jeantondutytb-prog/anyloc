@@ -1,4 +1,4 @@
-import { getCheckoutUrl } from "@/lib/constants";
+import { ONBOARDING_ENTRY_URL } from "@/lib/constants";
 import { sanitizeRedirectPath } from "@/lib/safe-redirect";
 import { getSubscriptionAccessForUser } from "@/lib/subscription";
 
@@ -37,5 +37,5 @@ export async function resolvePostAuthRedirect(
     return redirect;
   }
 
-  return getCheckoutUrl("annual");
+  return ONBOARDING_ENTRY_URL;
 }

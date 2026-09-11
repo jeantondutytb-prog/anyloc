@@ -8,6 +8,7 @@ import { AuthDivider } from "@/components/auth/auth-divider";
 import { AuthInput, AuthPasswordInput } from "@/components/auth/auth-input";
 import { GoogleAuthLink } from "@/components/auth/google-auth-link";
 import { Button } from "@/components/ui/button";
+import { getOnboardingUrl } from "@/lib/constants";
 import { MIN_PASSWORD_LENGTH } from "@/lib/password-policy";
 
 const initialState: AuthState = {};
@@ -21,7 +22,7 @@ export function SignupForm({
 }) {
   const [state, formAction, pending] = useActionState(signup, initialState);
   const [showPassword, setShowPassword] = useState(false);
-  const destination = redirectTo ?? `/checkout?plan=${plan}`;
+  const destination = redirectTo ?? getOnboardingUrl(plan);
 
   return (
     <div>

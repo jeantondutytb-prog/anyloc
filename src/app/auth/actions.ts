@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { resolvePostAuthRedirect } from "@/lib/auth-redirect";
 import { ensureStripeCustomerForUser } from "@/lib/billing";
-import { getCheckoutUrl } from "@/lib/constants";
+import { ONBOARDING_ENTRY_URL } from "@/lib/constants";
 import { validatePassword } from "@/lib/password-policy";
 import { sanitizeRedirectPath } from "@/lib/safe-redirect";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
@@ -33,7 +33,7 @@ function translateAuthError(message: string) {
 
 function getRedirectTo(formData: FormData) {
   const redirectTo = String(formData.get("redirectTo") ?? "").trim();
-  return sanitizeRedirectPath(redirectTo, getCheckoutUrl("annual"));
+  return sanitizeRedirectPath(redirectTo, ONBOARDING_ENTRY_URL);
 }
 
 async function linkStripeCustomer(userId: string, email: string) {
