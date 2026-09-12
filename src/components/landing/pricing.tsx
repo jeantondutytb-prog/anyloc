@@ -6,7 +6,6 @@ import { getOnboardingUrl, PLANS } from "@/lib/constants";
 import { PaywallValueStack } from "@/components/pricing/paywall-value-stack";
 import { PlanPrice } from "@/components/pricing/plan-price";
 import { RefundGuaranteeNotice } from "@/components/pricing/refund-guarantee-notice";
-import { getTrialCtaLabel } from "@/lib/trial";
 
 export function Pricing() {
   return (
@@ -17,8 +16,7 @@ export function Pricing() {
             Choisis ton plan
           </h2>
           <p className="mt-4 text-zinc-600">
-            {getTrialCtaLabel()} sur tous les plans. Garantie 48 h si le GPS ne
-            fonctionne pas après installation.
+            Garantie 48 h si le GPS ne fonctionne pas après installation.
           </p>
         </div>
 

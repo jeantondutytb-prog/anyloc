@@ -49,7 +49,7 @@ class MockLocationService : Service() {
 
                 when {
                     result?.subscriptionInactive == true -> {
-                        updateNotification("Essai terminé — renouvelle sur anyloc.io")
+                        updateNotification("Abonnement inactif — renouvelle sur anyloc.io")
                     }
                     result?.location?.isActive == true -> {
                         val remote = result.location

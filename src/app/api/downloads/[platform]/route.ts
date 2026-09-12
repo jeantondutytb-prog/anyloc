@@ -3,24 +3,13 @@ import {
   isValidDownloadPlatform,
   resolveDownloadUrl,
 } from "@/lib/downloads";
-import {
-  getAuthenticatedUser,
-  hasActiveAndroidTrial,
-  requireActiveSubscription,
-} from "@/lib/subscription";
+import { requireActiveSubscription } from "@/lib/subscription";
 
 type RouteContext = {
   params: Promise<{ platform: string }>;
 };
 
-async function hasDownloadAccess(platform: string) {
-  if (platform === "apk") {
-    const user = await getAuthenticatedUser();
-    if (user && (await hasActiveAndroidTrial(user.id))) {
-      return { allowed: true, error: null };
-    }
-  }
-
+async function hasDownloadAccess() {
   const { error, access } = await requireActiveSubscription();
   return { allowed: Boolean(access?.hasAccess), error };
 }
@@ -32,7 +21,7 @@ export async function GET(_request: Request, context: RouteContext) {
     return Response.json({ error: "Plateforme inconnue." }, { status: 404 });
   }
 
-  const { allowed, error } = await hasDownloadAccess(platform);
+  const { allowed, error } = await hasDownloadAccess();
 
   if (!allowed) {
     return Response.json(
@@ -64,7 +53,7 @@ export async function HEAD(_request: Request, context: RouteContext) {
     return new Response(null, { status: 404 });
   }
 
-  const { allowed } = await hasDownloadAccess(platform);
+  const { allowed } = await hasDownloadAccess();
 
   if (!allowed) {
     return new Response(null, { status: 403 });

@@ -150,7 +150,7 @@ Configure les URLs des binaires dans `.env.local` :
 - `ANYLOC_DOWNLOAD_SETUP_MAC` — Anyloc Setup `.dmg`
 - `ANYLOC_DOWNLOAD_APK` — APK Android
 
-Les liens `/api/downloads/{platform}` redirigent vers ces URLs si l'abonnement est actif (`subscription_status` = `active` ou `trialing`), ou si le compte est admin (`ANYLOC_ADMIN_EMAILS`).
+Les liens `/api/downloads/{platform}` redirigent vers ces URLs si l'abonnement est actif (`subscription_status` = `active`), ou si le compte est admin (`ANYLOC_ADMIN_EMAILS`).
 
 ## Accès admin (dev)
 
