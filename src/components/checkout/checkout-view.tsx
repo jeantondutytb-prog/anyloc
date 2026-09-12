@@ -341,10 +341,11 @@ export function CheckoutView({
 
               <div className="mb-8">
                 <h2 className="text-xl font-bold tracking-tight text-zinc-900 sm:text-2xl">
-                  Choisis ton plan
+                  Choisis ta durée
                 </h2>
                 <p className="mt-1 text-sm text-zinc-500">
-                  Garantie 48 h si le GPS ne fonctionne pas après installation.
+                  Tous les plans incluent le même accès complet — seule la durée
+                  change.
                 </p>
               </div>
 
@@ -407,16 +408,12 @@ export function CheckoutView({
                         </p>
                       )}
 
+                      <div className="mt-3 flex-1 border-t border-zinc-100 pt-3">
+                        <PaywallValueStack compact showHeading />
+                      </div>
                     </button>
                   );
                 })}
-              </div>
-
-              <div className="mt-6 rounded-2xl border border-zinc-200 bg-zinc-50/80 px-4 py-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-pink-600">
-                  Inclus dans tous les plans
-                </p>
-                <PaywallValueStack className="mt-3" compact />
               </div>
 
               <Card className="mt-6 flex items-center justify-between gap-4 border-zinc-200 bg-surface-muted/60 p-4">

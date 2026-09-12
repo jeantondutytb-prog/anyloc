@@ -5,12 +5,25 @@ import { cn } from "@/lib/utils";
 export function PaywallValueStack({
   className,
   compact = false,
+  showHeading = false,
 }: {
   className?: string;
   compact?: boolean;
+  showHeading?: boolean;
 }) {
   return (
-    <ul className={cn("space-y-2", className)}>
+    <div className={className}>
+      {showHeading && (
+        <p
+          className={cn(
+            "font-semibold uppercase tracking-wide text-pink-600",
+            compact ? "mb-2 text-[10px]" : "mb-3 text-xs"
+          )}
+        >
+          Inclus dans ton abonnement
+        </p>
+      )}
+      <ul className={cn("space-y-2", showHeading ? undefined : className)}>
       {PLAN_VALUE_STACK.map((perk) => (
         <li
           key={perk}
@@ -28,6 +41,7 @@ export function PaywallValueStack({
           {perk}
         </li>
       ))}
-    </ul>
+      </ul>
+    </div>
   );
 }

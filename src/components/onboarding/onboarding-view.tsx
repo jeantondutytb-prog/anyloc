@@ -356,6 +356,10 @@ function PlanOption({
         </div>
         <PlanPrice plan={plan} size="card" align="right" className="shrink-0" />
       </div>
+
+      <div className="mt-3 border-t border-zinc-200 pt-3">
+        <PaywallValueStack compact showHeading />
+      </div>
     </button>
   );
 }
@@ -423,7 +427,7 @@ function StepPaywall({
           <span className="gradient-text">{destination.city}</span>
         </h1>
         <p className="mt-3 text-zinc-500">
-          Plus que le paiement — ta position change dès l&apos;installation.
+          Tous les plans incluent le même accès complet — seule la durée change.
         </p>
       </div>
 
@@ -438,13 +442,6 @@ function StepPaywall({
             onSelect={() => onPlanChange(plan.id)}
           />
         ))}
-      </div>
-
-      <div className="mt-5 rounded-2xl border border-zinc-200 bg-zinc-50/80 px-4 py-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-pink-600">
-          Inclus dans tous les plans
-        </p>
-        <PaywallValueStack className="mt-3" compact />
       </div>
 
       <p className="mt-4 text-center text-xs text-zinc-500">{weeklyLabel}</p>

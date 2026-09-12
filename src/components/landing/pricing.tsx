@@ -13,10 +13,11 @@ export function Pricing() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
-            Choisis ton plan
+            Choisis ta durée
           </h2>
           <p className="mt-4 text-zinc-600">
-            Garantie 48 h si le GPS ne fonctionne pas après installation.
+            Même accès complet sur tous les plans — fake ton GPS sur Snap, Insta,
+            Tinder et toutes tes apps. Seule la durée change.
           </p>
         </div>
 
@@ -42,13 +43,25 @@ export function Pricing() {
               )}
 
               <h3 className="text-lg font-semibold text-zinc-900">{plan.name}</h3>
+              <p className="mt-1 text-xs font-medium text-zinc-500">
+                Accès Anyloc complet
+              </p>
               <PlanPrice plan={plan} size="landing" className="mt-4" />
               {plan.savings && (
                 <p className="mt-1 text-sm text-pink-600">{plan.savings}</p>
               )}
+              {plan.compare && !plan.savings && (
+                <p className="mt-1 text-xs text-zinc-500">{plan.compare}</p>
+              )}
               <p className="mt-2 text-sm text-zinc-500">{plan.description}</p>
 
-              <Link href={getOnboardingUrl(plan.id)} className="mt-8 block">
+              <PaywallValueStack
+                className="mt-5 flex-1 border-t border-zinc-100 pt-5"
+                compact
+                showHeading
+              />
+
+              <Link href={getOnboardingUrl(plan.id)} className="mt-6 block">
                 <Button
                   className="w-full"
                   variant={plan.popular ? "default" : "secondary"}
@@ -58,13 +71,6 @@ export function Pricing() {
               </Link>
             </Card>
           ))}
-        </div>
-
-        <div className="mx-auto mt-10 max-w-2xl rounded-2xl border border-zinc-200 bg-zinc-50/80 px-6 py-5">
-          <p className="text-center text-sm font-semibold text-zinc-900">
-            Inclus dans tous les plans
-          </p>
-          <PaywallValueStack className="mt-4" />
         </div>
 
         <RefundGuaranteeNotice className="mt-8 text-center text-sm text-zinc-600" />
