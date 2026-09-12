@@ -43,7 +43,6 @@ import {
   isValidUseCaseId,
   ONBOARDING_USE_CASE_KEY,
   type OnboardingUseCase,
-  type OnboardingUseCaseId,
 } from "@/lib/onboarding-use-cases";
 import { cn } from "@/lib/utils";
 
