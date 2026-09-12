@@ -52,14 +52,14 @@ export async function createSubscriptionCheckoutSession({
     return stripe.checkout.sessions.create({
       ...sharedParams,
       ui_mode: "embedded_page",
-      return_url: `${appUrl}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`,
+      return_url: `${appUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
     });
   }
 
   return stripe.checkout.sessions.create({
     ...sharedParams,
     ui_mode: "hosted_page",
-    success_url: `${appUrl}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`,
+    success_url: `${appUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${appUrl}/checkout?plan=${plan.id}&canceled=true`,
   });
 }
