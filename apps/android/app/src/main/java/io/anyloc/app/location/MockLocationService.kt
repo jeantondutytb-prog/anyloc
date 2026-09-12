@@ -8,6 +8,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.location.Criteria
 import android.location.Location
 import android.location.LocationManager
 import android.os.Build
@@ -83,8 +84,8 @@ class MockLocationService : Service() {
                 true,
                 true,
                 true,
-                LocationManager.POWER_USAGE_LOW,
-                LocationManager.ACCURACY_FINE,
+                Criteria.POWER_USAGE_LOW,
+                Criteria.ACCURACY_FINE,
             )
             manager.setTestProviderEnabled(LocationManager.GPS_PROVIDER, true)
         } catch (_: SecurityException) {
