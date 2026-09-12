@@ -11,7 +11,25 @@ export type DeviceTokenRow = {
   pairing_data: string | null;
   last_seen_at: string | null;
   created_at: string;
+  is_trial: boolean;
+  trial_expires_at: string | null;
 };
+
+const TRIAL_DURATION_MS = 5 * 60 * 1000;
+
+export function getTrialExpiry() {
+  return new Date(Date.now() + TRIAL_DURATION_MS).toISOString();
+}
+
+export function isTrialExpired(row: Pick<DeviceTokenRow, "is_trial" | "trial_expires_at">) {
+  if (!row.is_trial) {
+    return false;
+  }
+  if (!row.trial_expires_at) {
+    return true;
+  }
+  return new Date(row.trial_expires_at).getTime() <= Date.now();
+}
 
 export type DeviceSummary = {
   id: string;
