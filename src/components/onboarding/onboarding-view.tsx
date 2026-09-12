@@ -9,7 +9,6 @@ import {
   Loader2,
   Search,
   Shield,
-  Smartphone,
   Sparkles,
   Star,
   Zap,
@@ -278,17 +277,6 @@ function StepPreview({
       <p className="mt-6 text-center text-sm text-zinc-500">
         Même signal que si ton tel était vraiment sur place.
       </p>
-
-      {!isAndroid && (
-        <div className="mt-3 flex items-start gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-xs text-blue-950">
-          <Smartphone className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          <p>
-            Sur iPhone, le vrai test se fait après l&apos;abonnement — un
-            branchement Mac de 2 min, une seule fois, à cause d&apos;une
-            limite Apple. Sur Android, tu peux tester en vrai tout de suite.
-          </p>
-        </div>
-      )}
 
       <Button className="mt-6 h-14 w-full text-base" onClick={onContinue}>
         {isAndroid ? "Continuer vers l'abonnement" : "Activer cette loc"}
