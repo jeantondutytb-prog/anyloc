@@ -84,7 +84,7 @@ class MockLocationService : Service() {
                 true,
                 true,
                 true,
-                Criteria.POWER_USAGE_LOW,
+                Criteria.POWER_LOW,
                 Criteria.ACCURACY_FINE,
             )
             manager.setTestProviderEnabled(LocationManager.GPS_PROVIDER, true)
