@@ -14,10 +14,7 @@ export function Cta() {
           Toi t&apos;es chez toi. Sur la map t&apos;es à Marbella. C&apos;est
           carré.
         </p>
-        <Link
-          href={`/signup?plan=annual&next=${encodeURIComponent(getOnboardingUrl("annual"))}`}
-          className="mt-8 inline-block"
-        >
+        <Link href={getOnboardingUrl("annual")} className="mt-8 inline-block">
           <Button size="lg">
             Fake ma loc
             <ArrowRight className="h-4 w-4" />
