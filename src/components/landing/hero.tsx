@@ -6,6 +6,7 @@ import { ArrowRight, Check, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getOnboardingUrl, SITE } from "@/lib/constants";
+import { getTrialCtaLabel } from "@/lib/trial";
 
 export function Hero() {
   return (
@@ -44,7 +45,7 @@ export function Hero() {
               href={`/signup?plan=annual&next=${encodeURIComponent(getOnboardingUrl("annual"))}`}
             >
               <Button size="lg" className="w-full sm:w-auto">
-                Fake ma loc
+                {getTrialCtaLabel()}
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>

@@ -37,6 +37,34 @@ export const CHECKOUT_PERKS = [
   "Garantie 48 h si le GPS ne fonctionne pas",
 ];
 
+/** Bénéfices identiques sur tous les plans — seule la durée change. */
+export const PLAN_VALUE_STACK = [
+  "Changements de loc illimités sur toutes tes apps",
+  "Snap, Insta, Tinder, Life360, Pokémon GO",
+  "iOS + Android + version web",
+  "Trajets simulés crédibles sur la map",
+  "Installation guidée pas à pas",
+  "Garantie 48 h si le GPS ne fonctionne pas",
+];
+
+export const PAYWALL_TESTIMONIALS = [
+  {
+    quote: "Mes potes ont rien capté, le pin était nickel sur Snap.",
+    author: "Lucas",
+    city: "Lyon",
+  },
+  {
+    quote: "Install en 10 min sur Android, loc à Marbella direct.",
+    author: "Inès",
+    city: "Paris",
+  },
+  {
+    quote: "J'ai testé l'essai, j'ai gardé l'annuel le lendemain.",
+    author: "Mehdi",
+    city: "Marseille",
+  },
+] as const;
+
 export const REFUND_GUARANTEE_SUMMARY =
   "Garantie 48 h : installation complète + test du service. Demande sous 48 h après l'achat, abonnement actif. Voir la politique de remboursement.";
 
@@ -56,18 +84,14 @@ export const PLANS = [
     period: "/mois",
     perDay: "0,33",
     perDayLabel: "€/jour",
-    billedNote: "Facturé 9,90 € chaque mois. Résiliation immédiate — perte d'accès instantanée.",
+    billedNote:
+      "Essai 24 h gratuit, puis 9,90 €/mois. Annule avant la fin de l'essai = 0 €.",
     compare: "Flexible si tu testes encore",
     description: "Sans engagement, tu paies mois par mois.",
-    features: [
-      "Tout le plan 6 mois",
-      "Trajets simulés sur la map",
-      "Bibliothèque de spots illimitée",
-      "Accès web (1 profil)",
-      "Nouvelles features en avant-première",
-    ],
+    savings: undefined,
+    features: PLAN_VALUE_STACK,
     popular: false,
-    ctaLabel: "Commencer maintenant",
+    ctaLabel: "Essayer 24 h gratuitement",
     stripePriceId: process.env.STRIPE_PRICE_MONTHLY,
   },
   {
@@ -77,17 +101,14 @@ export const PLANS = [
     period: "/6 mois",
     perDay: "≈ 0,19",
     perDayLabel: "€/jour",
-    billedNote: "Facturé 34,90 € tous les 6 mois. Résiliation immédiate — perte d'accès instantanée.",
+    billedNote:
+      "Essai 24 h gratuit, puis 34,90 € tous les 6 mois. Annule avant la fin de l'essai = 0 €.",
     compare: "Soit 69,80 € sur l'année si tu reprends",
     description: "Le sweet spot si tu l'utilises souvent.",
-    features: [
-      "Changements de loc illimités",
-      "Compatible avec toutes tes apps",
-      "iOS et Android",
-      "Support par mail",
-    ],
+    savings: "Économise 42 % vs mensuel",
+    features: PLAN_VALUE_STACK,
     popular: false,
-    ctaLabel: "Économiser 40%",
+    ctaLabel: "Essayer 24 h gratuitement",
     stripePriceId: process.env.STRIPE_PRICE_6MONTHS,
   },
   {
@@ -97,20 +118,15 @@ export const PLANS = [
     period: "/an",
     perDay: "≈ 0,14",
     perDayLabel: "€/jour",
-    billedNote: "Facturé 49,90 € une fois par an.",
+    billedNote:
+      "Essai 24 h gratuit, puis 49,90 €/an. Annule avant la fin de l'essai = 0 €.",
     compare: "Tu gardes 69 € sur l'année",
     badge: "App iPhone incluse",
     description: "Le meilleur deal si t'es un habitué.",
-    savings: "Tu gardes 69€ sur l'année",
-    features: [
-      "Tout le plan Mensuel",
-      "App iPhone sans ordi",
-      "Accès web (3 profils)",
-      "Support prioritaire",
-      "Updates à vie incluses",
-    ],
+    savings: "Tu gardes 69 € sur l'année · -58 % vs mensuel",
+    features: PLAN_VALUE_STACK,
     popular: true,
-    ctaLabel: "Débloquer le meilleur prix",
+    ctaLabel: "Essayer 24 h gratuitement",
     stripePriceId: process.env.STRIPE_PRICE_ANNUAL,
   },
 ];

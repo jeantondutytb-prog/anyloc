@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import { getOnboardingUrl } from "@/lib/constants";
+import { getTrialCtaShortLabel } from "@/lib/trial";
 
 export function Header() {
   return (
@@ -37,7 +38,7 @@ export function Header() {
           <Link
             href={`/signup?plan=annual&next=${encodeURIComponent(getOnboardingUrl("annual"))}`}
           >
-            <Button size="sm">Fake ma loc</Button>
+            <Button size="sm">{getTrialCtaShortLabel()}</Button>
           </Link>
         </div>
       </div>

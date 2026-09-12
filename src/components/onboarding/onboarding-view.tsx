@@ -15,11 +15,18 @@ import {
 } from "lucide-react";
 import type { GeocodeResult } from "@/lib/geocoding";
 import { OnboardingAhaMoment } from "@/components/onboarding/onboarding-aha-moment";
+import { OnboardingPaywallPreview } from "@/components/onboarding/onboarding-paywall-preview";
 import { OnboardingPaywallStripe } from "@/components/onboarding/onboarding-paywall-stripe";
+import { PaywallValueStack } from "@/components/pricing/paywall-value-stack";
 import { PlanPrice } from "@/components/pricing/plan-price";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
-import { isValidPlanId, PLANS, type Plan } from "@/lib/constants";
+import {
+  isValidPlanId,
+  PAYWALL_TESTIMONIALS,
+  PLANS,
+  type Plan,
+} from "@/lib/constants";
 import {
   mergeOnboardingSearchResults,
   ONBOARDING_DESTINATION_KEY,
@@ -28,6 +35,7 @@ import {
   type OnboardingDestination,
 } from "@/lib/onboarding-destinations";
 import { getDestinationSocialProof } from "@/lib/onboarding-social-proof";
+import { getTrialBillingNote } from "@/lib/trial";
 import { cn } from "@/lib/utils";
 
 function ProgressBar({ step }: { step: number }) {
@@ -326,11 +334,44 @@ function StepPaywall({
   onBack: () => void;
   stripePublishableKey: string;
 }) {
-  const socialProof = getDestinationSocialProof(destination);
+  const fallbackProof = getDestinationSocialProof(destination);
+  const [weeklyLabel, setWeeklyLabel] = useState(fallbackProof.weeklyLabel);
+  const selectedPlan =
+    PLANS.find((plan) => plan.id === selectedPlanId) ?? PLANS[2];
+  const testimonial =
+    PAYWALL_TESTIMONIALS[
+      destination.city.length % PAYWALL_TESTIMONIALS.length
+    ];
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    void fetch(
+      `/api/onboarding/social-proof?city=${encodeURIComponent(destination.city)}`,
+      { signal: controller.signal }
+    )
+      .then(async (response) => {
+        if (!response.ok) {
+          return null;
+        }
+
+        return (await response.json()) as { weeklyLabel?: string };
+      })
+      .then((data) => {
+        if (data?.weeklyLabel) {
+          setWeeklyLabel(data.weeklyLabel);
+        }
+      })
+      .catch(() => {
+        // Keep fallback social proof.
+      });
+
+    return () => controller.abort();
+  }, [destination.city]);
 
   return (
     <div className="mx-auto w-full max-w-2xl">
-      <div className="mb-8 text-center">
+      <div className="mb-6 text-center">
         <span className="inline-flex items-center gap-2 rounded-full border border-pink-200 bg-pink-50 px-4 py-1.5 text-sm font-medium text-pink-700">
           {destination.emoji} {destination.city} sélectionné
         </span>
@@ -339,11 +380,13 @@ function StepPaywall({
           <span className="gradient-text">{destination.city}</span>
         </h1>
         <p className="mt-3 text-zinc-500">
-          Plus que le paiement — ta position change dès l&apos;installation.
+          Essai 24 h gratuit — ta position change dès l&apos;installation.
         </p>
       </div>
 
-      <div className="space-y-3">
+      <OnboardingPaywallPreview destination={destination} />
+
+      <div className="mt-6 space-y-3">
         {PLANS.map((plan) => (
           <PlanOption
             key={plan.id}
@@ -354,9 +397,23 @@ function StepPaywall({
         ))}
       </div>
 
-      <p className="mt-4 text-center text-xs text-zinc-500">
-        {socialProof.weeklyLabel}
-      </p>
+      <div className="mt-5 rounded-2xl border border-zinc-200 bg-zinc-50/80 px-4 py-4">
+        <p className="text-xs font-semibold uppercase tracking-wide text-pink-600">
+          Inclus dans tous les plans
+        </p>
+        <PaywallValueStack className="mt-3" compact />
+      </div>
+
+      <p className="mt-4 text-center text-xs text-zinc-500">{weeklyLabel}</p>
+
+      <figure className="mt-4 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-center">
+        <blockquote className="text-sm text-zinc-700">
+          &ldquo;{testimonial.quote}&rdquo;
+        </blockquote>
+        <figcaption className="mt-1 text-xs text-zinc-500">
+          — {testimonial.author}, {testimonial.city}
+        </figcaption>
+      </figure>
 
       <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-zinc-500">
         <span className="inline-flex items-center gap-1.5">
@@ -372,6 +429,10 @@ function StepPaywall({
           Garantie 48 h
         </span>
       </div>
+
+      <p className="mt-4 text-center text-xs text-zinc-500">
+        {getTrialBillingNote(selectedPlan.price, selectedPlan.period)}
+      </p>
 
       <OnboardingPaywallStripe
         planId={selectedPlanId}

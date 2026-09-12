@@ -26,13 +26,16 @@ import {
   PLANS,
   SITE,
 } from "@/lib/constants";
+import { PaywallValueStack } from "@/components/pricing/paywall-value-stack";
+import { getTrialBillingNote, getTrialCtaLabel } from "@/lib/trial";
 import { cn } from "@/lib/utils";
 
 const SETUP_STEPS = [
   {
     icon: CreditCard,
-    title: "Valide ta formule",
-    description: "Paiement sécurisé — ton accès Anyloc est prêt en quelques secondes.",
+    title: "Active ton essai 24 h",
+    description:
+      "Carte requise — aucun prélèvement si tu annules avant la fin de l'essai.",
   },
   {
     icon: Download,
@@ -51,8 +54,8 @@ const SETUP_STEPS = [
 const SIDEBAR_FAQ = FAQ.slice(0, 2);
 
 const TRUST_ITEMS = [
+  "Essai 24 h gratuit sur tous les plans",
   "Paiement chiffré via Stripe",
-  "Accès instantané après validation",
   "Garantie 48 h si le GPS ne fonctionne pas",
 ];
 
@@ -342,7 +345,8 @@ export function CheckoutView({
                   Choisis ton plan
                 </h2>
                 <p className="mt-1 text-sm text-zinc-500">
-                  Garantie 48 h si le GPS ne fonctionne pas après installation.
+                  {getTrialCtaLabel()} sur tous les plans. Garantie 48 h si le
+                  GPS ne fonctionne pas après installation.
                 </p>
               </div>
 
@@ -405,20 +409,16 @@ export function CheckoutView({
                         </p>
                       )}
 
-                      <ul className="mt-4 hidden space-y-1.5 border-t border-zinc-100 pt-3 sm:block">
-                        {plan.features.slice(0, 3).map((feature) => (
-                          <li
-                            key={feature}
-                            className="flex gap-1.5 text-[11px] text-zinc-600"
-                          >
-                            <Check className="mt-0.5 h-3 w-3 shrink-0 text-pink-600" />
-                            {feature}
-                          </li>
-                        ))}
-                      </ul>
                     </button>
                   );
                 })}
+              </div>
+
+              <div className="mt-6 rounded-2xl border border-zinc-200 bg-zinc-50/80 px-4 py-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-pink-600">
+                  Inclus dans tous les plans
+                </p>
+                <PaywallValueStack className="mt-3" compact />
               </div>
 
               <Card className="mt-6 flex items-center justify-between gap-4 border-zinc-200 bg-surface-muted/60 p-4">
@@ -444,11 +444,18 @@ export function CheckoutView({
                 </p>
               )}
 
+              <p className="mt-4 text-center text-xs text-zinc-500">
+                {getTrialBillingNote(selectedPlan.price, selectedPlan.period)}
+              </p>
+
               <div className="relative mt-6">
                 <div className="mb-3 flex items-center gap-2 text-sm font-medium text-zinc-900">
                   <CreditCard className="h-4 w-4 text-pink-600" />
-                  Paiement sécurisé
+                  Essai 24 h gratuit — carte requise
                 </div>
+                <p className="mb-4 text-xs text-zinc-500">
+                  Aucun prélèvement si tu annules avant la fin de l&apos;essai.
+                </p>
 
                 {loading && !clientSecret ? (
                   <div className="flex min-h-[420px] items-center justify-center rounded-2xl border border-zinc-200 bg-white">

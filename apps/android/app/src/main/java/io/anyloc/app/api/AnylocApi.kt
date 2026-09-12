@@ -16,6 +16,11 @@ data class RemoteLocation(
     val isActive: Boolean,
 )
 
+data class LocationFetchResult(
+    val location: RemoteLocation? = null,
+    val subscriptionInactive: Boolean = false,
+)
+
 data class GeocodeResult(
     val id: String,
     val name: String,
@@ -36,7 +41,7 @@ class AnylocApi(
     private val baseUrl: String
         get() = apiBaseUrl.trimEnd('/')
 
-    fun fetchLocation(): RemoteLocation? {
+    fun fetchLocation(): LocationFetchResult {
         val request = Request.Builder()
             .url("$baseUrl/api/device/location")
             .header("Authorization", "Bearer $deviceToken")
@@ -44,12 +49,16 @@ class AnylocApi(
             .build()
 
         client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) {
-                return null
+            if (response.code == 403) {
+                return LocationFetchResult(subscriptionInactive = true)
             }
 
-            val body = response.body?.string() ?: return null
-            return parseLocationResponse(body)
+            if (!response.isSuccessful) {
+                return LocationFetchResult()
+            }
+
+            val body = response.body?.string() ?: return LocationFetchResult()
+            return LocationFetchResult(location = parseLocationResponse(body))
         }
     }
 

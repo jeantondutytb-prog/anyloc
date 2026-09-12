@@ -241,9 +241,15 @@ class MainActivity : AppCompatActivity() {
 
         Thread {
             val api = AnylocApi(credentials.first, credentials.second)
-            val location = api.fetchLocation()
+            val result = api.fetchLocation()
 
             runOnUiThread {
+                if (result.subscriptionInactive) {
+                    statusText.text = "Essai terminé — renouvelle sur anyloc.io"
+                    return@runOnUiThread
+                }
+
+                val location = result.location
                 if (location != null) {
                     activeLocation = location
                     updateLocationDisplay(location)
@@ -308,9 +314,15 @@ class MainActivity : AppCompatActivity() {
 
         Thread {
             val api = AnylocApi(credentials.first, credentials.second)
-            val location = api.fetchLocation()
+            val result = api.fetchLocation()
 
             runOnUiThread {
+                if (result.subscriptionInactive) {
+                    statusText.text = "Essai terminé — renouvelle sur anyloc.io"
+                    return@runOnUiThread
+                }
+
+                val location = result.location
                 if (location == null) {
                     statusText.text = "Échec de connexion — vérifie token et abonnement"
                     return@runOnUiThread

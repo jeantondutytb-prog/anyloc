@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getOnboardingUrl, PLANS } from "@/lib/constants";
+import { PaywallValueStack } from "@/components/pricing/paywall-value-stack";
 import { PlanPrice } from "@/components/pricing/plan-price";
 import { RefundGuaranteeNotice } from "@/components/pricing/refund-guarantee-notice";
+import { getTrialCtaLabel } from "@/lib/trial";
 
 export function Pricing() {
   return (
@@ -16,7 +17,8 @@ export function Pricing() {
             Choisis ton plan
           </h2>
           <p className="mt-4 text-zinc-600">
-            Garantie 48 h si le GPS ne fonctionne pas après installation.
+            {getTrialCtaLabel()} sur tous les plans. Garantie 48 h si le GPS ne
+            fonctionne pas après installation.
           </p>
         </div>
 
@@ -48,15 +50,6 @@ export function Pricing() {
               )}
               <p className="mt-2 text-sm text-zinc-500">{plan.description}</p>
 
-              <ul className="mt-6 flex-1 space-y-3">
-                {plan.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm text-zinc-600">
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-pink-600" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-
               <Link
                 href={`/signup?plan=${plan.id}&next=${encodeURIComponent(getOnboardingUrl(plan.id))}`}
                 className="mt-8 block"
@@ -70,6 +63,13 @@ export function Pricing() {
               </Link>
             </Card>
           ))}
+        </div>
+
+        <div className="mx-auto mt-10 max-w-2xl rounded-2xl border border-zinc-200 bg-zinc-50/80 px-6 py-5">
+          <p className="text-center text-sm font-semibold text-zinc-900">
+            Inclus dans tous les plans
+          </p>
+          <PaywallValueStack className="mt-4" />
         </div>
 
         <RefundGuaranteeNotice className="mt-8 text-center text-sm text-zinc-600" />

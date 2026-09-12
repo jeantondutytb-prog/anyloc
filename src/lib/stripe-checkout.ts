@@ -2,6 +2,7 @@ import type { User } from "@supabase/supabase-js";
 import type Stripe from "stripe";
 import type { Plan } from "@/lib/constants";
 import { ensureStripeCustomerForUser } from "@/lib/billing";
+import { getStripeTrialEndUnix } from "@/lib/trial";
 import { getAppUrl, stripe } from "@/lib/stripe";
 
 type CheckoutMode = "embedded_page" | "hosted_page";
@@ -37,7 +38,9 @@ export async function createSubscriptionCheckoutSession({
       supabase_user_id: user.id,
       plan_id: plan.id,
     },
+    payment_method_collection: "always",
     subscription_data: {
+      trial_end: getStripeTrialEndUnix(),
       metadata: {
         supabase_user_id: user.id,
         plan_id: plan.id,
