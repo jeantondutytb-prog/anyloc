@@ -16,7 +16,7 @@ export function OnboardingPaywallPreview({
       </div>
 
       <div className="absolute inset-0 flex items-center justify-center bg-white/35 backdrop-blur-[2px]">
-        <div className="mx-4 max-w-sm rounded-2xl border border-white/80 bg-white/90 px-5 py-4 text-center shadow-lg">
+        <div className="mx-3 max-w-sm rounded-2xl border border-white/80 bg-white/90 px-4 py-3 text-center shadow-lg sm:mx-4 sm:px-5 sm:py-4">
           <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-pink-100">
             <Lock className="h-5 w-5 text-pink-600" />
           </div>

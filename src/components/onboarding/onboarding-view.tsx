@@ -52,19 +52,32 @@ import { cn } from "@/lib/utils";
 const PAYWALL_STEP = ONBOARDING_TOTAL_STEPS;
 
 function ProgressBar({ step }: { step: number }) {
+  const percent = Math.round((step / ONBOARDING_TOTAL_STEPS) * 100);
+
   return (
-    <div className="flex items-center gap-1.5">
-      {Array.from({ length: ONBOARDING_TOTAL_STEPS }, (_, index) => index + 1).map(
-        (index) => (
-          <div
-            key={index}
-            className={cn(
-              "h-1.5 rounded-full transition-all",
-              index <= step ? "w-6 bg-pink-500 sm:w-8" : "w-6 bg-zinc-200 sm:w-8"
-            )}
-          />
-        )
-      )}
+    <div className="flex min-w-0 shrink-0 flex-col items-end gap-1.5">
+      <span className="text-[11px] font-semibold tabular-nums text-zinc-500 sm:hidden">
+        {step}/{ONBOARDING_TOTAL_STEPS}
+      </span>
+      <div className="h-1 w-20 overflow-hidden rounded-full bg-zinc-200 sm:hidden">
+        <div
+          className="h-full rounded-full bg-pink-500 transition-all duration-300"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+      <div className="hidden items-center gap-1 sm:flex sm:gap-1.5">
+        {Array.from({ length: ONBOARDING_TOTAL_STEPS }, (_, index) => index + 1).map(
+          (index) => (
+            <div
+              key={index}
+              className={cn(
+                "h-1.5 rounded-full transition-all",
+                index <= step ? "w-7 bg-pink-500 lg:w-8" : "w-7 bg-zinc-200 lg:w-8"
+              )}
+            />
+          )
+        )}
+      </div>
     </div>
   );
 }
@@ -176,11 +189,11 @@ function StepDestination({
           <Sparkles className="h-4 w-4" />
           Étape 2
         </p>
-        <h1 className="mt-3 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+        <h1 className="mt-3 text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl lg:text-4xl">
           Où tu veux être{" "}
           <span className="gradient-text">maintenant</span> ?
         </h1>
-        <p className="mt-3 text-zinc-500">
+        <p className="mt-3 text-sm text-zinc-500 sm:text-base">
           Choisis ta destination ou tape n&apos;importe quelle ville.
         </p>
       </div>
@@ -266,11 +279,11 @@ function StepPreview({
           <Sparkles className="h-4 w-4" />
           Étape 4
         </p>
-        <h1 className="mt-3 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+        <h1 className="mt-3 text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl lg:text-4xl">
           On téléporte ta loc à{" "}
           <span className="gradient-text">{destination.city}</span>
         </h1>
-        <p className="mt-3 text-zinc-500">
+        <p className="mt-3 text-sm text-zinc-500 sm:text-base">
           Regarde le signal GPS se mettre à jour en direct sur {useCase.appName}.
         </p>
       </div>
@@ -318,19 +331,19 @@ function PlanOption({
       type="button"
       onClick={onSelect}
       className={cn(
-        "relative w-full rounded-2xl border px-5 py-4 text-left transition-all",
+        "relative w-full rounded-2xl border px-3.5 py-3.5 text-left transition-all sm:px-5 sm:py-4",
         selected
           ? "border-pink-400 bg-gradient-to-r from-pink-50 to-violet-50 shadow-sm"
           : "border-zinc-200 bg-white hover:border-pink-200"
       )}
     >
       {plan.popular && (
-        <span className="absolute -top-2.5 right-4 rounded-full bg-pink-500 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+        <span className="absolute -top-2.5 right-3 rounded-full bg-pink-500 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white sm:right-4 sm:px-2.5 sm:text-[10px]">
           Le plus populaire
         </span>
       )}
 
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-2 sm:gap-4">
         <div className="flex min-w-0 items-center gap-3">
           <div
             className={cn(
@@ -415,14 +428,16 @@ function StepPaywall({
           <Sparkles className="h-4 w-4" />
           Étape {PAYWALL_STEP}
         </p>
-        <span className="mt-3 inline-flex items-center gap-2 rounded-full border border-pink-200 bg-pink-50 px-4 py-1.5 text-sm font-medium text-pink-700">
-          {destination.emoji} {destination.city} · {useCase.emoji} {useCase.label}
+        <span className="mt-3 inline-flex max-w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-full border border-pink-200 bg-pink-50 px-3 py-1.5 text-xs font-medium text-pink-700 sm:px-4 sm:text-sm">
+          <span>{destination.emoji} {destination.city}</span>
+          <span className="text-pink-400">·</span>
+          <span>{useCase.emoji} {useCase.label}</span>
         </span>
-        <h1 className="mt-4 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+        <h1 className="mt-4 text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl lg:text-4xl">
           Débloque ta loc à{" "}
           <span className="gradient-text">{destination.city}</span>
         </h1>
-        <p className="mt-3 text-zinc-500">
+        <p className="mt-3 text-sm text-zinc-500 sm:text-base">
           Plus que le paiement — ta position change dès l&apos;installation.
         </p>
       </div>
@@ -607,15 +622,15 @@ function OnboardingViewContent({
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-zinc-100 bg-white/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
-          <Logo href="/" />
+    <div className="min-h-screen overflow-x-hidden bg-background">
+      <header className="sticky top-0 z-20 border-b border-zinc-100 bg-white/90 backdrop-blur-md">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
+          <Logo href="/" size="sm" nameClassName="hidden min-[380px]:inline text-base sm:text-lg" />
           <ProgressBar step={step} />
         </div>
       </header>
 
-      <main className="px-4 py-10 sm:px-6 sm:py-14">
+      <main className="px-4 py-8 pb-10 sm:px-6 sm:py-14">
         {step === 1 && <OnboardingUseCaseStep onSelect={selectUseCase} />}
 
         {step === 2 && (

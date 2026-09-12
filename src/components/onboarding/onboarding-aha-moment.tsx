@@ -320,11 +320,11 @@ export function OnboardingAhaMoment({
   const showDestination = phase === "lock" || phase === "sync" || isDone;
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-xl">
+    <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl sm:rounded-3xl">
       <motion.div
         layout
         className={cn(
-          "bg-gradient-to-r px-5 py-3 text-center text-sm font-medium text-white transition-colors duration-500",
+          "bg-gradient-to-r px-3 py-2.5 text-center text-xs font-medium text-white transition-colors duration-500 sm:px-5 sm:py-3 sm:text-sm",
           config.headerClass
         )}
       >
@@ -362,7 +362,7 @@ export function OnboardingAhaMoment({
         />
       </div>
 
-      <div className="p-5 sm:p-6">
+      <div className="p-4 sm:p-6">
         <AnimatedMap destination={destination} phase={phase} />
         <CoordinatesTicker destination={destination} phase={phase} />
 
@@ -373,14 +373,14 @@ export function OnboardingAhaMoment({
             y: showDestination ? 0 : 4,
           }}
           transition={{ duration: 0.35 }}
-          className="mt-4 flex items-center gap-3 rounded-2xl border border-zinc-100 bg-zinc-50 px-4 py-3"
+          className="mt-4 flex items-center gap-2.5 rounded-2xl border border-zinc-100 bg-zinc-50 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3"
         >
-          <span className="text-3xl">{destination.emoji}</span>
+          <span className="text-2xl sm:text-3xl">{destination.emoji}</span>
           <div className="min-w-0 flex-1">
-            <p className="font-semibold text-zinc-900">
+            <p className="truncate font-semibold text-zinc-900">
               {showDestination ? destination.city : "Localisation en cours…"}
             </p>
-            <p className="text-sm text-zinc-500">
+            <p className="truncate text-xs text-zinc-500 sm:text-sm">
               {showDestination ? destination.area : "Patientez quelques secondes"}
             </p>
           </div>
@@ -396,7 +396,7 @@ export function OnboardingAhaMoment({
           )}
         </motion.div>
 
-        <div className="mt-4 grid grid-cols-2 gap-3">
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:gap-3">
           {orderedApps.map((app, index) => {
             const synced = syncedApps > index;
             const syncing = phase === "sync" && syncedApps === index;
@@ -410,7 +410,7 @@ export function OnboardingAhaMoment({
                 }}
                 transition={{ duration: 0.3 }}
                 className={cn(
-                  "rounded-xl border px-3 py-3 transition-colors",
+                  "rounded-xl border px-2.5 py-2.5 transition-colors sm:px-3 sm:py-3",
                   synced || isDone
                     ? "border-pink-100 bg-pink-50/50"
                     : "border-zinc-100 bg-zinc-50"
@@ -433,9 +433,11 @@ export function OnboardingAhaMoment({
                     </motion.div>
                   )}
                 </div>
-                <p className="mt-1 flex items-center gap-1 text-sm font-medium text-zinc-800">
-                  <MapPin className={cn("h-3.5 w-3.5", app.pinClass)} />
-                  {synced || isDone ? destination.city : "…"}
+                <p className="mt-1 flex min-w-0 items-center gap-1 text-xs font-medium text-zinc-800 sm:text-sm">
+                  <MapPin className={cn("h-3.5 w-3.5 shrink-0", app.pinClass)} />
+                  <span className="truncate">
+                    {synced || isDone ? destination.city : "…"}
+                  </span>
                 </p>
               </motion.div>
             );
