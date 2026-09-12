@@ -5,7 +5,7 @@ import {
   resolveLocation,
   toLocationResponse,
 } from "@/lib/location";
-import { hashDeviceToken, type DeviceTokenRow } from "@/lib/device";
+import { hashDeviceToken, isTrialExpired, type DeviceTokenRow } from "@/lib/device";
 import { getSubscriptionAccessForUser, isActiveSubscriptionStatus } from "@/lib/subscription";
 
 export async function getDeviceByToken(token: string) {
@@ -112,6 +112,18 @@ export async function getDeviceContext(token: string) {
 
   if (!device) {
     return { device: null, access: null, error: "Token appareil invalide." };
+  }
+
+  if (device.is_trial) {
+    if (isTrialExpired(device)) {
+      return {
+        device,
+        access: null,
+        error: "Ton essai gratuit est terminé. Active ton abonnement pour continuer.",
+      };
+    }
+
+    return { device, access: null, error: null };
   }
 
   const access = await getSubscriptionAccessForUser(device.user_id);

@@ -35,9 +35,7 @@ export function Header() {
           <Link href="/login" className="hidden sm:block">
             <Button variant="ghost" size="sm">Connexion</Button>
           </Link>
-          <Link
-            href={`/signup?plan=annual&next=${encodeURIComponent(getOnboardingUrl("annual"))}`}
-          >
+          <Link href={getOnboardingUrl("annual")}>
             <Button size="sm">{getTrialCtaShortLabel()}</Button>
           </Link>
         </div>

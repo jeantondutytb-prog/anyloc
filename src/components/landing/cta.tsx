@@ -15,10 +15,7 @@ export function Cta() {
           {getTrialCtaLabel()} — toi t&apos;es chez toi, sur la map t&apos;es à
           Marbella.
         </p>
-        <Link
-          href={`/signup?plan=annual&next=${encodeURIComponent(getOnboardingUrl("annual"))}`}
-          className="mt-8 inline-block"
-        >
+        <Link href={getOnboardingUrl("annual")} className="mt-8 inline-block">
           <Button size="lg">
             {getTrialCtaLabel()}
             <ArrowRight className="h-4 w-4" />

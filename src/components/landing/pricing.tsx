@@ -50,10 +50,7 @@ export function Pricing() {
               )}
               <p className="mt-2 text-sm text-zinc-500">{plan.description}</p>
 
-              <Link
-                href={`/signup?plan=${plan.id}&next=${encodeURIComponent(getOnboardingUrl(plan.id))}`}
-                className="mt-8 block"
-              >
+              <Link href={getOnboardingUrl(plan.id)} className="mt-8 block">
                 <Button
                   className="w-full"
                   variant={plan.popular ? "default" : "secondary"}

@@ -7,7 +7,7 @@ import java.util.Properties
 
 android {
     namespace = "io.anyloc.app"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "io.anyloc.app"

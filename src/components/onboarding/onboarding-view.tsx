@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import type { GeocodeResult } from "@/lib/geocoding";
 import { OnboardingAhaMoment } from "@/components/onboarding/onboarding-aha-moment";
+import { OnboardingAndroidTrial } from "@/components/onboarding/onboarding-android-trial";
 import { OnboardingPaywallPreview } from "@/components/onboarding/onboarding-paywall-preview";
 import { OnboardingPaywallStripe } from "@/components/onboarding/onboarding-paywall-stripe";
 import { PaywallValueStack } from "@/components/pricing/paywall-value-stack";
@@ -231,6 +232,16 @@ function StepDestination({
   );
 }
 
+type Os = "android" | "ios" | "other";
+
+function detectOs(): Os {
+  if (typeof navigator === "undefined") return "other";
+  const ua = navigator.userAgent;
+  if (/android/i.test(ua)) return "android";
+  if (/iphone|ipad|ipod/i.test(ua)) return "ios";
+  return "other";
+}
+
 function StepPreview({
   destination,
   onContinue,
@@ -238,6 +249,14 @@ function StepPreview({
   destination: OnboardingDestination;
   onContinue: () => void;
 }) {
+  const [os, setOs] = useState<Os>("other");
+
+  useEffect(() => {
+    setOs(detectOs());
+  }, []);
+
+  const isAndroid = os === "android";
+
   return (
     <div className="mx-auto w-full max-w-xl">
       <div className="mb-8 text-center">
@@ -246,22 +265,29 @@ function StepPreview({
           Étape 2
         </p>
         <h1 className="mt-3 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
-          On téléporte ta loc à{" "}
+          {isAndroid ? "Teste ta loc à " : "On téléporte ta loc à "}
           <span className="gradient-text">{destination.city}</span>
+          {isAndroid ? " — pour de vrai" : ""}
         </h1>
         <p className="mt-3 text-zinc-500">
-          Regarde le signal GPS se mettre à jour en direct sur tes apps.
+          {isAndroid
+            ? "Essai gratuit de 5 minutes, sans carte bancaire."
+            : "Regarde le signal GPS se mettre à jour en direct sur tes apps."}
         </p>
       </div>
 
-      <OnboardingAhaMoment destination={destination} />
+      {isAndroid ? (
+        <OnboardingAndroidTrial destination={destination} />
+      ) : (
+        <OnboardingAhaMoment destination={destination} />
+      )}
 
       <p className="mt-6 text-center text-sm text-zinc-500">
         Même signal que si ton tel était vraiment sur place.
       </p>
 
       <Button className="mt-6 h-14 w-full text-base" onClick={onContinue}>
-        Activer cette loc
+        {isAndroid ? "Continuer vers l'abonnement" : "Activer cette loc"}
         <ArrowRight className="h-5 w-5" />
       </Button>
     </div>
