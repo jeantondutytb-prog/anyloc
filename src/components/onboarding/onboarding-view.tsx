@@ -93,14 +93,14 @@ function DestinationCard({
     <button
       type="button"
       onClick={() => onSelect(destination)}
-      className="group flex w-full items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3.5 text-left shadow-sm transition-all hover:border-pink-300 hover:shadow-md"
+      className="group flex w-full min-w-0 max-w-full items-center gap-2.5 rounded-2xl border border-zinc-200 bg-white px-3.5 py-3.5 text-left shadow-sm transition-all hover:border-pink-300 hover:shadow-md sm:gap-3 sm:px-4"
     >
-      <span className="text-2xl">{destination.emoji}</span>
+      <span className="shrink-0 text-2xl">{destination.emoji}</span>
       <div className="min-w-0 flex-1">
         <p className="truncate font-semibold text-zinc-900">{destination.city}</p>
         <p className="truncate text-sm text-zinc-500">{destination.area}</p>
       </div>
-      <ChevronRight className="h-4 w-4 shrink-0 text-zinc-300 transition-transform group-hover:translate-x-0.5" />
+      <ChevronRight className="h-4 w-4 shrink-0 text-zinc-300 transition-transform sm:group-hover:translate-x-0.5" />
     </button>
   );
 }
@@ -183,10 +183,10 @@ function StepDestination({
   }, [isSearching, trimmedQuery]);
 
   return (
-    <div className="mx-auto w-full max-w-2xl">
+    <div className="mx-auto w-full min-w-0 max-w-2xl">
       <div className="mb-8 text-center">
         <p className="inline-flex items-center gap-1.5 text-sm font-medium text-pink-600">
-          <Sparkles className="h-4 w-4" />
+          <Sparkles className="h-4 w-4 shrink-0" />
           Étape 2
         </p>
         <h1 className="mt-3 text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl lg:text-4xl">
@@ -244,7 +244,7 @@ function StepDestination({
           <p className="mb-4 text-center text-xs font-semibold uppercase tracking-wider text-pink-500">
             Destinations Tendance
           </p>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid min-w-0 gap-3 sm:grid-cols-2">
             {TRENDING_DESTINATIONS.map((destination) => (
               <DestinationCard
                 key={destination.id}
@@ -619,7 +619,7 @@ function OnboardingViewContent({
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-background">
+    <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-20 border-b border-zinc-100 bg-white/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
           <Logo href="/" size="sm" nameClassName="hidden min-[380px]:inline text-base sm:text-lg" />
@@ -627,7 +627,7 @@ function OnboardingViewContent({
         </div>
       </header>
 
-      <main className="px-4 py-8 pb-10 sm:px-6 sm:py-14">
+      <main className="min-w-0 max-w-full px-4 py-8 pb-10 sm:px-6 sm:py-14">
         {step === 1 && <OnboardingUseCaseStep onSelect={selectUseCase} />}
 
         {step === 2 && (
