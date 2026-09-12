@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CreditCard, Loader2, Lock } from "lucide-react";
 import { StripeEmbeddedCheckout } from "@/components/checkout/stripe-embedded-checkout";
 import { Button } from "@/components/ui/button";
+import { getOnboardingPaywallUrl } from "@/lib/constants";
 
 async function parseJsonResponse(res: Response) {
   const text = await res.text();
@@ -93,7 +94,7 @@ export function OnboardingPaywallStripe({
     return () => requestRef.current?.abort();
   }, [planId]);
 
-  const onboardingReturn = `/onboarding?step=3`;
+  const onboardingReturn = getOnboardingPaywallUrl(planId);
   const loginNext = encodeURIComponent(onboardingReturn);
   const signupHref = `/signup?plan=${planId}&next=${encodeURIComponent(onboardingReturn)}`;
 

@@ -303,9 +303,17 @@ function CoordinatesTicker({
 
 export function OnboardingAhaMoment({
   destination,
+  highlightApp,
 }: {
   destination: OnboardingDestination;
+  highlightApp?: string;
 }) {
+  const orderedApps = highlightApp
+    ? [
+        ...APPS.filter((app) => app.label === highlightApp),
+        ...APPS.filter((app) => app.label !== highlightApp),
+      ]
+    : APPS;
   const { phase, syncedApps } = usePhaseTimeline(destination.id);
   const config = PHASE_CONFIG[phase];
   const isDone = phase === "done";
@@ -389,7 +397,7 @@ export function OnboardingAhaMoment({
         </motion.div>
 
         <div className="mt-4 grid grid-cols-2 gap-3">
-          {APPS.map((app, index) => {
+          {orderedApps.map((app, index) => {
             const synced = syncedApps > index;
             const syncing = phase === "sync" && syncedApps === index;
 

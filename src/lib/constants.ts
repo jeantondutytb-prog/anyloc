@@ -146,6 +146,13 @@ export function getOnboardingUrl(plan?: string) {
   return planId ? `${ONBOARDING_ENTRY_URL}?plan=${planId}` : ONBOARDING_ENTRY_URL;
 }
 
+export const ONBOARDING_TOTAL_STEPS = 6;
+
+export function getOnboardingPaywallUrl(plan?: string) {
+  const planId = isValidPlanId(plan) ? plan! : "annual";
+  return `${ONBOARDING_ENTRY_URL}?step=${ONBOARDING_TOTAL_STEPS}&plan=${planId}`;
+}
+
 export function getCheckoutUrl(plan: string = "annual") {
   const planId = isValidPlanId(plan) ? plan : "annual";
   return `/checkout?plan=${planId}`;
