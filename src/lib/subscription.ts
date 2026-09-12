@@ -74,6 +74,29 @@ export async function getSubscriptionAccessForUser(
   };
 }
 
+export async function hasActiveAndroidTrial(userId: string) {
+  if (!isSupabaseAdminConfigured()) {
+    return false;
+  }
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("device_tokens")
+    .select("trial_expires_at")
+    .eq("user_id", userId)
+    .eq("is_trial", true)
+    .eq("platform", "android")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data?.trial_expires_at) {
+    return false;
+  }
+
+  return new Date(data.trial_expires_at).getTime() > Date.now();
+}
+
 export async function getAuthenticatedUser() {
   const supabase = await createClient();
   const {

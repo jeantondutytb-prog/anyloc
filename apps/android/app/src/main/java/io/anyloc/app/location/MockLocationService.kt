@@ -8,6 +8,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.location.Criteria
 import android.location.Location
 import android.location.LocationManager
 import android.os.Build
@@ -44,13 +45,20 @@ class MockLocationService : Service() {
             val api = AnylocApi(apiBaseUrl, token)
 
             while (isActive) {
-                val remote = runCatching { api.fetchLocation() }.getOrNull()
+                val result = runCatching { api.fetchLocation() }.getOrNull()
 
-                if (remote?.isActive == true) {
-                    pushMockLocation(remote.lat, remote.lng, remote.accuracy)
-                    updateNotification(remote.name)
-                } else {
-                    updateNotification("En pause")
+                when {
+                    result?.subscriptionInactive == true -> {
+                        updateNotification("Essai terminé — renouvelle sur anyloc.io")
+                    }
+                    result?.location?.isActive == true -> {
+                        val remote = result.location
+                        pushMockLocation(remote.lat, remote.lng, remote.accuracy)
+                        updateNotification(remote.name)
+                    }
+                    else -> {
+                        updateNotification("En pause")
+                    }
                 }
 
                 delay(POLL_INTERVAL_MS)
@@ -83,8 +91,8 @@ class MockLocationService : Service() {
                 true,
                 true,
                 true,
-                LocationManager.POWER_USAGE_LOW,
-                LocationManager.ACCURACY_FINE,
+                Criteria.POWER_LOW,
+                Criteria.ACCURACY_FINE,
             )
             manager.setTestProviderEnabled(LocationManager.GPS_PROVIDER, true)
         } catch (_: SecurityException) {

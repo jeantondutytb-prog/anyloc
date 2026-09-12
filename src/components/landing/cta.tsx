@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getOnboardingUrl } from "@/lib/constants";
+import { getTrialCtaLabel } from "@/lib/trial";
 
 export function Cta() {
   return (
@@ -11,12 +12,12 @@ export function Cta() {
           Prêt à changer de life ?
         </h2>
         <p className="mt-4 text-zinc-600">
-          Toi t&apos;es chez toi. Sur la map t&apos;es à Marbella. C&apos;est
-          carré.
+          {getTrialCtaLabel()} — toi t&apos;es chez toi, sur la map t&apos;es à
+          Marbella.
         </p>
         <Link href={getOnboardingUrl("annual")} className="mt-8 inline-block">
           <Button size="lg">
-            Fake ma loc
+            {getTrialCtaLabel()}
             <ArrowRight className="h-4 w-4" />
           </Button>
         </Link>
