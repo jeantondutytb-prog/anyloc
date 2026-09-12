@@ -5,13 +5,19 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Loader2, MapPin, Sparkles } from "lucide-react";
 import type { OnboardingDestination } from "@/lib/onboarding-destinations";
 import type { OnboardingUseCase } from "@/lib/onboarding-use-cases";
+import { getFallbackApproxLocation } from "@/lib/approx-user-location";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 type AnimationPhase = "before" | "transition" | "after";
 
-const BEFORE_HOLD_MS = 1400;
-const TRANSITION_MS = 1600;
+type LocationState =
+  | { status: "loading" }
+  | { status: "ready"; city: string; area: string; resolved: boolean };
+
+const BEFORE_HOLD_MS = 2800;
+const TRANSITION_MS = 3200;
+const AFTER_REVEAL_MS = 800;
 
 function PhoneMockup({
   label,
@@ -69,7 +75,7 @@ function PhoneMockup({
               transition={
                 pulse || isAfter
                   ? {
-                      duration: pulse ? 1.4 : 0.6,
+                      duration: pulse ? 1.6 : 0.7,
                       repeat: pulse ? Infinity : 0,
                       ease: "easeInOut",
                     }
@@ -99,6 +105,41 @@ function PhoneMockup({
   );
 }
 
+function LocationLoadingSkeleton({ appLabel }: { appLabel: string }) {
+  return (
+    <div className="mx-auto w-full max-w-md">
+      <div className="flex items-center justify-center gap-6 sm:gap-10">
+        {[0, 1].map((index) => (
+          <div key={index} className="flex flex-1 flex-col items-center">
+            <div className="mb-3 h-3 w-12 animate-pulse rounded-full bg-zinc-200" />
+            <div
+              className={cn(
+                "w-full max-w-[200px] overflow-hidden rounded-[1.75rem] border-4 border-zinc-200 bg-zinc-50",
+                index === 1 && "opacity-50"
+              )}
+            >
+              <div className="bg-zinc-200 px-4 py-2 text-center">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400">
+                  {appLabel}
+                </p>
+              </div>
+              <div className="flex aspect-[9/14] flex-col items-center justify-center gap-3 bg-gradient-to-br from-zinc-100 to-zinc-50 p-4">
+                <Loader2 className="h-7 w-7 animate-spin text-pink-400" />
+                <div className="h-3 w-20 animate-pulse rounded-full bg-zinc-200" />
+                <div className="h-2 w-24 animate-pulse rounded-full bg-zinc-100" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="mt-6 flex items-center justify-center gap-2 text-sm text-zinc-500">
+        <Loader2 className="h-4 w-4 animate-spin text-pink-500" />
+        On localise ta position actuelle…
+      </p>
+    </div>
+  );
+}
+
 export function OnboardingBeforeAfter({
   useCase,
   destination,
@@ -108,15 +149,15 @@ export function OnboardingBeforeAfter({
   destination: OnboardingDestination;
   onContinue: () => void;
 }) {
-  const [phase, setPhase] = useState<AnimationPhase>("before");
-  const [currentLocation, setCurrentLocation] = useState({
-    city: "Chez toi",
-    area: "Position réelle",
-    resolved: false,
+  const [locationState, setLocationState] = useState<LocationState>({
+    status: "loading",
   });
+  const [phase, setPhase] = useState<AnimationPhase>("before");
+  const [canContinue, setCanContinue] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
+    setLocationState({ status: "loading" });
 
     void fetch("/api/onboarding/approx-location", { signal: controller.signal })
       .then(async (response) => {
@@ -131,25 +172,37 @@ export function OnboardingBeforeAfter({
         };
       })
       .then((data) => {
-        if (!data?.city) {
-          return;
-        }
+        const fallback = getFallbackApproxLocation();
 
-        setCurrentLocation({
-          city: data.city,
-          area: data.area ?? "Position réelle",
-          resolved: data.found === true,
+        setLocationState({
+          status: "ready",
+          city: data?.city ?? fallback.city,
+          area: data?.area ?? fallback.area,
+          resolved: data?.found === true,
         });
       })
       .catch(() => {
-        // Keep fallback labels.
+        const fallback = getFallbackApproxLocation();
+        setLocationState({
+          status: "ready",
+          city: fallback.city,
+          area: fallback.area,
+          resolved: false,
+        });
       });
 
     return () => controller.abort();
   }, []);
 
   useEffect(() => {
+    if (locationState.status !== "ready") {
+      setPhase("before");
+      setCanContinue(false);
+      return;
+    }
+
     setPhase("before");
+    setCanContinue(false);
 
     const transitionTimer = window.setTimeout(
       () => setPhase("transition"),
@@ -159,16 +212,25 @@ export function OnboardingBeforeAfter({
       () => setPhase("after"),
       BEFORE_HOLD_MS + TRANSITION_MS
     );
+    const continueTimer = window.setTimeout(
+      () => setCanContinue(true),
+      BEFORE_HOLD_MS + TRANSITION_MS + AFTER_REVEAL_MS
+    );
 
     return () => {
       window.clearTimeout(transitionTimer);
       window.clearTimeout(afterTimer);
+      window.clearTimeout(continueTimer);
     };
-  }, [destination.id, useCase.id]);
+  }, [destination.id, useCase.id, locationState]);
 
+  const isReady = locationState.status === "ready";
+  const currentLocation = isReady
+    ? locationState
+    : { city: "", area: "", resolved: false };
   const showAfter = phase === "after";
   const isTransition = phase === "transition";
-  const personalizedCopy = currentLocation.resolved;
+  const personalizedCopy = isReady && currentLocation.resolved;
 
   return (
     <div className="mx-auto w-full max-w-2xl">
@@ -182,115 +244,123 @@ export function OnboardingBeforeAfter({
           <span className="gradient-text">{useCase.appName}</span>
         </h1>
         <p className="mt-3 text-zinc-500">
-          {personalizedCopy
-            ? `De ${currentLocation.city} à ${destination.city} — en un clic.`
-            : "Avant / après — même app, nouvelle ville en un clic."}
+          {!isReady
+            ? "On prépare ta comparaison avant / après…"
+            : personalizedCopy
+              ? `De ${currentLocation.city} à ${destination.city} — en un clic.`
+              : "Avant / après — même app, nouvelle ville en un clic."}
         </p>
       </div>
 
-      <div className="flex items-center justify-center gap-3 sm:gap-8">
-        <motion.div
-          key={`before-${destination.id}-${currentLocation.city}`}
-          initial={{ opacity: 0, x: -24 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.55, ease: "easeOut" }}
-          className="flex-1"
-        >
-          <PhoneMockup
-            label="Avant"
-            location={currentLocation.city}
-            sublocation={currentLocation.area}
-            variant="before"
-            appLabel={useCase.mapLabel}
-            pinClass={useCase.pinColor}
-            pulse={phase === "before" || isTransition}
-          />
-        </motion.div>
-
-        <div className="flex shrink-0 flex-col items-center gap-2">
+      {!isReady ? (
+        <LocationLoadingSkeleton appLabel={useCase.mapLabel} />
+      ) : (
+        <div className="flex items-center justify-center gap-3 sm:gap-8">
           <motion.div
-            animate={{
-              opacity: showAfter ? 1 : isTransition ? 1 : 0.45,
-              scale: isTransition ? [1, 1.12, 1] : showAfter ? 1 : 0.92,
-              x: isTransition ? [0, 4, 0] : 0,
-            }}
-            transition={
-              isTransition
-                ? { duration: 0.9, repeat: Infinity, ease: "easeInOut" }
-                : { duration: 0.4 }
-            }
+            key={`before-${destination.id}-${currentLocation.city}`}
+            initial={{ opacity: 0, x: -24 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.65, ease: "easeOut" }}
+            className="flex-1"
           >
-            <ArrowRight className="h-6 w-6 text-pink-400 sm:h-8 sm:w-8" />
+            <PhoneMockup
+              label="Avant"
+              location={currentLocation.city}
+              sublocation={currentLocation.area}
+              variant="before"
+              appLabel={useCase.mapLabel}
+              pinClass={useCase.pinColor}
+              pulse={phase === "before" || isTransition}
+            />
           </motion.div>
 
-          <AnimatePresence mode="wait">
-            {isTransition && (
-              <motion.p
-                key="transition-label"
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                className="flex items-center gap-1 text-[10px] font-medium text-pink-600"
-              >
-                <Loader2 className="h-3 w-3 animate-spin" />
-                Téléportation…
-              </motion.p>
-            )}
-          </AnimatePresence>
+          <div className="flex shrink-0 flex-col items-center gap-2">
+            <motion.div
+              animate={{
+                opacity: showAfter ? 1 : isTransition ? 1 : 0.45,
+                scale: isTransition ? [1, 1.14, 1] : showAfter ? 1 : 0.92,
+                x: isTransition ? [0, 5, 0] : 0,
+              }}
+              transition={
+                isTransition
+                  ? { duration: 1.1, repeat: Infinity, ease: "easeInOut" }
+                  : { duration: 0.45 }
+              }
+            >
+              <ArrowRight className="h-6 w-6 text-pink-400 sm:h-8 sm:w-8" />
+            </motion.div>
+
+            <AnimatePresence mode="wait">
+              {isTransition && (
+                <motion.p
+                  key="transition-label"
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  className="flex items-center gap-1 text-[10px] font-medium text-pink-600"
+                >
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Téléportation…
+                </motion.p>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <motion.div
+            key={`after-${destination.id}-${showAfter}`}
+            initial={{ opacity: 0.35, x: 24, scale: 0.96 }}
+            animate={{
+              opacity: showAfter ? 1 : isTransition ? 0.55 : 0.35,
+              x: 0,
+              scale: showAfter ? 1 : 0.96,
+            }}
+            transition={{ duration: 0.75, ease: "easeOut" }}
+            className="flex-1"
+          >
+            <PhoneMockup
+              label="Après Anyloc"
+              location={destination.city}
+              sublocation={destination.area}
+              variant="after"
+              appLabel={useCase.mapLabel}
+              pinClass={useCase.pinColor}
+            />
+          </motion.div>
         </div>
+      )}
 
-        <motion.div
-          key={`after-${destination.id}-${showAfter}`}
-          initial={{ opacity: 0.35, x: 24, scale: 0.96 }}
-          animate={{
-            opacity: showAfter ? 1 : isTransition ? 0.55 : 0.35,
-            x: 0,
-            scale: showAfter ? 1 : 0.96,
-          }}
-          transition={{ duration: 0.65, ease: "easeOut" }}
-          className="flex-1"
+      {isReady && (
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: showAfter ? 1 : 0 }}
+          transition={{ duration: 0.55 }}
+          className="mt-8 text-center text-sm text-zinc-600"
         >
-          <PhoneMockup
-            label="Après Anyloc"
-            location={destination.city}
-            sublocation={destination.area}
-            variant="after"
-            appLabel={useCase.mapLabel}
-            pinClass={useCase.pinColor}
-          />
-        </motion.div>
-      </div>
-
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: showAfter ? 1 : 0 }}
-        transition={{ duration: 0.45 }}
-        className="mt-8 text-center text-sm text-zinc-600"
-      >
-        {personalizedCopy ? (
-          <>
-            Sur {useCase.appName}, tes potes verront{" "}
-            <strong className="text-zinc-700">{currentLocation.city}</strong> →{" "}
-            <strong className="text-pink-600">
-              {destination.emoji} {destination.city}
-            </strong>
-            .
-          </>
-        ) : (
-          <>
-            Sur {useCase.appName}, ton pin GPS affichera{" "}
-            <strong className="text-pink-600">
-              {destination.emoji} {destination.city}
-            </strong>{" "}
-            — comme si tu étais vraiment sur place.
-          </>
-        )}
-      </motion.p>
+          {personalizedCopy ? (
+            <>
+              Sur {useCase.appName}, tes potes verront{" "}
+              <strong className="text-zinc-700">{currentLocation.city}</strong> →{" "}
+              <strong className="text-pink-600">
+                {destination.emoji} {destination.city}
+              </strong>
+              .
+            </>
+          ) : (
+            <>
+              Sur {useCase.appName}, ton pin GPS affichera{" "}
+              <strong className="text-pink-600">
+                {destination.emoji} {destination.city}
+              </strong>{" "}
+              — comme si tu étais vraiment sur place.
+            </>
+          )}
+        </motion.p>
+      )}
 
       <Button
         className="mt-8 h-14 w-full text-base"
         onClick={onContinue}
-        disabled={!showAfter}
+        disabled={!canContinue}
       >
         Voir le signal GPS en action
         <ArrowRight className="h-5 w-5" />
