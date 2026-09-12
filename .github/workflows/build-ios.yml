@@ -27,7 +27,7 @@ jobs:
         run: chmod +x scripts/build-ios-ipa.sh && ./scripts/build-ios-ipa.sh
 
       - name: Upload IPA artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: anyloc-ios-ipa
           path: apps/ios/dist/Anyloc.ipa
@@ -46,7 +46,7 @@ jobs:
       - name: Keep IPA for release
         run: mkdir -p /tmp/ios-release && cp apps/ios/dist/Anyloc.ipa /tmp/ios-release/
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ios-release-ipa
           path: /tmp/ios-release/Anyloc.ipa

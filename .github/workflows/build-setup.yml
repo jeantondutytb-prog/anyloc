@@ -54,7 +54,7 @@ jobs:
         run: npm run build:mac
 
       - name: Upload DMG artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: anyloc-setup-mac
           path: apps/setup/dist/Anyloc-Setup.dmg
@@ -73,7 +73,7 @@ jobs:
       - name: Keep DMG for release
         run: mkdir -p /tmp/setup-release && cp apps/setup/dist/Anyloc-Setup.dmg /tmp/setup-release/
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: setup-release-mac
           path: /tmp/setup-release/Anyloc-Setup.dmg
@@ -101,7 +101,7 @@ jobs:
         run: npm run build:win
 
       - name: Upload EXE artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: anyloc-setup-win
           path: apps/setup/dist/Anyloc-Setup.exe
@@ -124,7 +124,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/setup-release"
           cp apps/setup/dist/Anyloc-Setup.exe "$RUNNER_TEMP/setup-release/"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: setup-release-win
           path: ${{ runner.temp }}/setup-release/Anyloc-Setup.exe
