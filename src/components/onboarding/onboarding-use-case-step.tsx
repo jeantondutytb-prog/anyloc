@@ -18,14 +18,14 @@ function UseCaseCard({
     <button
       type="button"
       onClick={() => onSelect(useCase)}
-      className="group flex w-full items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3.5 text-left shadow-sm transition-all hover:border-pink-300 hover:shadow-md"
+      className="group flex w-full min-w-0 max-w-full items-center gap-2.5 rounded-2xl border border-zinc-200 bg-white px-3.5 py-3.5 text-left shadow-sm transition-all hover:border-pink-300 hover:shadow-md sm:gap-3 sm:px-4"
     >
-      <span className="text-2xl">{useCase.emoji}</span>
+      <span className="shrink-0 text-2xl">{useCase.emoji}</span>
       <div className="min-w-0 flex-1">
-        <p className="font-semibold text-zinc-900">{useCase.label}</p>
+        <p className="truncate font-semibold text-zinc-900">{useCase.label}</p>
         <p className="truncate text-sm text-zinc-500">{useCase.description}</p>
       </div>
-      <ChevronRight className="h-4 w-4 shrink-0 text-zinc-300 transition-transform group-hover:translate-x-0.5" />
+      <ChevronRight className="h-4 w-4 shrink-0 text-zinc-300 transition-transform sm:group-hover:translate-x-0.5" />
     </button>
   );
 }
@@ -36,7 +36,7 @@ export function OnboardingUseCaseStep({
   onSelect: (useCase: OnboardingUseCase) => void;
 }) {
   return (
-    <div className="mx-auto w-full max-w-2xl">
+    <div className="mx-auto w-full min-w-0 max-w-2xl">
       <div className="mb-8 text-center">
         <p className="inline-flex items-center gap-1.5 text-sm font-medium text-pink-600">
           <Sparkles className="h-4 w-4" />
@@ -51,7 +51,7 @@ export function OnboardingUseCaseStep({
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid min-w-0 gap-3 sm:grid-cols-2">
         {ONBOARDING_USE_CASES.map((useCase) => (
           <UseCaseCard key={useCase.id} useCase={useCase} onSelect={onSelect} />
         ))}
