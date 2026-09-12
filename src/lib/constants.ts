@@ -80,13 +80,13 @@ export const PLANS = [
   {
     id: "weekly",
     name: "Hebdomadaire",
-    price: "3,49€",
+    price: "3,90€",
     period: "/semaine",
-    perDay: "0,50",
+    perDay: "0,56",
     perDayLabel: "€/jour",
     billedNote:
-      "Facturé 3,49 € chaque semaine. Résiliation immédiate — perte d'accès instantanée.",
-    compare: "Soit ~181 € sur l'année si tu restes",
+      "Facturé 3,90 € chaque semaine. Résiliation immédiate — perte d'accès instantanée.",
+    compare: "Soit ~203 € sur l'année si tu restes",
     description: "Sans engagement, tu testes à la semaine.",
     savings: undefined,
     features: PLAN_VALUE_STACK,
