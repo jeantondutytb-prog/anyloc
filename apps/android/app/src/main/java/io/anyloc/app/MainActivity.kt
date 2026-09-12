@@ -244,12 +244,12 @@ class MainActivity : AppCompatActivity() {
             val result = api.fetchLocation()
 
             runOnUiThread {
+                val location = result.location
                 if (result.subscriptionInactive) {
-                    statusText.text = "Essai terminé — renouvelle sur anyloc.io"
+                    statusText.text = "Abonnement inactif — renouvelle sur anyloc.io"
                     return@runOnUiThread
                 }
 
-                val location = result.location
                 if (location != null) {
                     activeLocation = location
                     updateLocationDisplay(location)
@@ -318,7 +318,7 @@ class MainActivity : AppCompatActivity() {
 
             runOnUiThread {
                 if (result.subscriptionInactive) {
-                    statusText.text = "Essai terminé — renouvelle sur anyloc.io"
+                    statusText.text = "Abonnement inactif — renouvelle sur anyloc.io"
                     return@runOnUiThread
                 }
 

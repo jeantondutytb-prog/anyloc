@@ -27,15 +27,13 @@ import {
   SITE,
 } from "@/lib/constants";
 import { PaywallValueStack } from "@/components/pricing/paywall-value-stack";
-import { getTrialBillingNote, getTrialCtaLabel } from "@/lib/trial";
 import { cn } from "@/lib/utils";
 
 const SETUP_STEPS = [
   {
     icon: CreditCard,
-    title: "Active ton essai 24 h",
-    description:
-      "Carte requise — aucun prélèvement si tu annules avant la fin de l'essai.",
+    title: "Valide ta formule",
+    description: "Paiement sécurisé — ton accès Anyloc est prêt en quelques secondes.",
   },
   {
     icon: Download,
@@ -54,8 +52,8 @@ const SETUP_STEPS = [
 const SIDEBAR_FAQ = FAQ.slice(0, 2);
 
 const TRUST_ITEMS = [
-  "Essai 24 h gratuit sur tous les plans",
   "Paiement chiffré via Stripe",
+  "Accès instantané après validation",
   "Garantie 48 h si le GPS ne fonctionne pas",
 ];
 
@@ -345,8 +343,7 @@ export function CheckoutView({
                   Choisis ton plan
                 </h2>
                 <p className="mt-1 text-sm text-zinc-500">
-                  {getTrialCtaLabel()} sur tous les plans. Garantie 48 h si le
-                  GPS ne fonctionne pas après installation.
+                  Garantie 48 h si le GPS ne fonctionne pas après installation.
                 </p>
               </div>
 
@@ -444,18 +441,11 @@ export function CheckoutView({
                 </p>
               )}
 
-              <p className="mt-4 text-center text-xs text-zinc-500">
-                {getTrialBillingNote(selectedPlan.price, selectedPlan.period)}
-              </p>
-
               <div className="relative mt-6">
                 <div className="mb-3 flex items-center gap-2 text-sm font-medium text-zinc-900">
                   <CreditCard className="h-4 w-4 text-pink-600" />
-                  Essai 24 h gratuit — carte requise
+                  Paiement sécurisé
                 </div>
-                <p className="mb-4 text-xs text-zinc-500">
-                  Aucun prélèvement si tu annules avant la fin de l&apos;essai.
-                </p>
 
                 {loading && !clientSecret ? (
                   <div className="flex min-h-[420px] items-center justify-center rounded-2xl border border-zinc-200 bg-white">

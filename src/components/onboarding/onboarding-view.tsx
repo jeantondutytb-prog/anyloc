@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import type { GeocodeResult } from "@/lib/geocoding";
 import { OnboardingAhaMoment } from "@/components/onboarding/onboarding-aha-moment";
-import { OnboardingAndroidTrial } from "@/components/onboarding/onboarding-android-trial";
 import { OnboardingBeforeAfter } from "@/components/onboarding/onboarding-before-after";
 import { OnboardingPaywallPreview } from "@/components/onboarding/onboarding-paywall-preview";
 import { OnboardingPaywallStripe } from "@/components/onboarding/onboarding-paywall-stripe";
@@ -48,7 +47,6 @@ import {
   ONBOARDING_USE_CASE_KEY,
   type OnboardingUseCase,
 } from "@/lib/onboarding-use-cases";
-import { getTrialBillingNote } from "@/lib/trial";
 import { cn } from "@/lib/utils";
 
 const PAYWALL_STEP = ONBOARDING_TOTAL_STEPS;
@@ -248,16 +246,6 @@ function StepDestination({
   );
 }
 
-type Os = "android" | "ios" | "other";
-
-function detectOs(): Os {
-  if (typeof navigator === "undefined") return "other";
-  const ua = navigator.userAgent;
-  if (/android/i.test(ua)) return "android";
-  if (/iphone|ipad|ipod/i.test(ua)) return "ios";
-  return "other";
-}
-
 function StepPreview({
   destination,
   useCase,
@@ -271,14 +259,6 @@ function StepPreview({
   onChangeDestination: () => void;
   onDestinationChange: (lat: number, lng: number) => void;
 }) {
-  const [os, setOs] = useState<Os>("other");
-
-  useEffect(() => {
-    setOs(detectOs());
-  }, []);
-
-  const isAndroid = os === "android";
-
   return (
     <div className="mx-auto w-full max-w-xl">
       <div className="mb-8 text-center">
@@ -287,38 +267,29 @@ function StepPreview({
           Étape 4
         </p>
         <h1 className="mt-3 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
-          {isAndroid ? "Teste ta loc à " : "On téléporte ta loc à "}
+          On téléporte ta loc à{" "}
           <span className="gradient-text">{destination.city}</span>
-          {isAndroid ? " — pour de vrai" : ""}
         </h1>
         <p className="mt-3 text-zinc-500">
-          {isAndroid
-            ? "Essai gratuit de 5 minutes, sans carte bancaire."
-            : `Regarde le signal GPS se mettre à jour en direct sur ${useCase.appName}.`}
+          Regarde le signal GPS se mettre à jour en direct sur {useCase.appName}.
         </p>
       </div>
 
-      {isAndroid ? (
-        <OnboardingAndroidTrial destination={destination} />
-      ) : (
-        <>
-          <OnboardingAhaMoment
-            destination={destination}
-            highlightApp={useCase.mapLabel}
-          />
-          <OnboardingPreviewMap
-            destination={destination}
-            onDestinationChange={onDestinationChange}
-          />
-        </>
-      )}
+      <OnboardingAhaMoment
+        destination={destination}
+        highlightApp={useCase.mapLabel}
+      />
+      <OnboardingPreviewMap
+        destination={destination}
+        onDestinationChange={onDestinationChange}
+      />
 
       <p className="mt-6 text-center text-sm text-zinc-500">
         Même signal que si ton tel était vraiment sur place.
       </p>
 
       <Button className="mt-6 h-14 w-full text-base" onClick={onContinue}>
-        {isAndroid ? "Continuer vers l'abonnement" : "Continuer"}
+        Continuer
         <ArrowRight className="h-5 w-5" />
       </Button>
 
@@ -403,8 +374,6 @@ function StepPaywall({
 }) {
   const fallbackProof = getDestinationSocialProof(destination);
   const [weeklyLabel, setWeeklyLabel] = useState(fallbackProof.weeklyLabel);
-  const selectedPlan =
-    PLANS.find((plan) => plan.id === selectedPlanId) ?? PLANS[2];
   const testimonial =
     PAYWALL_TESTIMONIALS[
       destination.city.length % PAYWALL_TESTIMONIALS.length
@@ -451,7 +420,7 @@ function StepPaywall({
           <span className="gradient-text">{destination.city}</span>
         </h1>
         <p className="mt-3 text-zinc-500">
-          Essai 24 h gratuit — ta position change dès l&apos;installation.
+          Plus que le paiement — ta position change dès l&apos;installation.
         </p>
       </div>
 
@@ -500,10 +469,6 @@ function StepPaywall({
           Garantie 48 h
         </span>
       </div>
-
-      <p className="mt-4 text-center text-xs text-zinc-500">
-        {getTrialBillingNote(selectedPlan.price, selectedPlan.period)}
-      </p>
 
       <OnboardingPaywallStripe
         planId={selectedPlanId}

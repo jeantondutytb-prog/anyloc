@@ -102,11 +102,8 @@ export function OnboardingPaywallStripe({
     <div className="relative mt-8">
       <div className="mb-3 flex items-center gap-2 text-sm font-medium text-zinc-900">
         <CreditCard className="h-4 w-4 text-pink-600" />
-        Essai 24 h gratuit — carte requise
+        Paiement sécurisé
       </div>
-      <p className="mb-4 text-xs text-zinc-500">
-        Aucun prélèvement si tu annules avant la fin de l&apos;essai.
-      </p>
 
       {needsAuth && (
         <div className="rounded-2xl border border-zinc-200 bg-white p-5 text-center">

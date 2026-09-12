@@ -6,7 +6,6 @@ import { ArrowRight, Check, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getOnboardingUrl, SITE } from "@/lib/constants";
-import { getTrialCtaLabel } from "@/lib/trial";
 
 export function Hero() {
   return (
@@ -43,7 +42,7 @@ export function Hero() {
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link href={getOnboardingUrl("annual")}>
               <Button size="lg" className="w-full sm:w-auto">
-                {getTrialCtaLabel()}
+                Fake ma loc
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>

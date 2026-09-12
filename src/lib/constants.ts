@@ -59,7 +59,7 @@ export const PAYWALL_TESTIMONIALS = [
     city: "Paris",
   },
   {
-    quote: "J'ai testé l'essai, j'ai gardé l'annuel le lendemain.",
+    quote: "J'ai pris l'annuel direct, zéro regret.",
     author: "Mehdi",
     city: "Marseille",
   },
@@ -85,13 +85,13 @@ export const PLANS = [
     perDay: "0,33",
     perDayLabel: "€/jour",
     billedNote:
-      "Essai 24 h gratuit, puis 9,90 €/mois. Annule avant la fin de l'essai = 0 €.",
+      "Facturé 9,90 € chaque mois. Résiliation immédiate — perte d'accès instantanée.",
     compare: "Flexible si tu testes encore",
     description: "Sans engagement, tu paies mois par mois.",
     savings: undefined,
     features: PLAN_VALUE_STACK,
     popular: false,
-    ctaLabel: "Essayer 24 h gratuitement",
+    ctaLabel: "Commencer maintenant",
     stripePriceId: process.env.STRIPE_PRICE_MONTHLY,
   },
   {
@@ -102,13 +102,13 @@ export const PLANS = [
     perDay: "≈ 0,19",
     perDayLabel: "€/jour",
     billedNote:
-      "Essai 24 h gratuit, puis 34,90 € tous les 6 mois. Annule avant la fin de l'essai = 0 €.",
+      "Facturé 34,90 € tous les 6 mois. Résiliation immédiate — perte d'accès instantanée.",
     compare: "Soit 69,80 € sur l'année si tu reprends",
     description: "Le sweet spot si tu l'utilises souvent.",
     savings: "Économise 42 % vs mensuel",
     features: PLAN_VALUE_STACK,
     popular: false,
-    ctaLabel: "Essayer 24 h gratuitement",
+    ctaLabel: "Économiser 42%",
     stripePriceId: process.env.STRIPE_PRICE_6MONTHS,
   },
   {
@@ -118,15 +118,14 @@ export const PLANS = [
     period: "/an",
     perDay: "≈ 0,14",
     perDayLabel: "€/jour",
-    billedNote:
-      "Essai 24 h gratuit, puis 49,90 €/an. Annule avant la fin de l'essai = 0 €.",
+    billedNote: "Facturé 49,90 € une fois par an.",
     compare: "Tu gardes 69 € sur l'année",
     badge: "App iPhone incluse",
     description: "Le meilleur deal si t'es un habitué.",
     savings: "Tu gardes 69 € sur l'année · -58 % vs mensuel",
     features: PLAN_VALUE_STACK,
     popular: true,
-    ctaLabel: "Essayer 24 h gratuitement",
+    ctaLabel: "Débloquer le meilleur prix",
     stripePriceId: process.env.STRIPE_PRICE_ANNUAL,
   },
 ];
