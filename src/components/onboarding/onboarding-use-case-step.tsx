@@ -42,11 +42,11 @@ export function OnboardingUseCaseStep({
           <Sparkles className="h-4 w-4" />
           Étape 1
         </p>
-        <h1 className="mt-3 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+        <h1 className="mt-3 text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl lg:text-4xl">
           Tu veux faker ta loc pour{" "}
           <span className="gradient-text">quoi</span> ?
         </h1>
-        <p className="mt-3 text-zinc-500">
+        <p className="mt-3 text-sm text-zinc-500 sm:text-base">
           On personnalise la suite selon ton usage — Snap, Insta, rencontres…
         </p>
       </div>

@@ -30,11 +30,11 @@ export function OnboardingValueRecap({
           <Sparkles className="h-4 w-4" />
           Étape 5
         </p>
-        <h1 className="mt-3 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+        <h1 className="mt-3 text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl lg:text-4xl">
           Ton pack{" "}
           <span className="gradient-text">{destination.city}</span> est prêt
         </h1>
-        <p className="mt-3 text-zinc-500">
+        <p className="mt-3 text-sm text-zinc-500 sm:text-base">
           Plus qu&apos;une étape pour activer ta fausse position.
         </p>
       </div>

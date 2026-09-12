@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Loader2, MapPin, Sparkles } from "lucide-react";
+import { ArrowDown, ArrowRight, Loader2, MapPin, Sparkles } from "lucide-react";
 import type { OnboardingDestination } from "@/lib/onboarding-destinations";
 import type { OnboardingUseCase } from "@/lib/onboarding-use-cases";
 import { getFallbackApproxLocation } from "@/lib/approx-user-location";
@@ -39,10 +39,10 @@ function PhoneMockup({
   const isAfter = variant === "after";
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex w-full max-w-[200px] flex-col items-center sm:max-w-[200px]">
       <p
         className={cn(
-          "mb-3 text-xs font-semibold uppercase tracking-wider",
+          "mb-2 text-[10px] font-semibold uppercase tracking-wider sm:mb-3 sm:text-xs",
           isAfter ? "text-pink-600" : "text-zinc-400"
         )}
       >
@@ -50,20 +50,20 @@ function PhoneMockup({
       </p>
       <div
         className={cn(
-          "w-full max-w-[200px] overflow-hidden rounded-[1.75rem] border-4 shadow-lg transition-shadow duration-700",
+          "w-full overflow-hidden rounded-[1.5rem] border-[3px] shadow-lg transition-shadow duration-700 sm:rounded-[1.75rem] sm:border-4",
           isAfter
             ? "border-pink-400 bg-gradient-to-b from-pink-50 to-white shadow-pink-200/40"
             : "border-zinc-300 bg-zinc-50"
         )}
       >
-        <div className="bg-zinc-900 px-4 py-2 text-center">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400">
+        <div className="bg-zinc-900 px-3 py-1.5 text-center sm:px-4 sm:py-2">
+          <p className="truncate text-[9px] font-semibold uppercase tracking-wide text-zinc-400 sm:text-[10px]">
             {appLabel}
           </p>
         </div>
-        <div className="relative aspect-[9/14] bg-gradient-to-br from-sky-100 via-emerald-50 to-amber-50 p-3">
-          <div className="absolute inset-3 rounded-xl bg-white/60 backdrop-blur-sm" />
-          <div className="relative flex h-full flex-col items-center justify-center gap-2 p-2">
+        <div className="relative aspect-[9/14] bg-gradient-to-br from-sky-100 via-emerald-50 to-amber-50 p-2 sm:p-3">
+          <div className="absolute inset-2 rounded-xl bg-white/60 backdrop-blur-sm sm:inset-3" />
+          <div className="relative flex h-full flex-col items-center justify-center gap-1.5 p-1.5 sm:gap-2 sm:p-2">
             <motion.div
               animate={
                 pulse
@@ -84,20 +84,22 @@ function PhoneMockup({
             >
               <MapPin
                 className={cn(
-                  "h-8 w-8",
+                  "h-7 w-7 sm:h-8 sm:w-8",
                   isAfter ? pinClass : "text-zinc-400"
                 )}
               />
             </motion.div>
             <p
               className={cn(
-                "text-center text-sm font-bold",
+                "line-clamp-2 w-full break-words text-center text-xs font-bold sm:text-sm",
                 isAfter ? "text-zinc-900" : "text-zinc-500"
               )}
             >
               {location}
             </p>
-            <p className="text-center text-[11px] text-zinc-500">{sublocation}</p>
+            <p className="line-clamp-2 w-full break-words text-center text-[10px] text-zinc-500 sm:text-[11px]">
+              {sublocation}
+            </p>
           </div>
         </div>
       </div>
@@ -105,21 +107,66 @@ function PhoneMockup({
   );
 }
 
+function TransitionIndicator({
+  isTransition,
+  showAfter,
+}: {
+  isTransition: boolean;
+  showAfter: boolean;
+}) {
+  return (
+    <div className="flex shrink-0 flex-col items-center justify-center gap-1.5 py-1 sm:gap-2 sm:py-0">
+      <motion.div
+        animate={{
+          opacity: showAfter ? 1 : isTransition ? 1 : 0.45,
+          scale: isTransition ? [1, 1.12, 1] : showAfter ? 1 : 0.92,
+          y: isTransition ? [0, 3, 0] : 0,
+          x: isTransition ? [0, 4, 0] : 0,
+        }}
+        transition={
+          isTransition
+            ? { duration: 1.1, repeat: Infinity, ease: "easeInOut" }
+            : { duration: 0.45 }
+        }
+        className="flex items-center justify-center"
+      >
+        <ArrowDown className="h-5 w-5 text-pink-400 sm:hidden" />
+        <ArrowRight className="hidden h-6 w-6 text-pink-400 sm:block sm:h-8 sm:w-8" />
+      </motion.div>
+
+      <AnimatePresence mode="wait">
+        {isTransition && (
+          <motion.p
+            key="transition-label"
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            className="flex items-center gap-1 whitespace-nowrap text-[10px] font-medium text-pink-600"
+          >
+            <Loader2 className="h-3 w-3 animate-spin" />
+            Téléportation…
+          </motion.p>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 function LocationLoadingSkeleton({ appLabel }: { appLabel: string }) {
   return (
-    <div className="mx-auto w-full max-w-md">
-      <div className="flex items-center justify-center gap-6 sm:gap-10">
+    <div className="mx-auto w-full max-w-sm sm:max-w-md">
+      <div className="flex flex-col items-center gap-5 sm:flex-row sm:justify-center sm:gap-10">
         {[0, 1].map((index) => (
-          <div key={index} className="flex flex-1 flex-col items-center">
-            <div className="mb-3 h-3 w-12 animate-pulse rounded-full bg-zinc-200" />
+          <div key={index} className="flex w-full max-w-[200px] flex-col items-center">
+            <div className="mb-2 h-3 w-12 animate-pulse rounded-full bg-zinc-200 sm:mb-3" />
             <div
               className={cn(
-                "w-full max-w-[200px] overflow-hidden rounded-[1.75rem] border-4 border-zinc-200 bg-zinc-50",
+                "w-full overflow-hidden rounded-[1.5rem] border-[3px] border-zinc-200 bg-zinc-50 sm:rounded-[1.75rem] sm:border-4",
                 index === 1 && "opacity-50"
               )}
             >
-              <div className="bg-zinc-200 px-4 py-2 text-center">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400">
+              <div className="bg-zinc-200 px-3 py-1.5 text-center sm:px-4 sm:py-2">
+                <p className="truncate text-[9px] font-semibold uppercase tracking-wide text-zinc-400 sm:text-[10px]">
                   {appLabel}
                 </p>
               </div>
@@ -132,8 +179,8 @@ function LocationLoadingSkeleton({ appLabel }: { appLabel: string }) {
           </div>
         ))}
       </div>
-      <p className="mt-6 flex items-center justify-center gap-2 text-sm text-zinc-500">
-        <Loader2 className="h-4 w-4 animate-spin text-pink-500" />
+      <p className="mt-6 flex items-center justify-center gap-2 px-2 text-center text-sm text-zinc-500">
+        <Loader2 className="h-4 w-4 shrink-0 animate-spin text-pink-500" />
         On localise ta position actuelle…
       </p>
     </div>
@@ -234,16 +281,16 @@ export function OnboardingBeforeAfter({
 
   return (
     <div className="mx-auto w-full max-w-2xl">
-      <div className="mb-8 text-center">
+      <div className="mb-6 text-center sm:mb-8">
         <p className="inline-flex items-center gap-1.5 text-sm font-medium text-pink-600">
-          <Sparkles className="h-4 w-4" />
+          <Sparkles className="h-4 w-4 shrink-0" />
           Étape 3
         </p>
-        <h1 className="mt-3 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+        <h1 className="mt-3 text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl lg:text-4xl">
           Voilà ce que tes potes verront sur{" "}
           <span className="gradient-text">{useCase.appName}</span>
         </h1>
-        <p className="mt-3 text-zinc-500">
+        <p className="mt-3 px-1 text-sm text-zinc-500 sm:text-base">
           {!isReady
             ? "On prépare ta comparaison avant / après…"
             : personalizedCopy
@@ -255,13 +302,13 @@ export function OnboardingBeforeAfter({
       {!isReady ? (
         <LocationLoadingSkeleton appLabel={useCase.mapLabel} />
       ) : (
-        <div className="flex items-center justify-center gap-3 sm:gap-8">
+        <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center sm:justify-center sm:gap-6 lg:gap-8">
           <motion.div
             key={`before-${destination.id}-${currentLocation.city}`}
-            initial={{ opacity: 0, x: -24 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.65, ease: "easeOut" }}
-            className="flex-1"
+            className="flex w-full justify-center sm:flex-1"
           >
             <PhoneMockup
               label="Avant"
@@ -274,48 +321,21 @@ export function OnboardingBeforeAfter({
             />
           </motion.div>
 
-          <div className="flex shrink-0 flex-col items-center gap-2">
-            <motion.div
-              animate={{
-                opacity: showAfter ? 1 : isTransition ? 1 : 0.45,
-                scale: isTransition ? [1, 1.14, 1] : showAfter ? 1 : 0.92,
-                x: isTransition ? [0, 5, 0] : 0,
-              }}
-              transition={
-                isTransition
-                  ? { duration: 1.1, repeat: Infinity, ease: "easeInOut" }
-                  : { duration: 0.45 }
-              }
-            >
-              <ArrowRight className="h-6 w-6 text-pink-400 sm:h-8 sm:w-8" />
-            </motion.div>
-
-            <AnimatePresence mode="wait">
-              {isTransition && (
-                <motion.p
-                  key="transition-label"
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  className="flex items-center gap-1 text-[10px] font-medium text-pink-600"
-                >
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  Téléportation…
-                </motion.p>
-              )}
-            </AnimatePresence>
-          </div>
+          <TransitionIndicator
+            isTransition={isTransition}
+            showAfter={showAfter}
+          />
 
           <motion.div
             key={`after-${destination.id}-${showAfter}`}
-            initial={{ opacity: 0.35, x: 24, scale: 0.96 }}
+            initial={{ opacity: 0.35, y: 16, scale: 0.96 }}
             animate={{
               opacity: showAfter ? 1 : isTransition ? 0.55 : 0.35,
-              x: 0,
+              y: 0,
               scale: showAfter ? 1 : 0.96,
             }}
             transition={{ duration: 0.75, ease: "easeOut" }}
-            className="flex-1"
+            className="flex w-full justify-center sm:flex-1"
           >
             <PhoneMockup
               label="Après Anyloc"
@@ -334,7 +354,7 @@ export function OnboardingBeforeAfter({
           initial={{ opacity: 0 }}
           animate={{ opacity: showAfter ? 1 : 0 }}
           transition={{ duration: 0.55 }}
-          className="mt-8 text-center text-sm text-zinc-600"
+          className="mt-6 px-1 text-center text-sm text-zinc-600 sm:mt-8"
         >
           {personalizedCopy ? (
             <>
@@ -358,7 +378,7 @@ export function OnboardingBeforeAfter({
       )}
 
       <Button
-        className="mt-8 h-14 w-full text-base"
+        className="mt-6 h-14 w-full text-base sm:mt-8"
         onClick={onContinue}
         disabled={!canContinue}
       >

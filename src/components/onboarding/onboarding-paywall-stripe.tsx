@@ -101,7 +101,7 @@ export function OnboardingPaywallStripe({
       )}
 
       {loading && !clientSecret ? (
-        <div className="flex min-h-[420px] items-center justify-center rounded-2xl border border-zinc-200 bg-white">
+        <div className="flex min-h-[300px] items-center justify-center rounded-2xl border border-zinc-200 bg-white sm:min-h-[420px]">
           <div className="flex items-center gap-2 text-sm text-zinc-500">
             <Loader2 className="h-4 w-4 animate-spin" />
             Préparation du checkout Stripe…
