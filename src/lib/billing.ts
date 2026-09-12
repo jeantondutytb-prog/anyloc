@@ -114,6 +114,13 @@ export async function syncProfileFromCheckoutSession(
       ? session.subscription
       : session.subscription?.id;
 
+  let subscriptionStatus: string | null = null;
+
+  if (subscriptionId && stripe) {
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    subscriptionStatus = subscription.status;
+  }
+
   const admin = createAdminClient();
   const { error } = await admin.from("profiles").upsert(
     {
@@ -121,7 +128,7 @@ export async function syncProfileFromCheckoutSession(
       email: session.customer_details?.email ?? session.customer_email ?? null,
       stripe_customer_id: customerId ?? null,
       stripe_subscription_id: subscriptionId ?? null,
-      subscription_status: subscriptionId ? "active" : null,
+      subscription_status: subscriptionStatus,
       plan_id: session.metadata?.plan_id ?? null,
       updated_at: new Date().toISOString(),
     },
