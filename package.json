@@ -11,7 +11,7 @@
   "dependencies": {
     "@stripe/react-stripe-js": "^6.9.0",
     "@stripe/stripe-js": "^9.15.0",
-    "@supabase/ssr": "^0.12.6",
+    "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.115.0",
     "@types/leaflet": "^1.9.22",
     "@vercel/blob": "^2.8.0",
