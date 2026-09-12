@@ -122,12 +122,8 @@ export async function resolveDownloadUrl(platform: DownloadPlatform) {
     return null;
   }
 
-  if (platform === "setup-mac" || platform === "setup-win") {
-    const releaseAssets = await fetchGithubReleaseAssets();
-    return releaseAssets[asset.filename] ?? null;
-  }
-
-  return null;
+  const releaseAssets = await fetchGithubReleaseAssets();
+  return releaseAssets[asset.filename] ?? null;
 }
 
 export async function isDownloadAvailable(platform: DownloadPlatform) {
