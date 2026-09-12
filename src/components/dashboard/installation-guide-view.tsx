@@ -9,6 +9,7 @@ import {
   ChevronDown,
   Copy,
   Download,
+  Globe,
   Loader2,
   Lock,
   Monitor,
@@ -523,6 +524,13 @@ export function InstallationGuideView({ embedded = false }: { embedded?: boolean
                   Suis le guide ci-dessous de A à Z. Chaque étape est sur cette
                   page, avec les boutons de téléchargement au bon moment.
                 </p>
+                <Link
+                  href="/web"
+                  className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700 underline-offset-2 hover:underline"
+                >
+                  <Globe className="h-4 w-4" />
+                  En attendant, teste le spoof dans ton navigateur
+                </Link>
               </div>
             </div>
           </div>
