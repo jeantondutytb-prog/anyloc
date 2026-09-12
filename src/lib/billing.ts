@@ -1,4 +1,5 @@
 import type Stripe from "stripe";
+import { ensureUserForEmail } from "@/lib/guest-account";
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 import { stripe } from "@/lib/stripe";
 
@@ -96,11 +97,20 @@ export async function syncProfileFromCheckoutSession(
     return;
   }
 
-  const userId =
-    session.client_reference_id ?? session.metadata?.supabase_user_id;
+  const email =
+    session.customer_details?.email?.trim() ??
+    session.customer_email?.trim() ??
+    null;
+
+  let userId =
+    session.client_reference_id ?? session.metadata?.supabase_user_id ?? null;
+
+  if (!userId && email) {
+    userId = await ensureUserForEmail(email);
+  }
 
   if (!userId) {
-    console.warn("[billing] Checkout session missing Supabase user id.");
+    console.warn("[billing] Checkout session missing Supabase user id and email.");
     return;
   }
 
@@ -108,6 +118,15 @@ export async function syncProfileFromCheckoutSession(
     typeof session.customer === "string"
       ? session.customer
       : session.customer?.id;
+
+  if (customerId && stripe) {
+    await stripe.customers.update(customerId, {
+      email: email ?? undefined,
+      metadata: {
+        supabase_user_id: userId,
+      },
+    });
+  }
 
   const subscriptionId =
     typeof session.subscription === "string"
@@ -148,13 +167,28 @@ export async function syncProfileFromSubscription(
     return;
   }
 
-  const userId = subscription.metadata?.supabase_user_id;
+  let userId = subscription.metadata?.supabase_user_id ?? null;
   const customerId =
     typeof subscription.customer === "string"
       ? subscription.customer
       : subscription.customer?.id;
 
   const admin = createAdminClient();
+
+  if (!userId && customerId && stripe) {
+    const customer = await stripe.customers.retrieve(customerId);
+
+    if (!customer.deleted && customer.email) {
+      userId = await ensureUserForEmail(customer.email);
+      await stripe.subscriptions.update(subscription.id, {
+        metadata: {
+          ...subscription.metadata,
+          supabase_user_id: userId,
+          plan_id: subscription.metadata?.plan_id ?? "",
+        },
+      });
+    }
+  }
 
   if (userId) {
     const { error } = await admin.from("profiles").upsert(

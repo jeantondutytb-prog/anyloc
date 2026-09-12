@@ -2,7 +2,8 @@ import { stripe } from "@/lib/stripe";
 
 export async function verifyCheckoutSessionForUser(
   sessionId: string,
-  userId: string
+  userId: string,
+  userEmail?: string | null
 ) {
   if (!stripe) {
     return { verified: false as const, error: "Stripe non configuré." };
@@ -17,7 +18,17 @@ export async function verifyCheckoutSessionForUser(
   const sessionUserId =
     session.client_reference_id ?? session.metadata?.supabase_user_id;
 
-  if (!sessionUserId || sessionUserId !== userId) {
+  const sessionEmail =
+    session.customer_details?.email?.trim().toLowerCase() ??
+    session.customer_email?.trim().toLowerCase() ??
+    null;
+
+  const emailMatches =
+    Boolean(userEmail) &&
+    Boolean(sessionEmail) &&
+    userEmail!.trim().toLowerCase() === sessionEmail;
+
+  if (sessionUserId && sessionUserId !== userId && !emailMatches) {
     return { verified: false as const, error: "Session non autorisée." };
   }
 

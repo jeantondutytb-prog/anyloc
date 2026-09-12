@@ -22,13 +22,6 @@ export async function POST(request: Request) {
 
     const user = await getAuthenticatedCheckoutUser();
 
-    if (!user) {
-      return NextResponse.json(
-        { error: "Connecte-toi pour continuer." },
-        { status: 401 }
-      );
-    }
-
     const session = await createSubscriptionCheckoutSession({
       plan,
       user,

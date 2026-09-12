@@ -78,6 +78,23 @@ export const LEGACY_STRIPE_PRICE_IDS = [
 
 export const PLANS = [
   {
+    id: "weekly",
+    name: "Hebdomadaire",
+    price: "3,49€",
+    period: "/semaine",
+    perDay: "0,50",
+    perDayLabel: "€/jour",
+    billedNote:
+      "Facturé 3,49 € chaque semaine. Résiliation immédiate — perte d'accès instantanée.",
+    compare: "Soit ~181 € sur l'année si tu restes",
+    description: "Sans engagement, tu testes à la semaine.",
+    savings: undefined,
+    features: PLAN_VALUE_STACK,
+    popular: false,
+    ctaLabel: "Essayer une semaine",
+    stripePriceId: process.env.STRIPE_PRICE_WEEKLY,
+  },
+  {
     id: "monthly",
     name: "Mensuel",
     price: "9,90€",
