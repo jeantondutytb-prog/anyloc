@@ -349,6 +349,9 @@ function PlanOption({
                 {plan.savings}
               </p>
             )}
+            {plan.compare && !plan.savings && (
+              <p className="mt-0.5 text-xs text-zinc-500">{plan.compare}</p>
+            )}
           </div>
         </div>
         <PlanPrice plan={plan} size="card" align="right" className="shrink-0" />

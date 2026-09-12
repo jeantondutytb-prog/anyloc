@@ -75,7 +75,8 @@ export function CheckoutView({
   const requestRef = useRef<AbortController | null>(null);
 
   const selectedPlan =
-    PLANS.find((plan) => plan.id === selectedPlanId) ?? PLANS[2];
+    PLANS.find((plan) => plan.id === selectedPlanId) ??
+    PLANS.find((plan) => plan.id === "annual")!;
 
   async function parseJsonResponse(res: Response) {
     const text = await res.text();
@@ -347,7 +348,7 @@ export function CheckoutView({
                 </p>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 {PLANS.map((plan) => {
                   const selected = plan.id === selectedPlanId;
 
@@ -446,6 +447,10 @@ export function CheckoutView({
                   <CreditCard className="h-4 w-4 text-pink-600" />
                   Paiement sécurisé
                 </div>
+                <p className="mb-4 text-xs text-zinc-500">
+                  Pas de compte requis — ton accès est créé automatiquement après
+                  le paiement.
+                </p>
 
                 {loading && !clientSecret ? (
                   <div className="flex min-h-[420px] items-center justify-center rounded-2xl border border-zinc-200 bg-white">

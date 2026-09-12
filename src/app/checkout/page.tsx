@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { CheckoutView } from "@/components/checkout/checkout-view";
 import { ensureStripeCustomerForUser } from "@/lib/billing";
-import { getCheckoutUrl, isValidPlanId } from "@/lib/constants";
+import { isValidPlanId } from "@/lib/constants";
 import { getStripePublishableKey } from "@/lib/stripe-client";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { getSubscriptionAccessForUser } from "@/lib/subscription";
@@ -24,24 +24,22 @@ export default async function CheckoutPage({
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user) {
-      redirect(`/login?next=${encodeURIComponent(getCheckoutUrl(planId))}`);
-    }
+    if (user) {
+      const access = await getSubscriptionAccessForUser(user.id, user.email);
 
-    const access = await getSubscriptionAccessForUser(user.id, user.email);
+      if (access.hasAccess) {
+        redirect("/dashboard");
+      }
 
-    if (access.hasAccess) {
-      redirect("/dashboard");
-    }
-
-    if (user.email) {
-      try {
-        await ensureStripeCustomerForUser({
-          userId: user.id,
-          email: user.email,
-        });
-      } catch (error) {
-        console.error("[checkout] Failed to create Stripe customer:", error);
+      if (user.email) {
+        try {
+          await ensureStripeCustomerForUser({
+            userId: user.id,
+            email: user.email,
+          });
+        } catch (error) {
+          console.error("[checkout] Failed to create Stripe customer:", error);
+        }
       }
     }
   }

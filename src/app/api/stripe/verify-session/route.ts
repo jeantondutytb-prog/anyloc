@@ -17,7 +17,11 @@ export async function GET(request: Request) {
   }
 
   try {
-    const result = await verifyCheckoutSessionForUser(sessionId, user.id);
+    const result = await verifyCheckoutSessionForUser(
+      sessionId,
+      user.id,
+      user.email
+    );
 
     if (!result.verified) {
       return NextResponse.json({ error: result.error }, { status: 400 });
