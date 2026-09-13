@@ -54,6 +54,16 @@ export function Hero() {
             </Link>
           </div>
 
+          <p className="mt-4 text-sm text-zinc-500">
+            Déjà client ?{" "}
+            <Link
+              href="/login"
+              className="font-medium text-pink-600 transition-colors hover:text-pink-700 hover:underline"
+            >
+              Connexion
+            </Link>
+          </p>
+
           <div className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-zinc-500">
             <span className="flex items-center gap-1.5">
               <Check className="h-4 w-4 text-pink-600" />

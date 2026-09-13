@@ -30,9 +30,11 @@ export function Header() {
           </Link>
         </nav>
 
-        <div className="flex items-center gap-3">
-          <Link href="/login" className="hidden sm:block">
-            <Button variant="ghost" size="sm">Connexion</Button>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Link href="/login">
+            <Button variant="ghost" size="sm">
+              Connexion
+            </Button>
           </Link>
           <Link href={getOnboardingUrl("annual")}>
             <Button size="sm">Fake ma loc</Button>
