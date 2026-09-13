@@ -59,6 +59,13 @@ class MockLocationService : Service() {
         }
 
         locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+
+        if (!MockLocationHelper.isMockLocationAllowed(this)) {
+            Log.w(TAG, "Anyloc is not selected as mock location app")
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
         ensureTestProvider()
 
         pollJob?.cancel()
@@ -121,7 +128,7 @@ class MockLocationService : Service() {
 
         try {
             manager.addTestProvider(
-                MOCK_PROVIDER,
+                LocationManager.GPS_PROVIDER,
                 false,
                 false,
                 false,
@@ -132,15 +139,16 @@ class MockLocationService : Service() {
                 Criteria.POWER_LOW,
                 Criteria.ACCURACY_FINE,
             )
-            manager.setTestProviderEnabled(MOCK_PROVIDER, true)
-        } catch (_: SecurityException) {
-            // Mock location app not selected in developer options.
         } catch (_: IllegalArgumentException) {
-            try {
-                manager.setTestProviderEnabled(MOCK_PROVIDER, true)
-            } catch (_: Exception) {
-                // Provider already exists or cannot be enabled yet.
-            }
+            // GPS provider already exists — keep going.
+        } catch (_: SecurityException) {
+            return
+        }
+
+        try {
+            manager.setTestProviderEnabled(LocationManager.GPS_PROVIDER, true)
+        } catch (_: Exception) {
+            // Provider cannot be enabled yet.
         }
     }
 
@@ -154,7 +162,7 @@ class MockLocationService : Service() {
             return
         }
 
-        val location = Location(MOCK_PROVIDER).apply {
+        val location = Location(LocationManager.GPS_PROVIDER).apply {
             latitude = lat
             longitude = lng
             this.accuracy = accuracy.toFloat()
@@ -163,11 +171,16 @@ class MockLocationService : Service() {
         }
 
         try {
-            manager.setTestProviderLocation(MOCK_PROVIDER, location)
+            manager.setTestProviderLocation(LocationManager.GPS_PROVIDER, location)
         } catch (_: SecurityException) {
             // Mock location permission missing.
         } catch (_: IllegalArgumentException) {
             ensureTestProvider()
+            try {
+                manager.setTestProviderLocation(LocationManager.GPS_PROVIDER, location)
+            } catch (_: Exception) {
+                // Provider still unavailable.
+            }
         }
     }
 
@@ -175,7 +188,7 @@ class MockLocationService : Service() {
         val manager = locationManager ?: return
 
         try {
-            manager.removeTestProvider(MOCK_PROVIDER)
+            manager.setTestProviderEnabled(LocationManager.GPS_PROVIDER, false)
         } catch (_: Exception) {
             // Ignore cleanup errors.
         }
@@ -211,7 +224,6 @@ class MockLocationService : Service() {
         const val EXTRA_API_BASE_URL = "api_base_url"
         const val EXTRA_DEVICE_TOKEN = "device_token"
         private const val TAG = "MockLocationService"
-        private const val MOCK_PROVIDER = "anyloc_mock"
         private const val NOTIFICATION_ID = 1001
         private const val POLL_INTERVAL_MS = 15_000L
 
