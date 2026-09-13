@@ -12,7 +12,6 @@ import {
   Globe,
   Loader2,
   Lock,
-  Monitor,
   Settings,
   Shield,
   Smartphone,
@@ -296,28 +295,67 @@ function TroubleshootingAccordion({
   );
 }
 
+function NoComputerNotice() {
+  return (
+    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-950">
+      <p className="font-semibold">Pas de Mac ni de PC Windows ?</p>
+      <p className="mt-1">
+        L&apos;installation sur iPhone nécessite un ordinateur (Mac ou Windows) branché
+        en USB — c&apos;est une contrainte Apple, pas Anyloc. Sans ordinateur compatible,
+        l&apos;installation iPhone n&apos;est pas possible.
+      </p>
+      <p className="mt-2">
+        Si tu as un téléphone <strong>Android</strong>, passe à l&apos;onglet Android :
+        tout se fait depuis le téléphone, sans ordinateur.
+      </p>
+      <p className="mt-2 text-xs text-amber-800/90">
+        Si aucune de ces options ne te convient, consulte la{" "}
+        <Link
+          href="/politique-de-remboursement"
+          className="font-medium underline underline-offset-2"
+        >
+          politique de remboursement
+        </Link>{" "}
+        (garantie 48 h ou droit de rétractation légal).
+      </p>
+    </div>
+  );
+}
+
 function IosGuide({ hasAccess }: { hasAccess: boolean }) {
   return (
     <div className="space-y-4">
+      <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-4 text-sm text-blue-950">
+        <p className="font-semibold">iPhone : un ordinateur est obligatoire (Mac ou Windows)</p>
+        <p className="mt-1">
+          Le chemin d&apos;installation iPhone est <strong>différent</strong> d&apos;Android.
+          Tu auras besoin d&apos;un Mac ou d&apos;un PC Windows pour la première installation
+          via USB. Ensuite, tu gères ta position depuis l&apos;iPhone.
+        </p>
+      </div>
+
       <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-900">
         <p className="font-semibold">Mains libres, 100 % depuis l&apos;iPhone</p>
         <p className="mt-1">
           Branche ton iPhone une seule fois. Ensuite, Anyloc Setup reste en tâche de fond
-          sur ton Mac et tu contrôles ta position depuis l&apos;app iPhone — sans toucher l&apos;ordi.
+          sur ton ordinateur et tu contrôles ta position depuis l&apos;app iPhone — sans
+          toucher l&apos;ordi.
         </p>
       </div>
 
-      <StepCard number={1} title="Télécharge Anyloc Setup sur Mac">
+      <NoComputerNotice />
+
+      <StepCard number={1} title="Télécharge Anyloc Setup sur ton ordinateur">
         <p>
-          Anyloc Setup est l&apos;app Mac qui fait le lien entre ton iPhone et le GPS.
-          Elle se lance automatiquement au démarrage et reste dans la barre de menus.
+          Anyloc Setup est le programme qui fait le lien entre ton iPhone et le GPS.
+          Sur Mac, il se lance au démarrage et reste dans la barre de menus.
         </p>
         <DownloadButtons
-          assetIds={["setup-mac"]}
+          assetIds={["setup-mac", "setup-win"]}
           hasAccess={hasAccess}
         />
         <p className="text-xs text-zinc-500">
-          Mac : Ventura ou plus récent · Apple Silicon ou Intel
+          Mac : Ventura ou plus récent · Windows : 10 ou plus récent · Câble USB requis
         </p>
 
         <TroubleshootingAccordion title="Mac : « Anyloc Setup est endommagé » ?">
@@ -394,41 +432,128 @@ function IosGuide({ hasAccess }: { hasAccess: boolean }) {
 function AndroidGuide({ hasAccess }: { hasAccess: boolean }) {
   return (
     <div className="space-y-4">
+      <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-4 text-sm text-blue-950">
+        <p className="font-semibold">Android : aucun ordinateur requis</p>
+        <p className="mt-1">
+          Le chemin d&apos;installation Android est <strong>différent</strong> de
+          l&apos;iPhone. Tout se fait depuis ton téléphone — pas de Mac, pas de PC,
+          pas de câble USB.
+        </p>
+      </div>
+
       <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-900">
         <p className="font-semibold">100 % depuis ton téléphone</p>
         <p className="mt-1">
-          Pas besoin d&apos;ordinateur. Installe l&apos;APK, configure une fois,
+          Installe l&apos;APK, configure une fois les options développeur,
           puis change ta position dans l&apos;app Anyloc.
         </p>
       </div>
 
       <StepCard number={1} title="Télécharge et installe l'APK Anyloc">
         <p>
-          Depuis ton Android, télécharge et installe l&apos;app — pas besoin
-          d&apos;ordinateur.
+          Depuis ton Android, télécharge et installe l&apos;app directement —
+          tu peux faire cette étape depuis le navigateur de ton téléphone.
         </p>
         <DownloadButtons assetIds={["apk"]} hasAccess={hasAccess} />
         <ol className="list-decimal space-y-2 pl-5">
           <li>Ouvre le fichier <strong>Anyloc.apk</strong> téléchargé</li>
-          <li>Si Android bloque, autorise ton navigateur à <strong>installer des apps inconnues</strong></li>
+          <li>
+            Si Android bloque l&apos;installation, autorise ton navigateur à{" "}
+            <strong>installer des applications inconnues</strong> (Chrome, Samsung
+            Internet, etc.)
+          </li>
+          <li>Ouvre l&apos;app <strong>Anyloc</strong> une fois installée</li>
         </ol>
+
+        <TroubleshootingAccordion title="Android bloque le téléchargement ou l'installation ?">
+          <ol className="list-decimal space-y-2 pl-5">
+            <li>
+              <strong>Chrome</strong> : Paramètres → Applications → Installer des
+              applications inconnues → Chrome → Autoriser
+            </li>
+            <li>
+              <strong>Samsung</strong> : Paramètres → Applications → menu ⋮ →
+              Accès spécial → Installer des applis inconnues → ton navigateur →
+              Autoriser
+            </li>
+            <li>
+              Si un message « fichier potentiellement dangereux » s&apos;affiche,
+              choisis <strong>Télécharger quand même</strong>
+            </li>
+          </ol>
+        </TroubleshootingAccordion>
       </StepCard>
 
-      <StepCard number={2} title="Configure le GPS fictif">
+      <StepCard number={2} title="Active les options développeur et le GPS fictif">
         <div className="flex items-start gap-3 rounded-xl bg-zinc-50 p-4">
           <Settings className="mt-0.5 h-5 w-5 shrink-0 text-pink-600" />
-          <ol className="list-decimal space-y-2 pl-5">
-            <li><strong>Paramètres → À propos</strong> → tape 7 fois sur <strong>Numéro de build</strong></li>
-            <li><strong>Options pour les développeurs</strong> → active-les</li>
-            <li>Choisis <strong>Anyloc</strong> comme <strong>Application de localisation fictive</strong></li>
-          </ol>
+          <div className="space-y-3">
+            <p className="font-medium text-zinc-800">Étape A — Activer le mode développeur</p>
+            <ol className="list-decimal space-y-2 pl-5">
+              <li>
+                <strong>Paramètres → À propos du téléphone</strong> (ou Infos sur
+                le téléphone)
+              </li>
+              <li>
+                Tape 7 fois sur <strong>Numéro de build</strong> (ou Numéro de
+                version MIUI sur Xiaomi)
+              </li>
+              <li>
+                Un message confirme que les <strong>options pour les
+                développeurs</strong> sont activées
+              </li>
+            </ol>
+          </div>
+        </div>
+        <div className="flex items-start gap-3 rounded-xl bg-zinc-50 p-4">
+          <Settings className="mt-0.5 h-5 w-5 shrink-0 text-pink-600" />
+          <div className="space-y-3">
+            <p className="font-medium text-zinc-800">Étape B — Choisir Anyloc comme app de localisation fictive</p>
+            <ol className="list-decimal space-y-2 pl-5">
+              <li>
+                <strong>Paramètres → Options pour les développeurs</strong> →
+                active le menu si besoin
+              </li>
+              <li>
+                Cherche <strong>Application de localisation fictive</strong> (ou
+                « Select mock location app »)
+              </li>
+              <li>Sélectionne <strong>Anyloc</strong></li>
+            </ol>
+          </div>
         </div>
         <div className="flex items-start gap-3 rounded-xl bg-zinc-50 p-4">
           <Shield className="mt-0.5 h-5 w-5 shrink-0 text-pink-600" />
           <p className="text-sm">
-            Autorise Anyloc en arrière-plan si Android te le demande.
+            Autorise Anyloc en arrière-plan et la localisation « tout le temps »
+            si Android te le demande.
           </p>
         </div>
+
+        <TroubleshootingAccordion title="Je ne trouve pas « Application de localisation fictive » ?">
+          <ul className="space-y-2">
+            <li>
+              <strong>Samsung</strong> : Options développeur → Application de
+              localisation fictive → Anyloc
+            </li>
+            <li>
+              <strong>Xiaomi / Redmi / POCO</strong> : Options développeur →
+              Sélectionner une application de localisation fictive → Anyloc
+            </li>
+            <li>
+              <strong>Huawei</strong> : Options développeur → Application de
+              simulation de position → Anyloc
+            </li>
+            <li>
+              <strong>Google Pixel</strong> : Options développeur → Select mock
+              location app → Anyloc
+            </li>
+            <li>
+              Si l&apos;option est grisée, ouvre d&apos;abord l&apos;app Anyloc
+              une fois, puis reviens dans les paramètres.
+            </li>
+          </ul>
+        </TroubleshootingAccordion>
       </StepCard>
 
       <StepCard number={3} title="Lie ton Android à ton compte">
@@ -436,11 +561,37 @@ function AndroidGuide({ hasAccess }: { hasAccess: boolean }) {
       </StepCard>
 
       <StepCard number={4} title="Choisis ta destination dans l'app">
-        <p>
-          Ouvre Anyloc, colle ton code, cherche une ville (ex. Marbella) et
-          appuie dessus pour activer le GPS. Tu changes de spot quand tu veux —
-          tout se fait depuis l&apos;app.
+        <ol className="list-decimal space-y-2 pl-5">
+          <li>Ouvre <strong>Anyloc</strong> et colle ton code de liaison</li>
+          <li>Cherche une ville (ex. Marbella) ou tape une adresse</li>
+          <li>Appuie sur le lieu pour activer le GPS fictif</li>
+          <li>
+            Vérifie dans Google Maps ou Snapchat que ta position a bien changé
+          </li>
+        </ol>
+        <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-950">
+          Tu changes de spot quand tu veux — tout se fait depuis l&apos;app, sans
+          ordinateur.
         </p>
+
+        <TroubleshootingAccordion title="Le GPS ne change pas après installation ?">
+          <ol className="list-decimal space-y-2 pl-5">
+            <li>Vérifie que <strong>Anyloc</strong> est bien l&apos;app de localisation fictive</li>
+            <li>Active la localisation (GPS) sur ton téléphone</li>
+            <li>Désactive les économies d&apos;énergie pour Anyloc</li>
+            <li>Ferme et rouvre l&apos;app testée (Snapchat, Instagram…)</li>
+            <li>
+              Si tu es toujours bloqué, contacte{" "}
+              <a href="mailto:support@anyloc.io" className="font-medium underline">
+                support@anyloc.io
+              </a>{" "}
+              avec des captures d&apos;écran — voir la{" "}
+              <Link href="/politique-de-remboursement" className="font-medium underline">
+                politique de remboursement
+              </Link>
+            </li>
+          </ol>
+        </TroubleshootingAccordion>
       </StepCard>
     </div>
   );
@@ -457,6 +608,8 @@ export function InstallationGuideView({ embedded = false }: { embedded?: boolean
     const urlPlatform = searchParams.get("platform");
     if (urlPlatform === "android" || urlPlatform === "ios") {
       setPlatform(urlPlatform);
+    } else if (/android/i.test(navigator.userAgent)) {
+      setPlatform("android");
     }
 
     const sessionId = searchParams.get("session_id");
@@ -542,8 +695,9 @@ export function InstallationGuideView({ embedded = false }: { embedded?: boolean
             Installe Anyloc sur ton téléphone
           </h1>
           <p className="mt-3 text-zinc-600">
-            Suis les étapes une par une, dans l&apos;ordre. Chaque bouton est sur
-            cette page.
+            Suis les étapes une par une, dans l&apos;ordre. Le chemin{" "}
+            <strong>iPhone</strong> et <strong>Android</strong> ne sont pas les
+            mêmes — choisis l&apos;onglet qui correspond à ton téléphone.
           </p>
 
           <div className="mt-8 flex gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 p-1.5">
@@ -559,6 +713,7 @@ export function InstallationGuideView({ embedded = false }: { embedded?: boolean
             >
               <Smartphone className="h-4 w-4" />
               iPhone
+              <span className="hidden text-xs text-zinc-400 sm:inline">· Mac ou PC</span>
             </button>
             <button
               type="button"
@@ -570,8 +725,9 @@ export function InstallationGuideView({ embedded = false }: { embedded?: boolean
                   : "text-zinc-600 hover:text-zinc-900"
               )}
             >
-              <Monitor className="h-4 w-4" />
+              <Smartphone className="h-4 w-4" />
               Android
+              <span className="hidden text-xs text-zinc-400 sm:inline">· sans ordi</span>
             </button>
           </div>
 
@@ -588,7 +744,7 @@ export function InstallationGuideView({ embedded = false }: { embedded?: boolean
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="h-4 w-4 text-pink-600" />
-                    Un Mac (l&apos;iPhone reste branché en USB)
+                    Un Mac ou un PC Windows (USB)
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="h-4 w-4 text-pink-600" />
@@ -604,6 +760,10 @@ export function InstallationGuideView({ embedded = false }: { embedded?: boolean
                   <li className="flex items-center gap-2">
                     <Check className="h-4 w-4 text-pink-600" />
                     Android 10 ou plus récent
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-pink-600" />
+                    Aucun ordinateur requis
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="h-4 w-4 text-pink-600" />
