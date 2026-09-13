@@ -2,6 +2,7 @@ import type Stripe from "stripe";
 import { ensureUserForEmail } from "@/lib/guest-account";
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 import { stripe } from "@/lib/stripe";
+import { logFunnelEvent } from "@/lib/funnel";
 
 export type ProfileRow = {
   id: string;
@@ -157,6 +158,12 @@ export async function syncProfileFromCheckoutSession(
   if (error) {
     throw new Error(`Failed to sync profile from checkout: ${error.message}`);
   }
+
+  logFunnelEvent("purchase_completed", {
+    planId: session.metadata?.plan_id ?? null,
+    email,
+    stripeSessionId: session.id,
+  });
 }
 
 export async function syncProfileFromSubscription(

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { CheckoutView } from "@/components/checkout/checkout-view";
 import { ensureStripeCustomerForUser } from "@/lib/billing";
 import { isValidPlanId } from "@/lib/constants";
+import { logFunnelEvent } from "@/lib/funnel";
 import { getStripePublishableKey } from "@/lib/stripe-client";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { getSubscriptionAccessForUser } from "@/lib/subscription";
@@ -42,6 +43,10 @@ export default async function CheckoutPage({
         }
       }
     }
+  }
+
+  if (canceled !== "true") {
+    logFunnelEvent("checkout_page_viewed", { planId });
   }
 
   return (
