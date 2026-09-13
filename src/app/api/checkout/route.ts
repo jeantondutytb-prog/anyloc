@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { PLANS } from "@/lib/constants";
+import { logFunnelEvent } from "@/lib/funnel";
 import {
   createSubscriptionCheckoutSession,
   getAuthenticatedCheckoutUser,
@@ -34,6 +35,12 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+
+    logFunnelEvent("checkout_started", {
+      planId,
+      email: user?.email ?? null,
+      stripeSessionId: session.id,
+    });
 
     return NextResponse.json({ url: session.url });
   } catch (error) {
