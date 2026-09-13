@@ -19,6 +19,7 @@ import androidx.core.content.ContextCompat
 import io.anyloc.app.api.AnylocApi
 import io.anyloc.app.api.GeocodeResult
 import io.anyloc.app.api.RemoteLocation
+import io.anyloc.app.location.MockLocationHelper
 import io.anyloc.app.location.MockLocationService
 
 class MainActivity : AppCompatActivity() {
@@ -154,12 +155,33 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
+        updateSpoofingStatus(credentials, showSuccessToast = false)
+    }
+
+    private fun updateSpoofingStatus(
+        credentials: Pair<String, String>,
+        showSuccessToast: Boolean,
+    ) {
+        if (!MockLocationHelper.isMockLocationAllowed(this)) {
+            statusText.text = "Choisis Anyloc dans Options développeur → Application de localisation fictive"
+            Toast.makeText(
+                this,
+                "Paramètres → Options pour les développeurs → Application de localisation fictive → Anyloc",
+                Toast.LENGTH_LONG,
+            ).show()
+            return
+        }
+
         persistCredentials(credentials.first, credentials.second)
         val started = MockLocationService.start(this, credentials.first, credentials.second)
         statusText.text = if (started) {
-            "Prêt — cherche une ville en haut de l'app"
+            "C'est bon — cherche une ville en haut de l'app"
         } else {
-            "Active Anyloc comme app de localisation fictive dans les options développeur"
+            "Impossible de démarrer le GPS — réessaie dans quelques secondes"
+        }
+
+        if (started && showSuccessToast) {
+            Toast.makeText(this, "GPS prêt — cherche ta ville en haut", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -424,18 +446,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        persistCredentials(credentials.first, credentials.second)
-        val started = MockLocationService.start(this, credentials.first, credentials.second)
-        statusText.text = if (started) {
-            "Service démarré — cherche une ville en haut"
-        } else {
-            "Sélectionne Anyloc comme app de localisation fictive"
-        }
-        Toast.makeText(
-            this,
-            "Options développeur → Application de localisation fictive → Anyloc",
-            Toast.LENGTH_LONG,
-        ).show()
+        updateSpoofingStatus(credentials, showSuccessToast = true)
     }
 
     companion object {
