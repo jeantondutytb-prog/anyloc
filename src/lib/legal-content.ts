@@ -45,7 +45,7 @@ export const LEGAL_PAGES: Record<string, LegalPageContent> = {
       {
         title: "3. Compte utilisateur",
         paragraphs: [
-          "Tu es responsable de la confidentialité de tes identifiants et de toute activité réalisée depuis ton compte. Tu t'engage à fournir des informations exactes lors de l'inscription.",
+          "Tu es responsable de la confidentialité de tes identifiants et de toute activité réalisée depuis ton compte. Tu t'engages à fournir des informations exactes lors de l'inscription.",
         ],
       },
       {
@@ -58,7 +58,7 @@ export const LEGAL_PAGES: Record<string, LegalPageContent> = {
       {
         title: "5. Utilisation acceptable",
         paragraphs: [
-          "Tu t'engage à utiliser Anyloc conformément aux lois applicables et aux conditions des plateformes tierces que tu utilises. Anyloc ne peut être tenu responsable d'une utilisation contraire aux règles d'une application ou d'un service tiers.",
+          "Tu t'engages à utiliser Anyloc conformément aux lois applicables et aux conditions des plateformes tierces que tu utilises. Anyloc ne peut être tenu responsable d'une utilisation contraire aux règles d'une application ou d'un service tiers.",
         ],
         list: [
           "Ne pas tenter de contourner les mesures de sécurité du service",

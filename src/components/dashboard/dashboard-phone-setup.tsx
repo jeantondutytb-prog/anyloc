@@ -246,8 +246,8 @@ export function DashboardPhoneSetup({
           Avant de choisir une ville
         </p>
         <p className="mt-1 text-sm leading-relaxed text-zinc-600">
-          On prépare ton téléphone. Suis les étapes dans l&apos;ordre — ton mot de
-          passe est déjà créé, tu n&apos;as presque rien à taper toi-même.
+          On prépare ton téléphone. Suis les étapes dans l&apos;ordre — ton code de
+          liaison est déjà créé, tu n&apos;as presque rien à taper toi-même.
         </p>
       </div>
 
@@ -424,7 +424,7 @@ export function DashboardPhoneSetup({
                     <strong>Numéro de build</strong>
                   </li>
                   <li>
-                    <strong>Options pour les développeurs</strong> → active-les
+                    <strong>Options pour les développeurs</strong> → Active-les
                   </li>
                   <li>
                     Cherche <strong>Application de localisation fictive</strong> → choisis{" "}
@@ -438,7 +438,7 @@ export function DashboardPhoneSetup({
           <details className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm">
             <summary className="flex cursor-pointer list-none items-center gap-2 font-medium text-zinc-700 [&::-webkit-details-marker]:hidden">
               <ChevronDown className="h-4 w-4 text-zinc-400" />
-              Ça ne marche pas ? Copie le mot de passe à la main
+              Ça ne marche pas ? Copie le code à la main
             </summary>
             <div className="mt-3 space-y-2 border-t border-zinc-100 pt-3">
               <code className="block break-all rounded-lg bg-zinc-50 px-2 py-1.5 text-[10px] text-zinc-700">
@@ -446,7 +446,7 @@ export function DashboardPhoneSetup({
               </code>
               <Button size="sm" variant="secondary" onClick={() => void copyToken()}>
                 <Copy className="h-4 w-4" />
-                {copied ? "Copié" : "Copier le mot de passe"}
+                {copied ? "Copié" : "Copier le code"}
               </Button>
             </div>
           </details>

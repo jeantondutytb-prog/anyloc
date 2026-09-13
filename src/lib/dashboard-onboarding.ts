@@ -26,7 +26,7 @@ export const ONBOARDING_STEP_ITEMS = [
     id: "install" as const,
     title: "Installe l'app sur ton téléphone",
     description:
-      "Suis les étapes en bas de la carte. Ton mot de passe est déjà prêt — scanne le carré avec l'appareil photo.",
+      "Suis les étapes en bas de la carte. Ton code de liaison est déjà prêt — scanne le carré avec l'appareil photo.",
     cta: "Voir le guide",
   },
   {

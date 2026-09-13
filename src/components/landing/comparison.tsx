@@ -40,7 +40,7 @@ export function Comparison() {
                   App GPS fake
                 </th>
                 <th className="px-4 py-4 text-center text-sm font-medium text-zinc-500">
-                  Capture écran
+                  Capture d&apos;écran
                 </th>
               </tr>
             </thead>

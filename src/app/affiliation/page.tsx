@@ -11,7 +11,7 @@ import { createPageMetadata } from "@/lib/seo";
 export const metadata = createPageMetadata({
   title: `Programme d'affiliation — ${SITE.name}`,
   description:
-    "Le programme d'affiliation Anyloc arrive bientôt. Inscris-toi sur liste d'attente pour être informé du lancement.",
+    "Le programme d'affiliation Anyloc arrive bientôt. Inscris-toi sur la liste d'attente pour être informé du lancement.",
   path: "/affiliation",
 });
 
