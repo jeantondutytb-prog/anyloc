@@ -3,6 +3,7 @@ package io.anyloc.app
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -32,6 +33,7 @@ class MainActivity : AppCompatActivity() {
     private val mainHandler = Handler(Looper.getMainLooper())
     private var searchRunnable: Runnable? = null
     private var activeLocation: RemoteLocation? = null
+    private var pendingSpoofingStart = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -76,16 +78,49 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        requestLocationPermissionIfNeeded()
         handleDeepLink(intent)
+        requestRuntimePermissionsIfNeeded()
         refreshCurrentLocation()
-        ensureSpoofingRunning()
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         handleDeepLink(intent)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        refreshCurrentLocation()
+        ensureSpoofingRunningIfReady()
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray,
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        if (requestCode != RUNTIME_PERMISSIONS_REQUEST) {
+            return
+        }
+
+        if (hasRequiredRuntimePermissions()) {
+            if (pendingSpoofingStart) {
+                pendingSpoofingStart = false
+                ensureSpoofingRunningIfReady()
+            }
+            return
+        }
+
+        pendingSpoofingStart = false
+        statusText.text = "Autorise la localisation et les notifications pour utiliser Anyloc"
+        Toast.makeText(
+            this,
+            "Anyloc a besoin de la localisation pour fonctionner",
+            Toast.LENGTH_LONG,
+        ).show()
     }
 
     private fun handleDeepLink(intent: Intent?) {
@@ -104,23 +139,28 @@ class MainActivity : AppCompatActivity() {
         apiBaseUrlInput.setText(api)
         tokenInput.setText(token)
         persistCredentials(api, token)
-        ensureSpoofingRunning()
-        statusText.text = "Configuré depuis le dashboard ✓"
+        ensureSpoofingRunningIfReady()
+        statusText.text = "Configuré depuis le lien ✓"
         Toast.makeText(this, "Anyloc configuré automatiquement", Toast.LENGTH_SHORT).show()
     }
 
-    override fun onResume() {
-        super.onResume()
-        refreshCurrentLocation()
-        ensureSpoofingRunning()
-    }
-
-    private fun ensureSpoofingRunning() {
+    private fun ensureSpoofingRunningIfReady() {
         val credentials = readCredentials() ?: return
 
+        if (!hasRequiredRuntimePermissions()) {
+            pendingSpoofingStart = true
+            requestRuntimePermissionsIfNeeded()
+            statusText.text = "Autorise la localisation pour continuer"
+            return
+        }
+
         persistCredentials(credentials.first, credentials.second)
-        MockLocationService.start(this, credentials.first, credentials.second)
-        statusText.text = "En attente d'une position depuis le dashboard…"
+        val started = MockLocationService.start(this, credentials.first, credentials.second)
+        statusText.text = if (started) {
+            "Prêt — cherche une ville en haut de l'app"
+        } else {
+            "Active Anyloc comme app de localisation fictive dans les options développeur"
+        }
     }
 
     private fun scheduleSearch(query: String) {
@@ -187,6 +227,13 @@ class MainActivity : AppCompatActivity() {
 
         if (credentials == null) {
             Toast.makeText(this, "Configure d'abord ton token ci-dessous", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        if (!hasRequiredRuntimePermissions()) {
+            pendingSpoofingStart = true
+            requestRuntimePermissionsIfNeeded()
+            Toast.makeText(this, "Autorise la localisation pour activer le GPS", Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -289,17 +336,39 @@ class MainActivity : AppCompatActivity() {
             .apply()
     }
 
-    private fun requestLocationPermissionIfNeeded() {
-        if (
-            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-            != PackageManager.PERMISSION_GRANTED
-        ) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                LOCATION_PERMISSION_REQUEST,
-            )
+    private fun requiredRuntimePermissions(): Array<String> {
+        val permissions = mutableListOf(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+        )
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissions.add(Manifest.permission.POST_NOTIFICATIONS)
         }
+
+        return permissions.toTypedArray()
+    }
+
+    private fun hasRequiredRuntimePermissions(): Boolean {
+        return requiredRuntimePermissions().all { permission ->
+            ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
+        }
+    }
+
+    private fun requestRuntimePermissionsIfNeeded() {
+        val missingPermissions = requiredRuntimePermissions().filter { permission ->
+            ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED
+        }
+
+        if (missingPermissions.isEmpty()) {
+            return
+        }
+
+        ActivityCompat.requestPermissions(
+            this,
+            missingPermissions.toTypedArray(),
+            RUNTIME_PERMISSIONS_REQUEST,
+        )
     }
 
     private fun testConnection() {
@@ -333,9 +402,9 @@ class MainActivity : AppCompatActivity() {
                 statusText.text = if (location.isActive) {
                     "Connecté · ${location.name}"
                 } else {
-                    "Connecté · en attente d'une position depuis le dashboard"
+                    "Connecté — cherche une ville en haut de l'app"
                 }
-                ensureSpoofingRunning()
+                ensureSpoofingRunningIfReady()
             }
         }.start()
     }
@@ -348,9 +417,20 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
+        if (!hasRequiredRuntimePermissions()) {
+            pendingSpoofingStart = true
+            requestRuntimePermissionsIfNeeded()
+            Toast.makeText(this, "Autorise la localisation pour démarrer", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         persistCredentials(credentials.first, credentials.second)
-        MockLocationService.start(this, credentials.first, credentials.second)
-        statusText.text = "Service démarré — sélectionne Anyloc comme app de loc fictive"
+        val started = MockLocationService.start(this, credentials.first, credentials.second)
+        statusText.text = if (started) {
+            "Service démarré — cherche une ville en haut"
+        } else {
+            "Sélectionne Anyloc comme app de localisation fictive"
+        }
         Toast.makeText(
             this,
             "Options développeur → Application de localisation fictive → Anyloc",
@@ -362,6 +442,6 @@ class MainActivity : AppCompatActivity() {
         private const val PREFS_NAME = "anyloc_prefs"
         private const val KEY_API_BASE_URL = "api_base_url"
         private const val KEY_DEVICE_TOKEN = "device_token"
-        private const val LOCATION_PERMISSION_REQUEST = 42
+        private const val RUNTIME_PERMISSIONS_REQUEST = 42
     }
 }

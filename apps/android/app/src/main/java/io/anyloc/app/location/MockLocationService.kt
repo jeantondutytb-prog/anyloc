@@ -8,14 +8,17 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.pm.ServiceInfo
 import android.location.Criteria
 import android.location.Location
 import android.location.LocationManager
 import android.os.Build
 import android.os.IBinder
 import android.os.SystemClock
+import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
+import androidx.core.app.ServiceCompat
 import io.anyloc.app.R
 import io.anyloc.app.api.AnylocApi
 import kotlinx.coroutines.CoroutineScope
@@ -36,7 +39,25 @@ class MockLocationService : Service() {
         val apiBaseUrl = intent?.getStringExtra(EXTRA_API_BASE_URL) ?: return START_NOT_STICKY
         val token = intent.getStringExtra(EXTRA_DEVICE_TOKEN) ?: return START_NOT_STICKY
 
-        startForeground(NOTIFICATION_ID, buildNotification("Synchronisation Anyloc"))
+        if (!hasRequiredPermissions()) {
+            Log.w(TAG, "Missing runtime permissions for foreground mock location service")
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
+        try {
+            ServiceCompat.startForeground(
+                this,
+                NOTIFICATION_ID,
+                buildNotification("Synchronisation Anyloc"),
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION,
+            )
+        } catch (error: Exception) {
+            Log.e(TAG, "Unable to start foreground service", error)
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
         locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         ensureTestProvider()
 
@@ -74,16 +95,33 @@ class MockLocationService : Service() {
         super.onDestroy()
     }
 
+    private fun hasRequiredPermissions(): Boolean {
+        val hasLocationPermission =
+            ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED ||
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED
+
+        if (!hasLocationPermission) {
+            return false
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            return ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.FOREGROUND_SERVICE_LOCATION,
+            ) == PackageManager.PERMISSION_GRANTED
+        }
+
+        return true
+    }
+
     private fun ensureTestProvider() {
         val manager = locationManager ?: return
 
-        if (!manager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            return
-        }
-
         try {
             manager.addTestProvider(
-                LocationManager.GPS_PROVIDER,
+                MOCK_PROVIDER,
                 false,
                 false,
                 false,
@@ -94,11 +132,15 @@ class MockLocationService : Service() {
                 Criteria.POWER_LOW,
                 Criteria.ACCURACY_FINE,
             )
-            manager.setTestProviderEnabled(LocationManager.GPS_PROVIDER, true)
+            manager.setTestProviderEnabled(MOCK_PROVIDER, true)
         } catch (_: SecurityException) {
             // Mock location app not selected in developer options.
         } catch (_: IllegalArgumentException) {
-            // Provider already exists.
+            try {
+                manager.setTestProviderEnabled(MOCK_PROVIDER, true)
+            } catch (_: Exception) {
+                // Provider already exists or cannot be enabled yet.
+            }
         }
     }
 
@@ -112,7 +154,7 @@ class MockLocationService : Service() {
             return
         }
 
-        val location = Location(LocationManager.GPS_PROVIDER).apply {
+        val location = Location(MOCK_PROVIDER).apply {
             latitude = lat
             longitude = lng
             this.accuracy = accuracy.toFloat()
@@ -121,9 +163,11 @@ class MockLocationService : Service() {
         }
 
         try {
-            manager.setTestProviderLocation(LocationManager.GPS_PROVIDER, location)
+            manager.setTestProviderLocation(MOCK_PROVIDER, location)
         } catch (_: SecurityException) {
             // Mock location permission missing.
+        } catch (_: IllegalArgumentException) {
+            ensureTestProvider()
         }
     }
 
@@ -131,7 +175,7 @@ class MockLocationService : Service() {
         val manager = locationManager ?: return
 
         try {
-            manager.removeTestProvider(LocationManager.GPS_PROVIDER)
+            manager.removeTestProvider(MOCK_PROVIDER)
         } catch (_: Exception) {
             // Ignore cleanup errors.
         }
@@ -166,19 +210,27 @@ class MockLocationService : Service() {
     companion object {
         const val EXTRA_API_BASE_URL = "api_base_url"
         const val EXTRA_DEVICE_TOKEN = "device_token"
+        private const val TAG = "MockLocationService"
+        private const val MOCK_PROVIDER = "anyloc_mock"
         private const val NOTIFICATION_ID = 1001
         private const val POLL_INTERVAL_MS = 15_000L
 
-        fun start(context: Context, apiBaseUrl: String, deviceToken: String) {
+        fun start(context: Context, apiBaseUrl: String, deviceToken: String): Boolean {
             val intent = Intent(context, MockLocationService::class.java).apply {
                 putExtra(EXTRA_API_BASE_URL, apiBaseUrl)
                 putExtra(EXTRA_DEVICE_TOKEN, deviceToken)
             }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(intent)
-            } else {
-                context.startService(intent)
+            return try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(intent)
+                } else {
+                    context.startService(intent)
+                }
+                true
+            } catch (error: Exception) {
+                Log.e(TAG, "Failed to start mock location service", error)
+                false
             }
         }
 
