@@ -8,6 +8,13 @@ export const TRIAL_HEADLINE =
 export const TRIAL_CHECKOUT_SUBTITLE =
   "0 € maintenant · débit automatique à la fin de l'essai sauf si tu annules avant.";
 
+export const TRIAL_CTA_LABEL = "Essai gratuit 1 h";
+
+export const TRIAL_CTA_LABEL_SHORT = "Essai 1 h";
+
+export const TRIAL_CTA_SUBLINE =
+  "0 € maintenant · carte requise · annule avant la fin si tu veux";
+
 export type TrialStatus = "active" | "converted" | "cancelled" | "charge_failed";
 
 export type TrialProfileFields = {

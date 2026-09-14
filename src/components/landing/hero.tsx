@@ -6,6 +6,7 @@ import { ArrowRight, Check, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getOnboardingUrl, SITE } from "@/lib/constants";
+import { TRIAL_CTA_LABEL, TRIAL_CTA_SUBLINE } from "@/lib/trial";
 
 export function Hero() {
   return (
@@ -40,12 +41,17 @@ export function Hero() {
           </p>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Link href={getOnboardingUrl("annual")}>
-              <Button size="lg" className="w-full sm:w-auto">
-                Fake ma loc
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
+            <div className="flex w-full flex-col items-center gap-2 sm:w-auto">
+              <Link href={getOnboardingUrl("annual")}>
+                <Button size="lg" className="w-full sm:w-auto">
+                  {TRIAL_CTA_LABEL}
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+              <p className="text-center text-xs text-zinc-500 sm:text-sm">
+                {TRIAL_CTA_SUBLINE}
+              </p>
+            </div>
             <Link href="/#how-it-works">
               <Button variant="secondary" size="lg" className="w-full sm:w-auto">
                 <Play className="h-4 w-4" />
@@ -65,6 +71,10 @@ export function Hero() {
           </p>
 
           <div className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-zinc-500">
+            <span className="flex items-center gap-1.5">
+              <Check className="h-4 w-4 text-pink-600" />
+              Essai 1 h gratuit
+            </span>
             <span className="flex items-center gap-1.5">
               <Check className="h-4 w-4 text-pink-600" />
               GPS natif

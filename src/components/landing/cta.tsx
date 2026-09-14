@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getOnboardingUrl } from "@/lib/constants";
+import { TRIAL_CTA_LABEL, TRIAL_CTA_SUBLINE } from "@/lib/trial";
 
 export function Cta() {
   return (
@@ -11,16 +12,17 @@ export function Cta() {
           Prêt à changer de life ?
         </h2>
         <p className="mt-4 text-zinc-600">
-          Toi t&apos;es chez toi. Sur la map t&apos;es à Marbella. C&apos;est
-          carré.
+          Teste Anyloc 1 h gratuitement sur le plan de ton choix — Snap, Insta,
+          Tinder et toutes tes apps.
         </p>
         <div className="mt-8 flex flex-col items-center gap-4">
           <Link href={getOnboardingUrl("annual")}>
             <Button size="lg">
-              Fake ma loc
+              {TRIAL_CTA_LABEL}
               <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
+          <p className="text-sm text-zinc-500">{TRIAL_CTA_SUBLINE}</p>
           <p className="text-sm text-zinc-500">
             Déjà client ?{" "}
             <Link

@@ -7,6 +7,7 @@ import { PaywallValueStack } from "@/components/pricing/paywall-value-stack";
 import { PlatformConstraintNotice } from "@/components/pricing/platform-constraint-notice";
 import { PlanPrice } from "@/components/pricing/plan-price";
 import { RefundGuaranteeNotice } from "@/components/pricing/refund-guarantee-notice";
+import { TRIAL_CTA_SUBLINE } from "@/lib/trial";
 
 export function Pricing() {
   return (
@@ -17,8 +18,12 @@ export function Pricing() {
             Choisis ta durée
           </h2>
           <p className="mt-4 text-zinc-600">
-            Même accès complet sur tous les plans — fake ton GPS sur Snap, Insta,
-            Tinder et toutes tes apps. Seule la durée change.
+            Essai gratuit 1 h sur tous les plans — même accès complet sur Snap,
+            Insta, Tinder et toutes tes apps. Seule la durée facturée change
+            après l&apos;essai.
+          </p>
+          <p className="mt-2 text-sm font-medium text-pink-600">
+            {TRIAL_CTA_SUBLINE}
           </p>
         </div>
 
