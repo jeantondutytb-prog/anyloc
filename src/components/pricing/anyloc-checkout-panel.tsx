@@ -168,6 +168,18 @@ export function AnyLocCheckoutPanel({
         </p>
       ) : null}
 
+      <div className="mt-8 sm:mt-10">
+        <h3 className="text-center text-2xl font-bold tracking-tight text-zinc-900">
+          {copy.proofTitle}
+        </h3>
+        <p className="mx-auto mt-2 max-w-md text-center text-sm text-zinc-600">
+          {copy.proofSub}
+        </p>
+        <div className="mt-6">
+          <CheckoutProofCarousel />
+        </div>
+      </div>
+
       <div className="mx-auto mt-12 max-w-2xl text-center">
         <h2 className="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">
           {copy.valueTitle}
@@ -186,18 +198,6 @@ export function AnyLocCheckoutPanel({
       </div>
 
       <CheckoutReviewsGrid />
-
-      <div className="mt-12">
-        <h3 className="text-center text-2xl font-bold tracking-tight text-zinc-900">
-          {copy.proofTitle}
-        </h3>
-        <p className="mx-auto mt-2 max-w-md text-center text-sm text-zinc-600">
-          {copy.proofSub}
-        </p>
-        <div className="mt-8">
-          <CheckoutProofCarousel />
-        </div>
-      </div>
 
       <div className="mx-auto mt-16 max-w-2xl text-center">
         <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
