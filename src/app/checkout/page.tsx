@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { CheckoutView } from "@/components/checkout/checkout-view";
 import { ensureStripeCustomerForUser } from "@/lib/billing";
-import { isValidPlanId } from "@/lib/constants";
+import { LOCAFLEX_CHECKOUT_PLAN_IDS } from "@/lib/checkout-locaflex-copy";
 import { getStripePublishableKey } from "@/lib/stripe-client";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { getSubscriptionAccessForUser } from "@/lib/subscription";
@@ -14,7 +14,11 @@ export default async function CheckoutPage({
   const { plan, canceled } = await searchParams;
   const planId = plan ?? "annual";
 
-  if (!isValidPlanId(planId)) {
+  if (
+    !LOCAFLEX_CHECKOUT_PLAN_IDS.includes(
+      planId as (typeof LOCAFLEX_CHECKOUT_PLAN_IDS)[number]
+    )
+  ) {
     redirect("/checkout?plan=annual");
   }
 

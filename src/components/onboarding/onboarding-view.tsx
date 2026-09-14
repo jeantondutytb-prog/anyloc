@@ -325,7 +325,10 @@ function OnboardingViewContent({
   );
   const [selectedPlanId, setSelectedPlanId] = useState(() => {
     const plan = searchParams.get("plan") ?? undefined;
-    return isValidPlanId(plan) ? plan! : "annual";
+    if (plan === "6months" || plan === "annual") {
+      return plan;
+    }
+    return "annual";
   });
 
   useEffect(() => {
@@ -393,13 +396,7 @@ function OnboardingViewContent({
   const isTrialStep = step === TRIAL_STEP;
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background">
-      {isTrialStep ? (
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute top-0 left-1/2 h-[420px] w-[720px] -translate-x-1/2 rounded-full bg-pink-500/8 blur-[120px]" />
-          <div className="absolute top-32 right-0 h-[280px] w-[360px] rounded-full bg-violet-500/8 blur-[100px]" />
-        </div>
-      ) : null}
+    <div className="relative min-h-screen overflow-hidden bg-white">
 
       <header className="sticky top-0 z-20 border-b border-zinc-100 bg-white/90 backdrop-blur-md">
         <div
@@ -446,8 +443,6 @@ function OnboardingViewContent({
             destination={destination}
             googleAuthRedirectTo={getOnboardingTrialUrl(selectedPlanId)}
             onBack={() => setStep(1)}
-            checkoutTitle={`Active ton essai à ${destination.city}`}
-            checkoutSubtitle="0 € maintenant — débit automatique à la fin de l'essai sauf annulation."
           />
         )}
       </main>
