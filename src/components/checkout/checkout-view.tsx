@@ -29,14 +29,14 @@ import {
 import { PaywallValueStack } from "@/components/pricing/paywall-value-stack";
 import { PlatformConstraintNotice } from "@/components/pricing/platform-constraint-notice";
 import { PlanSummaryCard } from "@/components/pricing/plan-summary-card";
-import { TRIAL_HEADLINE } from "@/lib/trial";
+import { TRIAL_CTA_LABEL_SHORT, TRIAL_HEADLINE } from "@/lib/trial";
 import { cn } from "@/lib/utils";
 
 const SETUP_STEPS = [
   {
     icon: CreditCard,
     title: "Enregistre ta carte",
-    description: "Essai 1 h gratuit — débit automatique à la fin sauf annulation.",
+    description: "Essai gratuit — débit automatique à la fin sauf annulation.",
   },
   {
     icon: Download,
@@ -56,7 +56,7 @@ const SIDEBAR_FAQ = FAQ.slice(0, 2);
 
 const TRUST_ITEMS = [
   "Paiement chiffré via Stripe",
-  "Essai 1 h gratuit dès validation de la carte",
+  "Essai gratuit dès validation de la carte",
   "Garantie 48 h si le GPS ne fonctionne pas",
 ];
 
@@ -437,7 +437,7 @@ export function CheckoutView({
               <div className="relative mt-6">
                 <div className="mb-3 flex items-center gap-2 text-sm font-medium text-zinc-900">
                   <CreditCard className="h-4 w-4 text-pink-600" />
-                  Essai gratuit 1 h
+                  {TRIAL_CTA_LABEL_SHORT}
                 </div>
                 <p className="mb-4 text-xs text-zinc-500">
                   {TRIAL_HEADLINE} Pas de compte requis — ton accès est créé

@@ -6,7 +6,11 @@ import { ArrowRight, Check, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getOnboardingUrl, SITE } from "@/lib/constants";
-import { TRIAL_CTA_LABEL, TRIAL_CTA_SUBLINE } from "@/lib/trial";
+import {
+  TRIAL_CTA_LABEL,
+  TRIAL_CTA_LABEL_SHORT,
+  TRIAL_CTA_SUBLINE,
+} from "@/lib/trial";
 
 export function Hero() {
   return (
@@ -73,7 +77,7 @@ export function Hero() {
           <div className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-zinc-500">
             <span className="flex items-center gap-1.5">
               <Check className="h-4 w-4 text-pink-600" />
-              Essai 1 h gratuit
+              {TRIAL_CTA_LABEL_SHORT}
             </span>
             <span className="flex items-center gap-1.5">
               <Check className="h-4 w-4 text-pink-600" />

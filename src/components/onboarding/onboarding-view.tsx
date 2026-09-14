@@ -50,6 +50,7 @@ import {
   ONBOARDING_USE_CASE_KEY,
   type OnboardingUseCase,
 } from "@/lib/onboarding-use-cases";
+import { TRIAL_CTA_LABEL_SHORT } from "@/lib/trial";
 import { cn } from "@/lib/utils";
 
 const PAYWALL_STEP = ONBOARDING_TOTAL_STEPS;
@@ -492,7 +493,7 @@ function StepPaywall({
         </span>
         <span className="inline-flex items-center gap-1.5">
           <Zap className="h-3.5 w-3.5 text-pink-500" />
-          Essai 1 h gratuit
+          {TRIAL_CTA_LABEL_SHORT}
         </span>
         <span className="inline-flex items-center gap-1.5">
           <Star className="h-3.5 w-3.5 text-pink-500" />

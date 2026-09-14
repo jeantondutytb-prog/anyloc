@@ -18,7 +18,7 @@ export function Pricing() {
             Choisis ta durée
           </h2>
           <p className="mt-4 text-zinc-600">
-            Essai gratuit 1 h sur tous les plans — même accès complet sur Snap,
+            Essaie gratuitement sur tous les plans — même accès complet sur Snap,
             Insta, Tinder et toutes tes apps. Seule la durée facturée change
             après l&apos;essai.
           </p>
