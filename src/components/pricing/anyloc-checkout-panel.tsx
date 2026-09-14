@@ -6,7 +6,7 @@ import { AuthDivider } from "@/components/auth/auth-divider";
 import { GoogleAuthLink } from "@/components/auth/google-auth-link";
 import { StripeEmbeddedCheckout } from "@/components/checkout/stripe-embedded-checkout";
 import { PaywallValueStack } from "@/components/pricing/paywall-value-stack";
-import { formatPlanBillingTotal, PlanPrice } from "@/components/pricing/plan-price";
+import { PlanPrice } from "@/components/pricing/plan-price";
 import {
   CHECKOUT_ANNUAL_EXTRA_PERKS,
   CHECKOUT_COPY,
@@ -236,10 +236,6 @@ export function AnyLocCheckoutPanel({
 }) {
   const copy = CHECKOUT_COPY;
   const checkoutPlans = getCheckoutPlans();
-  const selectedPlan =
-    checkoutPlans.find((plan) => plan.id === selectedPlanId) ??
-    checkoutPlans.find((plan) => plan.id === "annual")!;
-  const [bumpSelected, setBumpSelected] = useState(true);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -482,72 +478,6 @@ export function AnyLocCheckoutPanel({
             </button>
           );
         })}
-      </div>
-
-      <button
-        type="button"
-        onClick={() => setBumpSelected((current) => !current)}
-        aria-pressed={bumpSelected}
-        className={cn(
-          "mt-4 flex w-full items-start gap-3 rounded-2xl border-2 border-dashed p-4 text-left transition",
-          bumpSelected
-            ? "border-violet-500 bg-violet-500/5"
-            : "border-border bg-card hover:border-violet-300"
-        )}
-      >
-        <span
-          className={cn(
-            "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border-2",
-            bumpSelected
-              ? "border-violet-500 bg-violet-500 text-white"
-              : "border-border"
-          )}
-        >
-          {bumpSelected ? (
-            <span className="text-[11px] leading-none">✓</span>
-          ) : null}
-        </span>
-        <span className="min-w-0">
-          <span className="flex flex-wrap items-center gap-2">
-            <span className="font-bold">⭐ {copy.bumpHeadline}</span>
-            <span className="rounded-full bg-violet-600 px-2 py-0.5 text-[11px] font-bold text-white">
-              +{copy.bumpPrice}
-            </span>
-            <span className="rounded-full bg-pink-500/15 px-2 py-0.5 text-[11px] font-bold text-pink-700">
-              {copy.bumpRecommended}
-            </span>
-          </span>
-          <span className="mt-1 block text-sm text-muted-foreground">
-            {copy.bumpBlurb}
-          </span>
-          <span className="mt-1.5 block text-xs font-semibold text-foreground">
-            {copy.bumpNudge}
-          </span>
-        </span>
-      </button>
-
-      <div className="mt-6 rounded-2xl border-2 border-pink-500/30 bg-pink-500/5 p-4">
-        <div className="text-sm font-semibold text-foreground">
-          {copy.recapUnlock}
-        </div>
-        <div className="mt-3 flex items-baseline justify-between gap-3 border-t border-border pt-3">
-          <span className="text-sm font-bold text-foreground">
-            {selectedPlan.name}
-            {bumpSelected && (
-              <span className="font-semibold text-muted-foreground">
-                {" "}
-                + {copy.bumpHeadline} ({copy.bumpPrice})
-              </span>
-            )}
-          </span>
-          <span className="shrink-0 whitespace-nowrap text-xl font-extrabold gradient-text">
-            {formatPlanBillingTotal(selectedPlan)}
-          </span>
-        </div>
-        <div className="mt-3 flex items-start gap-2 text-xs font-semibold text-foreground">
-          <span aria-hidden="true">✅</span>
-          <span>{copy.guarantee}</span>
-        </div>
       </div>
 
       {googleAuthRedirectTo ? (

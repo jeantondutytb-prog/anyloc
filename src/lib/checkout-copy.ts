@@ -42,13 +42,6 @@ export const CHECKOUT_COPY = {
     "Essaie gratuitement — même accès complet sur Snap, Insta, Tinder et toutes tes apps. Seule la durée facturée change après l'essai.",
   guaranteeBadge: "Garantie 48 h",
   perksTitle: "Inclus dans ton accès",
-  bumpHeadline: "Ajoute les Spots Premium",
-  bumpPrice: "9,90 €",
-  bumpRecommended: "Le + populaire",
-  bumpBlurb:
-    "Marbella, Ibiza, Miami — tes destinations fav en un tap, plus les meilleurs spots (hôtels, aéroports, restos) pour des positions crédibles.",
-  bumpNudge:
-    "Pratique si tu changes souvent de ville : moins de temps à chercher, plus de temps à flex.",
   payOpening: "On prépare ton essai gratuit…",
   updating: "Mise à jour du plan…",
   trust: [
@@ -63,13 +56,9 @@ export const CHECKOUT_COPY = {
   ],
   secureTitle: "Paiement 100% sécurisé",
   ssl: "SSL · chiffrement 256 bits · Stripe",
-  recapUnlock:
-    "Ton accès Anyloc : loc illimitée sur tout le tel · signal GPS réel · installation guidée pas à pas.",
   consent:
     "En validant, tu acceptes nos {cgv}. Gère ton abonnement depuis ton espace client.",
   consentCgv: "conditions générales",
-  guarantee:
-    "Ça marche sur ton téléphone, ou on te rembourse sous 48 h. Annulable en 1 clic.",
   faqTitle: "T'as des questions ? Normal.",
   faq: [
     {
