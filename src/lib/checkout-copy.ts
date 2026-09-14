@@ -105,33 +105,33 @@ export const CHECKOUT_ANNUAL_EXTRA_PERKS = [
 
 export const CHECKOUT_PROOF_IMAGES = [
   {
-    src: "https://www.locaflex.io/proof/map-dubai.jpg",
+    src: "/proof/snap-dubai.png",
     city: "Dubaï — Burj Khalifa",
     kind: "map" as const,
   },
   {
-    src: "https://www.locaflex.io/proof/snap-miami.jpg",
-    city: "Miami",
-    kind: "map" as const,
-  },
-  {
-    src: "https://www.locaflex.io/proof/map-tokyo.jpg",
-    city: "Tokyo",
-    kind: "map" as const,
-  },
-  {
-    src: "https://www.locaflex.io/proof/snap-monaco.jpg",
-    city: "Monte-Carlo",
-    kind: "map" as const,
-  },
-  {
-    src: "https://www.locaflex.io/proof/sys-dubai-downtown.jpg",
-    city: "Dubaï",
+    src: "/proof/sys-paris.png",
+    city: "Paris — Tour Eiffel",
     kind: "system" as const,
   },
   {
-    src: "https://www.locaflex.io/proof/karte-marina.jpg",
-    city: "Dubai Marina",
+    src: "/proof/snap-miami.png",
+    city: "Miami Beach",
+    kind: "map" as const,
+  },
+  {
+    src: "/proof/sys-tokyo.png",
+    city: "Tokyo — Shibuya",
+    kind: "system" as const,
+  },
+  {
+    src: "/proof/snap-new-york.png",
+    city: "New York",
+    kind: "map" as const,
+  },
+  {
+    src: "/proof/sys-rio.png",
+    city: "Rio de Janeiro",
     kind: "system" as const,
   },
 ] as const;
