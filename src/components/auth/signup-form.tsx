@@ -7,6 +7,8 @@ import { signup, type AuthState } from "@/app/auth/actions";
 import { AuthDivider } from "@/components/auth/auth-divider";
 import { AuthInput, AuthPasswordInput } from "@/components/auth/auth-input";
 import { GoogleAuthLink } from "@/components/auth/google-auth-link";
+import { PlatformConstraintNotice } from "@/components/pricing/platform-constraint-notice";
+import { getPlanById, PlanSummaryCard } from "@/components/pricing/plan-summary-card";
 import { Button } from "@/components/ui/button";
 import { getOnboardingUrl } from "@/lib/constants";
 import { MIN_PASSWORD_LENGTH } from "@/lib/password-policy";
@@ -23,9 +25,13 @@ export function SignupForm({
   const [state, formAction, pending] = useActionState(signup, initialState);
   const [showPassword, setShowPassword] = useState(false);
   const destination = redirectTo ?? getOnboardingUrl(plan);
+  const selectedPlan = getPlanById(plan);
 
   return (
     <div>
+      <PlanSummaryCard plan={selectedPlan} className="mb-6" />
+      <PlatformConstraintNotice className="mb-6" compact />
+
       <form action={formAction} className="space-y-4">
         <input type="hidden" name="redirectTo" value={destination} />
         {state.error ? (

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { PLANS } from "@/lib/constants";
 import {
-  createSubscriptionCheckoutSession,
+  createTrialSetupCheckoutSession,
   getAuthenticatedCheckoutUser,
 } from "@/lib/stripe-checkout";
 
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
 
     const user = await getAuthenticatedCheckoutUser();
 
-    const session = await createSubscriptionCheckoutSession({
+    const session = await createTrialSetupCheckoutSession({
       plan,
       user,
       uiMode: "embedded_page",

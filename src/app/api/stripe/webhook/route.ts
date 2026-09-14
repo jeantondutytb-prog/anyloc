@@ -4,6 +4,7 @@ import {
   syncProfileFromCheckoutSession,
   syncProfileFromSubscription,
 } from "@/lib/billing";
+import { syncProfileFromTrialSetupSession } from "@/lib/trial-billing";
 import { capturePostHogEvent } from "@/lib/posthog/server";
 import { stripe } from "@/lib/stripe";
 import {
@@ -57,20 +58,38 @@ export async function POST(request: Request) {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
-        await syncProfileFromCheckoutSession(session);
 
-        const userId =
-          session.client_reference_id ?? session.metadata?.supabase_user_id;
+        if (session.mode === "setup") {
+          await syncProfileFromTrialSetupSession(session);
 
-        if (userId) {
-          await capturePostHogEvent({
-            distinctId: userId,
-            event: "purchase_completed",
-            properties: {
-              amount_total: session.amount_total,
-              currency: session.currency,
-            },
-          });
+          const userId =
+            session.client_reference_id ?? session.metadata?.supabase_user_id;
+
+          if (userId) {
+            await capturePostHogEvent({
+              distinctId: userId,
+              event: "trial_start",
+              properties: {
+                plan_id: session.metadata?.plan_id,
+              },
+            });
+          }
+        } else {
+          await syncProfileFromCheckoutSession(session);
+
+          const userId =
+            session.client_reference_id ?? session.metadata?.supabase_user_id;
+
+          if (userId) {
+            await capturePostHogEvent({
+              distinctId: userId,
+              event: "purchase_completed",
+              properties: {
+                amount_total: session.amount_total,
+                currency: session.currency,
+              },
+            });
+          }
         }
         break;
       }

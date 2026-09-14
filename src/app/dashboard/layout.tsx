@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
+import { TrialStatusBanner } from "@/components/dashboard/trial-status-banner";
 import { ONBOARDING_ENTRY_URL } from "@/lib/constants";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import {
@@ -28,5 +29,12 @@ export default async function DashboardLayout({
     redirect(ONBOARDING_ENTRY_URL);
   }
 
-  return children;
+  return (
+    <>
+      {access.isTrial && access.trialEndsAt ? (
+        <TrialStatusBanner trialEndsAt={access.trialEndsAt} />
+      ) : null}
+      {children}
+    </>
+  );
 }

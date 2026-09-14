@@ -23,6 +23,8 @@ import { OnboardingPreviewMap } from "@/components/onboarding/onboarding-preview
 import { OnboardingUseCaseStep } from "@/components/onboarding/onboarding-use-case-step";
 import { OnboardingValueRecap } from "@/components/onboarding/onboarding-value-recap";
 import { PaywallValueStack } from "@/components/pricing/paywall-value-stack";
+import { PlatformConstraintNotice } from "@/components/pricing/platform-constraint-notice";
+import { PlanSummaryCard } from "@/components/pricing/plan-summary-card";
 import { PlanPrice } from "@/components/pricing/plan-price";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
@@ -393,6 +395,9 @@ function StepPaywall({
   onBack: () => void;
   stripePublishableKey: string;
 }) {
+  const selectedPlan =
+    PLANS.find((plan) => plan.id === selectedPlanId) ??
+    PLANS.find((plan) => plan.id === "annual")!;
   const fallbackProof = getDestinationSocialProof(destination);
   const [weeklyLabel, setWeeklyLabel] = useState(fallbackProof.weeklyLabel);
   const testimonial =
@@ -471,6 +476,15 @@ function StepPaywall({
         </figcaption>
       </figure>
 
+      <PlanSummaryCard
+        plan={selectedPlan}
+        sticky
+        showTrialNote
+        className="mt-6"
+      />
+
+      <PlatformConstraintNotice className="mt-4" compact />
+
       <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-zinc-500">
         <span className="inline-flex items-center gap-1.5">
           <Shield className="h-3.5 w-3.5 text-pink-500" />
@@ -478,7 +492,7 @@ function StepPaywall({
         </span>
         <span className="inline-flex items-center gap-1.5">
           <Zap className="h-3.5 w-3.5 text-pink-500" />
-          Accès instantané
+          Essai 1 h gratuit
         </span>
         <span className="inline-flex items-center gap-1.5">
           <Star className="h-3.5 w-3.5 text-pink-500" />
