@@ -15,23 +15,21 @@ import {
   Zap,
 } from "lucide-react";
 import type { GeocodeResult } from "@/lib/geocoding";
+import { AuthDivider } from "@/components/auth/auth-divider";
+import { GoogleAuthLink } from "@/components/auth/google-auth-link";
 import { OnboardingAhaMoment } from "@/components/onboarding/onboarding-aha-moment";
-import { OnboardingBeforeAfter } from "@/components/onboarding/onboarding-before-after";
 import { OnboardingPaywallPreview } from "@/components/onboarding/onboarding-paywall-preview";
 import { OnboardingPaywallStripe } from "@/components/onboarding/onboarding-paywall-stripe";
 import { OnboardingPreviewMap } from "@/components/onboarding/onboarding-preview-map";
-import { OnboardingUseCaseStep } from "@/components/onboarding/onboarding-use-case-step";
-import { OnboardingValueRecap } from "@/components/onboarding/onboarding-value-recap";
-import { PaywallValueStack } from "@/components/pricing/paywall-value-stack";
 import { PlatformConstraintNotice } from "@/components/pricing/platform-constraint-notice";
 import { PlanSummaryCard } from "@/components/pricing/plan-summary-card";
 import { PlanPrice } from "@/components/pricing/plan-price";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import {
+  getOnboardingTrialUrl,
   isValidPlanId,
   ONBOARDING_TOTAL_STEPS,
-  PAYWALL_TESTIMONIALS,
   PLANS,
   type Plan,
 } from "@/lib/constants";
@@ -42,18 +40,10 @@ import {
   TRENDING_DESTINATIONS,
   type OnboardingDestination,
 } from "@/lib/onboarding-destinations";
-import { getDestinationSocialProof } from "@/lib/onboarding-social-proof";
-import {
-  DEFAULT_USE_CASE_ID,
-  getUseCaseById,
-  isValidUseCaseId,
-  ONBOARDING_USE_CASE_KEY,
-  type OnboardingUseCase,
-} from "@/lib/onboarding-use-cases";
-import { TRIAL_CTA_LABEL_SHORT } from "@/lib/trial";
+import { TRIAL_CTA_LABEL, TRIAL_CTA_LABEL_SHORT } from "@/lib/trial";
 import { cn } from "@/lib/utils";
 
-const PAYWALL_STEP = ONBOARDING_TOTAL_STEPS;
+const TRIAL_STEP = ONBOARDING_TOTAL_STEPS;
 
 function ProgressBar({ step }: { step: number }) {
   const percent = Math.round((step / ONBOARDING_TOTAL_STEPS) * 100);
@@ -191,7 +181,7 @@ function StepDestination({
       <div className="mb-8 text-center">
         <p className="inline-flex items-center gap-1.5 text-sm font-medium text-pink-600">
           <Sparkles className="h-4 w-4 shrink-0" />
-          Étape 2
+          Étape 1
         </p>
         <h1 className="mt-3 text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl lg:text-4xl">
           Où tu veux être{" "}
@@ -265,13 +255,11 @@ function StepDestination({
 
 function StepPreview({
   destination,
-  useCase,
   onContinue,
   onChangeDestination,
   onDestinationChange,
 }: {
   destination: OnboardingDestination;
-  useCase: OnboardingUseCase;
   onContinue: () => void;
   onChangeDestination: () => void;
   onDestinationChange: (lat: number, lng: number) => void;
@@ -281,21 +269,19 @@ function StepPreview({
       <div className="mb-8 text-center">
         <p className="inline-flex items-center gap-1.5 text-sm font-medium text-pink-600">
           <Sparkles className="h-4 w-4" />
-          Étape 4
+          Étape 2
         </p>
         <h1 className="mt-3 text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl lg:text-4xl">
           On téléporte ta loc à{" "}
           <span className="gradient-text">{destination.city}</span>
         </h1>
         <p className="mt-3 text-sm text-zinc-500 sm:text-base">
-          Regarde le signal GPS se mettre à jour en direct sur {useCase.appName}.
+          Regarde le signal GPS se mettre à jour en direct sur Snap, Insta, Tinder
+          et toutes tes apps.
         </p>
       </div>
 
-      <OnboardingAhaMoment
-        destination={destination}
-        highlightApp={useCase.mapLabel}
-      />
+      <OnboardingAhaMoment destination={destination} highlightApp="TES APPS" />
       <OnboardingPreviewMap
         destination={destination}
         onDestinationChange={onDestinationChange}
@@ -306,7 +292,7 @@ function StepPreview({
       </p>
 
       <Button className="mt-6 h-14 w-full text-base" onClick={onContinue}>
-        Continuer
+        {TRIAL_CTA_LABEL}
         <ArrowRight className="h-5 w-5" />
       </Button>
 
@@ -373,24 +359,18 @@ function PlanOption({
         </div>
         <PlanPrice plan={plan} size="card" align="right" className="shrink-0" />
       </div>
-
-      <div className="mt-3 border-t border-zinc-200 pt-3">
-        <PaywallValueStack compact showHeading />
-      </div>
     </button>
   );
 }
 
-function StepPaywall({
+function StepTrial({
   destination,
-  useCase,
   selectedPlanId,
   onPlanChange,
   onBack,
   stripePublishableKey,
 }: {
   destination: OnboardingDestination;
-  useCase: OnboardingUseCase;
   selectedPlanId: string;
   onPlanChange: (planId: string) => void;
   onBack: () => void;
@@ -399,57 +379,25 @@ function StepPaywall({
   const selectedPlan =
     PLANS.find((plan) => plan.id === selectedPlanId) ??
     PLANS.find((plan) => plan.id === "annual")!;
-  const fallbackProof = getDestinationSocialProof(destination);
-  const [weeklyLabel, setWeeklyLabel] = useState(fallbackProof.weeklyLabel);
-  const testimonial =
-    PAYWALL_TESTIMONIALS[
-      destination.city.length % PAYWALL_TESTIMONIALS.length
-    ];
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    void fetch(
-      `/api/onboarding/social-proof?city=${encodeURIComponent(destination.city)}`,
-      { signal: controller.signal }
-    )
-      .then(async (response) => {
-        if (!response.ok) {
-          return null;
-        }
-
-        return (await response.json()) as { weeklyLabel?: string };
-      })
-      .then((data) => {
-        if (data?.weeklyLabel) {
-          setWeeklyLabel(data.weeklyLabel);
-        }
-      })
-      .catch(() => {
-        // Keep fallback social proof.
-      });
-
-    return () => controller.abort();
-  }, [destination.city]);
+  const trialUrl = getOnboardingTrialUrl(selectedPlanId);
 
   return (
     <div className="mx-auto w-full max-w-2xl">
       <div className="mb-6 text-center">
         <p className="inline-flex items-center gap-1.5 text-sm font-medium text-pink-600">
           <Sparkles className="h-4 w-4" />
-          Étape {PAYWALL_STEP}
+          Étape {TRIAL_STEP}
         </p>
         <span className="mt-3 inline-flex max-w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-full border border-pink-200 bg-pink-50 px-3 py-1.5 text-xs font-medium text-pink-700 sm:px-4 sm:text-sm">
           <span>{destination.emoji} {destination.city}</span>
-          <span className="text-pink-400">·</span>
-          <span>{useCase.emoji} {useCase.label}</span>
         </span>
         <h1 className="mt-4 text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl lg:text-4xl">
-          Débloque ta loc à{" "}
+          Active ton essai à{" "}
           <span className="gradient-text">{destination.city}</span>
         </h1>
         <p className="mt-3 text-sm text-zinc-500 sm:text-base">
-          Tous les plans incluent le même accès complet — seule la durée change.
+          Choisis ta formule — 0 € maintenant, débit automatique à la fin de
+          l&apos;essai sauf annulation.
         </p>
       </div>
 
@@ -465,17 +413,6 @@ function StepPaywall({
           />
         ))}
       </div>
-
-      <p className="mt-4 text-center text-xs text-zinc-500">{weeklyLabel}</p>
-
-      <figure className="mt-4 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-center">
-        <blockquote className="text-sm text-zinc-700">
-          &ldquo;{testimonial.quote}&rdquo;
-        </blockquote>
-        <figcaption className="mt-1 text-xs text-zinc-500">
-          — {testimonial.author}, {testimonial.city}
-        </figcaption>
-      </figure>
 
       <PlanSummaryCard
         plan={selectedPlan}
@@ -501,6 +438,11 @@ function StepPaywall({
         </span>
       </div>
 
+      <div className="mt-8">
+        <GoogleAuthLink redirectTo={trialUrl} />
+        <AuthDivider />
+      </div>
+
       <OnboardingPaywallStripe
         planId={selectedPlanId}
         stripePublishableKey={stripePublishableKey}
@@ -515,23 +457,6 @@ function StepPaywall({
       </button>
     </div>
   );
-}
-
-function readStoredUseCase(): OnboardingUseCase {
-  if (typeof window === "undefined") {
-    return getUseCaseById(DEFAULT_USE_CASE_ID);
-  }
-
-  try {
-    const stored = window.sessionStorage.getItem(ONBOARDING_USE_CASE_KEY);
-    if (stored && isValidUseCaseId(stored)) {
-      return getUseCaseById(stored);
-    }
-  } catch {
-    // Ignore invalid stored use case.
-  }
-
-  return getUseCaseById(DEFAULT_USE_CASE_ID);
 }
 
 function readStoredDestination(): OnboardingDestination | null {
@@ -559,9 +484,6 @@ function OnboardingViewContent({
   const searchParams = useSearchParams();
   const [step, setStep] = useState(1);
   const [query, setQuery] = useState("");
-  const [useCase, setUseCase] = useState<OnboardingUseCase>(() =>
-    getUseCaseById(DEFAULT_USE_CASE_ID)
-  );
   const [destination, setDestination] = useState<OnboardingDestination>(
     TRENDING_DESTINATIONS[0]
   );
@@ -576,12 +498,9 @@ function OnboardingViewContent({
 
   useEffect(() => {
     const stepNames = {
-      1: "use_case",
-      2: "destination",
-      3: "before_after",
-      4: "preview",
-      5: "value_recap",
-      [PAYWALL_STEP]: "paywall",
+      1: "destination",
+      2: "preview",
+      [TRIAL_STEP]: "trial_activation",
     } as const;
     posthog.capture("onboarding_step_viewed", {
       step,
@@ -591,29 +510,20 @@ function OnboardingViewContent({
 
   useEffect(() => {
     const stepParam = searchParams.get("step");
-    const paywallStep =
-      stepParam === String(PAYWALL_STEP) || stepParam === "3" ? PAYWALL_STEP : null;
+    const trialStep =
+      stepParam === String(TRIAL_STEP) || stepParam === "6" ? TRIAL_STEP : null;
 
-    if (!paywallStep) {
+    if (!trialStep) {
       return;
     }
 
-    setStep(paywallStep);
+    setStep(trialStep);
 
     const storedDestination = readStoredDestination();
     if (storedDestination) {
       setDestination(storedDestination);
     }
-
-    setUseCase(readStoredUseCase());
   }, [searchParams]);
-
-  function persistUseCase(next: OnboardingUseCase) {
-    setUseCase(next);
-    if (typeof window !== "undefined") {
-      window.sessionStorage.setItem(ONBOARDING_USE_CASE_KEY, next.id);
-    }
-  }
 
   function persistDestination(next: OnboardingDestination) {
     setDestination(next);
@@ -626,14 +536,9 @@ function OnboardingViewContent({
     }
   }
 
-  function selectUseCase(next: OnboardingUseCase) {
-    persistUseCase(next);
-    setStep(2);
-  }
-
   function selectDestination(next: OnboardingDestination) {
     persistDestination(next);
-    setStep(3);
+    setStep(2);
   }
 
   function updateDestinationCoords(lat: number, lng: number) {
@@ -659,9 +564,7 @@ function OnboardingViewContent({
       </header>
 
       <main className="min-w-0 max-w-full px-4 py-8 pb-10 sm:px-6 sm:py-14">
-        {step === 1 && <OnboardingUseCaseStep onSelect={selectUseCase} />}
-
-        {step === 2 && (
+        {step === 1 && (
           <StepDestination
             query={query}
             onQueryChange={setQuery}
@@ -669,39 +572,21 @@ function OnboardingViewContent({
           />
         )}
 
-        {step === 3 && (
-          <OnboardingBeforeAfter
-            useCase={useCase}
-            destination={destination}
-            onContinue={() => setStep(4)}
-          />
-        )}
-
-        {step === 4 && (
+        {step === 2 && (
           <StepPreview
             destination={destination}
-            useCase={useCase}
-            onContinue={() => setStep(5)}
-            onChangeDestination={() => setStep(2)}
+            onContinue={() => setStep(TRIAL_STEP)}
+            onChangeDestination={() => setStep(1)}
             onDestinationChange={updateDestinationCoords}
           />
         )}
 
-        {step === 5 && (
-          <OnboardingValueRecap
-            useCase={useCase}
+        {step === TRIAL_STEP && (
+          <StepTrial
             destination={destination}
-            onContinue={() => setStep(PAYWALL_STEP)}
-          />
-        )}
-
-        {step === PAYWALL_STEP && (
-          <StepPaywall
-            destination={destination}
-            useCase={useCase}
             selectedPlanId={selectedPlanId}
             onPlanChange={setSelectedPlanId}
-            onBack={() => setStep(2)}
+            onBack={() => setStep(1)}
             stripePublishableKey={stripePublishableKey}
           />
         )}
