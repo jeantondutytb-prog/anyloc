@@ -48,3 +48,19 @@ export function formatTrialRemaining(ms: number) {
 export function getTrialEndDate(startedAt = new Date()) {
   return new Date(startedAt.getTime() + TRIAL_DURATION_MS);
 }
+
+export function getTrialEndUnix(startedAt = new Date()) {
+  return Math.floor(getTrialEndDate(startedAt).getTime() / 1000);
+}
+
+export function isStripeTrialingStatus(status: string | null | undefined) {
+  return status === "trialing";
+}
+
+export function unixToIso(unixSeconds: number | null | undefined) {
+  if (!unixSeconds) {
+    return null;
+  }
+
+  return new Date(unixSeconds * 1000).toISOString();
+}

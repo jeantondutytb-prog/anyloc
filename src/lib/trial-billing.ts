@@ -1,9 +1,13 @@
 import type Stripe from "stripe";
-import { PLANS } from "@/lib/constants";
+import { PLANS, isValidPlanId } from "@/lib/constants";
 import { ensureUserForEmail } from "@/lib/guest-account";
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 import { stripe } from "@/lib/stripe";
-import { getTrialEndDate } from "@/lib/trial";
+import {
+  getTrialEndUnix,
+  type TrialStatus,
+  unixToIso,
+} from "@/lib/trial";
 
 async function resolveSetupIntentPaymentMethodId(
   setupIntentRef: string | Stripe.SetupIntent | null | undefined
@@ -24,6 +28,84 @@ async function resolveSetupIntentPaymentMethodId(
     : paymentMethod?.id ?? null;
 }
 
+export function getTrialProfilePatchFromSubscription(
+  subscription: Stripe.Subscription
+) {
+  const basePatch = {
+    stripe_subscription_id: subscription.id,
+    subscription_status: subscription.status,
+    plan_id: subscription.metadata?.plan_id ?? null,
+  };
+
+  if (!subscription.trial_start && !subscription.trial_end) {
+    return basePatch;
+  }
+
+  const trialStart = unixToIso(subscription.trial_start);
+  const trialEnd = unixToIso(subscription.trial_end);
+
+  let trialStatus: TrialStatus | null = null;
+
+  if (subscription.status === "trialing") {
+    trialStatus = "active";
+  } else if (subscription.status === "active" && subscription.trial_end) {
+    trialStatus = "converted";
+  } else if (
+    subscription.status === "canceled" &&
+    subscription.trial_end &&
+    subscription.canceled_at &&
+    subscription.canceled_at <= subscription.trial_end
+  ) {
+    trialStatus = "cancelled";
+  }
+
+  return {
+    ...basePatch,
+    trial_started_at: trialStart,
+    trial_ends_at: trialEnd,
+    trial_status: trialStatus,
+  };
+}
+
+async function createTrialingSubscription({
+  customerId,
+  paymentMethodId,
+  planId,
+  userId,
+  guestCheckout,
+}: {
+  customerId: string;
+  paymentMethodId: string;
+  planId: string;
+  userId: string;
+  guestCheckout: boolean;
+}) {
+  if (!stripe) {
+    throw new Error("Stripe is not configured.");
+  }
+
+  const plan = PLANS.find((item) => item.id === planId);
+
+  if (!plan?.stripePriceId) {
+    throw new Error(`Invalid plan_id for trial subscription: ${planId}`);
+  }
+
+  const trialStartedAt = new Date();
+
+  return stripe.subscriptions.create({
+    customer: customerId,
+    items: [{ price: plan.stripePriceId, quantity: 1 }],
+    default_payment_method: paymentMethodId,
+    trial_end: getTrialEndUnix(trialStartedAt),
+    metadata: {
+      supabase_user_id: userId,
+      plan_id: plan.id,
+      guest_checkout: guestCheckout ? "true" : "false",
+      converted_from_trial: "true",
+    },
+  });
+}
+
 export async function syncProfileFromTrialSetupSession(
   session: Stripe.Checkout.Session
 ) {
@@ -37,6 +119,12 @@ export async function syncProfileFromTrialSetupSession(
       `[trial-billing] Session ${session.id} ignored: mode=${session.mode}, status=${session.status}`
     );
     return;
+  }
+
+  const planId = session.metadata?.plan_id;
+
+  if (!isValidPlanId(planId)) {
+    throw new Error(`Trial setup session ${session.id} has invalid plan_id.`);
   }
 
   const email =
@@ -61,41 +149,44 @@ export async function syncProfileFromTrialSetupSession(
       ? session.customer
       : session.customer?.id;
 
-  const setupIntentRef = session.setup_intent;
-  const paymentMethodId = await resolveSetupIntentPaymentMethodId(setupIntentRef);
+  if (!customerId) {
+    throw new Error(`Trial setup session ${session.id} is missing a customer.`);
+  }
+
+  const paymentMethodId = await resolveSetupIntentPaymentMethodId(
+    session.setup_intent
+  );
 
   if (!paymentMethodId) {
     throw new Error(`Trial setup session ${session.id} is missing a payment method.`);
   }
 
-  if (customerId) {
-    await stripe.customers.update(customerId, {
-      email: email ?? undefined,
-      metadata: {
-        supabase_user_id: userId,
-      },
-      invoice_settings: {
-        default_payment_method: paymentMethodId,
-      },
-    });
-  }
+  await stripe.customers.update(customerId, {
+    email: email ?? undefined,
+    metadata: {
+      supabase_user_id: userId,
+    },
+    invoice_settings: {
+      default_payment_method: paymentMethodId,
+    },
+  });
 
-  const trialStartedAt = new Date();
-  const trialEndsAt = getTrialEndDate(trialStartedAt);
-  const planId = session.metadata?.plan_id ?? null;
+  const subscription = await createTrialingSubscription({
+    customerId,
+    paymentMethodId,
+    planId: planId!,
+    userId,
+    guestCheckout: session.metadata?.guest_checkout === "true",
+  });
 
   const admin = createAdminClient();
   const { error } = await admin.from("profiles").upsert(
     {
       id: userId,
       email,
-      stripe_customer_id: customerId ?? null,
-      plan_id: planId,
-      subscription_status: "trialing",
-      trial_started_at: trialStartedAt.toISOString(),
-      trial_ends_at: trialEndsAt.toISOString(),
-      trial_status: "active",
+      stripe_customer_id: customerId,
       trial_payment_method_id: paymentMethodId,
+      ...getTrialProfilePatchFromSubscription(subscription),
       updated_at: new Date().toISOString(),
     },
     { onConflict: "id" }
@@ -106,67 +197,17 @@ export async function syncProfileFromTrialSetupSession(
   }
 }
 
-export async function chargeExpiredTrialForProfile(profile: {
-  id: string;
-  email: string | null;
-  stripe_customer_id: string | null;
-  plan_id: string | null;
-  trial_payment_method_id: string | null;
-}) {
-  if (!stripe) {
-    throw new Error("Stripe is not configured.");
-  }
-
-  if (!profile.stripe_customer_id || !profile.trial_payment_method_id) {
-    throw new Error("Trial profile is missing Stripe customer or payment method.");
-  }
-
-  const plan = PLANS.find((item) => item.id === profile.plan_id);
-
-  if (!plan?.stripePriceId) {
-    throw new Error(`Trial profile has invalid plan_id: ${profile.plan_id}`);
-  }
-
-  const subscription = await stripe.subscriptions.create({
-    customer: profile.stripe_customer_id,
-    items: [{ price: plan.stripePriceId, quantity: 1 }],
-    default_payment_method: profile.trial_payment_method_id,
-    metadata: {
-      supabase_user_id: profile.id,
-      plan_id: plan.id,
-      guest_checkout: "false",
-      converted_from_trial: "true",
-    },
-  });
-
-  const admin = createAdminClient();
-  const { error } = await admin
-    .from("profiles")
-    .update({
-      stripe_subscription_id: subscription.id,
-      subscription_status: subscription.status,
-      plan_id: plan.id,
-      trial_status: "converted",
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", profile.id);
-
-  if (error) {
-    throw new Error(`Failed to mark trial converted: ${error.message}`);
-  }
-
-  return subscription;
-}
-
 export async function cancelActiveTrialForUser(userId: string) {
-  if (!isSupabaseAdminConfigured()) {
-    throw new Error("Supabase admin is not configured.");
+  if (!isSupabaseAdminConfigured() || !stripe) {
+    throw new Error("Stripe or Supabase admin is not configured.");
   }
 
   const admin = createAdminClient();
   const { data, error: fetchError } = await admin
     .from("profiles")
-    .select("id, trial_status, trial_ends_at, trial_started_at, trial_payment_method_id")
+    .select(
+      "id, trial_status, trial_ends_at, stripe_subscription_id, subscription_status"
+    )
     .eq("id", userId)
     .maybeSingle();
 
@@ -174,27 +215,34 @@ export async function cancelActiveTrialForUser(userId: string) {
     throw new Error("Profil introuvable.");
   }
 
-  if (data.trial_status !== "active") {
+  const hasActiveTrial =
+    data.trial_status === "active" || data.subscription_status === "trialing";
+
+  if (!hasActiveTrial) {
     throw new Error("Aucun essai actif à annuler.");
+  }
+
+  if (data.stripe_subscription_id) {
+    await stripe.subscriptions.cancel(data.stripe_subscription_id);
   }
 
   const { error } = await admin
     .from("profiles")
     .update({
       trial_status: "cancelled",
-      subscription_status: null,
+      subscription_status: "canceled",
       updated_at: new Date().toISOString(),
     })
-    .eq("id", userId)
-    .eq("trial_status", "active");
+    .eq("id", userId);
 
   if (error) {
     throw new Error(`Failed to cancel trial: ${error.message}`);
   }
 }
 
+/** Legacy fallback for profiles created before Stripe-native trials. */
 export async function processDueTrialCharges() {
-  if (!isSupabaseAdminConfigured()) {
+  if (!isSupabaseAdminConfigured() || !stripe) {
     return { processed: 0, failed: 0 };
   }
 
@@ -203,9 +251,10 @@ export async function processDueTrialCharges() {
   const { data: dueTrials, error } = await admin
     .from("profiles")
     .select(
-      "id, email, stripe_customer_id, plan_id, trial_payment_method_id, trial_status, trial_ends_at"
+      "id, email, stripe_customer_id, plan_id, trial_payment_method_id, trial_status, trial_ends_at, stripe_subscription_id"
     )
     .eq("trial_status", "active")
+    .is("stripe_subscription_id", null)
     .lte("trial_ends_at", now);
 
   if (error) {
@@ -217,11 +266,44 @@ export async function processDueTrialCharges() {
 
   for (const profile of dueTrials ?? []) {
     try {
-      await chargeExpiredTrialForProfile(profile);
+      if (
+        !profile.stripe_customer_id ||
+        !profile.trial_payment_method_id ||
+        !isValidPlanId(profile.plan_id)
+      ) {
+        throw new Error("Legacy trial profile is incomplete.");
+      }
+
+      const plan = PLANS.find((item) => item.id === profile.plan_id);
+
+      if (!plan?.stripePriceId) {
+        throw new Error(`Legacy trial profile has invalid plan_id: ${profile.plan_id}`);
+      }
+
+      const subscription = await stripe.subscriptions.create({
+        customer: profile.stripe_customer_id,
+        items: [{ price: plan.stripePriceId, quantity: 1 }],
+        default_payment_method: profile.trial_payment_method_id,
+        metadata: {
+          supabase_user_id: profile.id,
+          plan_id: plan.id,
+          guest_checkout: "false",
+          converted_from_trial: "true",
+        },
+      });
+
+      await admin
+        .from("profiles")
+        .update({
+          ...getTrialProfilePatchFromSubscription(subscription),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", profile.id);
+
       processed += 1;
     } catch (chargeError) {
       failed += 1;
-      console.error(`[trial-billing] Charge failed for ${profile.id}`, chargeError);
+      console.error(`[trial-billing] Legacy trial sync failed for ${profile.id}`, chargeError);
 
       await admin
         .from("profiles")
