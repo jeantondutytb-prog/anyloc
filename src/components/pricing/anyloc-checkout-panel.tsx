@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { AuthDivider } from "@/components/auth/auth-divider";
 import { GoogleAuthLink } from "@/components/auth/google-auth-link";
 import { StripeEmbeddedCheckout } from "@/components/checkout/stripe-embedded-checkout";
+import { CheckoutProofCarousel } from "@/components/pricing/checkout-proof-carousel";
+import { CheckoutReviewsGrid } from "@/components/pricing/checkout-reviews-grid";
 import { PaywallValueStack } from "@/components/pricing/paywall-value-stack";
 import { PlanPrice } from "@/components/pricing/plan-price";
 import { RefundGuaranteeNotice } from "@/components/pricing/refund-guarantee-notice";
@@ -13,160 +15,12 @@ import { Card } from "@/components/ui/card";
 import {
   CHECKOUT_COPY,
   CHECKOUT_PLAN_IDS,
-  CHECKOUT_PROOF_IMAGES,
-  CHECKOUT_REVIEWS,
   getCheckoutHeadline,
 } from "@/lib/checkout-copy";
 import { PLANS } from "@/lib/constants";
 import type { OnboardingDestination } from "@/lib/onboarding-destinations";
 import { TRIAL_HEADLINE } from "@/lib/trial";
 import { cn } from "@/lib/utils";
-
-function Stars({ count }: { count: number }) {
-  return (
-    <span className="text-[13px] leading-none tracking-tight text-pink-500">
-      {"★".repeat(count)}
-    </span>
-  );
-}
-
-function ProofMarquee() {
-  const items = [...CHECKOUT_PROOF_IMAGES, ...CHECKOUT_PROOF_IMAGES];
-
-  return (
-    <div className="proof-marquee relative w-full overflow-hidden">
-      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-background to-transparent" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-background to-transparent" />
-      <div className="proof-track flex w-max">
-        {items.map((item, index) => (
-          <div key={`${item.src}-${index}`} className="mx-2 flex-shrink-0">
-            <div className="group relative overflow-hidden rounded-2xl border border-[var(--al-line)] bg-zinc-900 shadow-[0_10px_30px_rgba(236,72,153,0.12)] transition-transform duration-300 hover:scale-[1.03]">
-              <img
-                src={item.src}
-                alt={`Position à ${item.city}`}
-                className="h-[280px] w-[280px] object-cover sm:h-[340px] sm:w-[340px]"
-                loading="lazy"
-                draggable={false}
-              />
-              <div className="absolute left-2.5 top-2.5">
-                {item.kind === "map" ? (
-                  <span className="inline-flex items-center rounded-full bg-pink-500 px-2.5 py-1 text-[11px] font-bold text-white shadow">
-                    Sur ta map
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-zinc-900 shadow">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#2f6bff]" />
-                    Position système
-                  </span>
-                )}
-              </div>
-              <div className="absolute bottom-2.5 left-2.5">
-                <span className="rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">
-                  📍 {item.city}
-                </span>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-      <style jsx>{`
-        @keyframes proof-scroll {
-          0% {
-            transform: translateX(0);
-          }
-          100% {
-            transform: translateX(-50%);
-          }
-        }
-        .proof-track {
-          animation: proof-scroll 45s linear infinite;
-          will-change: transform;
-        }
-        .proof-marquee:hover .proof-track {
-          animation-play-state: paused;
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .proof-track {
-            animation: none;
-          }
-        }
-      `}</style>
-    </div>
-  );
-}
-
-function ReviewsMarquee() {
-  const reviews = [...CHECKOUT_REVIEWS, ...CHECKOUT_REVIEWS];
-  const average =
-    Math.round(
-      (CHECKOUT_REVIEWS.reduce((sum, review) => sum + review.stars, 0) /
-        CHECKOUT_REVIEWS.length) *
-        10
-    ) / 10;
-
-  return (
-    <div className="mt-10">
-      <h3 className="text-center text-2xl font-bold tracking-tight text-zinc-900">
-        {CHECKOUT_COPY.reviewsTitle}
-      </h3>
-      <p className="mt-1 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-        <Stars count={5} />
-        <span className="font-bold text-foreground">
-          {average.toString().replace(".", ",")}/5
-        </span>
-      </p>
-      <div className="reviews-marquee relative mt-5 w-full overflow-hidden">
-        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-[var(--al-surface-2)] to-transparent" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-[var(--al-surface-2)] to-transparent" />
-        <div className="reviews-track flex w-max">
-          {reviews.map((review, index) => (
-            <figure
-              key={`${review.name}-${index}`}
-              className="mx-2 flex h-full w-[260px] flex-shrink-0 flex-col justify-between rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:w-[300px]"
-            >
-              <Stars count={review.stars} />
-              <blockquote className="mt-2 text-sm leading-snug text-foreground">
-                « {review.text} »
-              </blockquote>
-              <figcaption className="mt-3 flex items-center gap-2 text-xs">
-                <span className="font-bold text-foreground">
-                  {review.name}
-                </span>
-                <span className="inline-flex items-center gap-1 text-muted-foreground">
-                  <span aria-hidden="true">✓</span>
-                  {CHECKOUT_COPY.reviewsVerified}
-                </span>
-              </figcaption>
-            </figure>
-          ))}
-        </div>
-        <style jsx>{`
-          @keyframes reviews-scroll {
-            0% {
-              transform: translateX(-50%);
-            }
-            100% {
-              transform: translateX(0);
-            }
-          }
-          .reviews-track {
-            animation: reviews-scroll 50s linear infinite;
-            will-change: transform;
-            align-items: stretch;
-          }
-          .reviews-marquee:hover .reviews-track {
-            animation-play-state: paused;
-          }
-          @media (prefers-reduced-motion: reduce) {
-            .reviews-track {
-              animation: none;
-            }
-          }
-        `}</style>
-      </div>
-    </div>
-  );
-}
 
 function getCheckoutPlans() {
   return CHECKOUT_PLAN_IDS.map((id) => {
@@ -321,17 +175,17 @@ export function AnyLocCheckoutPanel({
         ))}
       </div>
 
-      <ReviewsMarquee />
+      <CheckoutReviewsGrid />
 
-      <div className="mb-8 mt-10">
+      <div className="mt-12">
         <h3 className="text-center text-2xl font-bold tracking-tight text-zinc-900">
           {copy.proofTitle}
         </h3>
         <p className="mx-auto mt-2 max-w-md text-center text-sm text-zinc-600">
           {copy.proofSub}
         </p>
-        <div className="mt-5">
-          <ProofMarquee />
+        <div className="mt-8">
+          <CheckoutProofCarousel />
         </div>
       </div>
 

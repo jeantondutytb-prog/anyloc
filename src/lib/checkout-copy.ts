@@ -119,35 +119,21 @@ export const CHECKOUT_ANNUAL_EXTRA_PERKS = [
   "Meilleur prix sur l'année",
 ] as const;
 
-export const CHECKOUT_PROOF_IMAGES = [
+/** Paires Snap Map + Plans Apple, swipables sur le checkout. */
+export const CHECKOUT_PROOF_SLIDES = [
   {
-    src: "/proof/snap-dubai.png",
-    city: "Dubaï — Burj Khalifa",
-    kind: "map" as const,
+    id: "dubai-paris",
+    snap: { src: "/proof/snap-dubai.png", label: "Snap · Dubaï" },
+    system: { src: "/proof/sys-paris.png", label: "Plans · Paris" },
   },
   {
-    src: "/proof/sys-paris.png",
-    city: "Paris — Tour Eiffel",
-    kind: "system" as const,
+    id: "miami-tokyo",
+    snap: { src: "/proof/snap-miami.png", label: "Snap · Miami" },
+    system: { src: "/proof/sys-tokyo.png", label: "Plans · Tokyo" },
   },
   {
-    src: "/proof/snap-miami.png",
-    city: "Miami Beach",
-    kind: "map" as const,
-  },
-  {
-    src: "/proof/sys-tokyo.png",
-    city: "Tokyo — Shibuya",
-    kind: "system" as const,
-  },
-  {
-    src: "/proof/snap-new-york.png",
-    city: "New York",
-    kind: "map" as const,
-  },
-  {
-    src: "/proof/sys-rio.png",
-    city: "Rio de Janeiro",
-    kind: "system" as const,
+    id: "nyc-rio",
+    snap: { src: "/proof/snap-new-york.png", label: "Snap · New York" },
+    system: { src: "/proof/sys-rio.png", label: "Plans · Rio" },
   },
 ] as const;
