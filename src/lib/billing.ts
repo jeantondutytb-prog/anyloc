@@ -2,6 +2,7 @@ import type Stripe from "stripe";
 import { ensureUserForEmail } from "@/lib/guest-account";
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 import { stripe } from "@/lib/stripe";
+import { getTrialProfilePatchFromSubscription } from "@/lib/trial-billing";
 
 export type ProfileRow = {
   id: string;
@@ -191,13 +192,12 @@ export async function syncProfileFromSubscription(
   }
 
   if (userId) {
+    const trialPatch = getTrialProfilePatchFromSubscription(subscription);
     const { error } = await admin.from("profiles").upsert(
       {
         id: userId,
         stripe_customer_id: customerId ?? null,
-        stripe_subscription_id: subscription.id,
-        subscription_status: subscription.status,
-        plan_id: subscription.metadata?.plan_id ?? null,
+        ...trialPatch,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "id" }
@@ -215,12 +215,11 @@ export async function syncProfileFromSubscription(
     return;
   }
 
+  const trialPatch = getTrialProfilePatchFromSubscription(subscription);
   const { error } = await admin
     .from("profiles")
     .update({
-      stripe_subscription_id: subscription.id,
-      subscription_status: subscription.status,
-      plan_id: subscription.metadata?.plan_id ?? null,
+      ...trialPatch,
       updated_at: new Date().toISOString(),
     })
     .eq("stripe_customer_id", customerId);
