@@ -64,6 +64,36 @@ export const PAYWALL_TESTIMONIALS = [
     author: "Mehdi",
     city: "Marseille",
   },
+  {
+    quote: "Setup iPhone en 15 min, loc à Bali sur Snap direct.",
+    author: "Théo",
+    city: "Bordeaux",
+  },
+  {
+    quote: "Ma meuf croit que je suis à Ibiza depuis 3 jours mdrr.",
+    author: "Camille",
+    city: "Toulouse",
+  },
+  {
+    quote: "Snap + Plans Apple nickel, mes potes ont flipé.",
+    author: "Rayan",
+    city: "Nice",
+  },
+  {
+    quote: "Android galé un peu mais le tutoriel m'a sauvé.",
+    author: "Sofia",
+    city: "Nantes",
+  },
+  {
+    quote: "Loc Marbella pour le weekend, personne n'a douté.",
+    author: "Karim",
+    city: "Lille",
+  },
+  {
+    quote: "Essai gratuit nickel, j'ai gardé l'abo mensuel.",
+    author: "Julie",
+    city: "Strasbourg",
+  },
 ] as const;
 
 export const REFUND_GUARANTEE_SUMMARY =

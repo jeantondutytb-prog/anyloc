@@ -9,6 +9,12 @@ const AVATAR_STYLES = [
   "from-pink-500 to-rose-400",
   "from-violet-500 to-purple-500",
   "from-fuchsia-500 to-pink-500",
+  "from-rose-500 to-orange-400",
+  "from-purple-500 to-indigo-500",
+  "from-pink-600 to-fuchsia-500",
+  "from-violet-600 to-pink-500",
+  "from-rose-400 to-pink-600",
+  "from-fuchsia-600 to-violet-500",
 ] as const;
 
 function ReviewStars() {
