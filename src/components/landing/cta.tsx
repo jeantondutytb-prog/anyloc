@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getOnboardingUrl } from "@/lib/constants";
-import { TRIAL_CTA_LABEL, TRIAL_CTA_SUBLINE } from "@/lib/trial";
+import { TRIAL_CTA_LABEL, TRIAL_CTA_SUBLINE, TRIAL_MARKETING_LINE } from "@/lib/trial";
 
 export function Cta() {
   return (
@@ -12,8 +12,7 @@ export function Cta() {
           Prêt à changer de life ?
         </h2>
         <p className="mt-4 text-zinc-600">
-          Teste Anyloc 1 h gratuitement sur le plan de ton choix — Snap, Insta,
-          Tinder et toutes tes apps.
+          {TRIAL_MARKETING_LINE}
         </p>
         <div className="mt-8 flex flex-col items-center gap-4">
           <Link href={getOnboardingUrl("annual")}>
