@@ -27,13 +27,16 @@ import {
   SITE,
 } from "@/lib/constants";
 import { PaywallValueStack } from "@/components/pricing/paywall-value-stack";
+import { PlatformConstraintNotice } from "@/components/pricing/platform-constraint-notice";
+import { PlanSummaryCard } from "@/components/pricing/plan-summary-card";
+import { TRIAL_HEADLINE } from "@/lib/trial";
 import { cn } from "@/lib/utils";
 
 const SETUP_STEPS = [
   {
     icon: CreditCard,
-    title: "Valide ta formule",
-    description: "Paiement sécurisé — ton accès Anyloc est prêt en quelques secondes.",
+    title: "Enregistre ta carte",
+    description: "Essai 1 h gratuit — débit automatique à la fin sauf annulation.",
   },
   {
     icon: Download,
@@ -53,7 +56,7 @@ const SIDEBAR_FAQ = FAQ.slice(0, 2);
 
 const TRUST_ITEMS = [
   "Paiement chiffré via Stripe",
-  "Accès instantané après validation",
+  "Essai 1 h gratuit dès validation de la carte",
   "Garantie 48 h si le GPS ne fonctionne pas",
 ];
 
@@ -416,22 +419,14 @@ export function CheckoutView({
                 })}
               </div>
 
-              <Card className="mt-6 flex items-center justify-between gap-4 border-zinc-200 bg-surface-muted/60 p-4">
-                <div className="min-w-0">
-                  <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-                    Formule sélectionnée
-                  </p>
-                  <p className="mt-0.5 truncate font-semibold text-zinc-900">
-                    {selectedPlan.name}
-                  </p>
-                  <p className="mt-1 text-xs text-zinc-500">
-                    {selectedPlan.billedNote}
-                  </p>
-                </div>
-                <div className="shrink-0 text-right">
-                  <PlanPrice plan={selectedPlan} size="summary" align="right" />
-                </div>
-              </Card>
+              <PlanSummaryCard
+                plan={selectedPlan}
+                sticky
+                showTrialNote
+                className="mt-6"
+              />
+
+              <PlatformConstraintNotice className="mt-4" compact />
 
               {error && (
                 <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
@@ -442,11 +437,11 @@ export function CheckoutView({
               <div className="relative mt-6">
                 <div className="mb-3 flex items-center gap-2 text-sm font-medium text-zinc-900">
                   <CreditCard className="h-4 w-4 text-pink-600" />
-                  Paiement sécurisé
+                  Essai gratuit 1 h
                 </div>
                 <p className="mb-4 text-xs text-zinc-500">
-                  Pas de compte requis — ton accès est créé automatiquement après
-                  le paiement.
+                  {TRIAL_HEADLINE} Pas de compte requis — ton accès est créé
+                  automatiquement après validation de la carte.
                 </p>
 
                 {loading && !clientSecret ? (

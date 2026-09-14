@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
+import { isActiveTrial } from "@/lib/trial";
 
 const ACTIVE_STATUSES = new Set(["active"]);
 
@@ -8,6 +9,8 @@ export type SubscriptionAccess = {
   status: string | null;
   planId: string | null;
   isAdmin: boolean;
+  isTrial: boolean;
+  trialEndsAt: string | null;
 };
 
 function getAdminEmails() {
@@ -39,22 +42,40 @@ export async function getSubscriptionAccessForUser(
       status: "admin",
       planId: "admin",
       isAdmin: true,
+      isTrial: false,
+      trialEndsAt: null,
     };
   }
 
   if (!isSupabaseAdminConfigured()) {
-    return { hasAccess: false, status: null, planId: null, isAdmin: false };
+    return {
+      hasAccess: false,
+      status: null,
+      planId: null,
+      isAdmin: false,
+      isTrial: false,
+      trialEndsAt: null,
+    };
   }
 
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("profiles")
-    .select("subscription_status, plan_id, email, is_admin")
+    .select(
+      "subscription_status, plan_id, email, is_admin, trial_status, trial_ends_at, trial_started_at, trial_payment_method_id"
+    )
     .eq("id", userId)
     .maybeSingle();
 
   if (error || !data) {
-    return { hasAccess: false, status: null, planId: null, isAdmin: false };
+    return {
+      hasAccess: false,
+      status: null,
+      planId: null,
+      isAdmin: false,
+      isTrial: false,
+      trialEndsAt: null,
+    };
   }
 
   if (data.is_admin || isAdminEmail(data.email)) {
@@ -63,14 +84,21 @@ export async function getSubscriptionAccessForUser(
       status: "admin",
       planId: "admin",
       isAdmin: true,
+      isTrial: false,
+      trialEndsAt: null,
     };
   }
 
+  const trialActive = isActiveTrial(data);
+  const hasPaidAccess = isActiveSubscriptionStatus(data.subscription_status);
+
   return {
-    hasAccess: isActiveSubscriptionStatus(data.subscription_status),
-    status: data.subscription_status,
+    hasAccess: hasPaidAccess || trialActive,
+    status: trialActive ? "trialing" : data.subscription_status,
     planId: data.plan_id,
     isAdmin: false,
+    isTrial: trialActive,
+    trialEndsAt: trialActive ? data.trial_ends_at : null,
   };
 }
 

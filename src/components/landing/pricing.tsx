@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getOnboardingUrl, PLANS } from "@/lib/constants";
 import { PaywallValueStack } from "@/components/pricing/paywall-value-stack";
+import { PlatformConstraintNotice } from "@/components/pricing/platform-constraint-notice";
 import { PlanPrice } from "@/components/pricing/plan-price";
 import { RefundGuaranteeNotice } from "@/components/pricing/refund-guarantee-notice";
 
@@ -20,6 +21,8 @@ export function Pricing() {
             Tinder et toutes tes apps. Seule la durée change.
           </p>
         </div>
+
+        <PlatformConstraintNotice className="mx-auto mt-8 max-w-2xl" />
 
         <div className="mt-16 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
           {PLANS.map((plan) => (
