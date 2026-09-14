@@ -4,6 +4,7 @@ import {
   syncProfileFromCheckoutSession,
   syncProfileFromSubscription,
 } from "@/lib/billing";
+import { capturePostHogEvent } from "@/lib/posthog/server";
 import { stripe } from "@/lib/stripe";
 import {
   hasProcessedStripeEvent,
@@ -54,11 +55,25 @@ export async function POST(request: Request) {
     }
 
     switch (event.type) {
-      case "checkout.session.completed":
-        await syncProfileFromCheckoutSession(
-          event.data.object as Stripe.Checkout.Session
-        );
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        await syncProfileFromCheckoutSession(session);
+
+        const userId =
+          session.client_reference_id ?? session.metadata?.supabase_user_id;
+
+        if (userId) {
+          await capturePostHogEvent({
+            distinctId: userId,
+            event: "purchase_completed",
+            properties: {
+              amount_total: session.amount_total,
+              currency: session.currency,
+            },
+          });
+        }
         break;
+      }
       case "customer.subscription.created":
       case "customer.subscription.updated":
       case "customer.subscription.deleted":

@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import posthog from "posthog-js";
 import {
   ArrowRight,
   Check,
@@ -556,6 +557,21 @@ function OnboardingViewContent({
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0 });
+  }, [step]);
+
+  useEffect(() => {
+    const stepNames = {
+      1: "use_case",
+      2: "destination",
+      3: "before_after",
+      4: "preview",
+      5: "value_recap",
+      [PAYWALL_STEP]: "paywall",
+    } as const;
+    posthog.capture("onboarding_step_viewed", {
+      step,
+      step_name: stepNames[step as keyof typeof stepNames],
+    });
   }, [step]);
 
   useEffect(() => {

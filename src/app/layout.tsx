@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { CrispChat } from "@/components/crisp/crisp-chat";
+import { PostHogProvider } from "@/components/posthog/posthog-provider";
 import { ScrollToTop } from "@/components/scroll-to-top";
 import { rootMetadata, SITE_URL } from "@/lib/seo";
 
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col bg-background text-zinc-900">
         <ScrollToTop />
+        <PostHogProvider />
         {children}
         <CrispChat />
       </body>

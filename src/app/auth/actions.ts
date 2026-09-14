@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { resolvePostAuthRedirect } from "@/lib/auth-redirect";
 import { ensureStripeCustomerForUser } from "@/lib/billing";
 import { ONBOARDING_ENTRY_URL } from "@/lib/constants";
+import { capturePostHogEvent } from "@/lib/posthog/server";
 import { validatePassword } from "@/lib/password-policy";
 import { sanitizeRedirectPath } from "@/lib/safe-redirect";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
@@ -74,6 +75,11 @@ export async function login(
       await linkStripeCustomer(data.user.id, data.user.email);
     }
 
+    await capturePostHogEvent({
+      distinctId: data.user.id,
+      event: "login_completed",
+    });
+
     redirect(
       await resolvePostAuthRedirect(
         data.user.id,
@@ -118,6 +124,12 @@ export async function signup(
     if (data.user.email) {
       await linkStripeCustomer(data.user.id, data.user.email);
     }
+
+    await capturePostHogEvent({
+      distinctId: data.user.id,
+      event: "signup_completed",
+      properties: { email: data.user.email },
+    });
 
     redirect(
       await resolvePostAuthRedirect(
