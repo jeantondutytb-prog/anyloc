@@ -6,36 +6,36 @@ import { AuthDivider } from "@/components/auth/auth-divider";
 import { GoogleAuthLink } from "@/components/auth/google-auth-link";
 import { StripeEmbeddedCheckout } from "@/components/checkout/stripe-embedded-checkout";
 import {
-  LOCAFLEX_ANNUAL_EXTRA_PERKS,
-  LOCAFLEX_BASE_PERKS,
-  LOCAFLEX_CHECKOUT_COPY,
-  LOCAFLEX_CHECKOUT_PLAN_IDS,
-  LOCAFLEX_PROOF_IMAGES,
-  LOCAFLEX_REVIEWS,
-} from "@/lib/checkout-locaflex-copy";
+  CHECKOUT_ANNUAL_EXTRA_PERKS,
+  CHECKOUT_BASE_PERKS,
+  CHECKOUT_COPY,
+  CHECKOUT_PLAN_IDS,
+  CHECKOUT_PROOF_IMAGES,
+  CHECKOUT_REVIEWS,
+} from "@/lib/checkout-copy";
 import { PLANS, type Plan } from "@/lib/constants";
 import type { OnboardingDestination } from "@/lib/onboarding-destinations";
 import { cn } from "@/lib/utils";
 
 function Stars({ count }: { count: number }) {
   return (
-    <span className="text-[13px] leading-none tracking-tight text-[#f5a623]">
+    <span className="text-[13px] leading-none tracking-tight text-pink-500">
       {"★".repeat(count)}
     </span>
   );
 }
 
 function ProofMarquee() {
-  const items = [...LOCAFLEX_PROOF_IMAGES, ...LOCAFLEX_PROOF_IMAGES];
+  const items = [...CHECKOUT_PROOF_IMAGES, ...CHECKOUT_PROOF_IMAGES];
 
   return (
     <div className="proof-marquee relative w-full overflow-hidden">
-      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-[var(--lf-surface-2)] to-transparent" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-[var(--lf-surface-2)] to-transparent" />
+      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-[var(--al-surface-2)] to-transparent" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-[var(--al-surface-2)] to-transparent" />
       <div className="proof-track flex w-max">
         {items.map((item, index) => (
           <div key={`${item.src}-${index}`} className="mx-2 flex-shrink-0">
-            <div className="group relative overflow-hidden rounded-2xl border border-[var(--lf-line)] bg-[var(--lf-ink)] shadow-[0_10px_30px_rgba(11,11,15,0.12)] transition-transform duration-300 hover:scale-[1.03]">
+            <div className="group relative overflow-hidden rounded-2xl border border-[var(--al-line)] bg-zinc-900 shadow-[0_10px_30px_rgba(236,72,153,0.12)] transition-transform duration-300 hover:scale-[1.03]">
               <img
                 src={item.src}
                 alt={`Position à ${item.city}`}
@@ -45,11 +45,11 @@ function ProofMarquee() {
               />
               <div className="absolute left-2.5 top-2.5">
                 {item.kind === "map" ? (
-                  <span className="inline-flex items-center rounded-full bg-[var(--lf-accent)] px-2.5 py-1 text-[11px] font-bold text-[var(--lf-ink)] shadow">
+                  <span className="inline-flex items-center rounded-full bg-pink-500 px-2.5 py-1 text-[11px] font-bold text-white shadow">
                     Sur ta map
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-[var(--lf-ink)] shadow">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-zinc-900 shadow">
                     <span className="h-1.5 w-1.5 rounded-full bg-[#2f6bff]" />
                     Position système
                   </span>
@@ -91,45 +91,45 @@ function ProofMarquee() {
 }
 
 function ReviewsMarquee() {
-  const reviews = [...LOCAFLEX_REVIEWS, ...LOCAFLEX_REVIEWS];
+  const reviews = [...CHECKOUT_REVIEWS, ...CHECKOUT_REVIEWS];
   const average =
     Math.round(
-      (LOCAFLEX_REVIEWS.reduce((sum, review) => sum + review.stars, 0) /
-        LOCAFLEX_REVIEWS.length) *
+      (CHECKOUT_REVIEWS.reduce((sum, review) => sum + review.stars, 0) /
+        CHECKOUT_REVIEWS.length) *
         10
     ) / 10;
 
   return (
     <div className="mt-10">
       <h3 className="text-center text-lg font-extrabold tracking-tight">
-        {LOCAFLEX_CHECKOUT_COPY.reviewsTitle}
+        {CHECKOUT_COPY.reviewsTitle}
       </h3>
-      <p className="mt-1 flex items-center justify-center gap-2 text-sm text-[var(--lf-muted)]">
+      <p className="mt-1 flex items-center justify-center gap-2 text-sm text-muted-foreground">
         <Stars count={5} />
-        <span className="font-bold text-[var(--lf-ink)]">
+        <span className="font-bold text-foreground">
           {average.toString().replace(".", ",")}/5
         </span>
       </p>
       <div className="reviews-marquee relative mt-5 w-full overflow-hidden">
-        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-[var(--lf-surface-2)] to-transparent" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-[var(--lf-surface-2)] to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-[var(--al-surface-2)] to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-[var(--al-surface-2)] to-transparent" />
         <div className="reviews-track flex w-max">
           {reviews.map((review, index) => (
             <figure
               key={`${review.name}-${index}`}
-              className="mx-2 flex h-full w-[260px] flex-shrink-0 flex-col justify-between rounded-2xl border border-[var(--lf-line)] bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.05)] sm:w-[300px]"
+              className="mx-2 flex h-full w-[260px] flex-shrink-0 flex-col justify-between rounded-2xl border border-border bg-card p-4 shadow-[0_1px_3px_rgba(236,72,153,0.06)] sm:w-[300px]"
             >
               <Stars count={review.stars} />
-              <blockquote className="mt-2 text-sm leading-snug text-[var(--lf-ink)]">
+              <blockquote className="mt-2 text-sm leading-snug text-foreground">
                 « {review.text} »
               </blockquote>
               <figcaption className="mt-3 flex items-center gap-2 text-xs">
-                <span className="font-bold text-[var(--lf-ink)]">
+                <span className="font-bold text-foreground">
                   {review.name}
                 </span>
-                <span className="inline-flex items-center gap-1 text-[var(--lf-muted)]">
+                <span className="inline-flex items-center gap-1 text-muted-foreground">
                   <span aria-hidden="true">✓</span>
-                  {LOCAFLEX_CHECKOUT_COPY.reviewsVerified}
+                  {CHECKOUT_COPY.reviewsVerified}
                 </span>
               </figcaption>
             </figure>
@@ -184,11 +184,11 @@ function SecurePaymentBadge() {
         </svg>
       </span>
       <div className="text-left leading-tight">
-        <div className="text-sm font-bold text-[var(--lf-ink)]">
-          {LOCAFLEX_CHECKOUT_COPY.secureTitle}
+        <div className="text-sm font-bold text-foreground">
+          {CHECKOUT_COPY.secureTitle}
         </div>
-        <div className="text-xs text-[var(--lf-muted)]">
-          {LOCAFLEX_CHECKOUT_COPY.ssl}
+        <div className="text-xs text-muted-foreground">
+          {CHECKOUT_COPY.ssl}
         </div>
       </div>
     </div>
@@ -196,20 +196,20 @@ function SecurePaymentBadge() {
 }
 
 function getCheckoutPlans() {
-  return LOCAFLEX_CHECKOUT_PLAN_IDS.map((id) => {
+  return CHECKOUT_PLAN_IDS.map((id) => {
     const plan = PLANS.find((entry) => entry.id === id)!;
     return plan;
   });
 }
 
-const BOLD_PERKS = new Set<string>(LOCAFLEX_ANNUAL_EXTRA_PERKS);
+const BOLD_PERKS = new Set<string>(CHECKOUT_ANNUAL_EXTRA_PERKS);
 
 function getPlanPerks(plan: Plan) {
   if (plan.id === "annual") {
-    return [...LOCAFLEX_ANNUAL_EXTRA_PERKS, ...LOCAFLEX_BASE_PERKS];
+    return [...CHECKOUT_ANNUAL_EXTRA_PERKS, ...CHECKOUT_BASE_PERKS];
   }
 
-  return [...LOCAFLEX_BASE_PERKS];
+  return [...CHECKOUT_BASE_PERKS];
 }
 
 function getPlanPerMonth(plan: Plan) {
@@ -237,7 +237,7 @@ async function parseJsonResponse(res: Response) {
   }
 }
 
-export function LocaflexCheckoutPanel({
+export function AnyLocCheckoutPanel({
   selectedPlanId,
   onPlanChange,
   stripePublishableKey,
@@ -254,7 +254,7 @@ export function LocaflexCheckoutPanel({
   onBack?: () => void;
   canceled?: boolean;
 }) {
-  const copy = LOCAFLEX_CHECKOUT_COPY;
+  const copy = CHECKOUT_COPY;
   const checkoutPlans = getCheckoutPlans();
   const selectedPlan =
     checkoutPlans.find((plan) => plan.id === selectedPlanId) ??
@@ -323,17 +323,17 @@ export function LocaflexCheckoutPanel({
 
   return (
     <div
-      className="locaflex-checkout mx-auto max-w-3xl text-[var(--lf-ink)]"
+      className="anyloc-checkout mx-auto max-w-3xl text-foreground"
       style={{
-        ["--lf-bg" as string]: "#ffffff",
-        ["--lf-surface-2" as string]: "#f5f5f7",
-        ["--lf-line" as string]: "#e7e7ea",
-        ["--lf-ink" as string]: "#0b0b0f",
-        ["--lf-muted" as string]: "#5b5b66",
-        ["--lf-accent" as string]: "#fffc00",
-        ["--lf-guarantee" as string]: "#1d4ed8",
-        ["--lf-guarantee-bg" as string]: "#eff4ff",
-        ["--lf-guarantee-line" as string]: "#c9dbff",
+        ["--al-bg" as string]: "#fff9fb",
+        ["--al-surface-2" as string]: "#fdf2f8",
+        ["--al-line" as string]: "#e4e4e7",
+        ["--al-accent" as string]: "#ec4899",
+        ["--al-accent-soft" as string]: "#fce7f3",
+        ["--al-violet" as string]: "#a855f7",
+        ["--al-guarantee" as string]: "#db2777",
+        ["--al-guarantee-bg" as string]: "#fdf2f8",
+        ["--al-guarantee-line" as string]: "#fbcfe8",
       }}
     >
       {canceled && (
@@ -342,24 +342,24 @@ export function LocaflexCheckoutPanel({
         </p>
       )}
 
-      <p className="text-center text-xs font-bold text-[var(--lf-muted)]">
+      <p className="text-center text-xs font-bold text-pink-600">
         {copy.scarcity}
       </p>
 
       <h1 className="mt-4 text-center text-3xl font-extrabold tracking-tight sm:text-4xl">
         {copy.h1a}
         <br />
-        {copy.h1b}
+        <span className="gradient-text">{copy.h1b}</span>
       </h1>
 
-      <p className="mx-auto mt-3 max-w-2xl text-center text-sm leading-relaxed text-[var(--lf-muted)] sm:text-base">
+      <p className="mx-auto mt-3 max-w-2xl text-center text-sm leading-relaxed text-muted-foreground sm:text-base">
         {copy.subA}
-        <span className="font-bold text-[var(--lf-ink)]">{copy.subHl}</span>
+        <span className="font-bold text-foreground">{copy.subHl}</span>
         {copy.subB}
       </p>
 
       {destination ? (
-        <p className="mt-4 text-center text-sm font-semibold text-[var(--lf-ink)]">
+        <p className="mt-4 text-center text-sm font-semibold text-foreground">
           {destination.emoji} Destination choisie : {destination.city}
         </p>
       ) : null}
@@ -371,10 +371,10 @@ export function LocaflexCheckoutPanel({
         {copy.included.map((item) => (
           <div
             key={item.t}
-            className="rounded-2xl border border-[var(--lf-line)] bg-white p-4"
+            className="rounded-2xl border border-border bg-card p-4"
           >
-            <p className="text-sm font-bold text-[var(--lf-ink)]">{item.t}</p>
-            <p className="mt-1 text-sm leading-snug text-[var(--lf-muted)]">
+            <p className="text-sm font-bold text-foreground">{item.t}</p>
+            <p className="mt-1 text-sm leading-snug text-muted-foreground">
               {item.d}
             </p>
           </div>
@@ -387,7 +387,7 @@ export function LocaflexCheckoutPanel({
         <h3 className="text-center text-lg font-extrabold tracking-tight">
           {copy.proofTitle}
         </h3>
-        <p className="mx-auto mt-1 max-w-sm text-center text-sm text-[var(--lf-muted)]">
+        <p className="mx-auto mt-1 max-w-sm text-center text-sm text-muted-foreground">
           {copy.proofSub}
         </p>
         <div className="mt-5">
@@ -399,7 +399,7 @@ export function LocaflexCheckoutPanel({
         <h2 className="text-xl font-extrabold tracking-tight">
           {copy.selectTitle}
         </h2>
-        <p className="mt-1 text-sm text-[var(--lf-muted)]">{copy.selectSub}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{copy.selectSub}</p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -417,12 +417,12 @@ export function LocaflexCheckoutPanel({
               className={cn(
                 "relative rounded-2xl border-2 p-5 text-left transition",
                 selected
-                  ? "border-[var(--lf-ink)] bg-[var(--lf-accent)]/10"
-                  : "border-[var(--lf-line)] bg-white hover:border-[var(--lf-muted)]"
+                  ? "border-pink-500 bg-pink-500/5 shadow-lg shadow-pink-500/10"
+                  : "border-border bg-card hover:border-pink-300"
               )}
             >
               {plan.badge && (
-                <span className="absolute -top-2.5 right-4 rounded-full bg-[var(--lf-accent)] px-2.5 py-0.5 text-[11px] font-bold text-[var(--lf-ink)]">
+                <span className="absolute -top-2.5 right-4 rounded-full bg-pink-500 px-2.5 py-0.5 text-[11px] font-bold text-white">
                   {plan.badge}
                 </span>
               )}
@@ -433,8 +433,8 @@ export function LocaflexCheckoutPanel({
                   className={cn(
                     "flex h-5 w-5 items-center justify-center rounded-full border-2",
                     selected
-                      ? "border-[var(--lf-ink)] bg-[var(--lf-ink)] text-white"
-                      : "border-[var(--lf-line)]"
+                      ? "border-pink-500 bg-pink-500 text-white"
+                      : "border-border"
                   )}
                 >
                   {selected ? <span className="text-[10px]">✓</span> : null}
@@ -445,10 +445,10 @@ export function LocaflexCheckoutPanel({
                 <span className="text-2xl font-extrabold">
                   {perMonth.replace("≈ ", "").replace("/mois", "")}
                 </span>
-                <span className="text-xs text-[var(--lf-muted)]">/mois</span>
+                <span className="text-xs text-muted-foreground">/mois</span>
               </div>
 
-              <div className="mt-1 text-xs font-semibold text-[var(--lf-ink)]">
+              <div className="mt-1 text-xs font-semibold text-foreground">
                 Facturé {plan.price.replace("€", " €")} {cadence}
               </div>
 
@@ -457,8 +457,8 @@ export function LocaflexCheckoutPanel({
                   className={cn(
                     "mt-1 text-[11px] leading-snug",
                     plan.id === "annual"
-                      ? "font-bold text-[var(--lf-ink)]"
-                      : "text-[var(--lf-muted)]"
+                      ? "font-bold text-foreground"
+                      : "text-muted-foreground"
                   )}
                 >
                   {plan.id === "annual" ? "✓ " : ""}
@@ -469,9 +469,9 @@ export function LocaflexCheckoutPanel({
               <div
                 className="mt-3 flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold"
                 style={{
-                  color: "var(--lf-guarantee)",
-                  backgroundColor: "var(--lf-guarantee-bg)",
-                  borderColor: "var(--lf-guarantee-line)",
+                  color: "var(--al-guarantee)",
+                  backgroundColor: "var(--al-guarantee-bg)",
+                  borderColor: "var(--al-guarantee-line)",
                 }}
               >
                 <svg
@@ -487,8 +487,8 @@ export function LocaflexCheckoutPanel({
                 <span>{copy.guaranteeBadge}</span>
               </div>
 
-              <div className="mt-4 border-t border-[var(--lf-line)] pt-3">
-                <div className="text-[10px] font-bold uppercase tracking-wide text-[var(--lf-muted)]">
+              <div className="mt-4 border-t border-border pt-3">
+                <div className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
                   {copy.perksTitle}
                 </div>
                 <ul className="mt-2 space-y-1.5">
@@ -500,15 +500,15 @@ export function LocaflexCheckoutPanel({
                       <span
                         aria-hidden="true"
                         className="shrink-0 font-bold"
-                        style={{ color: "var(--lf-guarantee)" }}
+                        style={{ color: "var(--al-guarantee)" }}
                       >
                         ✓
                       </span>
                       <span
                         className={cn(
                           BOLD_PERKS.has(perk)
-                            ? "font-bold text-[var(--lf-ink)]"
-                            : "text-[var(--lf-muted)]"
+                            ? "font-bold text-foreground"
+                            : "text-muted-foreground"
                         )}
                       >
                         {perk}
@@ -519,12 +519,12 @@ export function LocaflexCheckoutPanel({
               </div>
 
               {plan.id === "annual" && (
-                <div className="mt-2 flex items-start gap-1.5 rounded-lg bg-[var(--lf-accent)]/25 px-2 py-1.5">
+                <div className="mt-2 flex items-start gap-1.5 rounded-lg bg-violet-500/10 px-2 py-1.5">
                   <span aria-hidden="true" className="text-[11px] leading-tight">
                     🎁
                   </span>
-                  <span className="text-[11px] font-extrabold leading-tight text-[var(--lf-ink)]">
-                    Studio IA inclus gratuitement 1 mois
+                  <span className="text-[11px] font-extrabold leading-tight text-violet-700">
+                    {CHECKOUT_ANNUAL_EXTRA_PERKS[0]}
                   </span>
                 </div>
               )}
@@ -540,16 +540,16 @@ export function LocaflexCheckoutPanel({
         className={cn(
           "mt-4 flex w-full items-start gap-3 rounded-2xl border-2 border-dashed p-4 text-left transition",
           bumpSelected
-            ? "border-[var(--lf-ink)] bg-[var(--lf-accent)]/15"
-            : "border-[var(--lf-line)] bg-white hover:border-[var(--lf-muted)]"
+            ? "border-violet-500 bg-violet-500/5"
+            : "border-border bg-card hover:border-violet-300"
         )}
       >
         <span
           className={cn(
             "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border-2",
             bumpSelected
-              ? "border-[var(--lf-ink)] bg-[var(--lf-ink)] text-white"
-              : "border-[var(--lf-line)]"
+              ? "border-violet-500 bg-violet-500 text-white"
+              : "border-border"
           )}
         >
           {bumpSelected ? (
@@ -559,47 +559,47 @@ export function LocaflexCheckoutPanel({
         <span className="min-w-0">
           <span className="flex flex-wrap items-center gap-2">
             <span className="font-bold">⭐ {copy.bumpHeadline}</span>
-            <span className="rounded-full bg-[var(--lf-ink)] px-2 py-0.5 text-[11px] font-bold text-white">
+            <span className="rounded-full bg-violet-600 px-2 py-0.5 text-[11px] font-bold text-white">
               +{copy.bumpPrice}
             </span>
-            <span className="rounded-full bg-[var(--lf-accent)] px-2 py-0.5 text-[11px] font-bold text-[var(--lf-ink)]">
+            <span className="rounded-full bg-pink-500/15 px-2 py-0.5 text-[11px] font-bold text-pink-700">
               {copy.bumpRecommended}
             </span>
           </span>
-          <span className="mt-1 block text-sm text-[var(--lf-muted)]">
+          <span className="mt-1 block text-sm text-muted-foreground">
             {copy.bumpBlurb}
           </span>
-          <span className="mt-1.5 block text-xs font-semibold text-[var(--lf-ink)]">
+          <span className="mt-1.5 block text-xs font-semibold text-foreground">
             {copy.bumpNudge}
           </span>
         </span>
       </button>
 
-      <div className="mt-6 rounded-2xl border-2 border-[var(--lf-ink)] bg-[var(--lf-accent)]/10 p-4">
-        <div className="text-sm font-semibold text-[var(--lf-ink)]">
+      <div className="mt-6 rounded-2xl border-2 border-pink-500/30 bg-pink-500/5 p-4">
+        <div className="text-sm font-semibold text-foreground">
           {copy.recapUnlock}
         </div>
-        <div className="mt-3 flex items-baseline justify-between gap-3 border-t border-[var(--lf-line)] pt-3">
-          <span className="text-sm font-bold text-[var(--lf-ink)]">
+        <div className="mt-3 flex items-baseline justify-between gap-3 border-t border-border pt-3">
+          <span className="text-sm font-bold text-foreground">
             {selectedPlan.name}
             {bumpSelected && (
-              <span className="font-semibold text-[var(--lf-muted)]">
+              <span className="font-semibold text-muted-foreground">
                 {" "}
                 + {copy.bumpHeadline} ({copy.bumpPrice})
               </span>
             )}
           </span>
           <span className="shrink-0 whitespace-nowrap">
-            <span className="text-xl font-extrabold text-[var(--lf-ink)]">
+            <span className="text-xl font-extrabold gradient-text">
               {selectedPlan.price.replace("€", " €")}
             </span>
-            <span className="text-xs text-[var(--lf-muted)]">
+            <span className="text-xs text-muted-foreground">
               {" "}
               {getPlanCadence(selectedPlan)}
             </span>
           </span>
         </div>
-        <div className="mt-3 flex items-start gap-2 text-xs font-semibold text-[var(--lf-ink)]">
+        <div className="mt-3 flex items-start gap-2 text-xs font-semibold text-foreground">
           <span aria-hidden="true">✅</span>
           <span>{copy.guarantee}</span>
         </div>
@@ -621,7 +621,7 @@ export function LocaflexCheckoutPanel({
               publishableKey={stripePublishableKey}
             />
             {updating ? (
-              <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-white/70 text-sm font-semibold text-[var(--lf-ink)] backdrop-blur-[1px]">
+              <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-white/70 text-sm font-semibold text-foreground backdrop-blur-[1px]">
                 {copy.updating}
               </div>
             ) : null}
@@ -633,59 +633,59 @@ export function LocaflexCheckoutPanel({
               type="button"
               onClick={() => void startCheckout(selectedPlanId)}
               disabled={loading}
-              className="mt-3 rounded-full bg-[var(--lf-ink)] px-6 py-2.5 text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-60"
+              className="mt-3 rounded-full btn-gradient px-6 py-2.5 text-sm font-bold transition hover:opacity-90 disabled:opacity-60"
             >
               Continuer vers le paiement sécurisé
             </button>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center gap-3 py-10 text-sm font-semibold text-[var(--lf-muted)]">
-            <span className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--lf-line)] border-t-[var(--lf-ink)]" />
+          <div className="flex flex-col items-center justify-center gap-3 py-10 text-sm font-semibold text-muted-foreground">
+            <span className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-pink-500" />
             {copy.payOpening}
           </div>
         )}
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-center text-sm font-bold text-[var(--lf-ink)]">
+      <div className="mt-3 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-center text-sm font-bold text-foreground">
         {copy.trust.map((item) => (
           <span key={item}>{item}</span>
         ))}
       </div>
 
-      <div className="mt-6 rounded-2xl border border-[var(--lf-line)] bg-[var(--lf-surface-2)] p-4">
-        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-center text-sm font-bold text-[var(--lf-ink)]">
+      <div className="mt-6 rounded-2xl border border-border bg-[var(--al-surface-2)] p-4">
+        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-center text-sm font-bold text-foreground">
           <span>↩︎ {copy.reassure[1]}</span>
           <span>⚡ {copy.reassure[2]}</span>
         </div>
-        <div className="mt-4 border-t border-[var(--lf-line)] pt-4">
+        <div className="mt-4 border-t border-border pt-4">
           <SecurePaymentBadge />
         </div>
       </div>
 
-      <p className="mt-4 text-center text-[11px] leading-snug text-[var(--lf-muted)]">
+      <p className="mt-4 text-center text-[11px] leading-snug text-muted-foreground">
         {consentParts[0]}
         <Link
           href="/conditions-generales"
           target="_blank"
           rel="noreferrer"
-          className="underline hover:text-[var(--lf-ink)]"
+          className="underline hover:text-foreground"
         >
           {copy.consentCgv}
         </Link>
         {consentParts[1]}
       </p>
 
-      <div className="mt-8 rounded-2xl border border-[var(--lf-line)] bg-[var(--lf-surface-2)] p-5">
+      <div className="mt-8 rounded-2xl border border-border bg-[var(--al-surface-2)] p-5">
         <h3 className="text-sm font-extrabold tracking-tight">
           {copy.faqTitle}
         </h3>
         <dl className="mt-3 space-y-3">
           {copy.faq.map((item) => (
             <div key={item.q}>
-              <dt className="text-sm font-bold text-[var(--lf-ink)]">
+              <dt className="text-sm font-bold text-foreground">
                 {item.q}
               </dt>
-              <dd className="mt-0.5 text-sm leading-snug text-[var(--lf-muted)]">
+              <dd className="mt-0.5 text-sm leading-snug text-muted-foreground">
                 {item.a}
               </dd>
             </div>
@@ -697,7 +697,7 @@ export function LocaflexCheckoutPanel({
         <button
           type="button"
           onClick={onBack}
-          className="mt-6 w-full text-center text-sm text-[var(--lf-muted)] transition-colors hover:text-[var(--lf-ink)]"
+          className="mt-6 w-full text-center text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           Changer de destination
         </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { LocaflexCheckoutPanel } from "@/components/pricing/locaflex-checkout-panel";
+import { AnyLocCheckoutPanel } from "@/components/pricing/anyloc-checkout-panel";
 import type { OnboardingDestination } from "@/lib/onboarding-destinations";
 
 export function PaywallCheckoutPanel({
@@ -25,7 +25,7 @@ export function PaywallCheckoutPanel({
   checkoutSubtitle?: string;
 }) {
   return (
-    <LocaflexCheckoutPanel
+    <AnyLocCheckoutPanel
       selectedPlanId={selectedPlanId}
       onPlanChange={onPlanChange}
       stripePublishableKey={stripePublishableKey}

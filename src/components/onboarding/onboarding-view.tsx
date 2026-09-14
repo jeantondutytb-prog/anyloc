@@ -396,9 +396,15 @@ function OnboardingViewContent({
   const isTrialStep = step === TRIAL_STEP;
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-white">
+    <div className="relative min-h-screen overflow-hidden bg-background">
+      {isTrialStep ? (
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute top-1/4 left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-pink-500/10 blur-[120px]" />
+          <div className="absolute top-0 right-0 h-[300px] w-[400px] rounded-full bg-violet-500/10 blur-[100px]" />
+        </div>
+      ) : null}
 
-      <header className="sticky top-0 z-20 border-b border-zinc-100 bg-white/90 backdrop-blur-md">
+      <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur-md">
         <div
           className={cn(
             "mx-auto flex items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4",

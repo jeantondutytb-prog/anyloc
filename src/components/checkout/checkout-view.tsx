@@ -3,22 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Bricolage_Grotesque } from "next/font/google";
 import { Footer } from "@/components/layout/footer";
-import { LocaflexCheckoutPanel } from "@/components/pricing/locaflex-checkout-panel";
+import { AnyLocCheckoutPanel } from "@/components/pricing/anyloc-checkout-panel";
 import { Logo } from "@/components/ui/logo";
-import { LOCAFLEX_CHECKOUT_PLAN_IDS } from "@/lib/checkout-locaflex-copy";
-
-const display = Bricolage_Grotesque({
-  subsets: ["latin"],
-  weight: ["700", "800"],
-  variable: "--font-display",
-});
+import { CHECKOUT_PLAN_IDS } from "@/lib/checkout-copy";
 
 function normalizeCheckoutPlan(planId: string) {
-  return LOCAFLEX_CHECKOUT_PLAN_IDS.includes(
-    planId as (typeof LOCAFLEX_CHECKOUT_PLAN_IDS)[number]
-  )
+  return CHECKOUT_PLAN_IDS.includes(planId as (typeof CHECKOUT_PLAN_IDS)[number])
     ? planId
     : "annual";
 }
@@ -43,24 +34,26 @@ export function CheckoutView({
   }
 
   return (
-    <div
-      className={`${display.variable} flex min-h-screen flex-col bg-white text-[#0b0b0f]`}
-      style={{ fontFamily: "var(--font-display), system-ui, sans-serif" }}
-    >
-      <div className="border-b border-[#e7e7ea] bg-white/80 backdrop-blur">
+    <div className="relative flex min-h-screen flex-col bg-background text-foreground">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute top-1/4 left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-pink-500/10 blur-[120px]" />
+        <div className="absolute top-0 right-0 h-[300px] w-[400px] rounded-full bg-violet-500/10 blur-[100px]" />
+      </div>
+
+      <div className="relative border-b border-border bg-logo-background/90 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-2 px-4 sm:h-16 sm:px-5">
-          <Logo nameClassName="text-base font-extrabold tracking-tight sm:text-lg" />
+          <Logo nameClassName="text-base font-bold tracking-tight sm:text-lg" />
           <Link
             href="/"
-            className="text-sm font-semibold text-[#5b5b66] transition hover:text-[#0b0b0f]"
+            className="text-sm font-medium text-muted-foreground transition hover:text-foreground"
           >
             Accueil
           </Link>
         </div>
       </div>
 
-      <main className="flex-1 px-4 py-8 sm:px-6 sm:py-12">
-        <LocaflexCheckoutPanel
+      <main className="relative flex-1 px-4 py-8 sm:px-6 sm:py-12">
+        <AnyLocCheckoutPanel
           selectedPlanId={selectedPlanId}
           onPlanChange={selectPlan}
           stripePublishableKey={stripePublishableKey}
