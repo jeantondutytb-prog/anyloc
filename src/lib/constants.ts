@@ -193,11 +193,16 @@ export function getOnboardingUrl(plan?: string) {
   return planId ? `${ONBOARDING_ENTRY_URL}?plan=${planId}` : ONBOARDING_ENTRY_URL;
 }
 
-export const ONBOARDING_TOTAL_STEPS = 3;
+export const ONBOARDING_TOTAL_STEPS = 2;
 
 export function getOnboardingTrialUrl(plan?: string) {
+  return getCheckoutUrl(plan);
+}
+
+export function getPostOnboardingSignupUrl(plan?: string) {
   const planId = isValidPlanId(plan) ? plan! : "annual";
-  return `${ONBOARDING_ENTRY_URL}?step=${ONBOARDING_TOTAL_STEPS}&plan=${planId}`;
+  const checkoutUrl = getCheckoutUrl(planId);
+  return `/signup?plan=${planId}&next=${encodeURIComponent(checkoutUrl)}`;
 }
 
 /** @deprecated Use getOnboardingTrialUrl */

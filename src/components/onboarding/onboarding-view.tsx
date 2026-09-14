@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import posthog from "posthog-js";
 import {
   ArrowRight,
@@ -13,11 +13,10 @@ import {
 import type { GeocodeResult } from "@/lib/geocoding";
 import { OnboardingAhaMoment } from "@/components/onboarding/onboarding-aha-moment";
 import { OnboardingPreviewMap } from "@/components/onboarding/onboarding-preview-map";
-import { PaywallCheckoutPanel } from "@/components/pricing/paywall-checkout-panel";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import {
-  getOnboardingTrialUrl,
+  getPostOnboardingSignupUrl,
   isValidPlanId,
   ONBOARDING_TOTAL_STEPS,
 } from "@/lib/constants";
@@ -30,8 +29,6 @@ import {
 } from "@/lib/onboarding-destinations";
 import { TRIAL_CTA_LABEL } from "@/lib/trial";
 import { cn } from "@/lib/utils";
-
-const TRIAL_STEP = ONBOARDING_TOTAL_STEPS;
 
 function ProgressBar({ step }: { step: number }) {
   const percent = Math.round((step / ONBOARDING_TOTAL_STEPS) * 100);
@@ -312,24 +309,21 @@ function readStoredDestination(): OnboardingDestination | null {
   }
 }
 
-function OnboardingViewContent({
-  stripePublishableKey,
-}: {
-  stripePublishableKey: string;
-}) {
+function OnboardingViewContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [step, setStep] = useState(1);
   const [query, setQuery] = useState("");
   const [destination, setDestination] = useState<OnboardingDestination>(
     TRENDING_DESTINATIONS[0]
   );
-  const [selectedPlanId, setSelectedPlanId] = useState(() => {
+  const selectedPlanId = useMemo(() => {
     const plan = searchParams.get("plan") ?? undefined;
     if (isValidPlanId(plan)) {
       return plan!;
     }
     return "annual";
-  });
+  }, [searchParams]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0 });
@@ -339,7 +333,6 @@ function OnboardingViewContent({
     const stepNames = {
       1: "destination",
       2: "preview",
-      [TRIAL_STEP]: "trial_activation",
     } as const;
     posthog.capture("onboarding_step_viewed", {
       step,
@@ -349,20 +342,19 @@ function OnboardingViewContent({
 
   useEffect(() => {
     const stepParam = searchParams.get("step");
-    const trialStep =
-      stepParam === String(TRIAL_STEP) || stepParam === "6" ? TRIAL_STEP : null;
+    const legacyTrialStep =
+      stepParam === "3" || stepParam === "6" || stepParam === String(ONBOARDING_TOTAL_STEPS + 1);
 
-    if (!trialStep) {
+    if (legacyTrialStep) {
+      router.replace(getPostOnboardingSignupUrl(selectedPlanId));
       return;
     }
-
-    setStep(trialStep);
 
     const storedDestination = readStoredDestination();
     if (storedDestination) {
       setDestination(storedDestination);
     }
-  }, [searchParams]);
+  }, [router, searchParams, selectedPlanId]);
 
   function persistDestination(next: OnboardingDestination) {
     setDestination(next);
@@ -393,37 +385,24 @@ function OnboardingViewContent({
     });
   }
 
-  const isTrialStep = step === TRIAL_STEP;
+  function continueToSignup() {
+    posthog.capture("onboarding_completed", {
+      destination_city: destination.city,
+      plan: selectedPlanId,
+    });
+    router.push(getPostOnboardingSignupUrl(selectedPlanId));
+  }
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
-      {isTrialStep ? (
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute top-1/4 left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-pink-500/10 blur-[120px]" />
-          <div className="absolute top-0 right-0 h-[300px] w-[400px] rounded-full bg-violet-500/10 blur-[100px]" />
-        </div>
-      ) : null}
-
       <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur-md">
-        <div
-          className={cn(
-            "mx-auto flex items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4",
-            isTrialStep ? "max-w-6xl" : "max-w-5xl"
-          )}
-        >
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
           <Logo href="/" size="sm" nameClassName="hidden min-[380px]:inline text-base sm:text-lg" />
           <ProgressBar step={step} />
         </div>
       </header>
 
-      <main
-        className={cn(
-          "relative min-w-0 max-w-full pb-10",
-          isTrialStep
-            ? "mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12"
-            : "px-4 py-8 sm:px-6 sm:py-14"
-        )}
-      >
+      <main className="relative min-w-0 max-w-full px-4 py-8 sm:px-6 sm:py-14">
         {step === 1 && (
           <StepDestination
             query={query}
@@ -435,20 +414,9 @@ function OnboardingViewContent({
         {step === 2 && (
           <StepPreview
             destination={destination}
-            onContinue={() => setStep(TRIAL_STEP)}
+            onContinue={continueToSignup}
             onChangeDestination={() => setStep(1)}
             onDestinationChange={updateDestinationCoords}
-          />
-        )}
-
-        {step === TRIAL_STEP && (
-          <PaywallCheckoutPanel
-            selectedPlanId={selectedPlanId}
-            onPlanChange={setSelectedPlanId}
-            stripePublishableKey={stripePublishableKey}
-            destination={destination}
-            googleAuthRedirectTo={getOnboardingTrialUrl(selectedPlanId)}
-            onBack={() => setStep(1)}
           />
         )}
       </main>
@@ -456,11 +424,7 @@ function OnboardingViewContent({
   );
 }
 
-export function OnboardingView({
-  stripePublishableKey,
-}: {
-  stripePublishableKey: string;
-}) {
+export function OnboardingView() {
   return (
     <Suspense
       fallback={
@@ -470,7 +434,7 @@ export function OnboardingView({
         </div>
       }
     >
-      <OnboardingViewContent stripePublishableKey={stripePublishableKey} />
+      <OnboardingViewContent />
     </Suspense>
   );
 }

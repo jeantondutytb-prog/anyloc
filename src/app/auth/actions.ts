@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { resolvePostAuthRedirect } from "@/lib/auth-redirect";
 import { ensureStripeCustomerForUser } from "@/lib/billing";
-import { ONBOARDING_ENTRY_URL } from "@/lib/constants";
+import { getCheckoutUrl } from "@/lib/constants";
 import { capturePostHogEvent } from "@/lib/posthog/server";
 import { validatePassword } from "@/lib/password-policy";
 import { sanitizeRedirectPath } from "@/lib/safe-redirect";
@@ -34,7 +34,7 @@ function translateAuthError(message: string) {
 
 function getRedirectTo(formData: FormData) {
   const redirectTo = String(formData.get("redirectTo") ?? "").trim();
-  return sanitizeRedirectPath(redirectTo, ONBOARDING_ENTRY_URL);
+  return sanitizeRedirectPath(redirectTo, getCheckoutUrl());
 }
 
 async function linkStripeCustomer(userId: string, email: string) {

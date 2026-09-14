@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getOnboardingUrl, isValidPlanId } from "@/lib/constants";
+import { getCheckoutUrl, isValidPlanId } from "@/lib/constants";
 
 export default async function RegisterPage({
   searchParams,
@@ -9,6 +9,6 @@ export default async function RegisterPage({
   const { plan } = await searchParams;
   const planId = isValidPlanId(plan) ? plan! : "annual";
   redirect(
-    `/signup?plan=${planId}&next=${encodeURIComponent(getOnboardingUrl(planId))}`
+    `/signup?plan=${planId}&next=${encodeURIComponent(getCheckoutUrl(planId))}`
   );
 }

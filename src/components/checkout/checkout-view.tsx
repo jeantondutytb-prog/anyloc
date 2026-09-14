@@ -1,12 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Footer } from "@/components/layout/footer";
 import { AnyLocCheckoutPanel } from "@/components/pricing/anyloc-checkout-panel";
 import { Logo } from "@/components/ui/logo";
 import { isValidPlanId } from "@/lib/constants";
+import {
+  ONBOARDING_DESTINATION_KEY,
+  type OnboardingDestination,
+} from "@/lib/onboarding-destinations";
 
 function normalizeCheckoutPlan(planId: string) {
   return isValidPlanId(planId) ? planId : "annual";
@@ -25,6 +29,18 @@ export function CheckoutView({
   const [selectedPlanId, setSelectedPlanId] = useState(
     normalizeCheckoutPlan(initialPlanId)
   );
+  const [destination, setDestination] = useState<OnboardingDestination | undefined>();
+
+  useEffect(() => {
+    try {
+      const stored = window.sessionStorage.getItem(ONBOARDING_DESTINATION_KEY);
+      if (stored) {
+        setDestination(JSON.parse(stored) as OnboardingDestination);
+      }
+    } catch {
+      setDestination(undefined);
+    }
+  }, []);
 
   function selectPlan(planId: string) {
     setSelectedPlanId(planId);
@@ -55,6 +71,7 @@ export function CheckoutView({
           selectedPlanId={selectedPlanId}
           onPlanChange={selectPlan}
           stripePublishableKey={stripePublishableKey}
+          destination={destination}
           canceled={canceled}
         />
       </main>

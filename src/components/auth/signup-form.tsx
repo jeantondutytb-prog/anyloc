@@ -10,7 +10,7 @@ import { GoogleAuthLink } from "@/components/auth/google-auth-link";
 import { PlatformConstraintNotice } from "@/components/pricing/platform-constraint-notice";
 import { getPlanById, PlanSummaryCard } from "@/components/pricing/plan-summary-card";
 import { Button } from "@/components/ui/button";
-import { getOnboardingUrl } from "@/lib/constants";
+import { getCheckoutUrl } from "@/lib/constants";
 import { MIN_PASSWORD_LENGTH } from "@/lib/password-policy";
 
 const initialState: AuthState = {};
@@ -24,7 +24,7 @@ export function SignupForm({
 }) {
   const [state, formAction, pending] = useActionState(signup, initialState);
   const [showPassword, setShowPassword] = useState(false);
-  const destination = redirectTo ?? getOnboardingUrl(plan);
+  const destination = redirectTo ?? getCheckoutUrl(plan);
   const selectedPlan = getPlanById(plan);
 
   return (
