@@ -13,6 +13,10 @@ if (typeof window !== "undefined") {
       capture_pageview: false,
       capture_pageleave: true,
       person_profiles: "identified_only",
+      session_recording: {
+        maskAllInputs: true,
+        maskTextSelector: "[data-ph-mask]",
+      },
     });
   }
 }
