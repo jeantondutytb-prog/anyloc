@@ -7,7 +7,6 @@ import { GoogleAuthLink } from "@/components/auth/google-auth-link";
 import { StripeEmbeddedCheckout } from "@/components/checkout/stripe-embedded-checkout";
 import { PaywallValueStack } from "@/components/pricing/paywall-value-stack";
 import { formatPlanBillingTotal, PlanPrice } from "@/components/pricing/plan-price";
-import { PlatformConstraintNotice } from "@/components/pricing/platform-constraint-notice";
 import {
   CHECKOUT_ANNUAL_EXTRA_PERKS,
   CHECKOUT_COPY,
@@ -388,8 +387,6 @@ export function AnyLocCheckoutPanel({
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">{copy.selectSub}</p>
       </div>
-
-      <PlatformConstraintNotice className="mt-6" compact />
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {checkoutPlans.map((plan) => {
