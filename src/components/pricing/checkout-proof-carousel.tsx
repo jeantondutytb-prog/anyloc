@@ -103,18 +103,12 @@ export function CheckoutProofCarousel() {
             key={slide.id}
             className="w-full shrink-0 snap-center px-2"
           >
-            <div className="flex items-center justify-center gap-2 sm:gap-3">
+            <div className="flex items-end justify-center gap-4 sm:gap-6">
               <ProofPhone
                 label={slide.snap.label}
                 src={slide.snap.src}
                 variant="snap"
               />
-              <span
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-pink-500 to-violet-500 text-sm font-bold text-white shadow-md"
-                aria-hidden="true"
-              >
-                =
-              </span>
               <ProofPhone
                 label={slide.system.label}
                 src={slide.system.src}
