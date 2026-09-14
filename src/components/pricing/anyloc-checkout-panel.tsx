@@ -66,7 +66,16 @@ export function AnyLocCheckoutPanel({
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const requestRef = useRef<AbortController | null>(null);
-  const startedRef = useRef(false);
+  const paymentSectionRef = useRef<HTMLDivElement>(null);
+
+  function scrollToPayment() {
+    requestAnimationFrame(() => {
+      paymentSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  }
 
   async function startCheckout(planId: string, isInitial = false) {
     requestRef.current?.abort();
@@ -95,7 +104,6 @@ export function AnyLocCheckoutPanel({
 
       if (requestRef.current === controller) {
         setClientSecret(data.clientSecret);
-        startedRef.current = true;
       }
     } catch (err) {
       if (controller.signal.aborted) return;
@@ -109,8 +117,10 @@ export function AnyLocCheckoutPanel({
   }
 
   function selectPlan(planId: string) {
-    if (planId === selectedPlanId) return;
-    onPlanChange(planId);
+    if (planId !== selectedPlanId) {
+      onPlanChange(planId);
+    }
+    scrollToPayment();
   }
 
   useEffect(() => {
@@ -265,7 +275,11 @@ export function AnyLocCheckoutPanel({
 
       <RefundGuaranteeNotice className="mt-8 text-center text-sm text-zinc-600" />
 
-      <div className="mx-auto mt-12 max-w-2xl">
+      <div
+        ref={paymentSectionRef}
+        id="checkout-payment"
+        className="mx-auto mt-12 max-w-2xl scroll-mt-28"
+      >
         <h3 className="text-center text-lg font-semibold text-zinc-900">
           Active ton essai
         </h3>
