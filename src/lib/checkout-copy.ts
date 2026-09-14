@@ -1,4 +1,4 @@
-import { PAYWALL_TESTIMONIALS, PLAN_VALUE_STACK, SITE } from "@/lib/constants";
+import { PAYWALL_TESTIMONIALS, PLAN_IDS, PLAN_VALUE_STACK, SITE } from "@/lib/constants";
 import { TRIAL_CTA_SUBLINE } from "@/lib/trial";
 
 export const CHECKOUT_REVIEWS = PAYWALL_TESTIMONIALS.map((testimonial) => ({
@@ -120,7 +120,7 @@ export function getCheckoutHeadline(city?: string) {
   };
 }
 
-export const CHECKOUT_PLAN_IDS = ["6months", "annual"] as const;
+export const CHECKOUT_PLAN_IDS = PLAN_IDS;
 
 export const CHECKOUT_BASE_PERKS = PLAN_VALUE_STACK;
 

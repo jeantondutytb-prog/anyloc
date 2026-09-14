@@ -6,12 +6,10 @@ import { useRouter } from "next/navigation";
 import { Footer } from "@/components/layout/footer";
 import { AnyLocCheckoutPanel } from "@/components/pricing/anyloc-checkout-panel";
 import { Logo } from "@/components/ui/logo";
-import { CHECKOUT_PLAN_IDS } from "@/lib/checkout-copy";
+import { isValidPlanId } from "@/lib/constants";
 
 function normalizeCheckoutPlan(planId: string) {
-  return CHECKOUT_PLAN_IDS.includes(planId as (typeof CHECKOUT_PLAN_IDS)[number])
-    ? planId
-    : "annual";
+  return isValidPlanId(planId) ? planId : "annual";
 }
 
 export function CheckoutView({

@@ -5,16 +5,18 @@ import { useEffect, useRef, useState } from "react";
 import { AuthDivider } from "@/components/auth/auth-divider";
 import { GoogleAuthLink } from "@/components/auth/google-auth-link";
 import { StripeEmbeddedCheckout } from "@/components/checkout/stripe-embedded-checkout";
+import { PaywallValueStack } from "@/components/pricing/paywall-value-stack";
+import { formatPlanBillingTotal, PlanPrice } from "@/components/pricing/plan-price";
+import { PlatformConstraintNotice } from "@/components/pricing/platform-constraint-notice";
 import {
   CHECKOUT_ANNUAL_EXTRA_PERKS,
-  CHECKOUT_BASE_PERKS,
   CHECKOUT_COPY,
   CHECKOUT_PLAN_IDS,
   CHECKOUT_PROOF_IMAGES,
   CHECKOUT_REVIEWS,
   getCheckoutHeadline,
 } from "@/lib/checkout-copy";
-import { PLANS, type Plan } from "@/lib/constants";
+import { PLANS } from "@/lib/constants";
 import type { OnboardingDestination } from "@/lib/onboarding-destinations";
 import { cn } from "@/lib/utils";
 
@@ -203,28 +205,6 @@ function getCheckoutPlans() {
   });
 }
 
-const BOLD_PERKS = new Set<string>(CHECKOUT_ANNUAL_EXTRA_PERKS);
-
-function getPlanPerks(plan: Plan) {
-  if (plan.id === "annual") {
-    return [...CHECKOUT_ANNUAL_EXTRA_PERKS, ...CHECKOUT_BASE_PERKS];
-  }
-
-  return [...CHECKOUT_BASE_PERKS];
-}
-
-function getPlanPerMonth(plan: Plan) {
-  if (plan.id === "6months") {
-    return "≈ 5,82 €/mois";
-  }
-
-  return "≈ 4,16 €/mois";
-}
-
-function getPlanCadence(plan: Plan) {
-  return plan.id === "6months" ? "/ 6 mois" : "/ an";
-}
-
 async function parseJsonResponse(res: Response) {
   const text = await res.text();
   if (!text) {
@@ -325,7 +305,7 @@ export function AnyLocCheckoutPanel({
 
   return (
     <div
-      className="anyloc-checkout mx-auto max-w-3xl text-foreground"
+      className="anyloc-checkout mx-auto max-w-6xl text-foreground"
       style={{
         ["--al-bg" as string]: "#fff9fb",
         ["--al-surface-2" as string]: "#fdf2f8",
@@ -402,19 +382,18 @@ export function AnyLocCheckoutPanel({
         </div>
       </div>
 
-      <div className="mb-4">
+      <div className="mx-auto max-w-3xl">
         <h2 className="text-xl font-extrabold tracking-tight">
           {copy.selectTitle}
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">{copy.selectSub}</p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <PlatformConstraintNotice className="mt-6" compact />
+
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {checkoutPlans.map((plan) => {
           const selected = plan.id === selectedPlanId;
-          const perks = getPlanPerks(plan);
-          const perMonth = getPlanPerMonth(plan);
-          const cadence = getPlanCadence(plan);
 
           return (
             <button
@@ -422,23 +401,28 @@ export function AnyLocCheckoutPanel({
               type="button"
               onClick={() => selectPlan(plan.id)}
               className={cn(
-                "relative rounded-2xl border-2 p-5 text-left transition",
+                "relative flex flex-col rounded-2xl border-2 p-5 text-left transition",
                 selected
                   ? "border-pink-500 bg-pink-500/5 shadow-lg shadow-pink-500/10"
-                  : "border-border bg-card hover:border-pink-300"
+                  : "border-border bg-card hover:border-pink-300",
+                plan.popular && !selected && "border-pink-500/30"
               )}
             >
-              {plan.badge && (
-                <span className="absolute -top-2.5 right-4 rounded-full bg-pink-500 px-2.5 py-0.5 text-[11px] font-bold text-white">
+              {plan.popular ? (
+                <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-pink-500 px-2.5 py-0.5 text-[11px] font-bold text-white">
+                  Le plus populaire
+                </span>
+              ) : plan.badge ? (
+                <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-pink-500 px-2.5 py-0.5 text-[11px] font-bold text-white">
                   {plan.badge}
                 </span>
-              )}
+              ) : null}
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <span className="font-bold">{plan.name}</span>
                 <span
                   className={cn(
-                    "flex h-5 w-5 items-center justify-center rounded-full border-2",
+                    "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2",
                     selected
                       ? "border-pink-500 bg-pink-500 text-white"
                       : "border-border"
@@ -448,33 +432,27 @@ export function AnyLocCheckoutPanel({
                 </span>
               </div>
 
-              <div className="mt-2 flex items-baseline gap-1.5">
-                <span className="text-2xl font-extrabold">
-                  {perMonth.replace("≈ ", "").replace("/mois", "")}
-                </span>
-                <span className="text-xs text-muted-foreground">/mois</span>
-              </div>
+              <p className="mt-1 text-xs font-medium text-muted-foreground">
+                Accès Anyloc complet
+              </p>
 
-              <div className="mt-1 text-xs font-semibold text-foreground">
-                Facturé {plan.price.replace("€", " €")} {cadence}
-              </div>
+              <PlanPrice plan={plan} size="card" className="mt-3" />
 
-              {plan.compare && (
-                <div
-                  className={cn(
-                    "mt-1 text-[11px] leading-snug",
-                    plan.id === "annual"
-                      ? "font-bold text-foreground"
-                      : "text-muted-foreground"
-                  )}
-                >
-                  {plan.id === "annual" ? "✓ " : ""}
-                  {plan.compare}
-                </div>
-              )}
+              {plan.savings ? (
+                <p className="mt-1 text-sm font-medium text-pink-600">{plan.savings}</p>
+              ) : plan.compare ? (
+                <p className="mt-1 text-xs text-muted-foreground">{plan.compare}</p>
+              ) : null}
+
+              <p className="mt-2 text-sm text-muted-foreground">{plan.description}</p>
+
+              <PaywallValueStack
+                className="mt-4 flex-1 border-t border-border pt-4"
+                compact
+              />
 
               <div
-                className="mt-3 flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold"
+                className="mt-4 flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold"
                 style={{
                   color: "var(--al-guarantee)",
                   backgroundColor: "var(--al-guarantee-bg)",
@@ -494,39 +472,8 @@ export function AnyLocCheckoutPanel({
                 <span>{copy.guaranteeBadge}</span>
               </div>
 
-              <div className="mt-4 border-t border-border pt-3">
-                <div className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                  {copy.perksTitle}
-                </div>
-                <ul className="mt-2 space-y-1.5">
-                  {perks.map((perk) => (
-                    <li
-                      key={perk}
-                      className="flex gap-1.5 text-[11px] leading-snug"
-                    >
-                      <span
-                        aria-hidden="true"
-                        className="shrink-0 font-bold"
-                        style={{ color: "var(--al-guarantee)" }}
-                      >
-                        ✓
-                      </span>
-                      <span
-                        className={cn(
-                          BOLD_PERKS.has(perk)
-                            ? "font-bold text-foreground"
-                            : "text-muted-foreground"
-                        )}
-                      >
-                        {perk}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {plan.id === "annual" && (
-                <div className="mt-2 flex items-start gap-1.5 rounded-lg bg-violet-500/10 px-2 py-1.5">
+              {plan.id === "annual" ? (
+                <div className="mt-3 flex items-start gap-1.5 rounded-lg bg-violet-500/10 px-2 py-1.5">
                   <span aria-hidden="true" className="text-[11px] leading-tight">
                     🎁
                   </span>
@@ -534,7 +481,7 @@ export function AnyLocCheckoutPanel({
                     {CHECKOUT_ANNUAL_EXTRA_PERKS[0]}
                   </span>
                 </div>
-              )}
+              ) : null}
             </button>
           );
         })}
@@ -596,14 +543,8 @@ export function AnyLocCheckoutPanel({
               </span>
             )}
           </span>
-          <span className="shrink-0 whitespace-nowrap">
-            <span className="text-xl font-extrabold gradient-text">
-              {selectedPlan.price.replace("€", " €")}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              {" "}
-              {getPlanCadence(selectedPlan)}
-            </span>
+          <span className="shrink-0 whitespace-nowrap text-xl font-extrabold gradient-text">
+            {formatPlanBillingTotal(selectedPlan)}
           </span>
         </div>
         <div className="mt-3 flex items-start gap-2 text-xs font-semibold text-foreground">

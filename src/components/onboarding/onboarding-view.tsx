@@ -325,8 +325,8 @@ function OnboardingViewContent({
   );
   const [selectedPlanId, setSelectedPlanId] = useState(() => {
     const plan = searchParams.get("plan") ?? undefined;
-    if (plan === "6months" || plan === "annual") {
-      return plan;
+    if (isValidPlanId(plan)) {
+      return plan!;
     }
     return "annual";
   });

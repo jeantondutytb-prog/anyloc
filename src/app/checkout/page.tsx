@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { CheckoutView } from "@/components/checkout/checkout-view";
 import { ensureStripeCustomerForUser } from "@/lib/billing";
-import { CHECKOUT_PLAN_IDS } from "@/lib/checkout-copy";
+import { isValidPlanId } from "@/lib/constants";
 import { getStripePublishableKey } from "@/lib/stripe-client";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { getSubscriptionAccessForUser } from "@/lib/subscription";
@@ -14,11 +14,7 @@ export default async function CheckoutPage({
   const { plan, canceled } = await searchParams;
   const planId = plan ?? "annual";
 
-  if (
-    !CHECKOUT_PLAN_IDS.includes(
-      planId as (typeof CHECKOUT_PLAN_IDS)[number]
-    )
-  ) {
+  if (!isValidPlanId(planId)) {
     redirect("/checkout?plan=annual");
   }
 
