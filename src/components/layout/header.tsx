@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import { getOnboardingUrl } from "@/lib/constants";
+import { TRIAL_CTA_LABEL_SHORT } from "@/lib/trial";
 
 export function Header() {
   return (
@@ -37,7 +38,7 @@ export function Header() {
             </Button>
           </Link>
           <Link href={getOnboardingUrl("annual")}>
-            <Button size="sm">Fake ma loc</Button>
+            <Button size="sm">{TRIAL_CTA_LABEL_SHORT}</Button>
           </Link>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { DESTINATION_SPOTS } from "@/lib/destination-spots";
+import { TRIAL_CTA_LABEL } from "@/lib/trial";
 
 export const SITE = {
   name: "Anyloc",
@@ -91,7 +92,7 @@ export const PLANS = [
     savings: undefined,
     features: PLAN_VALUE_STACK,
     popular: false,
-    ctaLabel: "Essayer une semaine",
+    ctaLabel: TRIAL_CTA_LABEL,
     stripePriceId: process.env.STRIPE_PRICE_WEEKLY,
   },
   {
@@ -108,7 +109,7 @@ export const PLANS = [
     savings: undefined,
     features: PLAN_VALUE_STACK,
     popular: false,
-    ctaLabel: "Commencer maintenant",
+    ctaLabel: TRIAL_CTA_LABEL,
     stripePriceId: process.env.STRIPE_PRICE_MONTHLY,
   },
   {
@@ -125,7 +126,7 @@ export const PLANS = [
     savings: "Économise 42 % vs mensuel",
     features: PLAN_VALUE_STACK,
     popular: false,
-    ctaLabel: "Économiser 42%",
+    ctaLabel: TRIAL_CTA_LABEL,
     stripePriceId: process.env.STRIPE_PRICE_6MONTHS,
   },
   {
@@ -142,7 +143,7 @@ export const PLANS = [
     savings: "Tu gardes 69 € sur l'année · -58 % vs mensuel",
     features: PLAN_VALUE_STACK,
     popular: true,
-    ctaLabel: "Débloquer le meilleur prix",
+    ctaLabel: TRIAL_CTA_LABEL,
     stripePriceId: process.env.STRIPE_PRICE_ANNUAL,
   },
 ];
