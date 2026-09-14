@@ -28,6 +28,10 @@ export async function verifyCheckoutSessionForUser(
     Boolean(sessionEmail) &&
     userEmail!.trim().toLowerCase() === sessionEmail;
 
+  if (!sessionUserId && !emailMatches) {
+    return { verified: false as const, error: "Session non autorisée." };
+  }
+
   if (sessionUserId && sessionUserId !== userId && !emailMatches) {
     return { verified: false as const, error: "Session non autorisée." };
   }

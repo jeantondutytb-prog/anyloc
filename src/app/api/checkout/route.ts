@@ -5,6 +5,7 @@ import {
   createSubscriptionCheckoutSession,
   getAuthenticatedCheckoutUser,
 } from "@/lib/stripe-checkout";
+import { CHECKOUT_INTENT_COOKIE } from "@/lib/checkout-intent-cookie";
 
 export async function POST(request: Request) {
   try {
@@ -42,7 +43,19 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({ url: session.url });
+    const response = NextResponse.json({ url: session.url });
+
+    if (!user) {
+      response.cookies.set(CHECKOUT_INTENT_COOKIE, session.id, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/auth/checkout-complete",
+        maxAge: 60 * 60,
+      });
+    }
+
+    return response;
   } catch (error) {
     console.error("[checkout]", error);
 
