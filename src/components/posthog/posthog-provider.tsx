@@ -15,7 +15,7 @@ if (typeof window !== "undefined") {
       person_profiles: "identified_only",
       session_recording: {
         maskAllInputs: true,
-        maskTextSelector: "[data-ph-mask]",
+        maskTextSelector: "*",
       },
     });
   }
