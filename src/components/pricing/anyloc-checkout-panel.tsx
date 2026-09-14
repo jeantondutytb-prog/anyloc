@@ -12,6 +12,7 @@ import {
   CHECKOUT_PLAN_IDS,
   CHECKOUT_PROOF_IMAGES,
   CHECKOUT_REVIEWS,
+  getCheckoutHeadline,
 } from "@/lib/checkout-copy";
 import { PLANS, type Plan } from "@/lib/constants";
 import type { OnboardingDestination } from "@/lib/onboarding-destinations";
@@ -320,6 +321,7 @@ export function AnyLocCheckoutPanel({
   }, [selectedPlanId]);
 
   const consentParts = copy.consent.split("{cgv}");
+  const headline = getCheckoutHeadline(destination?.city);
 
   return (
     <div
@@ -338,18 +340,23 @@ export function AnyLocCheckoutPanel({
     >
       {canceled && (
         <p className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Paiement annulé. Reprends quand tu veux — ta formule reste sélectionnée.
+          {copy.canceled}
         </p>
       )}
 
-      <p className="text-center text-xs font-bold text-pink-600">
+      <p className="text-center text-xs font-semibold text-pink-600">
         {copy.scarcity}
       </p>
 
       <h1 className="mt-4 text-center text-3xl font-extrabold tracking-tight sm:text-4xl">
-        {copy.h1a}
-        <br />
-        <span className="gradient-text">{copy.h1b}</span>
+        {headline.before}{" "}
+        <span className="gradient-text">{headline.highlight}</span>
+        {headline.after ? (
+          <>
+            <br />
+            {headline.after}
+          </>
+        ) : null}
       </h1>
 
       <p className="mx-auto mt-3 max-w-2xl text-center text-sm leading-relaxed text-muted-foreground sm:text-base">
@@ -360,7 +367,7 @@ export function AnyLocCheckoutPanel({
 
       {destination ? (
         <p className="mt-4 text-center text-sm font-semibold text-foreground">
-          {destination.emoji} Destination choisie : {destination.city}
+          {destination.emoji} {copy.destinationLabel} : {destination.city}
         </p>
       ) : null}
 
@@ -635,7 +642,7 @@ export function AnyLocCheckoutPanel({
               disabled={loading}
               className="mt-3 rounded-full btn-gradient px-6 py-2.5 text-sm font-bold transition hover:opacity-90 disabled:opacity-60"
             >
-              Continuer vers le paiement sécurisé
+              {copy.retryCta}
             </button>
           </div>
         ) : (
@@ -699,7 +706,7 @@ export function AnyLocCheckoutPanel({
           onClick={onBack}
           className="mt-6 w-full text-center text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
-          Changer de destination
+          {copy.backCta}
         </button>
       ) : null}
 

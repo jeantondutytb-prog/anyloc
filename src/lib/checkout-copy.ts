@@ -1,4 +1,5 @@
 import { PAYWALL_TESTIMONIALS, PLAN_VALUE_STACK, SITE } from "@/lib/constants";
+import { TRIAL_CTA_SUBLINE } from "@/lib/trial";
 
 export const CHECKOUT_REVIEWS = PAYWALL_TESTIMONIALS.map((testimonial) => ({
   name: testimonial.author,
@@ -8,49 +9,52 @@ export const CHECKOUT_REVIEWS = PAYWALL_TESTIMONIALS.map((testimonial) => ({
 }));
 
 export const CHECKOUT_COPY = {
-  scarcity: "Essai gratuit · résiliable en 1 clic",
-  h1a: "Fake ta loc.",
-  h1b: SITE.tagline,
-  subA: `${SITE.description} Pas un screenshot, pas un montage : ta `,
-  subHl: "vraie position GPS",
-  subB: ", en direct. Ton accès se débloque dès la validation.",
-  valueTitle: "Ce que tu débloques aujourd'hui",
+  scarcity: TRIAL_CTA_SUBLINE,
+  h1a: "Fake ta loc",
+  h1b: "alors que t'es chez toi.",
+  subA: `${SITE.name} hack ton GPS — Snap, Insta, Tinder, jeux : un réglage et `,
+  subHl: "tout ton tel déménage",
+  subB: ". Pas de screen, pas de montage — le même signal que si t'étais sur place.",
+  valueTitle: "Un seul cheat code pour tout ton tel",
   included: [
     {
-      t: "Snap, Insta, Tinder — tout le tel",
-      d: "Une seule loc pour toutes tes apps, pas une par une.",
+      t: "Multi-apps native",
+      d:
+        "Fini les apps qui marchent que sur Snap. Un réglage, toutes les apps impactées.",
     },
     {
-      t: "Une position que personne peut griller",
-      d: "Signal GPS réel, pas un screenshot ni un montage.",
+      t: "Signal GPS réel",
+      d:
+        "Les autres solutions trichent en surface. Anyloc modifie le signal que ton tel envoie vraiment.",
     },
     {
-      t: "Guidé pas à pas, pour ton modèle",
-      d: "Android depuis le mobile. iPhone avec la formule annuelle.",
+      t: "Opérationnel en quelques minutes",
+      d:
+        "Pas besoin d'être un crack en tech. On te guide de l'inscription à ta première loc.",
     },
     {
-      t: "Zéro engagement",
-      d: "Résiliation en 1 clic, quand tu veux, sans justificatif.",
+      t: "Annule quand tu veux",
+      d: "Résiliation en 1 clic depuis ton espace — sans appel, sans formulaire.",
     },
   ],
-  selectTitle: "Choisis ta formule",
+  selectTitle: "Choisis ta durée",
   selectSub:
-    "Tous les plans incluent le même accès — plus tu prends long, moins tu payes.",
+    "Essaie gratuitement — même accès complet sur Snap, Insta, Tinder et toutes tes apps. Seule la durée facturée change après l'essai.",
   guaranteeBadge: "Garantie 48 h",
-  perksTitle: "Ce que ta formule inclut",
-  bumpHeadline: "Ajoute le Pack Spots Premium",
+  perksTitle: "Inclus dans ton accès",
+  bumpHeadline: "Ajoute les Spots Premium",
   bumpPrice: "9,90 €",
-  bumpRecommended: "Recommandé",
+  bumpRecommended: "Le + populaire",
   bumpBlurb:
-    "La carte des meilleurs spots — hôtels, aéroports, restos, monuments — pour des positions crédibles partout.",
+    "Marbella, Ibiza, Miami — tes destinations fav en un tap, plus les meilleurs spots (hôtels, aéroports, restos) pour des positions crédibles.",
   bumpNudge:
-    "La plupart l'ajoutent : ça fait la différence entre une loc posée et un vrai déplacement.",
-  payOpening: "Préparation du checkout Stripe…",
-  updating: "Mise à jour de la formule…",
+    "Pratique si tu changes souvent de ville : moins de temps à chercher, plus de temps à flex.",
+  payOpening: "On prépare ton essai gratuit…",
+  updating: "Mise à jour du plan…",
   trust: [
     "🔒 Paiement sécurisé",
-    "· Annulation en 1 clic",
-    "· Accès débloqué à la seconde",
+    "· 0 € maintenant",
+    "· Accès dès la validation",
   ],
   reassure: [
     "Paiement 100% sécurisé",
@@ -60,38 +64,61 @@ export const CHECKOUT_COPY = {
   secureTitle: "Paiement 100% sécurisé",
   ssl: "SSL · chiffrement 256 bits · Stripe",
   recapUnlock:
-    "Tu débloques : loc illimitée sur toutes tes apps · signal GPS réel · installation guidée pas à pas.",
+    "Ton accès Anyloc : loc illimitée sur tout le tel · signal GPS réel · installation guidée pas à pas.",
   consent:
     "En validant, tu acceptes nos {cgv}. Gère ton abonnement depuis ton espace client.",
   consentCgv: "conditions générales",
   guarantee:
     "Ça marche sur ton téléphone, ou on te rembourse sous 48 h. Annulable en 1 clic.",
-  faqTitle: "Avant de valider",
+  faqTitle: "T'as des questions ? Normal.",
   faq: [
     {
-      q: "Ça marche sur mon téléphone ?",
+      q: "Ça marche sur quelles apps ?",
       a:
-        "Oui — iPhone et Android. Sur Android tout se fait depuis ton tel. Sur iPhone, la formule annuelle inclut l'app native : une mise en route guidée de quelques minutes, puis tout depuis ton téléphone.",
+        "Toutes celles qui lisent le GPS de ton tel : Snapchat, Insta, Tinder, Bumble, Pokémon GO, Life360, etc. Anyloc agit au niveau du système, pas dans une seule app.",
     },
     {
-      q: "On va me griller ?",
+      q: "Mes potes peuvent capter que c'est fake ?",
       a:
-        "Non. C'est pas un screenshot : c'est ta vraie position GPS, en direct — exactement ce que ton téléphone envoie à Snap, Insta et Tinder.",
+        "Ils voient un pin GPS normal, mis à jour en temps réel — le même signal que ton tel enverrait s'il était vraiment sur place. Pas de screen, pas de montage.",
     },
     {
-      q: "Et si je veux arrêter ?",
+      q: "Ça passe sur iPhone et Android ?",
       a:
-        "Résiliation en 1 clic depuis ton espace, quand tu veux, sans justificatif.",
+        "Oui. Sur Android, tout se fait depuis le tel. Sur iPhone, une seule install via Mac ou PC (limite Apple), puis tu gères ta position depuis ton iPhone — sans repasser par l'ordi.",
     },
   ],
-  proofTitle: "Pas un montage. La preuve.",
+  proofTitle: "Même pin sur Snap et sur Plans",
   proofSub:
-    "La même position sur la map sociale ET sur le GPS système. Le même point, partout.",
-  reviewsTitle: "Ce qu'en disent les abonnés",
-  reviewsVerified: "Client vérifié",
+    "La map sociale et le GPS système affichent le même point — c'est ça la différence avec un screenshot.",
+  reviewsTitle: "Ils l'ont fait",
+  reviewsVerified: "Abonné vérifié",
+  destinationLabel: "Ta prochaine loc",
+  canceled:
+    "Paiement annulé. Reprends quand tu veux — ton plan reste sélectionné.",
+  retryCta: "Essayer gratuitement",
+  backCta: "Changer de destination",
   errGeneric: "Une erreur est survenue. Réessaie dans quelques instants.",
-  errStart: "Impossible de démarrer le paiement.",
+  errStart: "Impossible de démarrer l'essai.",
 } as const;
+
+export function getCheckoutHeadline(city?: string) {
+  if (city) {
+    return {
+      before: "Fake ta loc à",
+      highlight: city,
+      after: "alors que t'es chez toi.",
+      multiline: true,
+    };
+  }
+
+  return {
+    before: CHECKOUT_COPY.h1a,
+    highlight: CHECKOUT_COPY.h1b,
+    after: null,
+    multiline: true,
+  };
+}
 
 export const CHECKOUT_PLAN_IDS = ["6months", "annual"] as const;
 
