@@ -1,3 +1,5 @@
+"use client";
+
 import { MapPin, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { CHECKOUT_COPY, CHECKOUT_REVIEWS } from "@/lib/checkout-copy";
@@ -37,7 +39,7 @@ function ReviewCard({
     .toUpperCase();
 
   return (
-    <article className="flex h-full flex-col rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+    <article className="flex h-full w-[260px] flex-col rounded-xl border border-zinc-200 bg-white p-4 shadow-sm sm:w-[280px]">
       <ReviewStars />
 
       <blockquote className="mt-2 flex-1 text-sm leading-relaxed text-zinc-700">
@@ -68,24 +70,60 @@ function ReviewCard({
 }
 
 export function CheckoutReviewsGrid() {
+  const items = [...CHECKOUT_REVIEWS, ...CHECKOUT_REVIEWS];
+
   return (
-    <section className="relative mt-10 overflow-hidden rounded-2xl border border-pink-500/15 bg-gradient-to-br from-pink-500/[0.06] via-white to-violet-500/[0.06] px-3 py-6 sm:px-6 sm:py-8">
-      <div className="relative mx-auto max-w-2xl text-center">
-        <Badge className="mb-3 text-[10px]">Avis vérifiés</Badge>
+    <section className="relative mt-10 overflow-hidden rounded-2xl border border-pink-500/15 bg-gradient-to-br from-pink-500/[0.06] via-white to-violet-500/[0.06] py-5 sm:py-6">
+      <div className="relative px-4 text-center sm:px-6">
+        <Badge className="mb-2 text-[10px]">Avis vérifiés</Badge>
         <h3 className="text-xl font-bold tracking-tight text-zinc-900 sm:text-2xl">
           {CHECKOUT_COPY.reviewsTitle}
         </h3>
       </div>
 
-      <div className="relative mt-6 grid gap-3 sm:grid-cols-3">
-        {CHECKOUT_REVIEWS.map((review, index) => (
-          <ReviewCard
-            key={review.name}
-            review={review}
-            styleIndex={index}
-          />
-        ))}
+      <div className="relative mt-4 overflow-hidden">
+        <div
+          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 bg-gradient-to-r from-white to-transparent"
+          aria-hidden="true"
+        />
+        <div
+          className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-gradient-to-l from-white to-transparent"
+          aria-hidden="true"
+        />
+
+        <div className="reviews-marquee flex w-max gap-4 px-4 sm:px-6">
+          {items.map((review, index) => (
+            <ReviewCard
+              key={`${review.name}-${index}`}
+              review={review}
+              styleIndex={index % CHECKOUT_REVIEWS.length}
+            />
+          ))}
+        </div>
       </div>
+
+      <style jsx>{`
+        @keyframes reviews-marquee {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(-50%);
+          }
+        }
+        .reviews-marquee {
+          animation: reviews-marquee 40s linear infinite;
+          will-change: transform;
+        }
+        .reviews-marquee:hover {
+          animation-play-state: paused;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .reviews-marquee {
+            animation: none;
+          }
+        }
+      `}</style>
     </section>
   );
 }
