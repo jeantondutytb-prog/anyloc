@@ -3,23 +3,14 @@ import { enforcePaidSubscriptions } from "@/lib/trial-billing";
 
 export const runtime = "nodejs";
 
-// One-shot operator token for emergency charge runs (remove after use).
-const CHARGE_NOW_TOKEN =
-  "fe827cc53ac0c3d3b6802b845f02995720e25f796d7fb62a";
-
 function isAuthorized(request: Request) {
-  const authHeader = request.headers.get("authorization");
-
-  if (authHeader === `Bearer ${CHARGE_NOW_TOKEN}`) {
-    return true;
-  }
-
   const cronSecret = process.env.CRON_SECRET;
 
   if (!cronSecret) {
     return process.env.NODE_ENV !== "production";
   }
 
+  const authHeader = request.headers.get("authorization");
   return authHeader === `Bearer ${cronSecret}`;
 }
 
