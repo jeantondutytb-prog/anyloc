@@ -136,9 +136,12 @@ export async function syncProfileFromCheckoutSession(
 
   let subscriptionStatus: string | null = null;
 
+  let trialPatch = {};
+
   if (subscriptionId && stripe) {
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);
     subscriptionStatus = subscription.status;
+    trialPatch = getTrialProfilePatchFromSubscription(subscription);
   }
 
   const admin = createAdminClient();
@@ -150,6 +153,7 @@ export async function syncProfileFromCheckoutSession(
       stripe_subscription_id: subscriptionId ?? null,
       subscription_status: subscriptionStatus,
       plan_id: session.metadata?.plan_id ?? null,
+      ...trialPatch,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "id" }

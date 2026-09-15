@@ -5,6 +5,7 @@ import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/adm
 import { stripe } from "@/lib/stripe";
 import {
   getTrialEndUnix,
+  TRIAL_DURATION_MS,
   type TrialStatus,
   unixToIso,
 } from "@/lib/trial";
@@ -48,8 +49,18 @@ export function getTrialProfilePatchFromSubscription(
 
   if (subscription.status === "trialing") {
     trialStatus = "active";
-  } else if (subscription.status === "active" && subscription.trial_end) {
+  } else if (
+    subscription.status === "active" &&
+    subscription.trial_end &&
+    subscription.trial_end * 1000 <= Date.now()
+  ) {
     trialStatus = "converted";
+  } else if (
+    subscription.status === "active" &&
+    subscription.trial_end &&
+    subscription.trial_end * 1000 > Date.now()
+  ) {
+    trialStatus = "active";
   } else if (
     subscription.status === "canceled" &&
     subscription.trial_end &&
@@ -92,11 +103,13 @@ async function createTrialingSubscription({
 
   const trialStartedAt = new Date();
 
-  return stripe.subscriptions.create({
+  const expectedTrialEnd = getTrialEndUnix(trialStartedAt);
+
+  const subscription = await stripe.subscriptions.create({
     customer: customerId,
     items: [{ price: plan.stripePriceId, quantity: 1 }],
     default_payment_method: paymentMethodId,
-    trial_end: getTrialEndUnix(trialStartedAt),
+    trial_end: expectedTrialEnd,
     metadata: {
       supabase_user_id: userId,
       plan_id: plan.id,
@@ -104,6 +117,24 @@ async function createTrialingSubscription({
       converted_from_trial: "true",
     },
   });
+
+  if (
+    subscription.trial_start &&
+    subscription.trial_end &&
+    (subscription.trial_end - subscription.trial_start) * 1000 >
+      TRIAL_DURATION_MS + 60_000
+  ) {
+    console.warn(
+      `[trial-billing] Subscription ${subscription.id} trial longer than expected; correcting trial_end.`
+    );
+
+    return stripe.subscriptions.update(subscription.id, {
+      trial_end: expectedTrialEnd,
+      proration_behavior: "none",
+    });
+  }
+
+  return subscription;
 }
 
 export async function syncProfileFromTrialSetupSession(
@@ -290,6 +321,7 @@ export async function processDueTrialCharges() {
           guest_checkout: "false",
           converted_from_trial: "true",
         },
+        // Legacy DB trial already ended — charge immediately, do not inherit price trial.
       });
 
       await admin

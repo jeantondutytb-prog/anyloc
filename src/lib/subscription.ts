@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
-import { isActiveTrial, isStripeTrialingStatus } from "@/lib/trial";
+import { isTrialAccessActive } from "@/lib/trial";
 
 const ACTIVE_STATUSES = new Set(["active"]);
 
@@ -89,10 +89,9 @@ export async function getSubscriptionAccessForUser(
     };
   }
 
-  const customTrialActive = isActiveTrial(data);
-  const stripeTrialActive = isStripeTrialingStatus(data.subscription_status);
-  const trialActive = customTrialActive || stripeTrialActive;
-  const hasPaidAccess = isActiveSubscriptionStatus(data.subscription_status);
+  const trialActive = isTrialAccessActive(data);
+  const hasPaidAccess =
+    isActiveSubscriptionStatus(data.subscription_status) && !trialActive;
 
   return {
     hasAccess: hasPaidAccess || trialActive,
