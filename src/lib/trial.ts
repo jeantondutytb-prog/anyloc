@@ -69,6 +69,41 @@ export function isStripeTrialingStatus(status: string | null | undefined) {
   return status === "trialing";
 }
 
+export function isTrialEndInFuture(trialEndsAt: string | null | undefined) {
+  if (!trialEndsAt) {
+    return false;
+  }
+
+  return new Date(trialEndsAt).getTime() > Date.now();
+}
+
+export function isCancelledTrialStatus(status: TrialStatus | null | undefined) {
+  return status === "cancelled" || status === "charge_failed";
+}
+
+export function isTrialAccessActive(profile: {
+  subscription_status?: string | null;
+  trial_status?: TrialStatus | null;
+  trial_ends_at?: string | null;
+}) {
+  if (isCancelledTrialStatus(profile.trial_status ?? null)) {
+    return false;
+  }
+
+  const trialFields: TrialProfileFields = {
+    trial_status: profile.trial_status ?? null,
+    trial_ends_at: profile.trial_ends_at ?? null,
+    trial_started_at: null,
+    trial_payment_method_id: null,
+  };
+
+  return (
+    isActiveTrial(trialFields) ||
+    isStripeTrialingStatus(profile.subscription_status) ||
+    (profile.trial_status === "active" && isTrialEndInFuture(profile.trial_ends_at))
+  );
+}
+
 export function unixToIso(unixSeconds: number | null | undefined) {
   if (!unixSeconds) {
     return null;
