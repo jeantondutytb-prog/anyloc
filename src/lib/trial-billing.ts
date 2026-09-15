@@ -351,3 +351,245 @@ export async function processDueTrialCharges() {
 
   return { processed, failed };
 }
+
+const UNPAID_SUBSCRIPTION_STATUSES = new Set([
+  "incomplete",
+  "incomplete_expired",
+  "past_due",
+  "unpaid",
+]);
+
+async function listAllSubscriptionsByStatus(
+  status: Stripe.Subscription.Status
+) {
+  if (!stripe) {
+    return [] as Stripe.Subscription[];
+  }
+
+  const subscriptions: Stripe.Subscription[] = [];
+  let startingAfter: string | undefined;
+
+  for (;;) {
+    const page = await stripe.subscriptions.list({
+      status,
+      limit: 100,
+      ...(startingAfter ? { starting_after: startingAfter } : {}),
+    });
+
+    subscriptions.push(...page.data);
+
+    if (!page.has_more || page.data.length === 0) {
+      break;
+    }
+
+    startingAfter = page.data[page.data.length - 1]?.id;
+  }
+
+  return subscriptions;
+}
+
+async function syncLocalProfileFromSubscription(
+  subscription: Stripe.Subscription
+) {
+  if (!isSupabaseAdminConfigured()) {
+    return;
+  }
+
+  const admin = createAdminClient();
+  const userId = subscription.metadata?.supabase_user_id ?? null;
+  const customerId =
+    typeof subscription.customer === "string"
+      ? subscription.customer
+      : subscription.customer?.id;
+  const patch = {
+    ...getTrialProfilePatchFromSubscription(subscription),
+    updated_at: new Date().toISOString(),
+  };
+
+  if (userId) {
+    await admin.from("profiles").upsert(
+      {
+        id: userId,
+        stripe_customer_id: customerId ?? null,
+        ...patch,
+      },
+      { onConflict: "id" }
+    );
+    return;
+  }
+
+  if (!customerId) {
+    return;
+  }
+
+  await admin
+    .from("profiles")
+    .update(patch)
+    .eq("stripe_customer_id", customerId);
+}
+
+async function markLocalProfileCanceled(subscription: Stripe.Subscription) {
+  if (!isSupabaseAdminConfigured()) {
+    return;
+  }
+
+  const admin = createAdminClient();
+  const userId = subscription.metadata?.supabase_user_id ?? null;
+  const customerId =
+    typeof subscription.customer === "string"
+      ? subscription.customer
+      : subscription.customer?.id;
+  const patch = {
+    subscription_status: "canceled",
+    trial_status: "cancelled" as TrialStatus,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (userId) {
+    await admin.from("profiles").update(patch).eq("id", userId);
+    return;
+  }
+
+  if (customerId) {
+    await admin
+      .from("profiles")
+      .update(patch)
+      .eq("stripe_customer_id", customerId);
+  }
+
+  if (subscription.id) {
+    await admin
+      .from("profiles")
+      .update(patch)
+      .eq("stripe_subscription_id", subscription.id);
+  }
+}
+
+/**
+ * Ends open trials immediately (attempts first charge), then cancels
+ * subscriptions that remain unpaid / past_due / incomplete.
+ */
+export async function enforcePaidSubscriptions() {
+  if (!stripe) {
+    throw new Error("Stripe is not configured.");
+  }
+
+  const charged: string[] = [];
+  const chargeFailed: string[] = [];
+  const canceled: string[] = [];
+  const errors: Array<{ subscriptionId: string; error: string }> = [];
+
+  const trialing = await listAllSubscriptionsByStatus("trialing");
+
+  for (const subscription of trialing) {
+    try {
+      const updated = await stripe.subscriptions.update(subscription.id, {
+        trial_end: "now",
+        proration_behavior: "none",
+      });
+
+      if (updated.status === "active") {
+        charged.push(updated.id);
+        await syncLocalProfileFromSubscription(updated);
+        continue;
+      }
+
+      if (UNPAID_SUBSCRIPTION_STATUSES.has(updated.status)) {
+        chargeFailed.push(updated.id);
+        const canceledSub = await stripe.subscriptions.cancel(updated.id);
+        canceled.push(canceledSub.id);
+        await markLocalProfileCanceled(canceledSub);
+        continue;
+      }
+
+      await syncLocalProfileFromSubscription(updated);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to end trial.";
+      errors.push({ subscriptionId: subscription.id, error: message });
+      console.error(
+        `[trial-billing] Failed to charge trial ${subscription.id}`,
+        error
+      );
+    }
+  }
+
+  for (const status of ["past_due", "unpaid", "incomplete"] as const) {
+    const unpaid = await listAllSubscriptionsByStatus(status);
+
+    for (const subscription of unpaid) {
+      if (canceled.includes(subscription.id)) {
+        continue;
+      }
+
+      try {
+        const invoices = await stripe.invoices.list({
+          subscription: subscription.id,
+          status: "open",
+          limit: 3,
+        });
+
+        let paid = false;
+
+        for (const invoice of invoices.data) {
+          try {
+            const paidInvoice = await stripe.invoices.pay(invoice.id);
+            if (paidInvoice.status === "paid") {
+              paid = true;
+            }
+          } catch (payError) {
+            console.warn(
+              `[trial-billing] Invoice pay failed for ${invoice.id}`,
+              payError
+            );
+          }
+        }
+
+        if (paid) {
+          const refreshed = await stripe.subscriptions.retrieve(
+            subscription.id
+          );
+          if (refreshed.status === "active") {
+            charged.push(refreshed.id);
+            await syncLocalProfileFromSubscription(refreshed);
+            continue;
+          }
+        }
+
+        const canceledSub = await stripe.subscriptions.cancel(subscription.id);
+        canceled.push(canceledSub.id);
+        await markLocalProfileCanceled(canceledSub);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Failed to cancel unpaid.";
+        errors.push({ subscriptionId: subscription.id, error: message });
+        console.error(
+          `[trial-billing] Failed to enforce unpaid ${subscription.id}`,
+          error
+        );
+      }
+    }
+  }
+
+  if (isSupabaseAdminConfigured()) {
+    const admin = createAdminClient();
+    await admin
+      .from("profiles")
+      .update({
+        subscription_status: "canceled",
+        trial_status: "cancelled",
+        updated_at: new Date().toISOString(),
+      })
+      .in("subscription_status", ["past_due", "unpaid", "incomplete"]);
+  }
+
+  return {
+    trialingFound: trialing.length,
+    charged: charged.length,
+    chargeFailed: chargeFailed.length,
+    canceled: canceled.length,
+    chargedIds: charged,
+    canceledIds: canceled,
+    errors,
+  };
+}
