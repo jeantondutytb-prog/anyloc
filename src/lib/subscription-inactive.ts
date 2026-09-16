@@ -1,5 +1,5 @@
 import { getCheckoutUrl, getPlanDisplayName, isValidPlanId } from "@/lib/constants";
-import type { TrialStatus } from "@/lib/trial";
+import { TRIAL_DURATION_LABEL, type TrialStatus } from "@/lib/trial";
 import { isActiveSubscriptionStatus } from "@/lib/subscription";
 
 export type SubscriptionInactiveReason =
@@ -75,7 +75,7 @@ const REASON_COPY: Record<
   trial_ended: {
     title: "Essai terminé",
     description:
-      "Ton essai gratuit de 10 minutes est fini et tu n'as plus d'accès actif. Choisis une formule pour continuer.",
+      `Ton essai gratuit de ${TRIAL_DURATION_LABEL} est fini et tu n'as plus d'accès actif. Choisis une formule pour continuer.`,
     ctaLabel: "Choisir une formule",
   },
   no_subscription: {

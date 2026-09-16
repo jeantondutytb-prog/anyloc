@@ -1,5 +1,5 @@
 import { PAYWALL_TESTIMONIALS, PLAN_IDS, PLAN_VALUE_STACK, SITE } from "@/lib/constants";
-import { TRIAL_CTA_SUBLINE } from "@/lib/trial";
+import { TRIAL_CTA_SUBLINE, TRIAL_SELECT_SUBLINE } from "@/lib/trial";
 
 export const CHECKOUT_REVIEWS = PAYWALL_TESTIMONIALS.map((testimonial) => ({
   name: testimonial.author,
@@ -38,8 +38,7 @@ export const CHECKOUT_COPY = {
     },
   ],
   selectTitle: "Choisis ta durée",
-  selectSub:
-    "Essaie gratuitement — même accès complet sur Snap, Insta, Tinder et toutes tes apps. Seule la durée facturée change après l'essai.",
+  selectSub: TRIAL_SELECT_SUBLINE,
   guaranteeBadge: "Garantie 48 h",
   perksTitle: "Inclus dans ton accès",
   payOpening: "On prépare ton essai gratuit…",
