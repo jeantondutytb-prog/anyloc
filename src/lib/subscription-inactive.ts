@@ -75,7 +75,7 @@ const REASON_COPY: Record<
   trial_ended: {
     title: "Essai terminé",
     description:
-      "Ton essai gratuit d'une heure est fini et tu n'as plus d'accès actif. Choisis une formule pour continuer.",
+      "Ton essai gratuit de 10 minutes est fini et tu n'as plus d'accès actif. Choisis une formule pour continuer.",
     ctaLabel: "Choisir une formule",
   },
   no_subscription: {

@@ -1,8 +1,8 @@
-export const TRIAL_DURATION_MS = 60 * 60 * 1000;
+export const TRIAL_DURATION_MS = 10 * 60 * 1000;
 
 export const TRIAL_DURATION_SECONDS = TRIAL_DURATION_MS / 1000;
 
-export const TRIAL_DURATION_MINUTES = 60;
+export const TRIAL_DURATION_MINUTES = 10;
 
 export const TRIAL_DURATION_TOLERANCE_SECONDS = 60;
 
