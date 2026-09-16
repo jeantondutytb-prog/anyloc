@@ -150,7 +150,9 @@ export function NavigationProgressProvider({
         )}
       >
         <div className="flex flex-col items-center gap-5">
-          <Logo size="lg" href={null} />
+          <div className="animate-loading-logo">
+            <Logo size="lg" href={null} />
+          </div>
           <div className="flex items-center gap-2 text-sm text-zinc-500">
             <Loader2 className="h-4 w-4 animate-spin text-pink-500" />
             Chargement…
