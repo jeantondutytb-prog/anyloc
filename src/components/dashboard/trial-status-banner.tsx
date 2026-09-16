@@ -1,14 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Clock3, Loader2 } from "lucide-react";
+import { Clock3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CancelSubscriptionConfirmDialog } from "@/components/subscription/cancel-subscription-confirm-dialog";
 import { formatTrialRemaining, getTrialRemainingMs } from "@/lib/trial";
 
 export function TrialStatusBanner({ trialEndsAt }: { trialEndsAt: string }) {
   const [remainingMs, setRemainingMs] = useState(() =>
     getTrialRemainingMs({ trial_status: "active", trial_ends_at: trialEndsAt, trial_started_at: null, trial_payment_method_id: null })
   );
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [cancelled, setCancelled] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,9 +42,11 @@ export function TrialStatusBanner({ trialEndsAt }: { trialEndsAt: string }) {
         throw new Error(data.error ?? "Impossible d'annuler l'essai.");
       }
 
+      setShowCancelDialog(false);
       setCancelled(true);
       window.location.reload();
     } catch (cancelError) {
+      setShowCancelDialog(false);
       setError(
         cancelError instanceof Error
           ? cancelError.message
@@ -78,18 +82,20 @@ export function TrialStatusBanner({ trialEndsAt }: { trialEndsAt: string }) {
           size="sm"
           className="shrink-0"
           disabled={cancelling}
-          onClick={() => void cancelTrial()}
+          onClick={() => setShowCancelDialog(true)}
         >
-          {cancelling ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Annulation…
-            </>
-          ) : (
-            "Annuler avant le débit"
-          )}
+          Annuler avant le débit
         </Button>
       </div>
+
+      <CancelSubscriptionConfirmDialog
+        open={showCancelDialog}
+        context="trial"
+        trialRemainingMs={remainingMs}
+        loading={cancelling}
+        onClose={() => setShowCancelDialog(false)}
+        onConfirm={() => void cancelTrial()}
+      />
     </div>
   );
 }

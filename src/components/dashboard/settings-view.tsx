@@ -26,6 +26,7 @@ import {
   updatePassword,
   type SettingsActionState,
 } from "@/app/dashboard/(protected)/settings/actions";
+import { CancelSubscriptionConfirmDialog } from "@/components/subscription/cancel-subscription-confirm-dialog";
 import { formatSubscriptionStatusLabel } from "@/lib/account-billing-types";
 import { cn } from "@/lib/utils";
 
@@ -140,7 +141,9 @@ export function SettingsView({ embedded = false }: { embedded?: boolean } = {}) 
   const { data, loading, error } = useAccount();
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [showDeleteForm, setShowDeleteForm] = useState(false);
-  const [showCancelForm, setShowCancelForm] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancelPortalLoading, setCancelPortalLoading] = useState(false);
+  const [cancelPortalError, setCancelPortalError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordState, passwordAction, passwordPending] = useActionState(
@@ -154,6 +157,36 @@ export function SettingsView({ embedded = false }: { embedded?: boolean } = {}) 
 
   const currentPlan = PLANS.find((plan) => plan.id === data?.planId) ?? null;
   const alternativePlans = PLANS.filter((plan) => plan.id !== data?.planId);
+
+  async function openCancelPortal() {
+    setCancelPortalLoading(true);
+    setCancelPortalError(null);
+
+    try {
+      const response = await fetch("/api/stripe/billing-portal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ flow: "subscription" }),
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Impossible d'ouvrir le portail.");
+      }
+
+      if (payload.url) {
+        window.location.href = payload.url;
+      }
+    } catch (portalError) {
+      setCancelPortalError(
+        portalError instanceof Error
+          ? portalError.message
+          : "Impossible d'ouvrir le portail."
+      );
+      setCancelPortalLoading(false);
+    }
+  }
 
   return (
     <div className={embedded ? "" : "min-h-screen bg-background"}>
@@ -428,66 +461,40 @@ export function SettingsView({ embedded = false }: { embedded?: boolean } = {}) 
                     <strong>avant</strong> de résilier.
                   </p>
 
-                  {!showCancelForm ? (
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      className="mt-4 border-amber-200 text-amber-800 hover:border-amber-300 hover:bg-amber-50"
-                      onClick={() => setShowCancelForm(true)}
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="mt-4 border-amber-200 text-amber-800 hover:border-amber-300 hover:bg-amber-50"
+                    onClick={() => {
+                      setCancelPortalError(null);
+                      setShowCancelDialog(true);
+                    }}
+                  >
+                    Résilier mon abonnement
+                  </Button>
+
+                  {cancelPortalError ? (
+                    <p className="mt-2 text-xs text-red-600">{cancelPortalError}</p>
+                  ) : null}
+
+                  <p className="mt-3 text-xs text-zinc-500">
+                    Consulte la{" "}
+                    <Link
+                      href="/politique-d-annulation"
+                      className="text-pink-600 hover:underline"
                     >
-                      Résilier mon abonnement
-                    </Button>
-                  ) : (
-                    <div className="mt-4 space-y-4">
-                      <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                        <p className="font-medium">
-                          Tu vas perdre l&apos;accès immédiatement
-                        </p>
-                        <p className="mt-1">
-                          Dashboard, guides, téléchargements et modification GPS
-                          : tout sera coupé dès confirmation sur Stripe.
-                        </p>
-                      </div>
-
-                      <div className="flex flex-wrap gap-2">
-                        <BillingPortalButton
-                          flow="subscription"
-                          variant="secondary"
-                          size="sm"
-                          className="border-amber-200 text-amber-800 hover:border-amber-300 hover:bg-amber-50"
-                        >
-                          Confirmer et résilier
-                        </BillingPortalButton>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setShowCancelForm(false)}
-                        >
-                          Annuler
-                        </Button>
-                      </div>
-
-                      <p className="text-xs text-zinc-500">
-                        Consulte la{" "}
-                        <Link
-                          href="/politique-d-annulation"
-                          className="text-pink-600 hover:underline"
-                        >
-                          politique d&apos;annulation
-                        </Link>{" "}
-                        et la{" "}
-                        <Link
-                          href="/politique-de-remboursement"
-                          className="text-pink-600 hover:underline"
-                        >
-                          politique de remboursement
-                        </Link>
-                        .
-                      </p>
-                    </div>
-                  )}
+                      politique d&apos;annulation
+                    </Link>{" "}
+                    et la{" "}
+                    <Link
+                      href="/politique-de-remboursement"
+                      className="text-pink-600 hover:underline"
+                    >
+                      politique de remboursement
+                    </Link>
+                    .
+                  </p>
                 </div>
               </div>
             </Card>
@@ -594,6 +601,14 @@ export function SettingsView({ embedded = false }: { embedded?: boolean } = {}) 
           </Card>
         </SettingsSection>
       </main>
+
+      <CancelSubscriptionConfirmDialog
+        open={showCancelDialog}
+        context="paid"
+        loading={cancelPortalLoading}
+        onClose={() => setShowCancelDialog(false)}
+        onConfirm={() => void openCancelPortal()}
+      />
     </div>
   );
 }
