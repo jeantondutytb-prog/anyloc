@@ -1,4 +1,4 @@
-import { getCheckoutUrl } from "@/lib/constants";
+import { SUBSCRIPTION_EXPIRED_PATH } from "@/lib/subscription-inactive";
 import { sanitizeRedirectPath } from "@/lib/safe-redirect";
 import { getSubscriptionAccessForUser } from "@/lib/subscription";
 
@@ -37,5 +37,5 @@ export async function resolvePostAuthRedirect(
     return redirect;
   }
 
-  return getCheckoutUrl();
+  return SUBSCRIPTION_EXPIRED_PATH;
 }

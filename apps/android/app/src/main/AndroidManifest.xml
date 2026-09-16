@@ -36,6 +36,12 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".SubscriptionInactiveActivity"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.Anyloc" />
+
         <service
             android:name=".location.MockLocationService"
             android:exported="false"

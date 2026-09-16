@@ -1,6 +1,6 @@
 import { extractBearerToken } from "@/lib/device";
 import { getDeviceByToken, touchDeviceLastSeen } from "@/lib/device-server";
-import { getSubscriptionAccessForUser } from "@/lib/subscription";
+import { buildSubscriptionAccessResponse } from "@/lib/subscription-access-api";
 
 export async function GET(request: Request) {
   const token = extractBearerToken(request);
@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     return Response.json({ error: "Token appareil invalide." }, { status: 401 });
   }
 
-  const access = await getSubscriptionAccessForUser(device.user_id);
+  const access = await buildSubscriptionAccessResponse(device.user_id);
 
   await touchDeviceLastSeen(device.id);
 
@@ -33,6 +33,8 @@ export async function GET(request: Request) {
       active: access.hasAccess,
       status: access.status,
       planId: access.planId,
+      isTrial: access.isTrial,
+      inactive: access.inactive,
     },
   });
 }
