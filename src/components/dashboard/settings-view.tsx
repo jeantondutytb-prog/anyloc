@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AuthPasswordInput } from "@/components/auth/auth-input";
 import { useAccount } from "@/hooks/use-account";
-import { CANCELLATION_WARNING, PLANS, getCheckoutUrl } from "@/lib/constants";
+import { CANCELLATION_WARNING, PLANS, getCheckoutUrl, getPlanDisplayName } from "@/lib/constants";
 import {
   deleteAccount,
   updatePassword,
@@ -365,7 +365,8 @@ export function SettingsView({ embedded = false }: { embedded?: boolean } = {}) 
                 <p className="mt-2 text-lg font-semibold text-zinc-900">
                   {data?.isAdmin
                     ? "Accès admin"
-                    : currentPlan?.name ?? "Aucune formule active"}
+                    : getPlanDisplayName(data?.planId ?? null) ??
+                      "Aucune formule active"}
                 </p>
 
                 {currentPlan ? (

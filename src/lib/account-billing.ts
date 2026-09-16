@@ -1,5 +1,5 @@
 import type Stripe from "stripe";
-import { PLANS } from "@/lib/constants";
+import { getPlanDisplayName } from "@/lib/constants";
 import type {
   AccountBillingDetails,
   AccountInvoice,
@@ -15,7 +15,7 @@ export function getPlanLabel(planId: string | null) {
     return null;
   }
 
-  return PLANS.find((plan) => plan.id === planId)?.name ?? planId;
+  return getPlanDisplayName(planId);
 }
 
 async function getProfileForUser(userId: string): Promise<ProfileRow | null> {

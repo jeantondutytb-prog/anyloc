@@ -4,8 +4,9 @@ import { ensureUserForEmail } from "@/lib/guest-account";
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 import { stripe } from "@/lib/stripe";
 import {
-  getTrialEndUnix,
-  TRIAL_DURATION_MS,
+  getTrialEndUnixFromNow,
+  isTrialDurationDrifted,
+  TRIAL_DURATION_SECONDS,
   type TrialStatus,
   unixToIso,
 } from "@/lib/trial";
@@ -78,18 +79,43 @@ export function getTrialProfilePatchFromSubscription(
   };
 }
 
+async function findTrialingSubscriptionForCheckoutSession(
+  customerId: string,
+  checkoutSessionId: string
+) {
+  if (!stripe) {
+    return null;
+  }
+
+  const subscriptions = await stripe.subscriptions.list({
+    customer: customerId,
+    status: "all",
+    limit: 20,
+  });
+
+  return (
+    subscriptions.data.find(
+      (subscription) =>
+        subscription.metadata?.checkout_session_id === checkoutSessionId &&
+        (subscription.status === "trialing" || subscription.status === "active")
+    ) ?? null
+  );
+}
+
 async function createTrialingSubscription({
   customerId,
   paymentMethodId,
   planId,
   userId,
   guestCheckout,
+  checkoutSessionId,
 }: {
   customerId: string;
   paymentMethodId: string;
   planId: string;
   userId: string;
   guestCheckout: boolean;
+  checkoutSessionId: string;
 }) {
   if (!stripe) {
     throw new Error("Stripe is not configured.");
@@ -101,9 +127,7 @@ async function createTrialingSubscription({
     throw new Error(`Invalid plan_id for trial subscription: ${planId}`);
   }
 
-  const trialStartedAt = new Date();
-
-  const expectedTrialEnd = getTrialEndUnix(trialStartedAt);
+  const expectedTrialEnd = getTrialEndUnixFromNow();
 
   const subscription = await stripe.subscriptions.create({
     customer: customerId,
@@ -115,21 +139,23 @@ async function createTrialingSubscription({
       plan_id: plan.id,
       guest_checkout: guestCheckout ? "true" : "false",
       converted_from_trial: "true",
+      checkout_session_id: checkoutSessionId,
     },
   });
 
   if (
     subscription.trial_start &&
     subscription.trial_end &&
-    (subscription.trial_end - subscription.trial_start) * 1000 >
-      TRIAL_DURATION_MS + 60_000
+    isTrialDurationDrifted(subscription.trial_start, subscription.trial_end)
   ) {
+    const correctedTrialEnd = subscription.trial_start + TRIAL_DURATION_SECONDS;
+
     console.warn(
-      `[trial-billing] Subscription ${subscription.id} trial longer than expected; correcting trial_end.`
+      `[trial-billing] Subscription ${subscription.id} trial drifted; correcting trial_end to ${correctedTrialEnd}.`
     );
 
     return stripe.subscriptions.update(subscription.id, {
-      trial_end: expectedTrialEnd,
+      trial_end: correctedTrialEnd,
       proration_behavior: "none",
     });
   }
@@ -202,13 +228,21 @@ export async function syncProfileFromTrialSetupSession(
     },
   });
 
-  const subscription = await createTrialingSubscription({
+  const existingSubscription = await findTrialingSubscriptionForCheckoutSession(
     customerId,
-    paymentMethodId,
-    planId: planId!,
-    userId,
-    guestCheckout: session.metadata?.guest_checkout === "true",
-  });
+    session.id
+  );
+
+  const subscription =
+    existingSubscription ??
+    (await createTrialingSubscription({
+      customerId,
+      paymentMethodId,
+      planId: planId!,
+      userId,
+      guestCheckout: session.metadata?.guest_checkout === "true",
+      checkoutSessionId: session.id,
+    }));
 
   const admin = createAdminClient();
   const { error } = await admin.from("profiles").upsert(

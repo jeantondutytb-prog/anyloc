@@ -107,24 +107,12 @@ export const LEGACY_STRIPE_PRICE_IDS = [
   "price_1UDMpbENC8ag2ECjNc7JAw5O", // Mensuel 8 € (grandfathered)
 ] as const;
 
+/** Plans retirés du checkout — libellés pour les abonnés existants. */
+export const LEGACY_PLAN_LABELS: Record<string, string> = {
+  weekly: "Hebdomadaire",
+};
+
 export const PLANS = [
-  {
-    id: "weekly",
-    name: "Hebdomadaire",
-    price: "3,90€",
-    period: "/semaine",
-    perDay: "0,56",
-    perDayLabel: "€/jour",
-    billedNote:
-      "Facturé 3,90 € chaque semaine. Résiliation immédiate — perte d'accès instantanée.",
-    compare: "Soit ~203 € sur l'année si tu restes",
-    description: "Sans engagement, tu testes à la semaine.",
-    savings: undefined,
-    features: PLAN_VALUE_STACK,
-    popular: false,
-    ctaLabel: TRIAL_CTA_LABEL,
-    stripePriceId: process.env.STRIPE_PRICE_WEEKLY,
-  },
   {
     id: "monthly",
     name: "Mensuel",
@@ -184,6 +172,14 @@ export const PLAN_IDS = PLANS.map((plan) => plan.id);
 
 export function isValidPlanId(plan: string | undefined) {
   return plan !== undefined && PLAN_IDS.includes(plan as (typeof PLAN_IDS)[number]);
+}
+
+export function getPlanDisplayName(planId: string | null | undefined) {
+  if (!planId) {
+    return null;
+  }
+
+  return PLANS.find((plan) => plan.id === planId)?.name ?? LEGACY_PLAN_LABELS[planId] ?? planId;
 }
 
 export const ONBOARDING_ENTRY_URL = "/onboarding";
