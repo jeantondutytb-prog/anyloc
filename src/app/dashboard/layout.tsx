@@ -1,12 +1,7 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
-import { TrialStatusBanner } from "@/components/dashboard/trial-status-banner";
-import { getCheckoutUrl } from "@/lib/constants";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
-import {
-  getAuthenticatedUser,
-  getSubscriptionAccessForUser,
-} from "@/lib/subscription";
+import { getAuthenticatedUser } from "@/lib/subscription";
 
 export default async function DashboardLayout({
   children,
@@ -23,18 +18,5 @@ export default async function DashboardLayout({
     redirect("/login?next=/dashboard");
   }
 
-  const access = await getSubscriptionAccessForUser(user.id, user.email);
-
-  if (!access.hasAccess) {
-    redirect(getCheckoutUrl());
-  }
-
-  return (
-    <>
-      {access.isTrial && access.trialEndsAt ? (
-        <TrialStatusBanner trialEndsAt={access.trialEndsAt} />
-      ) : null}
-      {children}
-    </>
-  );
+  return children;
 }

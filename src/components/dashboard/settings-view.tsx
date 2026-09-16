@@ -25,7 +25,7 @@ import {
   deleteAccount,
   updatePassword,
   type SettingsActionState,
-} from "@/app/dashboard/settings/actions";
+} from "@/app/dashboard/(protected)/settings/actions";
 import { formatSubscriptionStatusLabel } from "@/lib/account-billing-types";
 import { cn } from "@/lib/utils";
 

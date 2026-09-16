@@ -2,7 +2,8 @@ import { redirect } from "next/navigation";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { WebSpoofView } from "@/components/web-spoof/web-spoof-view";
-import { getCheckoutUrl, SITE } from "@/lib/constants";
+import { SUBSCRIPTION_EXPIRED_PATH } from "@/lib/subscription-inactive";
+import { SITE } from "@/lib/constants";
 import { createPageMetadata } from "@/lib/seo";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import {
@@ -31,7 +32,7 @@ export default async function WebSpoofPage() {
   const access = await getSubscriptionAccessForUser(user.id, user.email);
 
   if (!access.hasAccess) {
-    redirect(getCheckoutUrl());
+    redirect(SUBSCRIPTION_EXPIRED_PATH);
   }
 
   return (

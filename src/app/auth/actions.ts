@@ -13,6 +13,16 @@ export type AuthState = {
   error?: string;
 };
 
+export async function signOut() {
+  if (!isSupabaseConfigured()) {
+    redirect("/login");
+  }
+
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect("/login");
+}
+
 function translateAuthError(message: string) {
   const normalized = message.toLowerCase();
 
