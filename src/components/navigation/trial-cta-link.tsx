@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { useNavigationProgress } from "@/components/navigation/navigation-progress";
 
 type TrialCtaLinkProps = {

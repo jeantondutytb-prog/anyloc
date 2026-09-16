@@ -13,7 +13,7 @@ import { Loader2 } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { cn } from "@/lib/utils";
 
-const MIN_VISIBLE_MS = 380;
+const MIN_VISIBLE_MS = 750;
 
 type NavigationProgressContextValue = {
   start: () => void;
