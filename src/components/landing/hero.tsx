@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Check, Play } from "lucide-react";
+import { Check, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { TrialCtaLink } from "@/components/navigation/trial-cta-link";
 import { getOnboardingUrl, SITE } from "@/lib/constants";
 import {
   TRIAL_CTA_LABEL,
@@ -46,12 +47,11 @@ export function Hero() {
 
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <div className="flex w-full flex-col items-center gap-2 sm:w-auto">
-              <Link href={getOnboardingUrl("annual")}>
-                <Button size="lg" className="w-full sm:w-auto">
-                  {TRIAL_CTA_LABEL}
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
+              <TrialCtaLink
+                href={getOnboardingUrl("annual")}
+                label={TRIAL_CTA_LABEL}
+                buttonClassName="w-full sm:w-auto"
+              />
               <p className="text-center text-xs text-zinc-500 sm:text-sm">
                 {TRIAL_CTA_SUBLINE}
               </p>

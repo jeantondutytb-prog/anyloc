@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { TrialCtaLink } from "@/components/navigation/trial-cta-link";
 import { Logo } from "@/components/ui/logo";
 import { getOnboardingUrl } from "@/lib/constants";
 import { TRIAL_CTA_LABEL_SHORT } from "@/lib/trial";
@@ -37,9 +38,12 @@ export function Header() {
               Connexion
             </Button>
           </Link>
-          <Link href={getOnboardingUrl("annual")}>
-            <Button size="sm">{TRIAL_CTA_LABEL_SHORT}</Button>
-          </Link>
+          <TrialCtaLink
+            href={getOnboardingUrl("annual")}
+            label={TRIAL_CTA_LABEL_SHORT}
+            size="sm"
+            showArrow={false}
+          />
         </div>
       </div>
     </header>
