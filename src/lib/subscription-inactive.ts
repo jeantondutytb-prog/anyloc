@@ -83,12 +83,16 @@ export function getSubscriptionInactiveReason(
     return "trial_cancelled";
   }
 
-  if (subscriptionStatus === "canceled") {
-    return "ended";
+  if (trialEnded && !isActiveSubscriptionStatus(subscriptionStatus)) {
+    if (trialStatus === "converted") {
+      return "payment_failed";
+    }
+
+    return "trial_ended";
   }
 
-  if (trialEnded && !isActiveSubscriptionStatus(subscriptionStatus)) {
-    return trialStatus === "converted" ? "payment_failed" : "trial_ended";
+  if (subscriptionStatus === "canceled") {
+    return "ended";
   }
 
   if (!subscriptionStatus && !profile.plan_id) {
