@@ -9,8 +9,11 @@ import {
   useState,
 } from "react";
 import { usePathname } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import { Logo } from "@/components/ui/logo";
+import { cn } from "@/lib/utils";
 
-const MIN_VISIBLE_MS = 320;
+const MIN_VISIBLE_MS = 380;
 
 type NavigationProgressContextValue = {
   start: () => void;
@@ -38,17 +41,10 @@ export function NavigationProgressProvider({
 }) {
   const pathname = usePathname();
   const [isActive, setIsActive] = useState(false);
-  const [progress, setProgress] = useState(0);
   const startedAtRef = useRef<number | null>(null);
-  const intervalRef = useRef<number | null>(null);
   const timeoutRef = useRef<number | null>(null);
 
   const clearTimers = useCallback(() => {
-    if (intervalRef.current !== null) {
-      window.clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-
     if (timeoutRef.current !== null) {
       window.clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
@@ -63,17 +59,6 @@ export function NavigationProgressProvider({
     clearTimers();
     startedAtRef.current = Date.now();
     setIsActive(true);
-    setProgress(18);
-
-    intervalRef.current = window.setInterval(() => {
-      setProgress((current) => {
-        if (current >= 92) {
-          return current;
-        }
-
-        return current + 4 + Math.random() * 6;
-      });
-    }, 160);
   }, [clearTimers]);
 
   const complete = useCallback(() => {
@@ -84,14 +69,9 @@ export function NavigationProgressProvider({
     }
 
     const finish = () => {
-      setProgress(100);
-
-      timeoutRef.current = window.setTimeout(() => {
-        setIsActive(false);
-        setProgress(0);
-        startedAtRef.current = null;
-        clearTimers();
-      }, 180);
+      setIsActive(false);
+      startedAtRef.current = null;
+      clearTimers();
     };
 
     const elapsed = Date.now() - startedAt;
@@ -160,16 +140,22 @@ export function NavigationProgressProvider({
     <NavigationProgressContext.Provider value={{ start }}>
       {children}
       <div
-        aria-hidden="true"
-        className="pointer-events-none fixed inset-x-0 top-0 z-[100] h-[2px]"
+        aria-live="polite"
+        aria-busy={isActive}
+        className={cn(
+          "fixed inset-0 z-[100] flex items-center justify-center bg-white transition-opacity duration-200",
+          isActive
+            ? "pointer-events-auto opacity-100"
+            : "pointer-events-none opacity-0"
+        )}
       >
-        <div
-          className="h-full bg-gradient-to-r from-pink-500 via-fuchsia-500 to-violet-500 shadow-[0_0_10px_rgba(236,72,153,0.35)] transition-[width,opacity] duration-200 ease-out"
-          style={{
-            width: isActive ? `${progress}%` : "0%",
-            opacity: isActive ? 1 : 0,
-          }}
-        />
+        <div className="flex flex-col items-center gap-5">
+          <Logo size="lg" href={null} />
+          <div className="flex items-center gap-2 text-sm text-zinc-500">
+            <Loader2 className="h-4 w-4 animate-spin text-pink-500" />
+            Chargement…
+          </div>
+        </div>
       </div>
     </NavigationProgressContext.Provider>
   );
