@@ -29,7 +29,7 @@ export function Pricing() {
 
         <PlatformConstraintNotice className="mx-auto mt-8 max-w-2xl" />
 
-        <div className="mt-16 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {PLANS.map((plan) => (
             <Card
               key={plan.id}

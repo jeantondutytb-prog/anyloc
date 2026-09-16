@@ -1,6 +1,10 @@
 export const TRIAL_DURATION_MS = 60 * 60 * 1000;
 
+export const TRIAL_DURATION_SECONDS = TRIAL_DURATION_MS / 1000;
+
 export const TRIAL_DURATION_MINUTES = 60;
+
+export const TRIAL_DURATION_TOLERANCE_SECONDS = 60;
 
 export const TRIAL_HEADLINE =
   "Essai gratuit — ta carte est enregistrée, aucun prélèvement avant la fin de l'essai.";
@@ -63,6 +67,20 @@ export function getTrialEndDate(startedAt = new Date()) {
 
 export function getTrialEndUnix(startedAt = new Date()) {
   return Math.floor(getTrialEndDate(startedAt).getTime() / 1000);
+}
+
+export function getTrialEndUnixFromNow(nowMs = Date.now()) {
+  return Math.floor(nowMs / 1000) + TRIAL_DURATION_SECONDS;
+}
+
+export function isTrialDurationDrifted(
+  trialStartUnix: number,
+  trialEndUnix: number,
+  toleranceSeconds = TRIAL_DURATION_TOLERANCE_SECONDS
+) {
+  const actualDurationSeconds = trialEndUnix - trialStartUnix;
+
+  return Math.abs(actualDurationSeconds - TRIAL_DURATION_SECONDS) > toleranceSeconds;
 }
 
 export function isStripeTrialingStatus(status: string | null | undefined) {
