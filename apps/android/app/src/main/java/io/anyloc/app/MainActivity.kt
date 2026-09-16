@@ -19,6 +19,7 @@ import androidx.core.content.ContextCompat
 import io.anyloc.app.api.AnylocApi
 import io.anyloc.app.api.GeocodeResult
 import io.anyloc.app.api.RemoteLocation
+import io.anyloc.app.api.SubscriptionInactiveDetails
 import io.anyloc.app.location.MockLocationHelper
 import io.anyloc.app.location.MockLocationService
 
@@ -269,6 +270,15 @@ class MainActivity : AppCompatActivity() {
 
             runOnUiThread {
                 if (location == null) {
+                    val check = api.fetchLocation()
+                    if (check.subscriptionInactive) {
+                        showSubscriptionInactive(
+                            check.inactiveDetails
+                                ?: SubscriptionInactiveDetails.fallback(credentials.first)
+                        )
+                        return@runOnUiThread
+                    }
+
                     statusText.text = "Impossible d'activer cette position"
                     Toast.makeText(this, "Erreur — vérifie token et abonnement", Toast.LENGTH_SHORT).show()
                     return@runOnUiThread
@@ -305,6 +315,11 @@ class MainActivity : AppCompatActivity() {
         }.start()
     }
 
+    private fun showSubscriptionInactive(details: SubscriptionInactiveDetails) {
+        MockLocationService.stop(this)
+        startActivity(SubscriptionInactiveActivity.createIntent(this, details))
+    }
+
     private fun refreshCurrentLocation() {
         val credentials = readCredentials() ?: return
 
@@ -315,7 +330,10 @@ class MainActivity : AppCompatActivity() {
             runOnUiThread {
                 val location = result.location
                 if (result.subscriptionInactive) {
-                    statusText.text = "Abonnement inactif — renouvelle sur anyloc.io"
+                    showSubscriptionInactive(
+                        result.inactiveDetails
+                            ?: SubscriptionInactiveDetails.fallback(credentials.first)
+                    )
                     return@runOnUiThread
                 }
 
@@ -409,7 +427,10 @@ class MainActivity : AppCompatActivity() {
 
             runOnUiThread {
                 if (result.subscriptionInactive) {
-                    statusText.text = "Abonnement inactif — renouvelle sur anyloc.io"
+                    showSubscriptionInactive(
+                        result.inactiveDetails
+                            ?: SubscriptionInactiveDetails.fallback(credentials.first)
+                    )
                     return@runOnUiThread
                 }
 

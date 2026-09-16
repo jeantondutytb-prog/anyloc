@@ -31,14 +31,14 @@ export async function GET(request: Request) {
     );
   }
 
-  const { device, error } = await getDeviceContext(token);
+  const { device, error, inactive } = await getDeviceContext(token);
 
   if (!device) {
     return Response.json({ error }, { status: 401 });
   }
 
   if (error) {
-    return Response.json({ error }, { status: 403 });
+    return Response.json({ error, inactive }, { status: 403 });
   }
 
   await touchDeviceLastSeen(device.id);
@@ -68,14 +68,14 @@ export async function PUT(request: Request) {
     );
   }
 
-  const { device, error } = await getDeviceContext(token);
+  const { device, error, inactive } = await getDeviceContext(token);
 
   if (!device) {
     return Response.json({ error }, { status: 401 });
   }
 
   if (error) {
-    return Response.json({ error }, { status: 403 });
+    return Response.json({ error, inactive }, { status: 403 });
   }
 
   let body: unknown;

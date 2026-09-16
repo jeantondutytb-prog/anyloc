@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="anyloc_pink">#EC4899</color>
+    <color name="anyloc_pink_light">#FFF1F5</color>
+    <color name="anyloc_text">#18181B</color>
+    <color name="anyloc_text_muted">#71717A</color>
+    <color name="anyloc_border">#E4E4E7</color>
+    <color name="anyloc_card_stroke">#FBCFE8</color>
+</resources>

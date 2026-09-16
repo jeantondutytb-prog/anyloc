@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">Anyloc</string>
+    <string name="compare_offers">Comparer les offres</string>
+    <string name="contact_support">Contacte le support</string>
+    <string name="support_footer">Besoin d\'aide pour te reconnecter ? %1$s</string>
+    <string name="last_plan_label">Dernière formule : %1$s</string>
+    <string name="payment_support_hint">Tu peux aussi mettre à jour ta carte depuis le checkout Stripe, ou nous écrire sur %1$s.</string>
 </resources>

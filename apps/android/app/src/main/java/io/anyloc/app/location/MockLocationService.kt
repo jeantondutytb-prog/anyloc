@@ -5,8 +5,9 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
-import android.content.Context
+import android.app.PendingIntent
 import android.content.Intent
+import android.content.Context
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.location.Criteria
@@ -20,7 +21,9 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import io.anyloc.app.R
+import io.anyloc.app.SubscriptionInactiveActivity
 import io.anyloc.app.api.AnylocApi
+import io.anyloc.app.api.SubscriptionInactiveDetails
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -77,7 +80,11 @@ class MockLocationService : Service() {
 
                 when {
                     result?.subscriptionInactive == true -> {
-                        updateNotification("Abonnement inactif — renouvelle sur anyloc.io")
+                        val details = result.inactiveDetails
+                            ?: SubscriptionInactiveDetails.fallback(apiBaseUrl)
+                        showInactiveNotification(details)
+                        stopSelf()
+                        return@launch
                     }
                     result?.location?.isActive == true -> {
                         val remote = result.location
@@ -218,6 +225,40 @@ class MockLocationService : Service() {
     private fun updateNotification(content: String) {
         val notificationManager = getSystemService(NotificationManager::class.java)
         notificationManager.notify(NOTIFICATION_ID, buildNotification(content))
+    }
+
+    private fun showInactiveNotification(details: SubscriptionInactiveDetails) {
+        val channelId = "anyloc_subscription_inactive"
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                channelId,
+                "Abonnement Anyloc",
+                NotificationManager.IMPORTANCE_HIGH,
+            )
+            getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+        }
+
+        val intent = SubscriptionInactiveActivity.createIntent(this, details)
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
+        val notification = NotificationCompat.Builder(this, channelId)
+            .setContentTitle(details.title)
+            .setContentText(details.ctaLabel)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(details.description))
+            .setSmallIcon(android.R.drawable.ic_dialog_alert)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .build()
+
+        getSystemService(NotificationManager::class.java)
+            .notify(NOTIFICATION_ID + 1, notification)
     }
 
     companion object {

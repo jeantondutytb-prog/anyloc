@@ -32,6 +32,8 @@ struct MainTabView: View {
         }
         .ignoresSafeArea(.keyboard)
         .preferredColorScheme(.dark)
+        .task { await SubscriptionService.shared.refresh() }
+        .refreshable { await SubscriptionService.shared.refresh() }
     }
 
     private func tabButton(icon: String, label: String, tag: Int) -> some View {

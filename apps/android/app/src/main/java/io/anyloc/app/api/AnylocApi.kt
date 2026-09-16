@@ -19,6 +19,7 @@ data class RemoteLocation(
 data class LocationFetchResult(
     val location: RemoteLocation? = null,
     val subscriptionInactive: Boolean = false,
+    val inactiveDetails: SubscriptionInactiveDetails? = null,
 )
 
 data class GeocodeResult(
@@ -49,15 +50,23 @@ class AnylocApi(
             .build()
 
         client.newCall(request).execute().use { response ->
+            val body = response.body?.string().orEmpty()
+
             if (response.code == 403) {
-                return LocationFetchResult(subscriptionInactive = true)
+                val inactive = SubscriptionInactiveDetails.fromJson(
+                    runCatching { JSONObject(body).optJSONObject("inactive") }.getOrNull()
+                )
+
+                return LocationFetchResult(
+                    subscriptionInactive = true,
+                    inactiveDetails = inactive ?: SubscriptionInactiveDetails.fallback(baseUrl),
+                )
             }
 
             if (!response.isSuccessful) {
                 return LocationFetchResult()
             }
 
-            val body = response.body?.string() ?: return LocationFetchResult()
             return LocationFetchResult(location = parseLocationResponse(body))
         }
     }
@@ -82,6 +91,10 @@ class AnylocApi(
             .build()
 
         client.newCall(request).execute().use { response ->
+            if (response.code == 403) {
+                return null
+            }
+
             if (!response.isSuccessful) {
                 return null
             }

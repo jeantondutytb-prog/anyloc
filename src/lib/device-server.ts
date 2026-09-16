@@ -6,7 +6,9 @@ import {
   toLocationResponse,
 } from "@/lib/location";
 import { hashDeviceToken, type DeviceTokenRow } from "@/lib/device";
+import { buildSubscriptionAccessResponse } from "@/lib/subscription-access-api";
 import { getSubscriptionAccessForUser, isActiveSubscriptionStatus } from "@/lib/subscription";
+import type { SubscriptionInactivePayload } from "@/lib/subscription-inactive";
 
 export async function getDeviceByToken(token: string) {
   if (!isSupabaseAdminConfigured()) {
@@ -117,14 +119,17 @@ export async function getDeviceContext(token: string) {
   const access = await getSubscriptionAccessForUser(device.user_id);
 
   if (!access.hasAccess) {
+    const subscription = await buildSubscriptionAccessResponse(device.user_id);
+
     return {
       device,
       access,
       error: "Abonnement inactif. Renouvelle ton accès Anyloc.",
+      inactive: subscription.inactive,
     };
   }
 
-  return { device, access, error: null };
+  return { device, access, error: null, inactive: null };
 }
 
 export function formatSubscriptionStatus(status: string | null) {

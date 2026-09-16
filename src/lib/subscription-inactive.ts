@@ -18,6 +18,29 @@ export type SubscriptionInactiveDetails = {
   previousPlanName: string | null;
 };
 
+export type SubscriptionInactivePayload = SubscriptionInactiveDetails & {
+  pricingUrl: string;
+  expiredUrl: string;
+  supportEmail: string;
+};
+
+export function toSubscriptionInactivePayload(
+  details: SubscriptionInactiveDetails,
+  siteUrl: string
+): SubscriptionInactivePayload {
+  const origin = siteUrl.replace(/\/$/, "");
+
+  return {
+    ...details,
+    checkoutUrl: details.checkoutUrl.startsWith("http")
+      ? details.checkoutUrl
+      : `${origin}${details.checkoutUrl}`,
+    pricingUrl: `${origin}/pricing`,
+    expiredUrl: `${origin}${SUBSCRIPTION_EXPIRED_PATH}`,
+    supportEmail: "support@anyloc.io",
+  };
+}
+
 type ProfileInactiveFields = {
   subscription_status?: string | null;
   trial_status?: TrialStatus | null;
