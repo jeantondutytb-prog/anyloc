@@ -4,6 +4,7 @@ import {
   getSubscriptionInactiveDetails,
   type SubscriptionInactiveReason,
 } from "@/lib/subscription-inactive";
+import { TRIAL_DURATION_MS } from "@/lib/trial";
 
 const PREVIEW_PROFILES: Record<
   SubscriptionInactiveReason,
@@ -32,7 +33,7 @@ const PREVIEW_PROFILES: Record<
   trial_ended: {
     subscription_status: null,
     trial_status: "active",
-    trial_ends_at: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+    trial_ends_at: new Date(Date.now() - TRIAL_DURATION_MS).toISOString(),
     plan_id: "monthly",
   },
   no_subscription: {},

@@ -7,7 +7,7 @@ import { PaywallValueStack } from "@/components/pricing/paywall-value-stack";
 import { PlatformConstraintNotice } from "@/components/pricing/platform-constraint-notice";
 import { PlanPrice } from "@/components/pricing/plan-price";
 import { RefundGuaranteeNotice } from "@/components/pricing/refund-guarantee-notice";
-import { TRIAL_CTA_SUBLINE } from "@/lib/trial";
+import { TRIAL_CTA_SUBLINE, TRIAL_SELECT_SUBLINE } from "@/lib/trial";
 
 export function Pricing() {
   return (
@@ -17,11 +17,7 @@ export function Pricing() {
           <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
             Choisis ta durée
           </h2>
-          <p className="mt-4 text-zinc-600">
-            Essaie gratuitement sur tous les plans — même accès complet sur Snap,
-            Insta, Tinder et toutes tes apps. Seule la durée facturée change
-            après l&apos;essai.
-          </p>
+          <p className="mt-4 text-zinc-600">{TRIAL_SELECT_SUBLINE}</p>
           <p className="mt-2 text-sm font-medium text-pink-600">
             {TRIAL_CTA_SUBLINE}
           </p>
