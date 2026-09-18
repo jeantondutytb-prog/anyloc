@@ -28,7 +28,7 @@ def install_with_pymobiledevice3(ipa_path: Path, udid: str | None) -> dict:
     if result.returncode == 0:
         return {
             "ok": True,
-            "message": "Anyloc installé sur ton iPhone. Ouvre l'app et connecte-toi avec le même compte.",
+            "message": "C'est installé. Si l'app refuse de s'ouvrir : Réglages iPhone → Général → VPN et gestion de l'appareil → Faire confiance.",
             "udid": udid,
             "output": result.stdout.strip(),
         }

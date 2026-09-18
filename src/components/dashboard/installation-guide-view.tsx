@@ -450,8 +450,9 @@ function IosGuide({
   return (
     <div className="space-y-4">
       <p className="text-sm text-zinc-600">
-        iPhone : 3 minutes sur un Mac ou un PC, avec un câble. Ensuite tout se
-        fait depuis le téléphone.
+        iPhone : Mac ou PC + câble. Tu changes la ville depuis le téléphone,
+        mais <strong>le câble reste branché</strong> et Anyloc Setup reste
+        ouvert — sinon Snap revoit ta vraie position.
       </p>
 
       {isPhone ? (
@@ -508,38 +509,60 @@ function IosGuide({
 
       <StepCard number={2} title="Branche l'iPhone et installe">
         <ol className="list-decimal space-y-2 pl-5">
-          <li>Ouvre <strong>Anyloc Setup</strong> et connecte-toi</li>
-          <li>Branche l&apos;iPhone, appuie sur <strong>Faire confiance</strong></li>
           <li>
-            Clique <strong>Installer l&apos;app iPhone</strong> (la fenêtre
-            s&apos;ouvre toute seule)
+            Ouvre <strong>Anyloc Setup</strong> et connecte-toi avec le{" "}
+            <strong>même compte</strong> (bouton Google = le plus simple)
+          </li>
+          <li>
+            Branche le câble, déverrouille l&apos;iPhone, appuie sur{" "}
+            <strong>Faire confiance</strong>
+          </li>
+          <li>
+            Clique <strong>Installer l&apos;app iPhone</strong>
           </li>
         </ol>
-        <p className="text-xs text-zinc-500">
-          Si iOS le demande : Réglages → Confidentialité et sécurité → Mode
-          développeur → ON, puis redémarre.
+        <p className="rounded-xl bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
+          Pas de mot de passe ? Sur cette page : <strong>Mon compte</strong> →
+          choisis-en un, puis reconnecte-toi dans Anyloc Setup.
         </p>
-        <HelpDetails title="L'iPhone n'est pas détecté ?">
-          <ul className="list-disc space-y-1.5 pl-5">
-            <li>Déverrouille l&apos;iPhone et rebranche le câble</li>
-            <li>Ouvre le Finder (Mac) et accepte « Faire confiance »</li>
-            <li>Dans Anyloc Setup, clique « Revérifier »</li>
-          </ul>
-        </HelpDetails>
+        <p className="rounded-xl bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
+          iOS demande le <strong>mode développeur</strong> ? Réglages →
+          Confidentialité et sécurité → Mode développeur → ON → redémarre →
+          rebranche, puis Installer.
+        </p>
+        <p className="rounded-xl bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
+          L&apos;iPhone n&apos;apparaît pas ? Déverrouille, rebranche, appuie
+          sur <strong>Faire confiance</strong>. Sur Mac, ouvre le Finder et
+          accepte. Dans Anyloc Setup, clique <strong>Revérifier</strong>.
+        </p>
       </StepCard>
 
-      <StepCard number={3} title="Ouvre Anyloc sur l'iPhone">
+      <StepCard number={3} title="Ouvre Anyloc — laisse le câble branché">
         <ol className="list-decimal space-y-2 pl-5">
-          <li>Ouvre l&apos;app <strong>Anyloc</strong></li>
-          <li>Connecte-toi avec le <strong>même compte</strong></li>
-          <li>Choisis une ville — ta loc change</li>
+          <li>
+            Si l&apos;app est grise ou refuse de s&apos;ouvrir : Réglages →
+            Général → <strong>VPN et gestion de l&apos;appareil</strong> →
+            Anyloc → <strong>Faire confiance</strong>
+          </li>
+          <li>
+            Ouvre <strong>Anyloc</strong> — même Google, ou l&apos;email + le
+            mot de passe de <strong>Mon compte</strong> — puis choisis une
+            ville
+          </li>
+          <li>
+            Vérifie dans Snap ou Plans — la loc a changé
+          </li>
         </ol>
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+          <strong>Laisse l&apos;iPhone branché</strong> et Anyloc Setup ouvert
+          (icône en haut de l&apos;écran). Si tu débranches, Snap revoit ta
+          vraie position. C&apos;est normal.
+        </p>
         <HelpDetails title="Dans ~7 jours, l'app iPhone s'arrête ?">
           <p className="mb-2">
             Normal (limite Apple). Installe <strong>LocalDevVPN</strong> (App
-            Store, gratuit), connecte-toi en Wi-Fi, appuie sur{" "}
-            <strong>Connect</strong>, puis relance Anyloc. Pas besoin de
-            rebrancher l&apos;ordinateur.
+            Store, gratuit), Wi-Fi → <strong>Connect</strong>, puis relance
+            Anyloc. Pas besoin de réinstaller.
           </p>
         </HelpDetails>
       </StepCard>
@@ -612,30 +635,25 @@ function AndroidGuide({
         <AndroidOpenHelp downloaded={downloaded} />
       </StepCard>
 
-      <StepCard number={2} title="Autorise la fausse position">
-        <ol className="list-decimal space-y-2 pl-5">
-          <li>
-            Paramètres → À propos du téléphone → tape 7 fois sur{" "}
-            <strong>Numéro de build</strong>
-          </li>
-          <li>
-            Options pour les développeurs →{" "}
-            <strong>Application de localisation fictive</strong> →{" "}
-            <strong>Anyloc</strong>
-          </li>
-        </ol>
-        <p className="text-xs text-zinc-500">
-          L&apos;app t&apos;ouvre les bons menus si tu es perdu.
+      <StepCard number={2} title="Ouvre Anyloc (le gros écran rose te guide)">
+        <AndroidLinkStep preview={preview} />
+        <p className="rounded-xl bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
+          L&apos;app te demande d&apos;autoriser la fausse position. Appuie sur
+          ses boutons — tu n&apos;as pas à chercher dans les réglages tout
+          seul.
         </p>
       </StepCard>
 
-      <StepCard number={3} title="Ouvre Anyloc et choisis une ville">
-        <AndroidLinkStep preview={preview} />
+      <StepCard number={3} title="Choisis une ville, vérifie dans Snap">
+        <ol className="list-decimal space-y-2 pl-5">
+          <li>Cherche une ville dans l&apos;app (Marbella, Paris…)</li>
+          <li>Ouvre Snap ou Maps — la loc a changé</li>
+        </ol>
         <HelpDetails title="La loc ne change pas ?">
           <ol className="list-decimal space-y-1.5 pl-5">
-            <li>Vérifie qu&apos;Anyloc est bien l&apos;app de localisation fictive</li>
-            <li>Active le GPS du téléphone</li>
-            <li>Ferme puis rouvre Snap / Maps / l&apos;app testée</li>
+            <li>Dans l&apos;app, suis l&apos;écran « Encore 1 étape »</li>
+            <li>Anyloc doit être l&apos;app de localisation fictive</li>
+            <li>Active le GPS, puis ferme et rouvre Snap</li>
           </ol>
         </HelpDetails>
       </StepCard>

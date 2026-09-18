@@ -579,7 +579,7 @@ async function setupInstall() {
 
   const result = await window.anylocSetup.installIos({ udid: usb.udid });
   $("setup-install-status").textContent = result.ok
-    ? "C'est installé. Ouvre Anyloc sur l'iPhone et connecte-toi avec le même compte."
+    ? "C'est installé. Si l'app est grise : Réglages → Général → VPN et gestion de l'appareil → Faire confiance. Laisse le câble branché."
     : result.message;
   $("setup-install-status").className = result.ok ? "setup-status ok" : "setup-status error";
   $("setup-install-btn").disabled = false;

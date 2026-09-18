@@ -924,7 +924,7 @@ async function installIosApp({ udid }) {
   if (result.ok) {
     return {
       ok: true,
-      message: "Anyloc installé sur ton iPhone. Ouvre l'app et connecte-toi avec le même compte.",
+      message: "C'est installé. Si l'app refuse de s'ouvrir : Réglages → Général → VPN et gestion de l'appareil → Faire confiance. Laisse l'iPhone branché.",
       udid,
       output: result.stdout.trim(),
     };
