@@ -164,6 +164,23 @@ export async function syncProfileFromCheckoutSession(
   }
 }
 
+async function resolveExistingAuthUserId(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string | null
+) {
+  if (!userId) {
+    return null;
+  }
+
+  const { data, error } = await admin.auth.admin.getUserById(userId);
+
+  if (error || !data.user) {
+    return null;
+  }
+
+  return data.user.id;
+}
+
 export async function syncProfileFromSubscription(
   subscription: Stripe.Subscription
 ) {
@@ -172,13 +189,21 @@ export async function syncProfileFromSubscription(
     return;
   }
 
-  let userId = subscription.metadata?.supabase_user_id ?? null;
   const customerId =
     typeof subscription.customer === "string"
       ? subscription.customer
       : subscription.customer?.id;
 
   const admin = createAdminClient();
+  const metadataUserId = subscription.metadata?.supabase_user_id ?? null;
+  let userId = await resolveExistingAuthUserId(admin, metadataUserId);
+
+  if (metadataUserId && !userId) {
+    console.warn(
+      `[billing] Skipping subscription ${subscription.id}: supabase user ${metadataUserId} no longer exists.`
+    );
+    return;
+  }
 
   if (!userId && customerId && stripe) {
     const customer = await stripe.customers.retrieve(customerId);

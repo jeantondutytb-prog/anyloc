@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { PLANS } from "@/lib/constants";
+import { capturePostHogEvent } from "@/lib/posthog/server";
 import {
   createTrialSetupCheckoutSession,
   getAuthenticatedCheckoutUser,
@@ -26,6 +27,12 @@ export async function POST(request: Request) {
       plan,
       user,
       uiMode: "embedded_page",
+    });
+
+    await capturePostHogEvent({
+      distinctId: user?.id ?? session.id,
+      event: "checkout_started",
+      properties: { plan: plan.id, guest_checkout: !user, ui_mode: "embedded" },
     });
 
     if (!session.client_secret) {

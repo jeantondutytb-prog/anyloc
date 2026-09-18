@@ -3,37 +3,64 @@
 import { useEffect, Suspense } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import posthog from "posthog-js";
+import {
+  initPostHogBrowser,
+  isPostHogBrowserReady,
+} from "@/lib/posthog/browser";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
-if (typeof window !== "undefined") {
-  const apiKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;
-
-  if (apiKey && !posthog.__loaded) {
-    posthog.init(apiKey, {
-      api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://eu.i.posthog.com",
-      capture_pageview: false,
-      capture_pageleave: true,
-      person_profiles: "identified_only",
-      session_recording: {
-        maskAllInputs: true,
-        maskTextSelector: "*",
-      },
-    });
-  }
-}
+initPostHogBrowser();
 
 function PostHogPageview() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (!pathname || !posthog.__loaded) return;
+    initPostHogBrowser();
 
-    const url = searchParams?.toString()
-      ? `${pathname}?${searchParams.toString()}`
-      : pathname;
+    if (!pathname || !isPostHogBrowserReady()) return;
 
-    posthog.capture("$pageview", { $current_url: url });
+    posthog.capture("$pageview", { $current_url: window.location.href });
   }, [pathname, searchParams]);
+
+  return null;
+}
+
+function PostHogIdentify() {
+  useEffect(() => {
+    if (!isSupabaseConfigured()) {
+      return;
+    }
+
+    const supabase = createClient();
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      initPostHogBrowser();
+
+      if (!isPostHogBrowserReady()) {
+        return;
+      }
+
+      if (
+        session?.user &&
+        (event === "INITIAL_SESSION" ||
+          event === "SIGNED_IN" ||
+          event === "USER_UPDATED")
+      ) {
+        posthog.identify(session.user.id, {
+          email: session.user.email,
+        });
+        return;
+      }
+
+      if (event === "SIGNED_OUT") {
+        posthog.reset();
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   return null;
 }
@@ -41,6 +68,7 @@ function PostHogPageview() {
 export function PostHogProvider() {
   return (
     <Suspense fallback={null}>
+      <PostHogIdentify />
       <PostHogPageview />
     </Suspense>
   );

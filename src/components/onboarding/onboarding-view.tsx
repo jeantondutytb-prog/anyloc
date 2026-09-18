@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import posthog from "posthog-js";
+import { capturePostHogClientEvent } from "@/lib/posthog/browser";
 import {
   ArrowRight,
   ChevronRight,
@@ -334,7 +334,7 @@ function OnboardingViewContent() {
       1: "destination",
       2: "preview",
     } as const;
-    posthog.capture("onboarding_step_viewed", {
+    capturePostHogClientEvent("onboarding_step_viewed", {
       step,
       step_name: stepNames[step as keyof typeof stepNames],
     });
@@ -386,7 +386,7 @@ function OnboardingViewContent() {
   }
 
   function continueToSignup() {
-    posthog.capture("onboarding_completed", {
+    capturePostHogClientEvent("onboarding_completed", {
       destination_city: destination.city,
       plan: selectedPlanId,
     });
