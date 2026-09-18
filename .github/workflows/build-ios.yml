@@ -9,31 +9,52 @@ on:
     paths:
       - "apps/ios/**"
       - "scripts/build-ios-ipa.sh"
+      - "scripts/upload-release.mjs"
       - ".github/workflows/build-ios.yml"
+
+permissions:
+  contents: write
 
 jobs:
   build:
-    if: ${{ secrets.APPLE_DEVELOPMENT_TEAM != '' }}
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check Apple team
+        id: team
+        env:
+          APPLE_DEVELOPMENT_TEAM: ${{ secrets.APPLE_DEVELOPMENT_TEAM }}
+        run: |
+          if [ -z "$APPLE_DEVELOPMENT_TEAM" ]; then
+            echo "has_team=false" >> "$GITHUB_OUTPUT"
+            echo "APPLE_DEVELOPMENT_TEAM absent — build iOS ignoré."
+          else
+            echo "has_team=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Install XcodeGen
+        if: steps.team.outputs.has_team == 'true'
         run: brew install xcodegen
 
       - name: Build signed IPA
+        if: steps.team.outputs.has_team == 'true'
         env:
           APPLE_DEVELOPMENT_TEAM: ${{ secrets.APPLE_DEVELOPMENT_TEAM }}
         run: chmod +x scripts/build-ios-ipa.sh && ./scripts/build-ios-ipa.sh
 
-      - name: Upload IPA artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/setup-node@v4
+        if: steps.team.outputs.has_team == 'true'
         with:
-          name: anyloc-ios-ipa
-          path: apps/ios/dist/Anyloc.ipa
-          if-no-files-found: error
+          node-version: 22
+          cache: npm
+
+      - name: Install root deps
+        if: steps.team.outputs.has_team == 'true'
+        run: npm ci
 
       - name: Upload to Vercel Blob
+        if: steps.team.outputs.has_team == 'true'
         env:
           BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
         run: |
@@ -43,48 +64,20 @@ jobs:
             echo "BLOB_READ_WRITE_TOKEN absent — skip upload Blob"
           fi
 
-      - name: Keep IPA for release
-        run: mkdir -p /tmp/ios-release && cp apps/ios/dist/Anyloc.ipa /tmp/ios-release/
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ios-release-ipa
-          path: /tmp/ios-release/Anyloc.ipa
-          if-no-files-found: error
-
-  skip:
-    if: ${{ secrets.APPLE_DEVELOPMENT_TEAM == '' }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Skip iOS build
-        run: |
-          echo "APPLE_DEVELOPMENT_TEAM absent — build iOS ignoré."
-          echo "Configure le secret GitHub pour publier Anyloc.ipa automatiquement."
-
-  publish:
-    needs: build
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: ios-release-ipa
-          path: release-files
-
       - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ios-v0.1.${{ github.run_number }}
-          name: Anyloc iOS v0.1.${{ github.run_number }}
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-          files: release-files/Anyloc.ipa
-
-      - name: Print download URL
+        if: github.ref == 'refs/heads/main' && steps.team.outputs.has_team == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           TAG="ios-v0.1.${{ github.run_number }}"
-          BASE="https://github.com/${{ github.repository }}/releases/download/${TAG}"
-          echo "ANYLOC_DOWNLOAD_IPA=${BASE}/Anyloc.ipa" >> $GITHUB_STEP_SUMMARY
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "Anyloc iOS v0.1.${{ github.run_number }}" --generate-notes
+          gh release upload "$TAG" apps/ios/dist/Anyloc.ipa --clobber
+
+      - name: Upload IPA artifact
+        if: steps.team.outputs.has_team == 'true'
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: anyloc-ios-ipa
+          path: apps/ios/dist/Anyloc.ipa
+          if-no-files-found: error

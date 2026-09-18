@@ -1,4 +1,6 @@
-import { createClient } from "@/lib/supabase/server";
+import { headers } from "next/headers";
+import { createClient as createJwtClient } from "@supabase/supabase-js";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 import { isTrialAccessActive } from "@/lib/trial";
 
@@ -104,6 +106,29 @@ export async function getSubscriptionAccessForUser(
 }
 
 export async function getAuthenticatedUser() {
+  if (!isSupabaseConfigured()) {
+    return null;
+  }
+
+  const headerStore = await headers();
+  const authorization = headerStore.get("authorization");
+
+  if (authorization?.startsWith("Bearer ")) {
+    const token = authorization.slice(7).trim();
+    const supabase = createJwtClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
+    );
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser(token);
+
+    if (!error && user) {
+      return user;
+    }
+  }
+
   const supabase = await createClient();
   const {
     data: { user },

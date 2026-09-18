@@ -15,14 +15,22 @@ const TARGETS = {
   android: {
     envKey: "ANYLOC_DOWNLOAD_APK",
     blobPath: "releases/Anyloc.apk",
+    contentType: "application/vnd.android.package-archive",
   },
   ios: {
     envKey: "ANYLOC_DOWNLOAD_IPA",
     blobPath: "releases/Anyloc.ipa",
+    contentType: "application/octet-stream",
   },
   "setup-mac": {
     envKey: "ANYLOC_DOWNLOAD_SETUP_MAC",
     blobPath: "releases/Anyloc-Setup.dmg",
+    contentType: "application/x-apple-diskimage",
+  },
+  "setup-win": {
+    envKey: "ANYLOC_DOWNLOAD_SETUP_WIN",
+    blobPath: "releases/Anyloc-Setup.exe",
+    contentType: "application/octet-stream",
   },
 };
 
@@ -32,7 +40,7 @@ async function main() {
 
   if (!targetKey || !filePath) {
     console.error(
-      "Usage: BLOB_READ_WRITE_TOKEN=xxx node scripts/upload-release.mjs <android|ios|setup-mac> <file-path>"
+      "Usage: BLOB_READ_WRITE_TOKEN=xxx node scripts/upload-release.mjs <android|ios|setup-mac|setup-win> <file-path>"
     );
     process.exit(1);
   }
@@ -62,6 +70,7 @@ async function main() {
     addRandomSuffix: false,
     allowOverwrite: true,
     cacheControlMaxAge: 31536000,
+    contentType: target.contentType,
   });
 
   console.log(`Upload OK: ${blob.url}`);

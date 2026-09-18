@@ -1,4 +1,4 @@
-export type DownloadPlatform = "setup-mac" | "setup-win" | "apk";
+export type DownloadPlatform = "setup-mac" | "setup-win" | "apk" | "ipa";
 
 export type DownloadAsset = {
   id: DownloadPlatform;
@@ -6,6 +6,7 @@ export type DownloadAsset = {
   description: string;
   filename: string;
   envKey: string;
+  blobPath: string;
 };
 
 export const DOWNLOAD_ASSETS: DownloadAsset[] = [
@@ -15,6 +16,7 @@ export const DOWNLOAD_ASSETS: DownloadAsset[] = [
     description: "macOS Ventura ou plus récent — installation iPhone via USB",
     filename: "Anyloc-Setup.dmg",
     envKey: "ANYLOC_DOWNLOAD_SETUP_MAC",
+    blobPath: "releases/Anyloc-Setup.dmg",
   },
   {
     id: "setup-win",
@@ -22,6 +24,7 @@ export const DOWNLOAD_ASSETS: DownloadAsset[] = [
     description: "Windows 10 ou plus récent — installation iPhone via USB",
     filename: "Anyloc-Setup.exe",
     envKey: "ANYLOC_DOWNLOAD_SETUP_WIN",
+    blobPath: "releases/Anyloc-Setup.exe",
   },
   {
     id: "apk",
@@ -29,6 +32,15 @@ export const DOWNLOAD_ASSETS: DownloadAsset[] = [
     description: "APK signé pour installation directe sur Android",
     filename: "Anyloc.apk",
     envKey: "ANYLOC_DOWNLOAD_APK",
+    blobPath: "releases/Anyloc.apk",
+  },
+  {
+    id: "ipa",
+    label: "Anyloc (iPhone)",
+    description: "IPA installée par Anyloc Setup via USB",
+    filename: "Anyloc.ipa",
+    envKey: "ANYLOC_DOWNLOAD_IPA",
+    blobPath: "releases/Anyloc.ipa",
   },
 ];
 
@@ -60,6 +72,58 @@ export function getDownloadUrl(platform: DownloadPlatform) {
   return url || null;
 }
 
+async function presignPrivateBlobUrl(pathname: string, token: string) {
+  const { issueSignedToken, presignUrl } = await import("@vercel/blob");
+  const signed = await issueSignedToken({
+    token,
+    pathname,
+    operations: ["get"],
+    validUntil: Date.now() + 60 * 60 * 1000,
+  });
+
+  const presignOptions = {
+    operation: "get" as const,
+    pathname,
+    access: "private" as const,
+  };
+  const { presignedUrl } = await presignUrl(signed, presignOptions);
+
+  return presignedUrl.replace(
+    ".undefined.blob.vercel-storage.com",
+    ".private.blob.vercel-storage.com"
+  );
+}
+
+async function resolveFromBlob(asset: DownloadAsset) {
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+
+  if (!token) {
+    return null;
+  }
+
+  try {
+    const { list, getDownloadUrl } = await import("@vercel/blob");
+    const { blobs } = await list({
+      prefix: asset.blobPath,
+      limit: 10,
+      token,
+    });
+    const blob = blobs.find((item) => item.pathname === asset.blobPath);
+
+    if (!blob?.url) {
+      return null;
+    }
+
+    if (blob.url.includes(".private.blob.vercel-storage.com")) {
+      return presignPrivateBlobUrl(asset.blobPath, token);
+    }
+
+    return getDownloadUrl(blob.url);
+  } catch {
+    return null;
+  }
+}
+
 async function fetchGithubReleaseAssets() {
   const now = Date.now();
 
@@ -68,12 +132,14 @@ async function fetchGithubReleaseAssets() {
   }
 
   try {
+    const githubToken = process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN;
     const response = await fetch(
-      `https://api.github.com/repos/${GITHUB_RELEASES_REPO}/releases/latest`,
+      `https://api.github.com/repos/${GITHUB_RELEASES_REPO}/releases?per_page=20`,
       {
         headers: {
           Accept: "application/vnd.github+json",
           "User-Agent": "anyloc-downloads",
+          ...(githubToken ? { Authorization: `Bearer ${githubToken}` } : {}),
         },
         next: { revalidate: 600 },
       }
@@ -83,13 +149,17 @@ async function fetchGithubReleaseAssets() {
       return {};
     }
 
-    const data = (await response.json()) as {
+    const releases = (await response.json()) as Array<{
       assets?: Array<{ name: string; browser_download_url: string }>;
-    };
+    }>;
 
-    const assets = Object.fromEntries(
-      (data.assets ?? []).map((item) => [item.name, item.browser_download_url])
-    );
+    const assets: Record<string, string> = {};
+
+    for (const release of releases) {
+      for (const item of release.assets ?? []) {
+        assets[item.name] ??= item.browser_download_url;
+      }
+    }
 
     githubReleaseCache = {
       expiresAt: now + 10 * 60 * 1000,
@@ -107,6 +177,17 @@ async function resolvePrivateBlobUrl(url: string): Promise<string> {
     return url;
   }
 
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  const pathname = new URL(url).pathname.replace(/^\/+/, "");
+
+  if (token && pathname) {
+    try {
+      return await presignPrivateBlobUrl(pathname, token);
+    } catch {
+      // Fall through to the download-disposition URL.
+    }
+  }
+
   const { getDownloadUrl: getBlobDownloadUrl } = await import("@vercel/blob");
   return getBlobDownloadUrl(url);
 }
@@ -120,6 +201,11 @@ export async function resolveDownloadUrl(platform: DownloadPlatform) {
   const asset = getDownloadAsset(platform);
   if (!asset) {
     return null;
+  }
+
+  const blobUrl = await resolveFromBlob(asset);
+  if (blobUrl) {
+    return blobUrl;
   }
 
   const releaseAssets = await fetchGithubReleaseAssets();
