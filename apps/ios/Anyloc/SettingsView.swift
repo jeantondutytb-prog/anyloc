@@ -2,6 +2,8 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var auth = AuthService.shared
+    @ObservedObject private var renewal = SignatureRenewalService.shared
+    @State private var showRenewal = false
 
     var body: some View {
         ZStack {
@@ -110,6 +112,41 @@ struct SettingsView: View {
                             .padding(12)
                         }
 
+                        // Renouvellement signature (~7 jours)
+                        settingsSection("Renouvellement iPhone") {
+                            VStack(alignment: .leading, spacing: 12) {
+                                HStack(spacing: 10) {
+                                    Image(systemName: "arrow.clockwise.circle.fill")
+                                        .font(.title2)
+                                        .foregroundColor(Theme.accent)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(renewalStatusLabel)
+                                            .font(.subheadline.bold())
+                                            .foregroundColor(Theme.text)
+                                        Text("LocalDevVPN + Wi-Fi — sans rebrancher l'ordi")
+                                            .font(.caption)
+                                            .foregroundColor(Theme.textDim)
+                                    }
+                                    Spacer()
+                                }
+                                .padding(12)
+
+                                Button {
+                                    showRenewal = true
+                                } label: {
+                                    Text("Renouveler maintenant")
+                                        .font(.subheadline.bold())
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 10)
+                                        .background(Theme.accent)
+                                        .foregroundColor(.white)
+                                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.bottom, 12)
+                            }
+                        }
+
                         // App
                         settingsSection("Application") {
                             VStack(spacing: 0) {
@@ -143,6 +180,25 @@ struct SettingsView: View {
                     .padding(.bottom, 80)
                 }
             }
+        }
+        .sheet(isPresented: $showRenewal) {
+            RenewalView()
+        }
+        .task {
+            await renewal.refreshPairingStatus()
+        }
+    }
+
+    private var renewalStatusLabel: String {
+        switch renewal.state {
+        case .expired:
+            return "Renouvellement recommandé"
+        case .soon(let days):
+            return "Expire dans \(days) jour\(days > 1 ? "s" : "")"
+        case .healthy(let days):
+            return "~\(days) jours restants"
+        case .unknown:
+            return "Signature ~7 jours"
         }
     }
 
