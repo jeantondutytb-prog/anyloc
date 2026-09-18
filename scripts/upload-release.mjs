@@ -24,6 +24,10 @@ const TARGETS = {
     envKey: "ANYLOC_DOWNLOAD_SETUP_MAC",
     blobPath: "releases/Anyloc-Setup.dmg",
   },
+  "setup-win": {
+    envKey: "ANYLOC_DOWNLOAD_SETUP_WIN",
+    blobPath: "releases/Anyloc-Setup.exe",
+  },
 };
 
 async function main() {
@@ -32,7 +36,7 @@ async function main() {
 
   if (!targetKey || !filePath) {
     console.error(
-      "Usage: BLOB_READ_WRITE_TOKEN=xxx node scripts/upload-release.mjs <android|ios|setup-mac> <file-path>"
+      "Usage: BLOB_READ_WRITE_TOKEN=xxx node scripts/upload-release.mjs <android|ios|setup-mac|setup-win> <file-path>"
     );
     process.exit(1);
   }

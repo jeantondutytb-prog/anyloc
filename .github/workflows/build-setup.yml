@@ -13,6 +13,9 @@ on:
       - "scripts/upload-release.mjs"
       - ".github/workflows/build-setup.yml"
 
+permissions:
+  contents: write
+
 jobs:
   build-mac:
     runs-on: macos-latest
@@ -25,24 +28,26 @@ jobs:
           cache: npm
           cache-dependency-path: apps/setup/package-lock.json
 
-      - name: Install dependencies
+      - name: Install Setup dependencies
         working-directory: apps/setup
         run: npm install
 
       - name: Bundle latest Anyloc.ipa (if published)
-        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p apps/ios/dist
-          URL=$(curl -fsSL \
-            -H "Accept: application/vnd.github+json" \
-            -H "User-Agent: anyloc-setup-build" \
-            "https://api.github.com/repos/${{ github.repository }}/releases?per_page=20" \
-            | python3 -c "import json,sys; releases=json.load(sys.stdin); \
-          url=next((a['browser_download_url'] for r in releases for a in r.get('assets',[]) if a.get('name')=='Anyloc.ipa'), None); \
-          print(url or '')")
-          if [ -n "$URL" ]; then
-            curl -fsSL -o apps/ios/dist/Anyloc.ipa "$URL"
-            echo "Bundled Anyloc.ipa from $URL"
+          API_URL=$(gh api "repos/${{ github.repository }}/releases?per_page=20" \
+            --jq '[.[].assets[] | select(.name=="Anyloc.ipa") | .url] | first' \
+            || true)
+          if [ -n "$API_URL" ] && [ "$API_URL" != "null" ]; then
+            curl -fsSL \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/octet-stream" \
+              -H "User-Agent: anyloc-setup-build" \
+              -o apps/ios/dist/Anyloc.ipa \
+              "$API_URL"
+            echo "Bundled Anyloc.ipa"
           else
             echo "No Anyloc.ipa in releases yet — Setup will download it at runtime."
           fi
@@ -53,12 +58,8 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: false
         run: npm run build:mac
 
-      - name: Upload DMG artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: anyloc-setup-mac
-          path: apps/setup/dist/Anyloc-Setup.dmg
-          if-no-files-found: error
+      - name: Install root deps
+        run: npm ci
 
       - name: Upload to Vercel Blob
         env:
@@ -70,13 +71,21 @@ jobs:
             echo "BLOB_READ_WRITE_TOKEN absent — skip upload Blob"
           fi
 
-      - name: Keep DMG for release
-        run: mkdir -p /tmp/setup-release && cp apps/setup/dist/Anyloc-Setup.dmg /tmp/setup-release/
+      - name: Publish GitHub Release asset
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="setup-v0.1.${{ github.run_number }}"
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "Anyloc Setup v0.1.${{ github.run_number }}" --generate-notes
+          gh release upload "$TAG" apps/setup/dist/Anyloc-Setup.dmg --clobber
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload DMG artifact
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
         with:
-          name: setup-release-mac
-          path: /tmp/setup-release/Anyloc-Setup.dmg
+          name: anyloc-setup-mac
+          path: apps/setup/dist/Anyloc-Setup.dmg
           if-no-files-found: error
 
   build-win:
@@ -90,7 +99,7 @@ jobs:
           cache: npm
           cache-dependency-path: apps/setup/package-lock.json
 
-      - name: Install dependencies
+      - name: Install Setup dependencies
         working-directory: apps/setup
         run: npm install
 
@@ -100,12 +109,9 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: false
         run: npm run build:win
 
-      - name: Upload EXE artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: anyloc-setup-win
-          path: apps/setup/dist/Anyloc-Setup.exe
-          if-no-files-found: error
+      - name: Install root deps
+        shell: bash
+        run: npm ci
 
       - name: Upload to Vercel Blob
         env:
@@ -118,68 +124,20 @@ jobs:
             echo "BLOB_READ_WRITE_TOKEN absent — skip upload Blob"
           fi
 
-      - name: Keep EXE for release
-        shell: bash
-        run: |
-          mkdir -p "$RUNNER_TEMP/setup-release"
-          cp apps/setup/dist/Anyloc-Setup.exe "$RUNNER_TEMP/setup-release/"
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: setup-release-win
-          path: ${{ runner.temp }}/setup-release/Anyloc-Setup.exe
-          if-no-files-found: error
-
-  publish:
-    needs: [build-mac, build-win]
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          path: release-files
-          pattern: setup-release-*
-          merge-multiple: true
-
-      - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: setup-v0.1.${{ github.run_number }}
-          name: Anyloc Setup v0.1.${{ github.run_number }}
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-          files: |
-            release-files/Anyloc-Setup.dmg
-            release-files/Anyloc-Setup.exe
-
-      - name: Attach Anyloc.ipa to release (if available)
-        shell: bash
+      - name: Publish GitHub Release asset
+        if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
+        shell: bash
         run: |
-          URL=$(curl -fsSL \
-            -H "Accept: application/vnd.github+json" \
-            -H "User-Agent: anyloc-setup-build" \
-            "https://api.github.com/repos/${{ github.repository }}/releases?per_page=20" \
-            | python3 -c "import json,sys; releases=json.load(sys.stdin); \
-          url=next((a['browser_download_url'] for r in releases for a in r.get('assets',[]) if a.get('name')=='Anyloc.ipa'), None); \
-          print(url or '')")
-          if [ -z "$URL" ]; then
-            echo "No Anyloc.ipa to attach."
-            exit 0
-          fi
-          curl -fsSL -o /tmp/Anyloc.ipa "$URL"
           TAG="setup-v0.1.${{ github.run_number }}"
-          gh release upload "$TAG" /tmp/Anyloc.ipa --clobber
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "Anyloc Setup v0.1.${{ github.run_number }}" --generate-notes
+          gh release upload "$TAG" apps/setup/dist/Anyloc-Setup.exe --clobber
 
-      - name: Print Vercel env vars
-        run: |
-          TAG="setup-v0.1.${{ github.run_number }}"
-          BASE="https://github.com/${{ github.repository }}/releases/download/${TAG}"
-          echo "## URLs à configurer sur Vercel" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "ANYLOC_DOWNLOAD_SETUP_MAC=${BASE}/Anyloc-Setup.dmg" >> $GITHUB_STEP_SUMMARY
-          echo "ANYLOC_DOWNLOAD_SETUP_WIN=${BASE}/Anyloc-Setup.exe" >> $GITHUB_STEP_SUMMARY
+      - name: Upload EXE artifact
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: anyloc-setup-win
+          path: apps/setup/dist/Anyloc-Setup.exe
+          if-no-files-found: error

@@ -15,7 +15,7 @@ export async function GET() {
   const access = await getSubscriptionAccessForUser(user.id, user.email);
 
   const assets = await Promise.all(
-    DOWNLOAD_ASSETS.map(async (asset) => ({
+    DOWNLOAD_ASSETS.filter((asset) => asset.id !== "ipa").map(async (asset) => ({
       id: asset.id,
       label: asset.label,
       description: asset.description,

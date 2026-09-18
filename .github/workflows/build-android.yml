@@ -8,7 +8,11 @@ on:
       - "cursor/**"
     paths:
       - "apps/android/**"
+      - "scripts/upload-release.mjs"
       - ".github/workflows/build-android.yml"
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -22,52 +26,46 @@ jobs:
           distribution: temurin
           java-version: 17
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
       - name: Build release APK
         working-directory: apps/android
         run: chmod +x gradlew && ./gradlew assembleRelease
 
+      - name: Normalize APK filename
+        run: |
+          mkdir -p dist/android
+          cp apps/android/app/build/outputs/apk/release/*.apk dist/android/Anyloc.apk
+
+      - name: Install root deps
+        run: npm ci
+
+      - name: Upload to Vercel Blob
+        env:
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+        run: |
+          if [ -n "$BLOB_READ_WRITE_TOKEN" ]; then
+            node scripts/upload-release.mjs android dist/android/Anyloc.apk
+          else
+            echo "BLOB_READ_WRITE_TOKEN absent — skip upload Blob"
+          fi
+
+      - name: Publish GitHub Release
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="android-v0.1.${{ github.run_number }}"
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "Anyloc Android v0.1.${{ github.run_number }}" --generate-notes
+          gh release upload "$TAG" dist/android/Anyloc.apk --clobber
+
       - name: Upload APK artifact
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: anyloc-android-apk
-          path: apps/android/app/build/outputs/apk/release/*.apk
+          path: dist/android/Anyloc.apk
           if-no-files-found: error
-
-      - name: Keep APK for release
-        run: |
-          mkdir -p /tmp/android-release
-          cp apps/android/app/build/outputs/apk/release/*.apk /tmp/android-release/Anyloc.apk
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: android-release-apk
-          path: /tmp/android-release/Anyloc.apk
-          if-no-files-found: error
-
-  publish:
-    needs: build
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: android-release-apk
-          path: release-files
-
-      - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: android-v0.1.${{ github.run_number }}
-          name: Anyloc Android v0.1.${{ github.run_number }}
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-          files: release-files/Anyloc.apk
-
-      - name: Print download URL
-        run: |
-          TAG="android-v0.1.${{ github.run_number }}"
-          BASE="https://github.com/${{ github.repository }}/releases/download/${TAG}"
-          echo "ANYLOC_DOWNLOAD_APK=${BASE}/Anyloc.apk" >> $GITHUB_STEP_SUMMARY

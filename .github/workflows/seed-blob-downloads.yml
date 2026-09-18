@@ -1,0 +1,55 @@
+name: Seed Blob downloads
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - "cursor/**"
+    paths:
+      - "scripts/upload-release.mjs"
+      - ".github/workflows/seed-blob-downloads.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install root deps
+        run: npm ci
+
+      - name: Download latest published files
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/seed
+          gh release download setup-v0.1.76 --dir /tmp/seed --pattern "Anyloc-Setup.*" || true
+          gh release download android-v0.1.32 --dir /tmp/seed --pattern "Anyloc.apk" || true
+          ls -lh /tmp/seed
+
+      - name: Upload existing files to Vercel Blob
+        env:
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+        run: |
+          if [ -z "$BLOB_READ_WRITE_TOKEN" ]; then
+            echo "BLOB_READ_WRITE_TOKEN absent"
+            exit 1
+          fi
+          if [ -f /tmp/seed/Anyloc-Setup.dmg ]; then
+            node scripts/upload-release.mjs setup-mac /tmp/seed/Anyloc-Setup.dmg
+          fi
+          if [ -f /tmp/seed/Anyloc-Setup.exe ]; then
+            node scripts/upload-release.mjs setup-win /tmp/seed/Anyloc-Setup.exe
+          fi
+          if [ -f /tmp/seed/Anyloc.apk ]; then
+            node scripts/upload-release.mjs android /tmp/seed/Anyloc.apk
+          fi

@@ -6,6 +6,7 @@ const {
   installIosApp,
   applyGpsLocation,
   ensureIpaAvailable,
+  setIpaDownloadAuth,
   exportPairingFile,
   savePairingLocalCopy,
   applyGpsDirect,
@@ -49,12 +50,21 @@ function saveSessionFile(session) {
     const fd = fs.openSync(p, "w", 0o600);
     try { fs.writeFileSync(fd, JSON.stringify(session)); } finally { fs.closeSync(fd); }
   } catch {}
+  setIpaDownloadAuth({
+    accessToken: session?.access_token,
+    apiBaseUrl: "https://www.anyloc.io",
+  });
 }
 
 function loadSessionFile() {
   try {
     const data = fs.readFileSync(getSessionFilePath(), "utf-8");
-    return JSON.parse(data);
+    const session = JSON.parse(data);
+    setIpaDownloadAuth({
+      accessToken: session?.access_token,
+      apiBaseUrl: "https://www.anyloc.io",
+    });
+    return session;
   } catch {
     return null;
   }

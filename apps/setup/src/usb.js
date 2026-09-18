@@ -19,6 +19,17 @@ const IPA_FILENAME = "Anyloc.ipa";
 const MIN_IPA_BYTES = 100_000;
 
 let ipaDownloadPromise = null;
+let ipaAuth = {
+  accessToken: "",
+  apiBaseUrl: DEFAULT_API_BASE_URL,
+};
+
+function setIpaDownloadAuth({ accessToken, apiBaseUrl } = {}) {
+  ipaAuth = {
+    accessToken: accessToken ? String(accessToken) : "",
+    apiBaseUrl: normalizeApiBaseUrl(apiBaseUrl || DEFAULT_API_BASE_URL),
+  };
+}
 
 function normalizeHost(hostname) {
   return String(hostname || "").trim().toLowerCase().replace(/\.$/, "");
@@ -150,6 +161,31 @@ function isValidIpaFile(filePath) {
   return fs.existsSync(filePath) && fs.statSync(filePath).size >= MIN_IPA_BYTES;
 }
 
+async function downloadIpaFromAnyloc() {
+  if (!ipaAuth.accessToken) {
+    return null;
+  }
+
+  try {
+    const response = await fetch(`${ipaAuth.apiBaseUrl}/api/downloads/ipa`, {
+      headers: {
+        Authorization: `Bearer ${ipaAuth.accessToken}`,
+        "User-Agent": "anyloc-setup",
+      },
+      redirect: "follow",
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+    return buffer.length >= MIN_IPA_BYTES ? buffer : null;
+  } catch {
+    return null;
+  }
+}
+
 async function resolveIpaDownloadUrl() {
   if (process.env.ANYLOC_IPA_URL?.trim()) {
     return process.env.ANYLOC_IPA_URL.trim();
@@ -202,20 +238,30 @@ async function ensureIpaAvailable() {
   }
 
   ipaDownloadPromise = (async () => {
-    const downloadUrl = await resolveIpaDownloadUrl();
-
-    if (!downloadUrl) {
-      return {
-        ok: false,
-        message:
-          "L'app iPhone est en cours de publication. Réessaie dans quelques minutes.",
-      };
-    }
-
     const targetPath = getCachedIpaPath();
 
     try {
       fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+
+      const apiBuffer = await downloadIpaFromAnyloc();
+      if (apiBuffer) {
+        fs.writeFileSync(targetPath, apiBuffer);
+        return {
+          ok: true,
+          path: targetPath,
+          source: "download",
+        };
+      }
+
+      const downloadUrl = await resolveIpaDownloadUrl();
+
+      if (!downloadUrl) {
+        return {
+          ok: false,
+          message:
+            "L'app iPhone est en cours de publication. Réessaie dans quelques minutes.",
+        };
+      }
 
       const response = await fetch(downloadUrl, {
         headers: {
@@ -983,6 +1029,7 @@ module.exports = {
   applyGpsDirect,
   clearGpsLocation,
   ensureIpaAvailable,
+  setIpaDownloadAuth,
   exportPairingFile,
   savePairingLocalCopy,
   resolvePythonExecutable,
