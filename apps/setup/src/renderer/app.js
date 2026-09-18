@@ -7,7 +7,10 @@ const STORAGE_KEYS = {
   favorites: "anyloc.favorites",
   lastPosition: "anyloc.lastPosition",
   iphoneInstalled: "anyloc.iphoneInstalled",
+  iosDeviceToken: "anyloc.iosDeviceToken",
 };
+
+const API_BASE_URL = "https://www.anyloc.io";
 
 // ── Spots data (same as iOS) ──
 const spotCategories = [
@@ -636,6 +639,59 @@ function closeSetup() {
   stopUsbPoll();
 }
 
+async function ensureIosDeviceToken() {
+  if (!session?.access_token) {
+    return null;
+  }
+
+  try {
+    const cached = localStorage.getItem(STORAGE_KEYS.iosDeviceToken);
+    if (cached?.startsWith("anyloc_")) {
+      return cached;
+    }
+  } catch {}
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/device`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ platform: "ios", deviceName: "iPhone" }),
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const payload = await response.json();
+    const token = payload?.token;
+
+    if (token?.startsWith("anyloc_")) {
+      try {
+        localStorage.setItem(STORAGE_KEYS.iosDeviceToken, token);
+      } catch {}
+      return token;
+    }
+  } catch {}
+
+  return null;
+}
+
+async function exportPairingForRenewal(udid) {
+  const token = await ensureIosDeviceToken();
+  if (!token) {
+    return { ok: false, message: "Code appareil iOS introuvable." };
+  }
+
+  return window.anylocSetup.exportPairing({
+    udid,
+    token,
+    apiBaseUrl: API_BASE_URL,
+  });
+}
+
 async function runIphoneInstall(statusEl, buttonEl, onSuccess) {
   if (buttonEl) buttonEl.disabled = true;
   if (statusEl) {
@@ -674,6 +730,18 @@ async function runIphoneInstall(statusEl, buttonEl, onSuccess) {
 
   if (result.ok) {
     markIphoneInstalled();
+
+    const pairing = await exportPairingForRenewal(usb.udid);
+    if (statusEl && pairing.ok) {
+      statusEl.textContent =
+        "C'est installé. Renouvellement Wi-Fi prêt — tu pourras prolonger depuis l'iPhone avec LocalDevVPN.";
+      statusEl.className = "setup-status ok";
+    } else if (statusEl && !pairing.ok) {
+      statusEl.textContent =
+        "Installé. Le renouvellement Wi-Fi sera disponible au prochain branchement USB.";
+      statusEl.className = "setup-status ok";
+    }
+
     onSuccess?.();
   }
 }

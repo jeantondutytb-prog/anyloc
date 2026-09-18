@@ -525,9 +525,11 @@ function IosGuide({
         ) : null}
         <HelpDetails title="Dans ~7 jours, l'app iPhone s'arrête ?">
           <p className="mb-2">
-            Normal (limite Apple). Installe <strong>LocalDevVPN</strong> (App
-            Store, gratuit), Wi-Fi → <strong>Connect</strong>, puis relance
-            Anyloc. Pas besoin de réinstaller.
+            Normal (limite Apple sans compte Developer payant). Installe{" "}
+            <strong>LocalDevVPN</strong> (App Store, gratuit), connecte le Wi-Fi,
+            puis dans Anyloc iPhone : <strong>Profil → Renouveler</strong>.
+            LocalDevVPN → <strong>Connect</strong>, puis le bouton Renouveler.
+            Pas besoin de rebrancher l&apos;ordi.
           </p>
         </HelpDetails>
       </StepCard>

@@ -2,18 +2,22 @@ import SwiftUI
 
 struct MainTabView: View {
     @State private var selectedTab = 0
+    @State private var showRenewal = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            TabView(selection: $selectedTab) {
-                DashboardView()
-                    .tag(0)
-                SpotsView()
-                    .tag(1)
-                SettingsView()
-                    .tag(2)
+            VStack(spacing: 0) {
+                RenewalBanner(showRenewal: $showRenewal)
+                TabView(selection: $selectedTab) {
+                    DashboardView()
+                        .tag(0)
+                    SpotsView()
+                        .tag(1)
+                    SettingsView()
+                        .tag(2)
+                }
+                .tabViewStyle(.page(indexDisplayMode: .never))
             }
-            .tabViewStyle(.page(indexDisplayMode: .never))
 
             // Custom tab bar
             HStack(spacing: 0) {
@@ -32,8 +36,17 @@ struct MainTabView: View {
         }
         .ignoresSafeArea(.keyboard)
         .preferredColorScheme(.dark)
-        .task { await SubscriptionService.shared.refresh() }
-        .refreshable { await SubscriptionService.shared.refresh() }
+        .sheet(isPresented: $showRenewal) {
+            RenewalView()
+        }
+        .task {
+            await SubscriptionService.shared.refresh()
+            await SignatureRenewalService.shared.refreshPairingStatus()
+        }
+        .refreshable {
+            await SubscriptionService.shared.refresh()
+            await SignatureRenewalService.shared.refreshPairingStatus()
+        }
     }
 
     private func tabButton(icon: String, label: String, tag: Int) -> some View {

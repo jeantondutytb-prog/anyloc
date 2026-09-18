@@ -39,4 +39,11 @@ Anyloc Setup installera ce fichier via USB.
 
 ## Renouvellement (LocalDevVPN)
 
-Comme Wiped/Locaflex : renouvelle la signature toutes les ~7 jours via LocalDevVPN + bouton Renew dans l'app (à implémenter).
+Sans compte Apple Developer payant, la signature gratuite dure ~7 jours.
+
+1. À la première install USB, Anyloc bureau envoie le pairing au serveur.
+2. Sur l'iPhone : **Profil → Renouveler** (ou bannière orange en haut).
+3. Installe **LocalDevVPN** (App Store), connecte le Wi-Fi, appuie sur **Connect**.
+4. Reviens dans Anyloc → **Renouveler**, puis relance l'app.
+
+Si l'app ne s'ouvre plus : réinstalle une fois via Anyloc bureau (USB).
