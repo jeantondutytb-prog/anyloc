@@ -486,6 +486,29 @@ body {
 .btn-ghost { background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-muted); }
 .btn-ghost:hover { background: var(--bg-surface-hover); color: var(--text); }
 
+/* ── First-run iPhone banner ── */
+.iphone-setup-banner {
+  position: absolute;
+  top: 64px;
+  left: 16px;
+  right: 16px;
+  z-index: 500;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+.iphone-setup-banner[hidden] { display: none; }
+.iphone-setup-banner-copy strong { display: block; font-size: 14px; margin-bottom: 2px; }
+.iphone-setup-banner-copy p { font-size: 13px; color: var(--text-muted); line-height: 1.4; }
+.iphone-setup-banner .btn { width: auto; min-width: 200px; }
+
 /* ── Setup modal ── */
 .setup-overlay {
   position: fixed; inset: 0;

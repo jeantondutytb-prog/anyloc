@@ -6,6 +6,7 @@ const STORAGE_KEYS = {
   session: "anyloc.session",
   favorites: "anyloc.favorites",
   lastPosition: "anyloc.lastPosition",
+  iphoneInstalled: "anyloc.iphoneInstalled",
 };
 
 // ── Spots data (same as iOS) ──
@@ -66,6 +67,7 @@ let session = null;
 let favorites = [];
 let toastTimer = null;
 let selectedCategory = "all";
+let usbPollTimer = null;
 
 // ── Helpers ──
 
@@ -159,6 +161,21 @@ async function handleOAuth(provider) {
   enterMain();
 }
 
+function hasInstalledIphone() {
+  try { return localStorage.getItem(STORAGE_KEYS.iphoneInstalled) === "1"; } catch { return false; }
+}
+
+function markIphoneInstalled() {
+  try { localStorage.setItem(STORAGE_KEYS.iphoneInstalled, "1"); } catch {}
+  updateSetupBanner();
+}
+
+function updateSetupBanner() {
+  const banner = $("iphone-setup-banner");
+  if (!banner) return;
+  banner.hidden = hasInstalledIphone();
+}
+
 function enterMain() {
   if (!session) return;
 
@@ -167,6 +184,10 @@ function enterMain() {
 
   showScreen("main");
   switchTab("carte");
+  updateSetupBanner();
+  if (!hasInstalledIphone()) {
+    void openSetup();
+  }
 
   window.anylocSetup.startAutoSync({ session });
   window.anylocSetup.onAutoSyncStatus((status) => {
@@ -191,6 +212,7 @@ function enterMain() {
 
 function logout() {
   window.anylocSetup.stopAutoSync();
+  closeSetup();
   clearSession();
   activeSpoof = null;
   selectedPosition = null;
@@ -499,23 +521,45 @@ function saveFavorite() {
 
 // ── Setup modal ──
 
-async function openSetup() {
-  $("setup-overlay").hidden = false;
+function stopUsbPoll() {
+  if (usbPollTimer) {
+    clearInterval(usbPollTimer);
+    usbPollTimer = null;
+  }
+}
+
+async function refreshUsbStatus() {
   const result = await window.anylocSetup.checkUsb();
   if (result.connected) {
-    $("setup-usb-status").textContent = `${result.deviceName} — connecté`;
+    $("setup-usb-status").textContent = `${result.deviceName} — iPhone détecté`;
     $("setup-usb-status").className = "setup-status ok";
     $("setup-install-btn").disabled = false;
   } else {
-    $("setup-usb-status").textContent = "Aucun iPhone détecté.";
+    $("setup-usb-status").textContent = result.message || "Branche l'iPhone et appuie sur Faire confiance.";
     $("setup-usb-status").className = "setup-status error";
     $("setup-install-btn").disabled = true;
   }
+  return result;
+}
+
+async function openSetup() {
+  $("setup-overlay").hidden = false;
+  $("setup-install-status").textContent = "";
+  await refreshUsbStatus();
+  stopUsbPoll();
+  usbPollTimer = setInterval(() => {
+    void refreshUsbStatus();
+  }, 2500);
+}
+
+function closeSetup() {
+  $("setup-overlay").hidden = true;
+  stopUsbPoll();
 }
 
 async function setupInstall() {
   $("setup-install-btn").disabled = true;
-  $("setup-install-status").textContent = "Installation...";
+  $("setup-install-status").textContent = "Installation…";
   $("setup-install-status").className = "setup-status info";
 
   const ensured = await window.anylocSetup.ensureIpa();
@@ -526,11 +570,23 @@ async function setupInstall() {
     return;
   }
 
-  const usb = await window.anylocSetup.checkUsb();
+  const usb = await refreshUsbStatus();
+  if (!usb.connected) {
+    $("setup-install-status").textContent = "iPhone introuvable. Rebranche-le, puis Revérifier.";
+    $("setup-install-status").className = "setup-status error";
+    return;
+  }
+
   const result = await window.anylocSetup.installIos({ udid: usb.udid });
-  $("setup-install-status").textContent = result.ok ? "App installée !" : result.message;
+  $("setup-install-status").textContent = result.ok
+    ? "C'est installé. Ouvre Anyloc sur l'iPhone et connecte-toi avec le même compte."
+    : result.message;
   $("setup-install-status").className = result.ok ? "setup-status ok" : "setup-status error";
   $("setup-install-btn").disabled = false;
+
+  if (result.ok) {
+    markIphoneInstalled();
+  }
 }
 
 // ── Init ──
@@ -629,8 +685,11 @@ async function init() {
   });
 
   // Setup
+  $("open-setup-btn")?.addEventListener("click", () => void openSetup());
+  $("open-setup-from-profil")?.addEventListener("click", () => void openSetup());
   $("setup-install-btn").addEventListener("click", setupInstall);
-  $("setup-close-btn").addEventListener("click", () => { $("setup-overlay").hidden = true; });
+  $("setup-recheck-btn")?.addEventListener("click", () => void refreshUsbStatus());
+  $("setup-close-btn").addEventListener("click", closeSetup);
 }
 
 void init();

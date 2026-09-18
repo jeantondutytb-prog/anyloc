@@ -924,7 +924,7 @@ async function installIosApp({ udid }) {
   if (result.ok) {
     return {
       ok: true,
-      message: "Anyloc installé sur ton iPhone. Ouvre l'app et colle ton token.",
+      message: "Anyloc installé sur ton iPhone. Ouvre l'app et connecte-toi avec le même compte.",
       udid,
       output: result.stdout.trim(),
     };

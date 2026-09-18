@@ -1,138 +1,207 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:padding="24dp">
+    android:layout_height="match_parent">
 
-    <LinearLayout
+    <ScrollView
+        android:id="@+id/mainScroll"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/app_name"
-            android:textSize="28sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Choisis ta destination directement ici — plus besoin d'ouvrir le dashboard."
-            android:textSize="14sp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="Où veux-tu apparaître ?"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
-        <EditText
-            android:id="@+id/searchInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:hint="Marbella, Paris, Miami..."
-            android:inputType="text"
-            android:imeOptions="actionSearch" />
+        android:layout_height="match_parent"
+        android:padding="24dp">
 
         <LinearLayout
-            android:id="@+id/searchResultsContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="vertical"
-            android:visibility="gone" />
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/app_name"
+                android:textSize="28sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Cherche une ville, appuie, ta loc change."
+                android:textSize="14sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="Où veux-tu apparaître ?"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/searchInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:hint="Marbella, Paris, Miami..."
+                android:imeOptions="actionSearch"
+                android:inputType="text" />
+
+            <LinearLayout
+                android:id="@+id/searchResultsContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="vertical"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/currentLocationText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Aucune position active"
+                android:textSize="14sp" />
+
+            <Button
+                android:id="@+id/pauseButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Mettre en pause"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/statusText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Ouvre Anyloc depuis le site, ou autorise la fausse position."
+                android:textSize="14sp" />
+
+            <LinearLayout
+                android:id="@+id/advancedConfig"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Réglages avancés"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="URL API"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/apiBaseUrlInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="https://anyloc.io"
+                    android:inputType="textUri" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="Code de liaison"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/tokenInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="anyloc_..."
+                    android:inputType="textPassword" />
+
+                <Button
+                    android:id="@+id/testButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="Tester la connexion" />
+
+                <Button
+                    android:id="@+id/startButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Activer le GPS" />
+
+                <Button
+                    android:id="@+id/stopButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Arrêter" />
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/toggleAdvancedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:backgroundTint="@android:color/transparent"
+                android:text="Réglages avancés"
+                android:textAllCaps="false"
+                android:textColor="@color/anyloc_text_muted" />
+        </LinearLayout>
+    </ScrollView>
+
+    <LinearLayout
+        android:id="@+id/setupOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/anyloc_pink_light"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="28dp"
+        android:visibility="gone">
 
         <TextView
-            android:id="@+id/currentLocationText"
+            android:id="@+id/setupTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Aucune position active"
-            android:textSize="14sp" />
-
-        <Button
-            android:id="@+id/pauseButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Mettre en pause"
-            android:visibility="gone" />
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginTop="24dp"
-            android:layout_marginBottom="24dp"
-            android:background="#E4E4E7" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Configuration (une seule fois)"
-            android:textSize="16sp"
+            android:text="Encore 1 étape"
+            android:textColor="@color/anyloc_text"
+            android:textSize="26sp"
             android:textStyle="bold" />
 
         <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="URL API"
-            android:textStyle="bold" />
-
-        <EditText
-            android:id="@+id/apiBaseUrlInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="https://anyloc.io"
-            android:inputType="textUri" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Token appareil"
-            android:textStyle="bold" />
-
-        <EditText
-            android:id="@+id/tokenInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="anyloc_..."
-            android:inputType="textPassword" />
-
-        <Button
-            android:id="@+id/testButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Tester la connexion" />
-
-        <Button
-            android:id="@+id/startButton"
+            android:id="@+id/setupBody"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="Activer le GPS" />
+            android:lineSpacingExtra="4dp"
+            android:text="Android a besoin qu'Anyloc soit l'app de localisation fictive. L'app t'ouvre le bon menu."
+            android:textColor="@color/anyloc_text_muted"
+            android:textSize="16sp" />
 
         <Button
-            android:id="@+id/stopButton"
+            android:id="@+id/setupPrimaryButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="Arrêter" />
+            android:layout_marginTop="28dp"
+            android:text="Ouvrir les options développeur" />
 
-        <TextView
-            android:id="@+id/statusText"
+        <Button
+            android:id="@+id/setupSecondaryButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Colle ton token, autorise la localisation, puis cherche une ville ci-dessus"
-            android:textSize="14sp" />
+            android:layout_marginTop="8dp"
+            android:text="Ouvrir À propos du téléphone" />
+
+        <Button
+            android:id="@+id/setupDoneButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="C'est fait, vérifier" />
     </LinearLayout>
-</ScrollView>
+</FrameLayout>

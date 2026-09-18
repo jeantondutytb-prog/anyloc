@@ -3,10 +3,12 @@ package io.anyloc.app
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
@@ -31,6 +33,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var currentLocationText: TextView
     private lateinit var pauseButton: Button
     private lateinit var statusText: TextView
+    private lateinit var setupOverlay: LinearLayout
+    private lateinit var setupTitle: TextView
+    private lateinit var setupBody: TextView
+    private lateinit var setupPrimaryButton: Button
+    private lateinit var setupSecondaryButton: Button
+    private lateinit var setupDoneButton: Button
+    private lateinit var advancedConfig: LinearLayout
+    private lateinit var toggleAdvancedButton: Button
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private var searchRunnable: Runnable? = null
@@ -48,6 +58,24 @@ class MainActivity : AppCompatActivity() {
         currentLocationText = findViewById(R.id.currentLocationText)
         pauseButton = findViewById(R.id.pauseButton)
         statusText = findViewById(R.id.statusText)
+        setupOverlay = findViewById(R.id.setupOverlay)
+        setupTitle = findViewById(R.id.setupTitle)
+        setupBody = findViewById(R.id.setupBody)
+        setupPrimaryButton = findViewById(R.id.setupPrimaryButton)
+        setupSecondaryButton = findViewById(R.id.setupSecondaryButton)
+        setupDoneButton = findViewById(R.id.setupDoneButton)
+        advancedConfig = findViewById(R.id.advancedConfig)
+        toggleAdvancedButton = findViewById(R.id.toggleAdvancedButton)
+
+        toggleAdvancedButton.setOnClickListener {
+            val visible = advancedConfig.visibility == View.VISIBLE
+            advancedConfig.visibility = if (visible) View.GONE else View.VISIBLE
+            toggleAdvancedButton.text = if (visible) "Réglages avancés" else "Masquer les réglages"
+        }
+
+        setupPrimaryButton.setOnClickListener { handleSetupPrimary() }
+        setupSecondaryButton.setOnClickListener { handleSetupSecondary() }
+        setupDoneButton.setOnClickListener { refreshSetupUi(startIfReady = true) }
 
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         apiBaseUrlInput.setText(
@@ -83,6 +111,7 @@ class MainActivity : AppCompatActivity() {
         handleDeepLink(intent)
         requestRuntimePermissionsIfNeeded()
         refreshCurrentLocation()
+        refreshSetupUi(startIfReady = true)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -94,7 +123,7 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         refreshCurrentLocation()
-        ensureSpoofingRunningIfReady()
+        refreshSetupUi(startIfReady = true)
     }
 
     override fun onRequestPermissionsResult(
@@ -141,13 +170,111 @@ class MainActivity : AppCompatActivity() {
         apiBaseUrlInput.setText(api)
         tokenInput.setText(token)
         persistCredentials(api, token)
-        ensureSpoofingRunningIfReady()
+        refreshSetupUi(startIfReady = true)
         statusText.text = "Configuré depuis le lien ✓"
         Toast.makeText(this, "Anyloc configuré automatiquement", Toast.LENGTH_SHORT).show()
     }
 
+    private fun refreshSetupUi(startIfReady: Boolean) {
+        val hasToken = readCredentials() != null
+        val mockAllowed = MockLocationHelper.isMockLocationAllowed(this)
+
+        if (!hasToken) {
+            showSetupOverlay(
+                title = "Lie l'app à ton compte",
+                body = "Sur anyloc.io, appuie sur « Ouvrir Anyloc sur mon tel ». Sinon, colle le code dans Réglages avancés.",
+                primary = "Ouvrir anyloc.io",
+                secondary = "Coller le code",
+                done = "C'est fait, vérifier",
+            )
+            return
+        }
+
+        if (!mockAllowed) {
+            showSetupOverlay(
+                title = "Encore 1 étape",
+                body = "Tape 7 fois sur Numéro de build, puis choisis Anyloc comme application de localisation fictive. Les boutons ouvrent les bons menus.",
+                primary = "Ouvrir les options développeur",
+                secondary = "Ouvrir À propos du téléphone",
+                done = "C'est fait, vérifier",
+            )
+            statusText.text = "Choisis Anyloc dans Options développeur → Application de localisation fictive"
+            return
+        }
+
+        hideSetupOverlay()
+
+        if (startIfReady) {
+            ensureSpoofingRunningIfReady()
+        }
+    }
+
+    private fun showSetupOverlay(
+        title: String,
+        body: String,
+        primary: String,
+        secondary: String,
+        done: String,
+    ) {
+        setupTitle.text = title
+        setupBody.text = body
+        setupPrimaryButton.text = primary
+        setupSecondaryButton.text = secondary
+        setupDoneButton.text = done
+        setupOverlay.visibility = View.VISIBLE
+    }
+
+    private fun hideSetupOverlay() {
+        setupOverlay.visibility = View.GONE
+    }
+
+    private fun handleSetupPrimary() {
+        if (readCredentials() == null) {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://anyloc.io/dashboard")))
+            return
+        }
+
+        openSettings(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
+    }
+
+    private fun handleSetupSecondary() {
+        if (readCredentials() == null) {
+            hideSetupOverlay()
+            advancedConfig.visibility = View.VISIBLE
+            toggleAdvancedButton.text = "Masquer les réglages"
+            return
+        }
+
+        openSettings(Settings.ACTION_DEVICE_INFO_SETTINGS)
+    }
+
+    private fun openSettings(action: String) {
+        val intents = listOf(
+            Intent(action),
+            Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS),
+            Intent(Settings.ACTION_DEVICE_INFO_SETTINGS),
+            Intent(Settings.ACTION_SETTINGS),
+        )
+
+        for (intent in intents) {
+            try {
+                startActivity(intent)
+                return
+            } catch (_: Exception) {
+                // Try the next fallback.
+            }
+        }
+
+        Toast.makeText(this, "Ouvre Paramètres → Options pour les développeurs", Toast.LENGTH_LONG).show()
+    }
+
     private fun ensureSpoofingRunningIfReady() {
         val credentials = readCredentials() ?: return
+
+        if (!MockLocationHelper.isMockLocationAllowed(this)) {
+            refreshSetupUi(startIfReady = false)
+            return
+        }
 
         if (!hasRequiredRuntimePermissions()) {
             pendingSpoofingStart = true
@@ -164,12 +291,7 @@ class MainActivity : AppCompatActivity() {
         showSuccessToast: Boolean,
     ) {
         if (!MockLocationHelper.isMockLocationAllowed(this)) {
-            statusText.text = "Choisis Anyloc dans Options développeur → Application de localisation fictive"
-            Toast.makeText(
-                this,
-                "Paramètres → Options pour les développeurs → Application de localisation fictive → Anyloc",
-                Toast.LENGTH_LONG,
-            ).show()
+            refreshSetupUi(startIfReady = false)
             return
         }
 

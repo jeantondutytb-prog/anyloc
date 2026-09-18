@@ -73,7 +73,7 @@ export const CHECKOUT_COPY = {
     {
       q: "Ça passe sur iPhone et Android ?",
       a:
-        "Oui. Sur Android, tout se fait depuis le tel. Sur iPhone, une seule install via Mac ou PC (limite Apple), puis tu gères ta position depuis ton iPhone — sans repasser par l'ordi.",
+        "Oui. Sur Android : 3 étapes sur le tel. Sur iPhone : un Mac ou un PC une seule fois (limite Apple), puis tu gères ta loc depuis l'iPhone — sans rebrancher l'ordi.",
     },
   ],
   proofTitle: "Même pin sur Snap et sur Plans",

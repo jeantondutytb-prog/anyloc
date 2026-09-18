@@ -28,7 +28,7 @@ def install_with_pymobiledevice3(ipa_path: Path, udid: str | None) -> dict:
     if result.returncode == 0:
         return {
             "ok": True,
-            "message": "Anyloc installé sur ton iPhone. Ouvre l'app et colle ton token.",
+            "message": "Anyloc installé sur ton iPhone. Ouvre l'app et connecte-toi avec le même compte.",
             "udid": udid,
             "output": result.stdout.strip(),
         }

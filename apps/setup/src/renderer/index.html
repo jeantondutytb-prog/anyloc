@@ -58,6 +58,14 @@
           <div id="search-results" class="search-results" hidden></div>
           <div id="map"></div>
 
+          <div id="iphone-setup-banner" class="iphone-setup-banner">
+            <div class="iphone-setup-banner-copy">
+              <strong>Première étape</strong>
+              <p>Branche ton iPhone, puis clique Installer — un seul bouton.</p>
+            </div>
+            <button type="button" class="btn btn-accent" id="open-setup-btn">Installer l'app iPhone</button>
+          </div>
+
           <!-- Bottom sheet -->
           <div id="bottom-sheet" class="bottom-sheet">
             <div id="sheet-content">
@@ -205,6 +213,11 @@
             <div class="settings-section">
               <div class="section-label">ACTIONS</div>
               <div class="settings-card">
+                <button class="logout-row" id="open-setup-from-profil">
+                  <span class="logout-icon">📱</span>
+                  <span>Installer l'app iPhone</span>
+                  <span class="chevron">›</span>
+                </button>
                 <button class="logout-row" id="logout-btn">
                   <span class="logout-icon">↗</span>
                   <span>Déconnexion</span>
@@ -236,14 +249,15 @@
     <!-- ── Setup Modal ── -->
     <div id="setup-overlay" class="setup-overlay" hidden>
       <div class="setup-modal">
-        <h2>Configurer un iPhone</h2>
-        <p class="setup-subtitle">Branche ton iPhone en USB.</p>
-        <div class="setup-step"><div class="setup-step-num">1</div><div><h3>Branche ton iPhone</h3><p>Avec le câble USB. Appuie sur « Faire confiance ».</p></div></div>
-        <div class="setup-step"><div class="setup-step-num">2</div><div><h3>Active le mode développeur</h3><p>Réglages → Confidentialité → Mode développeur → ON.</p></div></div>
-        <div class="setup-step"><div class="setup-step-num">3</div><div><h3>Installe l'app Anyloc</h3><p>Clique ci-dessous.</p></div></div>
-        <p id="setup-usb-status" class="setup-status info">Vérification USB...</p>
+        <h2>Installe Anyloc sur l'iPhone</h2>
+        <p class="setup-subtitle">3 minutes. Un câble. Un bouton.</p>
+        <div class="setup-step"><div class="setup-step-num">1</div><div><h3>Branche l'iPhone</h3><p>Câble USB. Sur l'iPhone, appuie sur « Faire confiance ».</p></div></div>
+        <div class="setup-step"><div class="setup-step-num">2</div><div><h3>Mode développeur si iOS le demande</h3><p>Réglages → Confidentialité → Mode développeur → ON.</p></div></div>
+        <div class="setup-step"><div class="setup-step-num">3</div><div><h3>Clique Installer</h3><p>Le bouton s'active dès que l'iPhone est détecté.</p></div></div>
+        <p id="setup-usb-status" class="setup-status info">Recherche de l'iPhone…</p>
         <div class="setup-actions">
           <button class="btn btn-accent" id="setup-install-btn" disabled style="flex:1">Installer l'app iPhone</button>
+          <button class="btn btn-ghost" id="setup-recheck-btn" style="flex:0 0 auto">Revérifier</button>
           <button class="btn btn-ghost" id="setup-close-btn" style="flex:0 0 auto">Fermer</button>
         </div>
         <p id="setup-install-status" class="setup-status"></p>

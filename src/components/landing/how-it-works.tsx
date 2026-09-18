@@ -9,9 +9,9 @@ const steps = [
   },
   {
     icon: Download,
-    title: "Configure ton tel",
+    title: "3 étapes sur ton tel",
     description:
-      "Android : tout depuis le mobile, étape par étape. iPhone : branchement unique à un ordi, puis c'est bon.",
+      "Android : installe l'app, autorise la fausse loc, ouvre Anyloc. iPhone : un ordi une fois, puis c'est bon.",
   },
   {
     icon: MapPin,

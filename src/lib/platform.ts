@@ -13,7 +13,7 @@ export function detectUserPlatform(userAgent: string): UserPlatform {
 }
 
 export const IOS_INSTALL_CONSTRAINT =
-  "Sur iPhone : un accès ponctuel à un Mac ou un PC est nécessaire pour l'installation (profil VPN). Ensuite, tout se gère depuis ton téléphone.";
+  "Sur iPhone : un Mac ou un PC, une seule fois, avec un câble USB. Ensuite tout se fait depuis le téléphone.";
 
 export const ANDROID_INSTALL_NOTE =
   "Sur Android : installation 100 % depuis le téléphone, sans ordinateur.";

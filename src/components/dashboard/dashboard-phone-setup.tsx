@@ -82,22 +82,42 @@ function StepBox({
   );
 }
 
+function readCachedToken(platform: Platform): CreatedToken | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const cached = sessionStorage.getItem(getPendingTokenStorageKey(platform));
+  if (!cached) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(cached) as CreatedToken;
+    if (parsed.token?.startsWith("anyloc_")) {
+      return parsed;
+    }
+  } catch {
+    sessionStorage.removeItem(getPendingTokenStorageKey(platform));
+  }
+
+  return null;
+}
+
 export function DashboardPhoneSetup({
   devices,
   phoneOnline,
   onLinked,
   compact = false,
 }: DashboardPhoneSetupProps) {
-  const [platform, setPlatform] = useState<Platform>("ios");
+  const [platform, setPlatform] = useState<Platform>(detectPlatform);
   const [creating, setCreating] = useState(false);
-  const [createdToken, setCreatedToken] = useState<CreatedToken | null>(null);
+  const [createdToken, setCreatedToken] = useState<CreatedToken | null>(() =>
+    readCachedToken(detectPlatform())
+  );
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const { data: downloads, loading: downloadsLoading } = useDownloads();
-
-  useEffect(() => {
-    setPlatform(detectPlatform());
-  }, []);
 
   const linkedForPlatform = devices.find((device) => device.platform === platform);
   const isMac = detectIsMac();
@@ -146,26 +166,16 @@ export function DashboardPhoneSetup({
   }, [onLinked, platform]);
 
   useEffect(() => {
-    if (phoneOnline || linkedForPlatform) {
+    if (phoneOnline || linkedForPlatform || createdToken) {
       return;
     }
 
-    const cached = sessionStorage.getItem(getPendingTokenStorageKey(platform));
+    const timeoutId = window.setTimeout(() => {
+      void createToken();
+    }, 0);
 
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached) as CreatedToken;
-        if (parsed.token?.startsWith("anyloc_")) {
-          setCreatedToken(parsed);
-          return;
-        }
-      } catch {
-        sessionStorage.removeItem(getPendingTokenStorageKey(platform));
-      }
-    }
-
-    void createToken();
-  }, [createToken, linkedForPlatform, phoneOnline, platform]);
+    return () => window.clearTimeout(timeoutId);
+  }, [createToken, createdToken, linkedForPlatform, phoneOnline]);
 
   const mobileSetupLink = useMemo(() => {
     if (!createdToken) {
@@ -259,16 +269,7 @@ export function DashboardPhoneSetup({
             onClick={() => {
               setPlatform(value);
               setError(null);
-              const cached = sessionStorage.getItem(getPendingTokenStorageKey(value));
-              if (cached) {
-                try {
-                  setCreatedToken(JSON.parse(cached) as CreatedToken);
-                  return;
-                } catch {
-                  sessionStorage.removeItem(getPendingTokenStorageKey(value));
-                }
-              }
-              setCreatedToken(null);
+              setCreatedToken(readCachedToken(value));
             }}
             className={cn(
               "flex-1 rounded-xl border px-3 py-2 text-sm font-medium transition-colors",
@@ -293,10 +294,10 @@ export function DashboardPhoneSetup({
         <div className="space-y-4">
           {platform === "ios" ? (
             <ol className="space-y-3">
-              <StepBox number={1} title="Sur ton ordinateur (Mac ou PC)">
+              <StepBox number={1} title="Sur l'ordinateur : installe l'app">
                 <p>
-                  Télécharge le programme <strong>Anyloc Setup</strong> — c&apos;est
-                  lui qui met l&apos;app sur ton iPhone. Une seule fois.
+                  Télécharge <strong>Anyloc Setup</strong>, ouvre-le, connecte-toi,
+                  branche l&apos;iPhone, clique <strong>Installer l&apos;app iPhone</strong>.
                 </p>
                 <div className="flex flex-col gap-2 sm:flex-row">
                   {setupDownload?.available ? (
@@ -318,55 +319,25 @@ export function DashboardPhoneSetup({
                     <a href={setupDesktopLink} className="flex-1">
                       <Button size="sm" variant="secondary" className="w-full">
                         <Monitor className="h-4 w-4" />
-                        Ouvrir le programme (déjà configuré)
+                        Ouvrir Anyloc Setup
                       </Button>
                     </a>
                   ) : null}
                 </div>
-                <ol className="list-decimal space-y-1.5 pl-5 text-xs text-zinc-500">
-                  <li>Branche ton iPhone avec ton câble de charge</li>
-                  <li>Sur l&apos;iPhone, appuie sur <strong>Faire confiance</strong></li>
-                  <li>
-                    Dans le programme : <strong>Installer l&apos;app sur mon iPhone</strong>
-                  </li>
-                  <li>
-                    Puis : <strong>Connecter mon iPhone à Anyloc</strong> (un seul bouton)
-                  </li>
-                </ol>
               </StepBox>
 
-              <StepBox number={2} title="Sur ton iPhone — lie l'app à ton compte">
+              <StepBox number={2} title="Sur l'iPhone : ouvre Anyloc">
                 <p>
-                  Ouvre l&apos;appareil photo et pointe vers le carré ci-dessous.
-                  Appuie sur la notification → l&apos;app Anyloc s&apos;ouvre et c&apos;est
-                  réglé.
+                  Connecte-toi avec le <strong>même compte</strong>, puis choisis
+                  une ville. Pas de code à coller.
                 </p>
-                {mobileSetupLink ? (
-                  <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-start">
-                    <SetupQrCode
-                      value={mobileSetupLink}
-                      label="Scanne avec l'appareil photo"
-                    />
-                    <p className="text-xs text-zinc-500 sm:max-w-[200px]">
-                      Ensuite, laisse l&apos;app <strong>Anyloc</strong> ouverte sur ton
-                      iPhone. Tu peux débrancher le câble.
-                    </p>
-                  </div>
-                ) : null}
               </StepBox>
 
-              <StepBox number={3} title="Une fois par semaine sur iPhone (2 min)">
+              <StepBox number={3} title="Si l'app s'arrête dans ~7 jours">
                 <p className="text-xs text-zinc-500">
-                  Apple fait expirer l&apos;app environ tous les 7 jours. C&apos;est normal.
+                  Installe <strong>LocalDevVPN</strong> (App Store), Wi-Fi →
+                  Connect, puis relance Anyloc. Sans ordinateur.
                 </p>
-                <ol className="list-decimal space-y-1.5 pl-5 text-xs text-zinc-500">
-                  <li>
-                    Installe <strong>LocalDevVPN</strong> depuis l&apos;App Store (gratuit)
-                  </li>
-                  <li>Connecte-toi au Wi-Fi</li>
-                  <li>Ouvre LocalDevVPN → appuie sur <strong>Connect</strong></li>
-                  <li>Relance Anyloc depuis ton écran d&apos;accueil</li>
-                </ol>
               </StepBox>
             </ol>
           ) : (

@@ -275,7 +275,7 @@ export const FAQ = [
   {
     q: "Ça passe sur iPhone et Android ?",
     a:
-      "Oui. Sur Android, tout se fait depuis le tel. Sur iPhone, une seule install via Mac ou PC (limite Apple), puis tu gères ta position et le renouvellement (~7 jours) depuis ton iPhone avec LocalDevVPN — sans repasser par l'ordi.",
+      "Oui. Sur Android : 3 étapes sur le tel. Sur iPhone : un Mac ou un PC une seule fois (limite Apple), puis tu gères ta loc depuis l'iPhone. Le renouvellement (~7 jours) se fait avec LocalDevVPN, sans rebrancher l'ordi.",
   },
   {
     q: "Faut-il rebrancher le Mac tous les 7 jours ?",
