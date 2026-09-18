@@ -27,6 +27,7 @@ import {
   type SettingsActionState,
 } from "@/app/dashboard/(protected)/settings/actions";
 import { CancelSubscriptionConfirmDialog } from "@/components/subscription/cancel-subscription-confirm-dialog";
+import { formatSubscriptionStatusLabel } from "@/lib/account-billing-types";
 import { MIN_PASSWORD_LENGTH } from "@/lib/password-policy";
 import { cn } from "@/lib/utils";
 
