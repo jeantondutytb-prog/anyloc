@@ -1,4 +1,17 @@
 export type UserPlatform = "ios" | "android" | "unknown";
+export type DesktopOs = "mac" | "win";
+
+export type ClientDevice = {
+  isPhone: boolean;
+  desktopOs: DesktopOs;
+};
+
+export const SERVER_CLIENT_DEVICE: ClientDevice = {
+  isPhone: false,
+  desktopOs: "mac",
+};
+
+let clientDeviceCache: ClientDevice | null = null;
 
 export function detectUserPlatform(userAgent: string): UserPlatform {
   if (/iphone|ipad|ipod/i.test(userAgent)) {
@@ -10,6 +23,27 @@ export function detectUserPlatform(userAgent: string): UserPlatform {
   }
 
   return "unknown";
+}
+
+export function detectClientDevice(): ClientDevice {
+  if (typeof navigator === "undefined") {
+    return SERVER_CLIENT_DEVICE;
+  }
+
+  const ua = navigator.userAgent;
+  const isPhone = /iphone|ipad|ipod|android/i.test(ua);
+  const desktopOs: DesktopOs = /win/i.test(ua) && !isPhone ? "win" : "mac";
+
+  return { isPhone, desktopOs };
+}
+
+export function getClientDeviceSnapshot(): ClientDevice {
+  if (typeof navigator === "undefined") {
+    return SERVER_CLIENT_DEVICE;
+  }
+
+  clientDeviceCache ??= detectClientDevice();
+  return clientDeviceCache;
 }
 
 export const IOS_INSTALL_CONSTRAINT =

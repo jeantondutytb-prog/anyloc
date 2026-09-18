@@ -296,8 +296,8 @@ export function DashboardPhoneSetup({
             <ol className="space-y-3">
               <StepBox number={1} title="Sur l'ordinateur : installe l'app">
                 <p>
-                  Télécharge <strong>Anyloc Setup</strong>, ouvre-le, connecte-toi,
-                  branche l&apos;iPhone, clique <strong>Installer l&apos;app iPhone</strong>.
+                  Télécharge <strong>Anyloc Setup</strong>. Le fichier va dans
+                  Téléchargements et <strong>ne s&apos;ouvre pas tout seul</strong>.
                 </p>
                 <div className="flex flex-col gap-2 sm:flex-row">
                   {setupDownload?.available ? (
@@ -324,6 +324,21 @@ export function DashboardPhoneSetup({
                     </a>
                   ) : null}
                 </div>
+                {isMac ? (
+                  <ol className="list-decimal space-y-1.5 pl-5 text-xs text-zinc-500">
+                    <li>Double-clique le fichier — une fenêtre (dossier) s&apos;ouvre</li>
+                    <li>Glisse Anyloc Setup sur Applications</li>
+                    <li>
+                      Clic <strong>droit</strong> → Ouvrir → Ouvrir (pas un
+                      double-clic)
+                    </li>
+                  </ol>
+                ) : (
+                  <ol className="list-decimal space-y-1.5 pl-5 text-xs text-zinc-500">
+                    <li>Double-clique le fichier dans Téléchargements</li>
+                    <li>Plus d&apos;infos → Exécuter quand même</li>
+                  </ol>
+                )}
               </StepBox>
 
               <StepBox number={2} title="Sur l'iPhone : ouvre Anyloc">
@@ -359,8 +374,8 @@ export function DashboardPhoneSetup({
                   </Link>
                 )}
                 <p className="text-xs text-zinc-500">
-                  Ouvre le fichier téléchargé et accepte l&apos;installation si Android
-                  te le demande.
+                  Le fichier est dans Téléchargements. Appuie dessus, autorise
+                  l&apos;installation si Android bloque.
                 </p>
               </StepBox>
 

@@ -17,6 +17,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 import { SetupQrCode } from "@/components/dashboard/setup-qr-code";
+import {
+  AndroidOpenHelp,
+  ComputerOnlyHint,
+  SetupOpenHelp,
+  WrongDeviceNotice,
+} from "@/components/dashboard/setup-open-help";
 import { useDownloads } from "@/hooks/use-downloads";
 import { useDashboardOnboarding } from "@/hooks/use-dashboard-onboarding";
 import { getCheckoutUrl } from "@/lib/constants";
@@ -30,6 +36,11 @@ import {
   getPendingTokenStorageKey,
   getPublicApiBaseUrl,
 } from "@/lib/device-setup-link";
+import {
+  getClientDeviceSnapshot,
+  SERVER_CLIENT_DEVICE,
+  type DesktopOs,
+} from "@/lib/platform";
 import { cn } from "@/lib/utils";
 
 type Platform = "ios" | "android";
@@ -48,12 +59,12 @@ function detectDefaultPlatform(): Platform {
   return /android/i.test(navigator.userAgent) ? "android" : "ios";
 }
 
-function detectIsWindows() {
-  if (typeof navigator === "undefined") {
-    return false;
+function getInstallPageUrl(platform: Platform) {
+  if (typeof window === "undefined") {
+    return `https://anyloc.io/dashboard?platform=${platform}`;
   }
 
-  return /Win/i.test(navigator.userAgent);
+  return `${window.location.origin}/dashboard?platform=${platform}`;
 }
 
 function StepCard({
@@ -108,10 +119,12 @@ function DownloadButtons({
   assetIds,
   hasAccess,
   preview = false,
+  onDownload,
 }: {
   assetIds: string[];
   hasAccess: boolean;
   preview?: boolean;
+  onDownload?: () => void;
 }) {
   const { data, loading, error } = useDownloads();
 
@@ -119,7 +132,7 @@ function DownloadButtons({
     return (
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
         {assetIds.map((id) => (
-          <Button key={id} className="w-full sm:w-auto">
+          <Button key={id} className="w-full sm:w-auto" onClick={onDownload}>
             <Download className="h-4 w-4" />
             {id === "apk"
               ? "Télécharger l'app"
@@ -172,7 +185,11 @@ function DownloadButtons({
     <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
       {assets.map((asset) =>
         asset.available ? (
-          <a key={asset.id} href={asset.downloadPath}>
+          <a
+            key={asset.id}
+            href={asset.downloadPath}
+            onClick={onDownload}
+          >
             <Button className="w-full sm:w-auto">
               <Download className="h-4 w-4" />
               {asset.id === "apk"
@@ -413,33 +430,80 @@ function AndroidLinkStep({ preview = false }: { preview?: boolean }) {
 function IosGuide({
   hasAccess,
   preview = false,
+  forcePhone = false,
 }: {
   hasAccess: boolean;
   preview?: boolean;
+  forcePhone?: boolean;
 }) {
-  const preferWindows = detectIsWindows();
+  const device = useSyncExternalStore(
+    () => () => {},
+    getClientDeviceSnapshot,
+    () => SERVER_CLIENT_DEVICE
+  );
+  const [desktopOs, setDesktopOs] = useState<DesktopOs | null>(null);
+  const [downloaded, setDownloaded] = useState(false);
+  const resolvedOs = desktopOs ?? device.desktopOs;
+  const installUrl = getInstallPageUrl("ios");
+  const isPhone = forcePhone || device.isPhone;
 
   return (
     <div className="space-y-4">
       <p className="text-sm text-zinc-600">
-        iPhone : tu as besoin d&apos;un Mac ou d&apos;un PC, une seule fois, avec
-        un câble USB. Ensuite tout se fait depuis le téléphone.
+        iPhone : 3 minutes sur un Mac ou un PC, avec un câble. Ensuite tout se
+        fait depuis le téléphone.
       </p>
 
-      <StepCard number={1} title="Télécharge Anyloc Setup sur l'ordinateur">
-        <p>C&apos;est le programme qui met l&apos;app sur ton iPhone.</p>
-        <DownloadButtons
-          assetIds={preferWindows ? ["setup-win", "setup-mac"] : ["setup-mac", "setup-win"]}
-          hasAccess={hasAccess}
-          preview={preview}
-        />
-        <HelpDetails title="Mac : « Anyloc Setup est endommagé » ?">
+      {isPhone ? (
+        <WrongDeviceNotice
+          title="Tu es sur ton téléphone — le fichier ne s'ouvre pas ici"
+          href={installUrl}
+          copyLabel="Copier le lien pour l'ordinateur"
+        >
           <p>
-            Clic droit sur l&apos;app → <strong>Ouvrir</strong> → confirme. Ou
-            Réglages → Confidentialité et sécurité →{" "}
-            <strong>Ouvrir quand même</strong>.
+            Anyloc Setup est un programme d&apos;ordinateur. Si tu le
+            télécharges ici, tu te retrouves avec un fichier / dossier qui ne
+            s&apos;ouvre pas.
           </p>
-        </HelpDetails>
+          <p>
+            1. Prends ton Mac ou ton PC · 2. Ouvre le lien · 3. Télécharge
+            depuis cette page.
+          </p>
+        </WrongDeviceNotice>
+      ) : null}
+
+      <StepCard number={1} title="Télécharge, puis ouvre le fichier">
+        {isPhone ? (
+          <ComputerOnlyHint />
+        ) : (
+          <>
+            <p>
+              Un seul bouton. Le fichier va dans{" "}
+              <strong>Téléchargements</strong> — il ne s&apos;ouvre pas tout
+              seul.
+            </p>
+            <DownloadButtons
+              assetIds={resolvedOs === "win" ? ["setup-win"] : ["setup-mac"]}
+              hasAccess={hasAccess}
+              preview={preview}
+              onDownload={() => setDownloaded(true)}
+            />
+            <button
+              type="button"
+              className="text-xs font-medium text-pink-600 underline-offset-2 hover:underline"
+              onClick={() =>
+                setDesktopOs(resolvedOs === "mac" ? "win" : "mac")
+              }
+            >
+              {resolvedOs === "mac" ? "J'ai un PC Windows" : "J'ai un Mac"}
+            </button>
+          </>
+        )}
+        <SetupOpenHelp
+          desktopOs={resolvedOs}
+          onDesktopOsChange={(os) => setDesktopOs(os)}
+          downloaded={downloaded}
+        />
       </StepCard>
 
       <StepCard number={2} title="Branche l'iPhone et installe">
@@ -486,25 +550,64 @@ function IosGuide({
 function AndroidGuide({
   hasAccess,
   preview = false,
+  forceComputer = false,
 }: {
   hasAccess: boolean;
   preview?: boolean;
+  forceComputer?: boolean;
 }) {
+  const device = useSyncExternalStore(
+    () => () => {},
+    getClientDeviceSnapshot,
+    () => SERVER_CLIENT_DEVICE
+  );
+  const [downloaded, setDownloaded] = useState(false);
+  const installUrl = getInstallPageUrl("android");
+  const onComputer = forceComputer || !device.isPhone;
+
   return (
     <div className="space-y-4">
       <p className="text-sm text-zinc-600">
         Android : tout se fait sur le téléphone. Pas d&apos;ordinateur.
       </p>
 
-      <StepCard number={1} title="Installe l'app Anyloc">
-        <p>Télécharge, ouvre le fichier, accepte l&apos;installation.</p>
-        <DownloadButtons assetIds={["apk"]} hasAccess={hasAccess} preview={preview} />
-        <HelpDetails title="Android bloque l'app ?">
+      {onComputer ? (
+        <WrongDeviceNotice
+          title="Télécharge depuis ton Android, pas depuis l'ordinateur"
+          href={installUrl}
+          copyLabel="Copier le lien"
+          qrLabel="Scanne avec ton Android"
+        >
           <p>
-            Autorise ton navigateur à installer des apps inconnues, puis
-            « Télécharger quand même » si un avertissement s&apos;affiche.
+            L&apos;app s&apos;installe sur le téléphone. Si tu télécharges ici,
+            tu te retrouves avec un fichier qui ne s&apos;ouvre pas.
           </p>
-        </HelpDetails>
+          <p>
+            Ouvre ce lien dans Chrome sur ton Android, puis appuie sur
+            Télécharger.
+          </p>
+        </WrongDeviceNotice>
+      ) : null}
+
+      <StepCard number={1} title="Télécharge, puis ouvre le fichier">
+        {onComputer ? (
+          <p className="text-xs text-zinc-500">
+            Les boutons ci-dessous sont pour quand tu es sur le téléphone.
+          </p>
+        ) : (
+          <p>
+            Appuie, puis ouvre le fichier dans{" "}
+            <strong>Téléchargements</strong>. Il ne s&apos;installe pas tout
+            seul.
+          </p>
+        )}
+        <DownloadButtons
+          assetIds={["apk"]}
+          hasAccess={hasAccess}
+          preview={preview}
+          onDownload={() => setDownloaded(true)}
+        />
+        <AndroidOpenHelp downloaded={downloaded} />
       </StepCard>
 
       <StepCard number={2} title="Autorise la fausse position">
@@ -668,11 +771,19 @@ export function InstallationGuideView({
             </div>
           ) : platform === "ios" ? (
             <div className="mt-8">
-              <IosGuide hasAccess={hasAccess} preview={preview} />
+              <IosGuide
+                hasAccess={hasAccess}
+                preview={preview}
+                forcePhone={preview && searchParams.get("device") === "phone"}
+              />
             </div>
           ) : (
             <div className="mt-8">
-              <AndroidGuide hasAccess={hasAccess} preview={preview} />
+              <AndroidGuide
+                hasAccess={hasAccess}
+                preview={preview}
+                forceComputer={preview && searchParams.get("device") === "computer"}
+              />
             </div>
           )}
 
