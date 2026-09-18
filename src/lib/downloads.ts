@@ -72,6 +72,28 @@ export function getDownloadUrl(platform: DownloadPlatform) {
   return url || null;
 }
 
+async function presignPrivateBlobUrl(pathname: string, token: string) {
+  const { issueSignedToken, presignUrl } = await import("@vercel/blob");
+  const signed = await issueSignedToken({
+    token,
+    pathname,
+    operations: ["get"],
+    validUntil: Date.now() + 60 * 60 * 1000,
+  });
+
+  const presignOptions = {
+    operation: "get" as const,
+    pathname,
+    access: "private" as const,
+  };
+  const { presignedUrl } = await presignUrl(signed, presignOptions);
+
+  return presignedUrl.replace(
+    ".undefined.blob.vercel-storage.com",
+    ".private.blob.vercel-storage.com"
+  );
+}
+
 async function resolveFromBlob(asset: DownloadAsset) {
   const token = process.env.BLOB_READ_WRITE_TOKEN;
 
@@ -90,6 +112,10 @@ async function resolveFromBlob(asset: DownloadAsset) {
 
     if (!blob?.url) {
       return null;
+    }
+
+    if (blob.url.includes(".private.blob.vercel-storage.com")) {
+      return presignPrivateBlobUrl(asset.blobPath, token);
     }
 
     return getDownloadUrl(blob.url);
@@ -149,6 +175,17 @@ async function fetchGithubReleaseAssets() {
 async function resolvePrivateBlobUrl(url: string): Promise<string> {
   if (!url.includes(".private.blob.vercel-storage.com")) {
     return url;
+  }
+
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  const pathname = new URL(url).pathname.replace(/^\/+/, "");
+
+  if (token && pathname) {
+    try {
+      return await presignPrivateBlobUrl(pathname, token);
+    } catch {
+      // Fall through to the download-disposition URL.
+    }
   }
 
   const { getDownloadUrl: getBlobDownloadUrl } = await import("@vercel/blob");

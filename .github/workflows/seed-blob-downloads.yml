@@ -41,8 +41,8 @@ jobs:
           BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
         run: |
           if [ -z "$BLOB_READ_WRITE_TOKEN" ]; then
-            echo "BLOB_READ_WRITE_TOKEN absent"
-            exit 1
+            echo "BLOB_READ_WRITE_TOKEN absent — skip seed (ajoute le secret GitHub pour republier automatiquement)"
+            exit 0
           fi
           if [ -f /tmp/seed/Anyloc-Setup.dmg ]; then
             node scripts/upload-release.mjs setup-mac /tmp/seed/Anyloc-Setup.dmg
