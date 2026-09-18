@@ -20,6 +20,28 @@ export function getPostHogServerClient(): PostHog | null {
   return client;
 }
 
+async function flushPostHog(posthog: PostHog) {
+  await posthog.flush();
+}
+
+export async function identifyPostHogUser(params: {
+  distinctId: string;
+  properties?: Record<string, unknown>;
+}) {
+  const posthog = getPostHogServerClient();
+
+  if (!posthog) {
+    return;
+  }
+
+  posthog.identify({
+    distinctId: params.distinctId,
+    properties: params.properties,
+  });
+
+  await flushPostHog(posthog);
+}
+
 export async function capturePostHogEvent(params: {
   distinctId: string;
   event: string;
@@ -37,5 +59,26 @@ export async function capturePostHogEvent(params: {
     properties: params.properties,
   });
 
-  await posthog.flush();
+  await flushPostHog(posthog);
+}
+
+export async function capturePostHogException(params: {
+  distinctId: string;
+  error: unknown;
+  properties?: Record<string, unknown>;
+}) {
+  const posthog = getPostHogServerClient();
+
+  if (!posthog) {
+    return;
+  }
+
+  const error =
+    params.error instanceof Error
+      ? params.error
+      : new Error(String(params.error));
+
+  posthog.captureException(error, params.distinctId, params.properties);
+
+  await flushPostHog(posthog);
 }

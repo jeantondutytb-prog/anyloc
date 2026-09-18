@@ -4,8 +4,11 @@ import { redirect } from "next/navigation";
 import { resolvePostAuthRedirect } from "@/lib/auth-redirect";
 import { ensureStripeCustomerForUser } from "@/lib/billing";
 import { getCheckoutUrl } from "@/lib/constants";
-import { capturePostHogEvent } from "@/lib/posthog/server";
-import { validatePassword } from "@/lib/password-policy";
+import {
+  capturePostHogEvent,
+  identifyPostHogUser,
+} from "@/lib/posthog/server";
+import { validateEmail, validatePassword } from "@/lib/password-policy";
 import { sanitizeRedirectPath } from "@/lib/safe-redirect";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
@@ -85,6 +88,10 @@ export async function login(
       await linkStripeCustomer(data.user.id, data.user.email);
     }
 
+    await identifyPostHogUser({
+      distinctId: data.user.id,
+      properties: { email: data.user.email },
+    });
     await capturePostHogEvent({
       distinctId: data.user.id,
       event: "login_completed",
@@ -113,6 +120,12 @@ export async function signup(
     return { error: "Renseigne ton email et ton mot de passe." };
   }
 
+  const emailError = validateEmail(email);
+
+  if (emailError) {
+    return { error: emailError };
+  }
+
   const passwordError = validatePassword(password);
 
   if (passwordError) {
@@ -135,10 +148,13 @@ export async function signup(
       await linkStripeCustomer(data.user.id, data.user.email);
     }
 
+    await identifyPostHogUser({
+      distinctId: data.user.id,
+      properties: { email: data.user.email },
+    });
     await capturePostHogEvent({
       distinctId: data.user.id,
       event: "signup_completed",
-      properties: { email: data.user.email },
     });
 
     redirect(

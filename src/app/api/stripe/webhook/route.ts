@@ -5,7 +5,7 @@ import {
   syncProfileFromSubscription,
 } from "@/lib/billing";
 import { syncProfileFromTrialSetupSession } from "@/lib/trial-billing";
-import { capturePostHogEvent } from "@/lib/posthog/server";
+import { capturePostHogEvent, capturePostHogException } from "@/lib/posthog/server";
 import { stripe } from "@/lib/stripe";
 import {
   hasProcessedStripeEvent,
@@ -107,6 +107,14 @@ export async function POST(request: Request) {
     await markStripeEventProcessed(event.id, event.type);
   } catch (error) {
     console.error(`[stripe-webhook] ${event.type}`, error);
+    await capturePostHogException({
+      distinctId: `stripe:${event.id}`,
+      error,
+      properties: {
+        source: "stripe-webhook",
+        event_type: event.type,
+      },
+    });
     return NextResponse.json(
       { error: "Webhook handler failed." },
       { status: 500 }
