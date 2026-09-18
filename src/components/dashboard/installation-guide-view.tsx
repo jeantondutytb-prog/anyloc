@@ -135,11 +135,7 @@ function DownloadButtons({
         {assetIds.map((id) => (
           <Button key={id} className="w-full sm:w-auto" onClick={onDownload}>
             <Download className="h-4 w-4" />
-            {id === "apk"
-              ? "Télécharger l'app"
-              : id === "setup-win"
-                ? "Télécharger pour Windows"
-                : "Télécharger pour Mac"}
+              {id === "apk" ? "Télécharger l'app" : "Télécharger Anyloc"}
           </Button>
         ))}
       </div>
@@ -193,11 +189,7 @@ function DownloadButtons({
           >
             <Button className="w-full sm:w-auto">
               <Download className="h-4 w-4" />
-              {asset.id === "apk"
-                ? "Télécharger l'app"
-                : asset.id === "setup-win"
-                  ? "Télécharger pour Windows"
-                  : "Télécharger pour Mac"}
+              {asset.id === "apk" ? "Télécharger l'app" : "Télécharger Anyloc"}
             </Button>
           </a>
         ) : (
@@ -453,9 +445,9 @@ function IosGuide({
   return (
     <div className="space-y-4">
       <p className="text-sm text-zinc-600">
-        iPhone : Mac ou PC + câble. Tu changes la ville depuis le téléphone,
-        mais <strong>le câble reste branché</strong> et Anyloc Setup reste
-        ouvert — sinon Snap revoit ta vraie position.
+        iPhone : télécharge <strong>Anyloc</strong> sur ton ordinateur (Mac ou
+        PC). Le guide complet est <strong>dans l&apos;app</strong> — branche
+        ton iPhone, installe en un clic, sans revenir sur le site.
       </p>
 
       {needsSetupPassword ? <SetupPasswordForm preview={preview} /> : null}
@@ -467,26 +459,23 @@ function IosGuide({
           copyLabel="Copier le lien pour l'ordinateur"
         >
           <p>
-            Anyloc Setup est un programme d&apos;ordinateur. Si tu le
-            télécharges ici, tu te retrouves avec un fichier / dossier qui ne
-            s&apos;ouvre pas.
+            Anyloc est un programme d&apos;ordinateur. Si tu le télécharges
+            ici, tu te retrouves avec un fichier qui ne s&apos;ouvre pas.
           </p>
           <p>
-            1. Prends ton Mac ou ton PC · 2. Ouvre le lien · 3. Télécharge
-            depuis cette page.
+            Ouvre ce lien sur ton Mac ou ton PC, puis télécharge Anyloc.
           </p>
         </WrongDeviceNotice>
       ) : null}
 
-      <StepCard number={1} title="Télécharge, puis ouvre le fichier">
+      <StepCard number={1} title="Télécharge Anyloc sur ton ordinateur">
         {isPhone ? (
           <ComputerOnlyHint />
         ) : (
           <>
             <p>
-              Un seul bouton. Le fichier va dans{" "}
-              <strong>Téléchargements</strong> — il ne s&apos;ouvre pas tout
-              seul.
+              Un seul fichier. Il va dans <strong>Téléchargements</strong> — il
+              ne s&apos;ouvre pas tout seul.
             </p>
             <DownloadButtons
               assetIds={resolvedOs === "win" ? ["setup-win"] : ["setup-mac"]}
@@ -512,66 +501,28 @@ function IosGuide({
         />
       </StepCard>
 
-      <StepCard number={2} title="Branche l'iPhone et installe">
+      <StepCard number={2} title="Ouvre Anyloc — le reste se fait dedans">
+        <p>
+          Lance Anyloc sur ton ordinateur. L&apos;app te guide{" "}
+          <strong>étape par étape</strong> :
+        </p>
         <ol className="list-decimal space-y-2 pl-5">
-          <li>
-            Ouvre <strong>Anyloc Setup</strong> et connecte-toi avec le{" "}
-            <strong>même compte</strong> (bouton Google = le plus simple)
-          </li>
-          <li>
-            Branche le câble, déverrouille l&apos;iPhone, appuie sur{" "}
-            <strong>Faire confiance</strong>
-          </li>
-          <li>
-            Clique <strong>Installer l&apos;app iPhone</strong>
-          </li>
-        </ol>
-        <p className="rounded-xl bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
-          {needsSetupPassword ? (
-            <>
-              Utilise le mot de passe que tu viens de choisir, ou le bouton{" "}
-              <strong>Google</strong> (même compte que le paiement).
-            </>
-          ) : (
-            <>
-              Pas de mot de passe ? Sur cette page : <strong>Mon compte</strong>{" "}
-              → choisis-en un, puis reconnecte-toi dans Anyloc Setup.
-            </>
-          )}
-        </p>
-        <p className="rounded-xl bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
-          iOS demande le <strong>mode développeur</strong> ? Réglages →
-          Confidentialité et sécurité → Mode développeur → ON → redémarre →
-          rebranche, puis Installer.
-        </p>
-        <p className="rounded-xl bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
-          L&apos;iPhone n&apos;apparaît pas ? Déverrouille, rebranche, appuie
-          sur <strong>Faire confiance</strong>. Sur Mac, ouvre le Finder et
-          accepte. Dans Anyloc Setup, clique <strong>Revérifier</strong>.
-        </p>
-      </StepCard>
-
-      <StepCard number={3} title="Ouvre Anyloc — laisse le câble branché">
-        <ol className="list-decimal space-y-2 pl-5">
-          <li>
-            Si l&apos;app est grise ou refuse de s&apos;ouvrir : Réglages →
-            Général → <strong>VPN et gestion de l&apos;appareil</strong> →
-            Anyloc → <strong>Faire confiance</strong>
-          </li>
-          <li>
-            Ouvre <strong>Anyloc</strong> — même Google, ou l&apos;email + le
-            mot de passe de <strong>Mon compte</strong> — puis choisis une
-            ville
-          </li>
-          <li>
-            Vérifie dans Snap ou Plans — la loc a changé
-          </li>
+          <li>Connexion avec le même compte que le paiement</li>
+          <li>Branche l&apos;iPhone (câble USB)</li>
+          <li>Clique <strong>Installer</strong> — l&apos;app se met sur le tel</li>
+          <li>Ouvre Anyloc sur l&apos;iPhone et choisis une ville</li>
         </ol>
         <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-          <strong>Laisse l&apos;iPhone branché</strong> et Anyloc Setup ouvert
-          (icône en haut de l&apos;écran). Si tu débranches, Snap revoit ta
-          vraie position. C&apos;est normal.
+          <strong>Laisse l&apos;iPhone branché</strong> et Anyloc ouvert sur
+          l&apos;ordi. Si tu débranches, Snap revoit ta vraie position.
         </p>
+        {needsSetupPassword ? (
+          <p className="rounded-xl bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
+            Pas encore de mot de passe ? Choisis-en un dans{" "}
+            <strong>Mon compte</strong> avant d&apos;ouvrir Anyloc, ou utilise
+            le bouton Google (même email).
+          </p>
+        ) : null}
         <HelpDetails title="Dans ~7 jours, l'app iPhone s'arrête ?">
           <p className="mb-2">
             Normal (limite Apple). Installe <strong>LocalDevVPN</strong> (App

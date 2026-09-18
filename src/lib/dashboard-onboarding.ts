@@ -26,7 +26,7 @@ export const ONBOARDING_STEP_ITEMS = [
     id: "install" as const,
     title: "Installe l'app sur ton téléphone",
     description:
-      "3 étapes. iPhone : Anyloc Setup + câble USB. Android : APK + localisation fictive.",
+      "2 étapes. iPhone : télécharge Anyloc sur l'ordi, le guide est dans l'app. Android : APK sur le tel.",
     cta: "Voir le guide",
   },
   {

@@ -7,24 +7,30 @@ export type DownloadAsset = {
   filename: string;
   envKey: string;
   blobPath: string;
+  alternateFilenames?: string[];
+  alternateBlobPaths?: string[];
 };
 
 export const DOWNLOAD_ASSETS: DownloadAsset[] = [
   {
     id: "setup-mac",
-    label: "Anyloc Setup (Mac)",
-    description: "macOS Ventura ou plus récent — installation iPhone via USB",
-    filename: "Anyloc-Setup.dmg",
+    label: "Anyloc (Mac)",
+    description: "macOS Ventura ou plus récent — branche ton iPhone et installe en un clic",
+    filename: "Anyloc.dmg",
     envKey: "ANYLOC_DOWNLOAD_SETUP_MAC",
-    blobPath: "releases/Anyloc-Setup.dmg",
+    blobPath: "releases/Anyloc.dmg",
+    alternateFilenames: ["Anyloc-Setup.dmg"],
+    alternateBlobPaths: ["releases/Anyloc-Setup.dmg"],
   },
   {
     id: "setup-win",
-    label: "Anyloc Setup (Windows)",
-    description: "Windows 10 ou plus récent — installation iPhone via USB",
-    filename: "Anyloc-Setup.exe",
+    label: "Anyloc (Windows)",
+    description: "Windows 10 ou plus récent — branche ton iPhone et installe en un clic",
+    filename: "Anyloc.exe",
     envKey: "ANYLOC_DOWNLOAD_SETUP_WIN",
-    blobPath: "releases/Anyloc-Setup.exe",
+    blobPath: "releases/Anyloc.exe",
+    alternateFilenames: ["Anyloc-Setup.exe"],
+    alternateBlobPaths: ["releases/Anyloc-Setup.exe"],
   },
   {
     id: "apk",
@@ -37,7 +43,7 @@ export const DOWNLOAD_ASSETS: DownloadAsset[] = [
   {
     id: "ipa",
     label: "Anyloc (iPhone)",
-    description: "IPA installée par Anyloc Setup via USB",
+    description: "App iPhone installée par Anyloc sur ordinateur via USB",
     filename: "Anyloc.ipa",
     envKey: "ANYLOC_DOWNLOAD_IPA",
     blobPath: "releases/Anyloc.ipa",
@@ -94,6 +100,26 @@ async function presignPrivateBlobUrl(pathname: string, token: string) {
   );
 }
 
+async function resolveBlobPath(pathname: string, token: string) {
+  const { list, getDownloadUrl } = await import("@vercel/blob");
+  const { blobs } = await list({
+    prefix: pathname,
+    limit: 10,
+    token,
+  });
+  const blob = blobs.find((item) => item.pathname === pathname);
+
+  if (!blob?.url) {
+    return null;
+  }
+
+  if (blob.url.includes(".private.blob.vercel-storage.com")) {
+    return presignPrivateBlobUrl(pathname, token);
+  }
+
+  return getDownloadUrl(blob.url);
+}
+
 async function resolveFromBlob(asset: DownloadAsset) {
   const token = process.env.BLOB_READ_WRITE_TOKEN;
 
@@ -101,27 +127,23 @@ async function resolveFromBlob(asset: DownloadAsset) {
     return null;
   }
 
-  try {
-    const { list, getDownloadUrl } = await import("@vercel/blob");
-    const { blobs } = await list({
-      prefix: asset.blobPath,
-      limit: 10,
-      token,
-    });
-    const blob = blobs.find((item) => item.pathname === asset.blobPath);
+  const paths = [
+    asset.blobPath,
+    ...(asset.alternateBlobPaths ?? []),
+  ];
 
-    if (!blob?.url) {
-      return null;
+  for (const pathname of paths) {
+    try {
+      const url = await resolveBlobPath(pathname, token);
+      if (url) {
+        return url;
+      }
+    } catch {
+      // Try the next blob path.
     }
-
-    if (blob.url.includes(".private.blob.vercel-storage.com")) {
-      return presignPrivateBlobUrl(asset.blobPath, token);
-    }
-
-    return getDownloadUrl(blob.url);
-  } catch {
-    return null;
   }
+
+  return null;
 }
 
 async function fetchGithubReleaseAssets() {
@@ -209,7 +231,18 @@ export async function resolveDownloadUrl(platform: DownloadPlatform) {
   }
 
   const releaseAssets = await fetchGithubReleaseAssets();
-  return releaseAssets[asset.filename] ?? null;
+  const filenames = [
+    asset.filename,
+    ...(asset.alternateFilenames ?? []),
+  ];
+
+  for (const filename of filenames) {
+    if (releaseAssets[filename]) {
+      return releaseAssets[filename];
+    }
+  }
+
+  return null;
 }
 
 export async function isDownloadAvailable(platform: DownloadPlatform) {

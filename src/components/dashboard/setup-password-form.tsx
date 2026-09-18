@@ -35,7 +35,7 @@ export function SetupPasswordForm({
           Mot de passe enregistré
         </p>
         <p className="mt-1 text-emerald-900/90">
-          Dans Anyloc Setup, connecte-toi avec le <strong>même email</strong> et
+          Dans Anyloc, connecte-toi avec le <strong>même email</strong> et
           ce mot de passe. Le bouton Google marche aussi si c&apos;est le même
           compte.
         </p>
@@ -47,7 +47,7 @@ export function SetupPasswordForm({
     <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-950">
       <p className="flex items-center gap-2 font-semibold">
         <KeyRound className="h-4 w-4 shrink-0" />
-        Avant d&apos;ouvrir Anyloc Setup : choisis un mot de passe
+        Avant d&apos;ouvrir Anyloc : choisis un mot de passe
       </p>
       <p className="mt-1 text-amber-900/90">
         Tu as payé sans en créer un. Sans ça, Setup affiche « email ou mot de

@@ -13,8 +13,9 @@
     <!-- ── Login Screen ── -->
     <div id="login-screen" class="screen login-screen active">
       <div class="login-card">
+        <p class="onboarding-kicker">Étape 1 sur 4</p>
         <div class="logo-big">Any<span>loc</span></div>
-        <p class="tagline">Change ta position. Partout dans le monde.</p>
+        <p class="tagline">Connecte-toi avec le même compte que sur le site.</p>
 
         <div class="oauth-buttons">
           <button class="oauth-btn" id="login-google">
@@ -42,6 +43,43 @@
         <p class="login-toggle">
           Pas encore de compte ? <a id="toggle-signup">Créer un compte</a>
         </p>
+      </div>
+    </div>
+
+    <!-- ── Onboarding (iPhone install wizard) ── -->
+    <div id="onboarding-screen" class="screen onboarding-screen">
+      <div class="onboarding-card">
+        <p class="onboarding-kicker" id="onboarding-kicker">Étape 2 sur 4</p>
+
+        <div id="onboarding-step-plug" class="onboarding-panel">
+          <h2>Branche ton iPhone</h2>
+          <p class="setup-subtitle">Câble USB. Déverrouille. Appuie sur « Faire confiance » sur l'iPhone.</p>
+          <p id="onboarding-usb-status" class="setup-status info">Recherche de l'iPhone…</p>
+          <div class="setup-actions">
+            <button type="button" class="btn btn-accent" id="onboarding-next-plug" disabled style="flex:1">Suivant</button>
+            <button type="button" class="btn btn-ghost" id="onboarding-recheck-plug">Revérifier</button>
+          </div>
+        </div>
+
+        <div id="onboarding-step-install" class="onboarding-panel" hidden>
+          <h2>Installe Anyloc sur l'iPhone</h2>
+          <p class="setup-subtitle">Un bouton — on s'occupe du reste en arrière-plan.</p>
+          <p id="onboarding-install-status" class="setup-status"></p>
+          <div class="setup-actions">
+            <button type="button" class="btn btn-accent" id="onboarding-install-btn" style="flex:1">Installer sur l'iPhone</button>
+          </div>
+        </div>
+
+        <div id="onboarding-step-done" class="onboarding-panel" hidden>
+          <h2>C'est sur ton iPhone</h2>
+          <p class="setup-subtitle">Ne ferme pas Anyloc. Ne débranche pas le câble.</p>
+          <div class="setup-step"><div class="setup-step-num">1</div><div><h3>Si l'app est grise</h3><p>Réglages → Général → VPN et gestion de l'appareil → Anyloc → Faire confiance.</p></div></div>
+          <div class="setup-step"><div class="setup-step-num">2</div><div><h3>Ouvre Anyloc sur l'iPhone</h3><p>Même compte Google, ou email + mot de passe du site.</p></div></div>
+          <div class="setup-step setup-step-warn"><div class="setup-step-num">3</div><div><h3>Laisse le câble branché</h3><p>Si tu débranches, Snap revoit ta vraie position.</p></div></div>
+          <div class="setup-actions">
+            <button type="button" class="btn btn-accent" id="onboarding-finish-btn" style="flex:1">Terminer — ouvrir la carte</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -268,7 +306,7 @@
         </div>
         <div id="setup-done-flow" hidden>
           <h2>C'est sur l'iPhone</h2>
-          <p class="setup-subtitle">Ne ferme pas Anyloc Setup. Ne débranche pas.</p>
+          <p class="setup-subtitle">Ne ferme pas Anyloc. Ne débranche pas.</p>
           <div class="setup-step"><div class="setup-step-num">1</div><div><h3>Si l'app est grise</h3><p>Réglages → Général → VPN et gestion de l'appareil → Anyloc → Faire confiance.</p></div></div>
           <div class="setup-step"><div class="setup-step-num">2</div><div><h3>Ouvre Anyloc</h3><p>Même Google, ou l'email + le mot de passe du site.</p></div></div>
           <div class="setup-step setup-step-warn"><div class="setup-step-num">3</div><div><h3>Laisse le câble</h3><p>Si tu débranches, Snap revoit ta vraie position. C'est normal.</p></div></div>

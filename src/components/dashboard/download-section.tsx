@@ -34,7 +34,7 @@ export function DownloadSection() {
       <Card className="p-5">
         <h3 className="text-sm font-medium text-zinc-600">Téléchargements</h3>
         <p className="mt-2 text-sm text-zinc-500">
-          Connecte-toi pour accéder à Anyloc Setup et à l&apos;APK Android.
+          Connecte-toi pour accéder à Anyloc et à l&apos;APK Android.
         </p>
         <Link href="/login" className="mt-4 inline-block">
           <Button size="sm">Se connecter</Button>

@@ -24,12 +24,12 @@ const TARGETS = {
   },
   "setup-mac": {
     envKey: "ANYLOC_DOWNLOAD_SETUP_MAC",
-    blobPath: "releases/Anyloc-Setup.dmg",
+    blobPath: "releases/Anyloc.dmg",
     contentType: "application/x-apple-diskimage",
   },
   "setup-win": {
     envKey: "ANYLOC_DOWNLOAD_SETUP_WIN",
-    blobPath: "releases/Anyloc-Setup.exe",
+    blobPath: "releases/Anyloc.exe",
     contentType: "application/octet-stream",
   },
 };
