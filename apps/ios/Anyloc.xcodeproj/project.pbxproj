@@ -18,6 +18,11 @@
 		B7FDDFCABBCE0F6CE9FC8341 /* SpotsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E39794D1B0B2004D724176E /* SpotsView.swift */; };
 		D620DB1F5B75773C802601BC /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0834AE3BCEF22F398E3FECA /* DashboardView.swift */; };
 		FB53196D1FD8C12D97F6C1B1 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4146D4F32E55E6241EFCD269 /* LoginView.swift */; };
+		A1B2C3D401234567890ABCDE /* RenewalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D411234567890ABCDE /* RenewalView.swift */; };
+		A1B2C3D402234567890ABCDE /* SignatureRenewalService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D412234567890ABCDE /* SignatureRenewalService.swift */; };
+		A1B2C3D403234567890ABCDE /* SubscriptionExpiredView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D413234567890ABCDE /* SubscriptionExpiredView.swift */; };
+		A1B2C3D404234567890ABCDE /* SubscriptionModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D414234567890ABCDE /* SubscriptionModels.swift */; };
+		A1B2C3D405234567890ABCDE /* SubscriptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D415234567890ABCDE /* SubscriptionService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -35,6 +40,11 @@
 		8461A9F65866A329254C9446 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		C0834AE3BCEF22F398E3FECA /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		CFC20EDE5853BB8E68B9D20E /* LocationAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationAPI.swift; sourceTree = "<group>"; };
+		A1B2C3D411234567890ABCDE /* RenewalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenewalView.swift; sourceTree = "<group>"; };
+		A1B2C3D412234567890ABCDE /* SignatureRenewalService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignatureRenewalService.swift; sourceTree = "<group>"; };
+		A1B2C3D413234567890ABCDE /* SubscriptionExpiredView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionExpiredView.swift; sourceTree = "<group>"; };
+		A1B2C3D414234567890ABCDE /* SubscriptionModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionModels.swift; sourceTree = "<group>"; };
+		A1B2C3D415234567890ABCDE /* SubscriptionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -59,8 +69,13 @@
 				CFC20EDE5853BB8E68B9D20E /* LocationAPI.swift */,
 				4146D4F32E55E6241EFCD269 /* LoginView.swift */,
 				68EDBF284E1E3A8E44C9DDF7 /* MainTabView.swift */,
+				A1B2C3D411234567890ABCDE /* RenewalView.swift */,
 				4D02DE99BB015A0A818066AA /* SettingsView.swift */,
+				A1B2C3D412234567890ABCDE /* SignatureRenewalService.swift */,
 				3E39794D1B0B2004D724176E /* SpotsView.swift */,
+				A1B2C3D413234567890ABCDE /* SubscriptionExpiredView.swift */,
+				A1B2C3D414234567890ABCDE /* SubscriptionModels.swift */,
+				A1B2C3D415234567890ABCDE /* SubscriptionService.swift */,
 				8461A9F65866A329254C9446 /* Theme.swift */,
 			);
 			path = Anyloc;
@@ -153,6 +168,11 @@
 				84E7E8669F64DE5C49D5217A /* MainTabView.swift in Sources */,
 				21487D0B8A1E885F3616133F /* SettingsView.swift in Sources */,
 				B7FDDFCABBCE0F6CE9FC8341 /* SpotsView.swift in Sources */,
+				A1B2C3D401234567890ABCDE /* RenewalView.swift in Sources */,
+				A1B2C3D402234567890ABCDE /* SignatureRenewalService.swift in Sources */,
+				A1B2C3D403234567890ABCDE /* SubscriptionExpiredView.swift in Sources */,
+				A1B2C3D404234567890ABCDE /* SubscriptionModels.swift in Sources */,
+				A1B2C3D405234567890ABCDE /* SubscriptionService.swift in Sources */,
 				1A4A1A01983B46371799B42B /* Theme.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
