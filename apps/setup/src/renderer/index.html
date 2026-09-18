@@ -37,6 +37,9 @@
         </form>
 
         <p class="login-toggle">
+          Payé sans mot de passe ? Va sur <strong>anyloc.io</strong> → Mon compte → choisis-en un, puis reviens ici.
+        </p>
+        <p class="login-toggle">
           Pas encore de compte ? <a id="toggle-signup">Créer un compte</a>
         </p>
       </div>
@@ -60,8 +63,8 @@
 
           <div id="iphone-setup-banner" class="iphone-setup-banner">
             <div class="iphone-setup-banner-copy">
-              <strong>Première étape</strong>
-              <p>Branche ton iPhone, puis clique Installer — un seul bouton.</p>
+              <strong id="iphone-setup-banner-title">Première étape</strong>
+              <p id="iphone-setup-banner-text">Branche ton iPhone, puis clique Installer — un seul bouton.</p>
             </div>
             <button type="button" class="btn btn-accent" id="open-setup-btn">Installer l'app iPhone</button>
           </div>
@@ -249,18 +252,31 @@
     <!-- ── Setup Modal ── -->
     <div id="setup-overlay" class="setup-overlay" hidden>
       <div class="setup-modal">
-        <h2>Installe Anyloc sur l'iPhone</h2>
-        <p class="setup-subtitle">3 minutes. Un câble. Un bouton.</p>
-        <div class="setup-step"><div class="setup-step-num">1</div><div><h3>Branche l'iPhone</h3><p>Câble USB. Déverrouille. Appuie sur « Faire confiance ».</p></div></div>
-        <div class="setup-step"><div class="setup-step-num">2</div><div><h3>Mode développeur si iOS le demande</h3><p>Réglages → Confidentialité et sécurité → Mode développeur → ON, puis redémarre.</p></div></div>
-        <div class="setup-step"><div class="setup-step-num">3</div><div><h3>Clique Installer</h3><p>Le bouton s'active dès que l'iPhone est détecté. Laisse le câble branché ensuite.</p></div></div>
-        <p id="setup-usb-status" class="setup-status info">Recherche de l'iPhone…</p>
-        <div class="setup-actions">
-          <button class="btn btn-accent" id="setup-install-btn" disabled style="flex:1">Installer l'app iPhone</button>
-          <button class="btn btn-ghost" id="setup-recheck-btn" style="flex:0 0 auto">Revérifier</button>
-          <button class="btn btn-ghost" id="setup-close-btn" style="flex:0 0 auto">Fermer</button>
+        <div id="setup-install-flow">
+          <h2>Installe Anyloc sur l'iPhone</h2>
+          <p class="setup-subtitle">3 minutes. Un câble. Un bouton.</p>
+          <div class="setup-step"><div class="setup-step-num">1</div><div><h3>Branche l'iPhone</h3><p>Câble USB. Déverrouille. Appuie sur « Faire confiance ».</p></div></div>
+          <div class="setup-step"><div class="setup-step-num">2</div><div><h3>Mode développeur si iOS le demande</h3><p>Réglages → Confidentialité et sécurité → Mode développeur → ON, puis redémarre.</p></div></div>
+          <div class="setup-step"><div class="setup-step-num">3</div><div><h3>Clique Installer</h3><p>Le bouton s'active dès que l'iPhone est détecté. Laisse le câble branché ensuite.</p></div></div>
+          <p id="setup-usb-status" class="setup-status info">Recherche de l'iPhone…</p>
+          <div class="setup-actions">
+            <button class="btn btn-accent" id="setup-install-btn" disabled style="flex:1">Installer l'app iPhone</button>
+            <button class="btn btn-ghost" id="setup-recheck-btn" style="flex:0 0 auto">Revérifier</button>
+            <button class="btn btn-ghost" id="setup-close-btn" style="flex:0 0 auto">Fermer</button>
+          </div>
+          <p id="setup-install-status" class="setup-status"></p>
         </div>
-        <p id="setup-install-status" class="setup-status"></p>
+        <div id="setup-done-flow" hidden>
+          <h2>C'est sur l'iPhone</h2>
+          <p class="setup-subtitle">Ne ferme pas Anyloc Setup. Ne débranche pas.</p>
+          <div class="setup-step"><div class="setup-step-num">1</div><div><h3>Si l'app est grise</h3><p>Réglages → Général → VPN et gestion de l'appareil → Anyloc → Faire confiance.</p></div></div>
+          <div class="setup-step"><div class="setup-step-num">2</div><div><h3>Ouvre Anyloc</h3><p>Même Google, ou l'email + le mot de passe du site.</p></div></div>
+          <div class="setup-step setup-step-warn"><div class="setup-step-num">3</div><div><h3>Laisse le câble</h3><p>Si tu débranches, Snap revoit ta vraie position. C'est normal.</p></div></div>
+          <div class="setup-actions">
+            <button class="btn btn-accent" id="setup-done-btn" style="flex:1">J'ai compris, je laisse branché</button>
+            <button class="btn btn-ghost" id="setup-reinstall-btn" style="flex:0 0 auto">Réinstaller</button>
+          </div>
+        </div>
       </div>
     </div>
 

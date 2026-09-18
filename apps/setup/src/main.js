@@ -351,7 +351,10 @@ ipcMain.handle("setup:auth", async (_event, action, payload) => {
       if (!res.ok) {
         return {
           ok: false,
-          message: res.data?.error_description || res.data?.msg || "Email ou mot de passe incorrect.",
+          message:
+            res.data?.error_description ||
+            res.data?.msg ||
+            "Email ou mot de passe incorrect. Si tu as payé sans mot de passe : anyloc.io → Mon compte → choisis-en un.",
         };
       }
       return { ok: true, session: res.data };

@@ -27,7 +27,7 @@ import {
   type SettingsActionState,
 } from "@/app/dashboard/(protected)/settings/actions";
 import { CancelSubscriptionConfirmDialog } from "@/components/subscription/cancel-subscription-confirm-dialog";
-import { formatSubscriptionStatusLabel } from "@/lib/account-billing-types";
+import { MIN_PASSWORD_LENGTH } from "@/lib/password-policy";
 import { cn } from "@/lib/utils";
 
 const initialActionState: SettingsActionState = {};
@@ -249,7 +249,7 @@ export function SettingsView({ embedded = false }: { embedded?: boolean } = {}) 
                       name="password"
                       label="Nouveau mot de passe"
                       autoComplete="new-password"
-                      minLength={6}
+                      minLength={MIN_PASSWORD_LENGTH}
                       required
                       showPassword={showPassword}
                       onToggle={() => setShowPassword((value) => !value)}
@@ -259,7 +259,7 @@ export function SettingsView({ embedded = false }: { embedded?: boolean } = {}) 
                       name="confirmPassword"
                       label="Confirmer le mot de passe"
                       autoComplete="new-password"
-                      minLength={6}
+                      minLength={MIN_PASSWORD_LENGTH}
                       required
                       showPassword={showConfirmPassword}
                       onToggle={() => setShowConfirmPassword((value) => !value)}

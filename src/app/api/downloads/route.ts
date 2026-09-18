@@ -1,4 +1,5 @@
 import { DOWNLOAD_ASSETS, isDownloadAvailable } from "@/lib/downloads";
+import { userNeedsSetupPassword } from "@/lib/setup-password";
 import {
   getSubscriptionAccessForUser,
   requireAuthenticatedUser,
@@ -11,7 +12,7 @@ export async function GET() {
     return Response.json({ error }, { status: 401 });
   }
 
-  const access = await getSubscriptionAccessForUser(user.id);
+  const access = await getSubscriptionAccessForUser(user.id, user.email);
 
   const assets = await Promise.all(
     DOWNLOAD_ASSETS.map(async (asset) => ({
@@ -29,6 +30,9 @@ export async function GET() {
     subscriptionStatus: access.status,
     planId: access.planId,
     isAdmin: access.isAdmin,
+    isTrial: access.isTrial,
+    trialEndsAt: access.trialEndsAt,
+    needsSetupPassword: userNeedsSetupPassword(user),
     assets,
   });
 }

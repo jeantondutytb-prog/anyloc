@@ -7,6 +7,7 @@ import {
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { requireAuthenticatedUser } from "@/lib/subscription";
+import { MIN_PASSWORD_LENGTH, validatePassword } from "@/lib/password-policy";
 
 export type SettingsActionState = {
   error?: string;
@@ -17,7 +18,7 @@ function translatePasswordError(message: string) {
   const normalized = message.toLowerCase();
 
   if (normalized.includes("password should be at least")) {
-    return "Le mot de passe doit contenir au moins 6 caractères.";
+    return `Le mot de passe doit contenir au moins ${MIN_PASSWORD_LENGTH} caractères.`;
   }
 
   if (normalized.includes("same password")) {
@@ -38,8 +39,10 @@ export async function updatePassword(
     return { error: "Renseigne ton nouveau mot de passe." };
   }
 
-  if (password.length < 6) {
-    return { error: "Le mot de passe doit contenir au moins 6 caractères." };
+  const passwordError = validatePassword(password);
+
+  if (passwordError) {
+    return { error: passwordError };
   }
 
   if (password !== confirmPassword) {
@@ -51,7 +54,10 @@ export async function updatePassword(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.updateUser({ password });
+  const { error } = await supabase.auth.updateUser({
+    password,
+    data: { password_set: true },
+  });
 
   if (error) {
     return { error: translatePasswordError(error.message) };

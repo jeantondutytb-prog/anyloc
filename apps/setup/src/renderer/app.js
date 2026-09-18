@@ -173,7 +173,33 @@ function markIphoneInstalled() {
 function updateSetupBanner() {
   const banner = $("iphone-setup-banner");
   if (!banner) return;
-  banner.hidden = hasInstalledIphone();
+  banner.hidden = false;
+  const installed = hasInstalledIphone();
+  const title = $("iphone-setup-banner-title");
+  const text = $("iphone-setup-banner-text");
+  const button = $("open-setup-btn");
+  if (title) title.textContent = installed ? "Laisse l'iPhone branché" : "Première étape";
+  if (text) {
+    text.textContent = installed
+      ? "Anyloc Setup doit rester ouvert. Si tu débranches, Snap revoit ta vraie position."
+      : "Branche ton iPhone, puis clique Installer — un seul bouton.";
+  }
+  if (button) button.textContent = installed ? "Revoir la suite" : "Installer l'app iPhone";
+}
+
+function showSetupInstallFlow() {
+  const install = $("setup-install-flow");
+  const done = $("setup-done-flow");
+  if (install) install.hidden = false;
+  if (done) done.hidden = true;
+}
+
+function showSetupDoneFlow() {
+  const install = $("setup-install-flow");
+  const done = $("setup-done-flow");
+  if (install) install.hidden = true;
+  if (done) done.hidden = false;
+  stopUsbPoll();
 }
 
 function enterMain() {
@@ -544,6 +570,11 @@ async function refreshUsbStatus() {
 
 async function openSetup() {
   $("setup-overlay").hidden = false;
+  if (hasInstalledIphone()) {
+    showSetupDoneFlow();
+    return;
+  }
+  showSetupInstallFlow();
   $("setup-install-status").textContent = "";
   await refreshUsbStatus();
   stopUsbPoll();
@@ -586,6 +617,7 @@ async function setupInstall() {
 
   if (result.ok) {
     markIphoneInstalled();
+    showSetupDoneFlow();
   }
 }
 
@@ -690,6 +722,16 @@ async function init() {
   $("setup-install-btn").addEventListener("click", setupInstall);
   $("setup-recheck-btn")?.addEventListener("click", () => void refreshUsbStatus());
   $("setup-close-btn").addEventListener("click", closeSetup);
+  $("setup-done-btn")?.addEventListener("click", closeSetup);
+  $("setup-reinstall-btn")?.addEventListener("click", () => {
+    showSetupInstallFlow();
+    $("setup-install-status").textContent = "";
+    void refreshUsbStatus();
+    stopUsbPoll();
+    usbPollTimer = setInterval(() => {
+      void refreshUsbStatus();
+    }, 2500);
+  });
 }
 
 void init();
