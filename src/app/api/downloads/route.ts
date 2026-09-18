@@ -30,8 +30,6 @@ export async function GET() {
     subscriptionStatus: access.status,
     planId: access.planId,
     isAdmin: access.isAdmin,
-    isTrial: access.isTrial,
-    trialEndsAt: access.trialEndsAt,
     needsSetupPassword: userNeedsSetupPassword(user),
     assets,
   });

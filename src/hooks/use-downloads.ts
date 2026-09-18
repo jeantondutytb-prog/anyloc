@@ -14,8 +14,6 @@ export type DownloadAssetInfo = {
 export type DownloadsResponse = {
   hasAccess: boolean;
   isAdmin?: boolean;
-  isTrial?: boolean;
-  trialEndsAt?: string | null;
   needsSetupPassword?: boolean;
   subscriptionStatus: string | null;
   assets: DownloadAssetInfo[];

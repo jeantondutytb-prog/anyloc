@@ -26,7 +26,7 @@ import {
 import { useDownloads } from "@/hooks/use-downloads";
 import { useDashboardOnboarding } from "@/hooks/use-dashboard-onboarding";
 import { SetupPasswordForm } from "@/components/dashboard/setup-password-form";
-import { TRIAL_DURATION_LABEL } from "@/lib/trial";
+import { getCheckoutUrl } from "@/lib/constants";
 import {
   PAYMENT_SUCCESS_SESSION_KEY,
   writeOnboardingState,
@@ -433,13 +433,11 @@ function IosGuide({
   preview = false,
   forcePhone = false,
   needsSetupPassword = false,
-  isTrial = false,
 }: {
   hasAccess: boolean;
   preview?: boolean;
   forcePhone?: boolean;
   needsSetupPassword?: boolean;
-  isTrial?: boolean;
 }) {
   const device = useSyncExternalStore(
     () => () => {},
@@ -459,15 +457,6 @@ function IosGuide({
         mais <strong>le câble reste branché</strong> et Anyloc Setup reste
         ouvert — sinon Snap revoit ta vraie position.
       </p>
-
-      {isTrial ? (
-        <p className="rounded-xl border border-pink-200 bg-pink-50 px-4 py-3 text-sm text-pink-950">
-          Essai {TRIAL_DURATION_LABEL} : l&apos;iPhone peut demander un
-          redémarrage. Reste jusqu&apos;à ce que Snap bouge — si l&apos;essai
-          se termine pendant l&apos;install, ce n&apos;est pas que ça marche
-          pas.
-        </p>
-      ) : null}
 
       {needsSetupPassword ? <SetupPasswordForm preview={preview} /> : null}
 
@@ -823,7 +812,6 @@ export function InstallationGuideView({
                 needsSetupPassword={
                   preview || Boolean(data?.needsSetupPassword)
                 }
-                isTrial={preview || Boolean(data?.isTrial)}
               />
             </div>
           ) : (
