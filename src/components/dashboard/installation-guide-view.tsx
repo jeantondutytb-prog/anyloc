@@ -39,6 +39,8 @@ import {
 } from "@/lib/device-setup-link";
 import {
   getClientDeviceSnapshot,
+  IOS_APP_UNAVAILABLE_HINT,
+  IOS_SETUP_SYNC_HINT,
   SERVER_CLIENT_DEVICE,
   type DesktopOs,
 } from "@/lib/platform";
@@ -578,6 +580,12 @@ function IosGuide({
             Store, gratuit), Wi-Fi → <strong>Connect</strong>, puis relance
             Anyloc. Pas besoin de réinstaller.
           </p>
+        </HelpDetails>
+        <HelpDetails title="Anyloc n'est plus disponible sur l'iPhone ?">
+          <p>{IOS_APP_UNAVAILABLE_HINT}</p>
+        </HelpDetails>
+        <HelpDetails title="Ma position ne se met pas à jour ?">
+          <p>{IOS_SETUP_SYNC_HINT}</p>
         </HelpDetails>
       </StepCard>
     </div>

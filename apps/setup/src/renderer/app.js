@@ -181,7 +181,7 @@ function updateSetupBanner() {
   if (title) title.textContent = installed ? "Laisse l'iPhone branché" : "Première étape";
   if (text) {
     text.textContent = installed
-      ? "Anyloc Setup doit rester ouvert. Si tu débranches, Snap revoit ta vraie position."
+      ? "Laisse Setup ouvert et l'iPhone branché. Ville qui ne bouge pas ? Cmd+R (Mac) ou Ctrl+R (Windows), puis Revérifier."
       : "Branche ton iPhone, puis clique Installer — un seul bouton.";
   }
   if (button) button.textContent = installed ? "Revoir la suite" : "Installer l'app iPhone";
