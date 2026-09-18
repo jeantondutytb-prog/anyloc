@@ -509,6 +509,43 @@ body {
 .iphone-setup-banner-copy p { font-size: 13px; color: var(--text-muted); line-height: 1.4; }
 .iphone-setup-banner .btn { width: auto; min-width: 200px; }
 
+/* ── Onboarding wizard ── */
+.onboarding-screen {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  width: 100%;
+  padding: 24px;
+}
+
+.onboarding-card {
+  width: 100%;
+  max-width: 520px;
+}
+
+.onboarding-kicker {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+
+.onboarding-panel h2 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.onboarding-panel .setup-subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+
 /* ── Setup modal ── */
 .setup-overlay {
   position: fixed; inset: 0;

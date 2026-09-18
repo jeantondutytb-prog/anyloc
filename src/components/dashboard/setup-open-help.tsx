@@ -112,15 +112,15 @@ export function SetupOpenHelp({
             Ouvre <strong>Téléchargements</strong> (icône en bas, ou Finder)
           </li>
           <li>
-            Double-clique <strong>Anyloc-Setup</strong> — une fenêtre s&apos;ouvre
+            Double-clique <strong>Anyloc</strong> — une fenêtre s&apos;ouvre
             (on dirait un dossier)
           </li>
           <li>
-            Glisse <strong>Anyloc Setup</strong> sur le dossier{" "}
+            Glisse <strong>Anyloc</strong> sur le dossier{" "}
             <strong>Applications</strong>
           </li>
           <li>
-            Va dans Applications → <strong>clic droit</strong> sur Anyloc Setup →{" "}
+            Va dans Applications → <strong>clic droit</strong> sur Anyloc →{" "}
             <strong>Ouvrir</strong> → <strong>Ouvrir</strong>
           </li>
         </ol>
@@ -130,7 +130,7 @@ export function SetupOpenHelp({
             Ouvre le dossier <strong>Téléchargements</strong>
           </li>
           <li>
-            Double-clique <strong>Anyloc-Setup</strong>
+            Double-clique <strong>Anyloc</strong>
           </li>
           <li>
             Si Windows bloque : <strong>Plus d&apos;infos</strong> →{" "}

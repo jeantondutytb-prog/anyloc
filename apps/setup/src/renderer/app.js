@@ -68,6 +68,7 @@ let favorites = [];
 let toastTimer = null;
 let selectedCategory = "all";
 let usbPollTimer = null;
+let onboardingUsbConnected = false;
 
 // ── Helpers ──
 
@@ -147,7 +148,7 @@ async function handleLogin(email, password) {
 
   session = result.session;
   persistSession(session);
-  enterMain();
+  afterAuth();
 }
 
 async function handleOAuth(provider) {
@@ -158,7 +159,15 @@ async function handleOAuth(provider) {
   }
   session = result.session;
   persistSession(session);
-  enterMain();
+  afterAuth();
+}
+
+function afterAuth() {
+  if (hasInstalledIphone()) {
+    enterMain();
+    return;
+  }
+  startOnboarding();
 }
 
 function hasInstalledIphone() {
@@ -181,7 +190,7 @@ function updateSetupBanner() {
   if (title) title.textContent = installed ? "Laisse l'iPhone branché" : "Première étape";
   if (text) {
     text.textContent = installed
-      ? "Anyloc Setup doit rester ouvert. Si tu débranches, Snap revoit ta vraie position."
+      ? "Anyloc doit rester ouvert. Si tu débranches, Snap revoit ta vraie position."
       : "Branche ton iPhone, puis clique Installer — un seul bouton.";
   }
   if (button) button.textContent = installed ? "Revoir la suite" : "Installer l'app iPhone";
@@ -202,8 +211,50 @@ function showSetupDoneFlow() {
   stopUsbPoll();
 }
 
+function showOnboardingPanel(panelId, stepNum) {
+  $("onboarding-step-plug").hidden = panelId !== "plug";
+  $("onboarding-step-install").hidden = panelId !== "install";
+  $("onboarding-step-done").hidden = panelId !== "done";
+  const kicker = $("onboarding-kicker");
+  if (kicker) kicker.textContent = `Étape ${stepNum} sur 4`;
+}
+
+function startOnboarding() {
+  showScreen("onboarding");
+  showOnboardingPanel("plug", 2);
+  $("onboarding-install-status").textContent = "";
+  $("onboarding-next-plug").disabled = true;
+  void refreshOnboardingUsb();
+  stopUsbPoll();
+  usbPollTimer = setInterval(() => {
+    void refreshOnboardingUsb();
+  }, 2500);
+}
+
+async function refreshOnboardingUsb() {
+  const result = await window.anylocSetup.checkUsb();
+  onboardingUsbConnected = Boolean(result.connected);
+  const status = $("onboarding-usb-status");
+  const nextBtn = $("onboarding-next-plug");
+
+  if (result.connected) {
+    status.textContent = `${result.deviceName} — iPhone détecté`;
+    status.className = "setup-status ok";
+    if (nextBtn) nextBtn.disabled = false;
+  } else {
+    status.textContent = result.message || "Branche l'iPhone et appuie sur Faire confiance.";
+    status.className = "setup-status error";
+    if (nextBtn) nextBtn.disabled = true;
+  }
+
+  return result;
+}
+
 function enterMain() {
   if (!session) return;
+
+  stopUsbPoll();
+  closeSetup();
 
   const email = session.user?.email || "...";
   $("profil-email").textContent = email;
@@ -211,9 +262,6 @@ function enterMain() {
   showScreen("main");
   switchTab("carte");
   updateSetupBanner();
-  if (!hasInstalledIphone()) {
-    void openSetup();
-  }
 
   window.anylocSetup.startAutoSync({ session });
   window.anylocSetup.onAutoSyncStatus((status) => {
@@ -588,37 +636,65 @@ function closeSetup() {
   stopUsbPoll();
 }
 
-async function setupInstall() {
-  $("setup-install-btn").disabled = true;
-  $("setup-install-status").textContent = "Installation…";
-  $("setup-install-status").className = "setup-status info";
+async function runIphoneInstall(statusEl, buttonEl, onSuccess) {
+  if (buttonEl) buttonEl.disabled = true;
+  if (statusEl) {
+    statusEl.textContent = "Installation en cours…";
+    statusEl.className = "setup-status info";
+  }
 
   const ensured = await window.anylocSetup.ensureIpa();
   if (!ensured.ok) {
-    $("setup-install-status").textContent = ensured.message;
-    $("setup-install-status").className = "setup-status error";
-    $("setup-install-btn").disabled = false;
+    if (statusEl) {
+      statusEl.textContent = ensured.message;
+      statusEl.className = "setup-status error";
+    }
+    if (buttonEl) buttonEl.disabled = false;
     return;
   }
 
-  const usb = await refreshUsbStatus();
+  const usb = await window.anylocSetup.checkUsb();
   if (!usb.connected) {
-    $("setup-install-status").textContent = "iPhone introuvable. Rebranche-le, puis Revérifier.";
-    $("setup-install-status").className = "setup-status error";
+    if (statusEl) {
+      statusEl.textContent = "iPhone introuvable. Rebranche-le, puis réessaie.";
+      statusEl.className = "setup-status error";
+    }
+    if (buttonEl) buttonEl.disabled = false;
     return;
   }
 
   const result = await window.anylocSetup.installIos({ udid: usb.udid });
-  $("setup-install-status").textContent = result.ok
-    ? "C'est installé. Si l'app est grise : Réglages → Général → VPN et gestion de l'appareil → Faire confiance. Laisse le câble branché."
-    : result.message;
-  $("setup-install-status").className = result.ok ? "setup-status ok" : "setup-status error";
-  $("setup-install-btn").disabled = false;
+  if (statusEl) {
+    statusEl.textContent = result.ok
+      ? "C'est installé sur ton iPhone."
+      : result.message;
+    statusEl.className = result.ok ? "setup-status ok" : "setup-status error";
+  }
+  if (buttonEl) buttonEl.disabled = false;
 
   if (result.ok) {
     markIphoneInstalled();
-    showSetupDoneFlow();
+    onSuccess?.();
   }
+}
+
+async function setupInstall() {
+  await runIphoneInstall(
+    $("setup-install-status"),
+    $("setup-install-btn"),
+    () => showSetupDoneFlow()
+  );
+}
+
+async function onboardingInstall() {
+  await runIphoneInstall(
+    $("onboarding-install-status"),
+    $("onboarding-install-btn"),
+    () => {
+      showOnboardingPanel("done", 4);
+      stopUsbPoll();
+    }
+  );
 }
 
 // ── Init ──
@@ -633,7 +709,7 @@ async function init() {
     if (verified.ok) {
       session = verified.session || saved;
       persistSession(session);
-      enterMain();
+      afterAuth();
     } else {
       clearSession();
     }
@@ -716,7 +792,16 @@ async function init() {
     if (spot) teleportSpot(spot);
   });
 
-  // Setup
+  // Onboarding
+  $("onboarding-recheck-plug")?.addEventListener("click", () => void refreshOnboardingUsb());
+  $("onboarding-next-plug")?.addEventListener("click", () => {
+    if (!onboardingUsbConnected) return;
+    showOnboardingPanel("install", 3);
+  });
+  $("onboarding-install-btn")?.addEventListener("click", () => void onboardingInstall());
+  $("onboarding-finish-btn")?.addEventListener("click", () => enterMain());
+
+  // Setup modal (reinstall)
   $("open-setup-btn")?.addEventListener("click", () => void openSetup());
   $("open-setup-from-profil")?.addEventListener("click", () => void openSetup());
   $("setup-install-btn").addEventListener("click", setupInstall);

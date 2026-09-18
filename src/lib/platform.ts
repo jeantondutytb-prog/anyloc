@@ -47,7 +47,7 @@ export function getClientDeviceSnapshot(): ClientDevice {
 }
 
 export const IOS_INSTALL_CONSTRAINT =
-  "Sur iPhone : un Mac ou un PC + câble USB. Tu changes la ville depuis le tel, mais l'iPhone reste branché et Anyloc Setup reste ouvert — sinon Snap revoit ta vraie position.";
+  "Sur iPhone : un Mac ou un PC + câble USB. Tu changes la ville depuis le tel, mais l'iPhone reste branché et Anyloc reste ouvert — sinon Snap revoit ta vraie position.";
 
 export const ANDROID_INSTALL_NOTE =
   "Sur Android : installation 100 % depuis le téléphone, sans ordinateur.";

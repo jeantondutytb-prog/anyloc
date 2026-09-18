@@ -296,7 +296,7 @@ export function DashboardPhoneSetup({
             <ol className="space-y-3">
               <StepBox number={1} title="Sur l'ordinateur : installe l'app">
                 <p>
-                  Télécharge <strong>Anyloc Setup</strong>. Le fichier va dans
+                  Télécharge <strong>Anyloc</strong>. Le fichier va dans
                   Téléchargements et <strong>ne s&apos;ouvre pas tout seul</strong>.
                 </p>
                 <div className="flex flex-col gap-2 sm:flex-row">
@@ -319,7 +319,7 @@ export function DashboardPhoneSetup({
                     <a href={setupDesktopLink} className="flex-1">
                       <Button size="sm" variant="secondary" className="w-full">
                         <Monitor className="h-4 w-4" />
-                        Ouvrir Anyloc Setup
+                        Ouvrir Anyloc
                       </Button>
                     </a>
                   ) : null}
@@ -327,7 +327,7 @@ export function DashboardPhoneSetup({
                 {isMac ? (
                   <ol className="list-decimal space-y-1.5 pl-5 text-xs text-zinc-500">
                     <li>Double-clique le fichier — une fenêtre (dossier) s&apos;ouvre</li>
-                    <li>Glisse Anyloc Setup sur Applications</li>
+                    <li>Glisse Anyloc sur Applications</li>
                     <li>
                       Clic <strong>droit</strong> → Ouvrir → Ouvrir (pas un
                       double-clic)

@@ -5,7 +5,7 @@ const path = require("node:path");
 module.exports = {
   appId: "io.anyloc.setup",
   productName: "Anyloc",
-  artifactName: "Anyloc-Setup.${ext}",
+  artifactName: "Anyloc.${ext}",
   directories: {
     output: "dist",
   },
@@ -43,8 +43,8 @@ module.exports = {
   },
   protocols: [
     {
-      name: "Anyloc Setup",
-      schemes: ["anyloc-setup"],
+      name: "Anyloc",
+      schemes: ["anyloc-setup", "anyloc"],
     },
   ],
 };

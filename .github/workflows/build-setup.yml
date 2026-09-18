@@ -66,7 +66,7 @@ jobs:
           BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
         run: |
           if [ -n "$BLOB_READ_WRITE_TOKEN" ]; then
-            node scripts/upload-release.mjs setup-mac apps/setup/dist/Anyloc-Setup.dmg
+            node scripts/upload-release.mjs setup-mac apps/setup/dist/Anyloc.dmg
           else
             echo "BLOB_READ_WRITE_TOKEN absent — skip upload Blob"
           fi
@@ -78,14 +78,14 @@ jobs:
         run: |
           TAG="setup-v0.1.${{ github.run_number }}"
           gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "Anyloc Setup v0.1.${{ github.run_number }}" --generate-notes
-          gh release upload "$TAG" apps/setup/dist/Anyloc-Setup.dmg --clobber
+          gh release upload "$TAG" apps/setup/dist/Anyloc.dmg --clobber
 
       - name: Upload DMG artifact
         continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: anyloc-setup-mac
-          path: apps/setup/dist/Anyloc-Setup.dmg
+          path: apps/setup/dist/Anyloc.dmg
           if-no-files-found: error
 
   build-win:
@@ -119,7 +119,7 @@ jobs:
         shell: bash
         run: |
           if [ -n "$BLOB_READ_WRITE_TOKEN" ]; then
-            node scripts/upload-release.mjs setup-win apps/setup/dist/Anyloc-Setup.exe
+            node scripts/upload-release.mjs setup-win apps/setup/dist/Anyloc.exe
           else
             echo "BLOB_READ_WRITE_TOKEN absent — skip upload Blob"
           fi
@@ -132,12 +132,12 @@ jobs:
         run: |
           TAG="setup-v0.1.${{ github.run_number }}"
           gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "Anyloc Setup v0.1.${{ github.run_number }}" --generate-notes
-          gh release upload "$TAG" apps/setup/dist/Anyloc-Setup.exe --clobber
+          gh release upload "$TAG" apps/setup/dist/Anyloc.exe --clobber
 
       - name: Upload EXE artifact
         continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: anyloc-setup-win
-          path: apps/setup/dist/Anyloc-Setup.exe
+          path: apps/setup/dist/Anyloc.exe
           if-no-files-found: error
