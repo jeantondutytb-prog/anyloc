@@ -33,7 +33,7 @@ export const ONBOARDING_STEP_ITEMS = [
     id: "chooseSpot" as const,
     title: "Choisis une ville",
     description:
-      "Clique sur Marbella, Paris, Miami… à gauche, ou cherche une adresse en haut, ou tape sur la carte.",
+      "Clique sur Marbella, Paris, Miami… à gauche, ou cherche une adresse en haut, ou tape sur la carte. iPhone : Anyloc Setup doit rester ouvert sur ton ordi.",
   },
   {
     id: "activate" as const,

@@ -49,5 +49,11 @@ export function getClientDeviceSnapshot(): ClientDevice {
 export const IOS_INSTALL_CONSTRAINT =
   "Sur iPhone : un Mac ou un PC + câble USB. Tu changes la ville depuis le tel, mais l'iPhone reste branché et Anyloc Setup reste ouvert — sinon Snap revoit ta vraie position.";
 
+export const IOS_APP_UNAVAILABLE_HINT =
+  "iOS affiche « Anyloc n'est plus disponible » ? Branche l'iPhone, ouvre Anyloc Setup sur ton Mac ou PC, puis clique Réinstaller. C'est normal après une mise à jour ou quand le certificat de développement expire (~7 jours).";
+
+export const IOS_SETUP_SYNC_HINT =
+  "Tu changes de ville depuis le site ou l'iPhone mais rien ne bouge sur le PC ? Actualise Anyloc Setup (Cmd+R sur Mac, Ctrl+R sur Windows), reconnecte-toi si besoin, garde l'iPhone branché et déverrouillé, puis clique Revérifier.";
+
 export const ANDROID_INSTALL_NOTE =
   "Sur Android : installation 100 % depuis le téléphone, sans ordinateur.";

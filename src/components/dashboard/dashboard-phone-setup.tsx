@@ -23,6 +23,7 @@ import {
   getPendingTokenStorageKey,
   getPublicApiBaseUrl,
 } from "@/lib/device-setup-link";
+import { IOS_APP_UNAVAILABLE_HINT, IOS_SETUP_SYNC_HINT } from "@/lib/platform";
 import { cn } from "@/lib/utils";
 
 type Platform = "ios" | "android";
@@ -209,19 +210,39 @@ export function DashboardPhoneSetup({
     window.setTimeout(() => setCopied(false), 2000);
   };
 
+  const hasIosDevice = devices.some((device) => device.platform === "ios");
+
   if (phoneOnline) {
     return (
-      <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50/80 px-4 py-3">
-        <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-emerald-900">
-            C&apos;est bon, ton téléphone est prêt
-          </p>
-          <p className="text-xs leading-relaxed text-emerald-700/90">
-            Clique sur une ville à gauche, ou cherche une adresse en haut, ou tape
-            sur la carte. Ta fausse position se met sur ton téléphone toute seule.
-          </p>
+      <div className="space-y-3">
+        <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50/80 px-4 py-3">
+          <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-emerald-900">
+              C&apos;est bon, ton téléphone est prêt
+            </p>
+            <p className="text-xs leading-relaxed text-emerald-700/90">
+              Clique sur une ville à gauche, ou cherche une adresse en haut, ou tape
+              sur la carte. Ta fausse position se met sur ton téléphone toute seule.
+            </p>
+          </div>
         </div>
+        {hasIosDevice ? (
+          <details className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm">
+            <summary className="flex cursor-pointer list-none items-center gap-2 font-medium text-zinc-700 [&::-webkit-details-marker]:hidden">
+              <ChevronDown className="h-4 w-4 text-zinc-400" />
+              iPhone : rappels importants
+            </summary>
+            <ul className="mt-3 space-y-2 border-t border-zinc-100 pt-3 text-xs leading-relaxed text-zinc-600">
+              <li>
+                Anyloc Setup doit rester ouvert sur ton Mac ou PC, avec le câble
+                branché.
+              </li>
+              <li>{IOS_SETUP_SYNC_HINT}</li>
+              <li>{IOS_APP_UNAVAILABLE_HINT}</li>
+            </ul>
+          </details>
+        ) : null}
       </div>
     );
   }
@@ -235,7 +256,7 @@ export function DashboardPhoneSetup({
             Ton téléphone est déjà enregistré. Ouvre simplement l&apos;app{" "}
             <strong>Anyloc</strong> sur ton tel et laisse-la ouverte.
             {platform === "ios"
-              ? " Sur iPhone, vérifie aussi que l'app LocalDevVPN est bien connectée (bouton vert)."
+              ? " Sur iPhone, laisse Anyloc Setup ouvert sur ton ordi avec le câble branché. Si l'app refuse de s'ouvrir (« n'est plus disponible »), réinstalle depuis Setup."
               : null}
           </p>
         </div>

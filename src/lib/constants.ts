@@ -292,6 +292,16 @@ export const FAQ = [
     a:
       "Sur Android, oui, même écran verrouillé. Avec le plan annuel sur iPhone, pareil. Sinon, la loc reste tant que la session Anyloc tourne.",
   },
+  {
+    q: "iOS dit « Anyloc n'est plus disponible » ?",
+    a:
+      "Normal après une mise à jour ou ~7 jours (limite Apple). Branche l'iPhone, ouvre Anyloc Setup sur Mac ou PC, puis clique Réinstaller. Ce n'est pas la même chose que LocalDevVPN : là, tu réinstalles l'app depuis l'ordi.",
+  },
+  {
+    q: "J'ai changé de ville mais la sync ne suit pas ?",
+    a:
+      "Sur iPhone, Anyloc Setup doit rester ouvert sur ton Mac ou PC avec le câble branché. Si la position ne se met pas à jour : actualise Setup (Cmd+R ou Ctrl+R), reconnecte-toi si besoin, déverrouille l'iPhone, puis clique Revérifier dans Setup.",
+  },
 ];
 
 export const FEATURES = [
