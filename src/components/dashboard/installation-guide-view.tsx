@@ -551,10 +551,12 @@ function AndroidGuide({
   hasAccess,
   preview = false,
   forceComputer = false,
+  forcePhone = false,
 }: {
   hasAccess: boolean;
   preview?: boolean;
   forceComputer?: boolean;
+  forcePhone?: boolean;
 }) {
   const device = useSyncExternalStore(
     () => () => {},
@@ -563,7 +565,7 @@ function AndroidGuide({
   );
   const [downloaded, setDownloaded] = useState(false);
   const installUrl = getInstallPageUrl("android");
-  const onComputer = forceComputer || !device.isPhone;
+  const onComputer = forceComputer || (!forcePhone && !device.isPhone);
 
   return (
     <div className="space-y-4">
@@ -783,6 +785,7 @@ export function InstallationGuideView({
                 hasAccess={hasAccess}
                 preview={preview}
                 forceComputer={preview && searchParams.get("device") === "computer"}
+                forcePhone={preview && searchParams.get("device") === "phone"}
               />
             </div>
           )}
