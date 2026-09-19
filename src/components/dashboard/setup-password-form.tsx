@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { CheckCircle2, KeyRound, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AuthPasswordInput } from "@/components/auth/auth-input";
@@ -14,8 +14,10 @@ const initialActionState: SettingsActionState = {};
 
 export function SetupPasswordForm({
   preview = false,
+  onSuccess,
 }: {
   preview?: boolean;
+  onSuccess?: () => void;
 }) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -26,6 +28,12 @@ export function SetupPasswordForm({
   );
 
   const done = preview ? previewDone : Boolean(passwordState.success);
+
+  useEffect(() => {
+    if (done) {
+      onSuccess?.();
+    }
+  }, [done, onSuccess]);
 
   if (done) {
     return (
