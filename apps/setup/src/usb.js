@@ -577,7 +577,9 @@ async function detectUsbDevice() {
         udid: null,
         deviceName: null,
         message:
-          "Aucun iPhone en USB. Déverrouille l'iPhone, branche-le, ouvre le Finder pour « Faire confiance », puis Revérifier.",
+          process.platform === "win32"
+            ? "Aucun iPhone en USB. Installe Apple Devices (Microsoft Store) ou iTunes, déverrouille l'iPhone, appuie sur Faire confiance, puis Revérifier."
+            : "Aucun iPhone en USB. Déverrouille l'iPhone, branche-le, appuie sur Faire confiance, puis Revérifier.",
       };
     }
 

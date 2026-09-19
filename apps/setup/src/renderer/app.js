@@ -72,6 +72,7 @@ let toastTimer = null;
 let selectedCategory = "all";
 let usbPollTimer = null;
 let onboardingUsbConnected = false;
+let desktopPlatform = "mac";
 
 // ── Helpers ──
 
@@ -166,11 +167,15 @@ async function handleOAuth(provider) {
 }
 
 function afterAuth() {
-  if (hasInstalledIphone()) {
-    enterMain();
-    return;
+  try {
+    if (hasInstalledIphone()) {
+      enterMain();
+      return;
+    }
+    startOnboarding();
+  } catch {
+    void startOnboarding();
   }
-  startOnboarding();
 }
 
 function hasInstalledIphone() {
@@ -222,11 +227,14 @@ function showOnboardingPanel(panelId, stepNum) {
   if (kicker) kicker.textContent = `Étape ${stepNum} sur 4`;
 }
 
-function startOnboarding() {
+async function startOnboarding() {
+  await applyPlatformHints();
   showScreen("onboarding");
   showOnboardingPanel("plug", 2);
-  $("onboarding-install-status").textContent = "";
-  $("onboarding-next-plug").disabled = true;
+  const installStatus = $("onboarding-install-status");
+  const nextBtn = $("onboarding-next-plug");
+  if (installStatus) installStatus.textContent = "";
+  if (nextBtn) nextBtn.disabled = true;
   void refreshOnboardingUsb();
   stopUsbPoll();
   usbPollTimer = setInterval(() => {
@@ -234,33 +242,74 @@ function startOnboarding() {
   }, 2500);
 }
 
+async function applyPlatformHints() {
+  try {
+    desktopPlatform = (await window.anylocSetup.getPlatform()) || desktopPlatform;
+  } catch {
+    // Keep the last known platform.
+  }
+  document.body.dataset.platform = desktopPlatform;
+  const hint = $("onboarding-win-hint");
+  if (hint) hint.hidden = desktopPlatform !== "win";
+  const deviceLabel = $("profil-device");
+  if (deviceLabel) {
+    deviceLabel.textContent = desktopPlatform === "win" ? "Windows" : "Mac";
+  }
+}
+
 async function refreshOnboardingUsb() {
-  const result = await window.anylocSetup.checkUsb();
-  onboardingUsbConnected = Boolean(result.connected);
   const status = $("onboarding-usb-status");
   const nextBtn = $("onboarding-next-plug");
 
-  if (result.connected) {
-    status.textContent = `${result.deviceName} — iPhone détecté`;
-    status.className = "setup-status ok";
-    if (nextBtn) nextBtn.disabled = false;
-  } else {
-    status.textContent = result.message || "Branche l'iPhone et appuie sur Faire confiance.";
-    status.className = "setup-status error";
-    if (nextBtn) nextBtn.disabled = true;
-  }
+  try {
+    const result = await window.anylocSetup.checkUsb();
+    onboardingUsbConnected = Boolean(result.connected);
 
-  return result;
+    if (result.connected) {
+      if (status) {
+        status.textContent = `${result.deviceName} — iPhone détecté`;
+        status.className = "setup-status ok";
+      }
+      if (nextBtn) nextBtn.disabled = false;
+    } else {
+      if (status) {
+        status.textContent =
+          result.message ||
+          (desktopPlatform === "win"
+            ? "Branche l'iPhone, appuie sur Faire confiance, installe Apple Devices si besoin."
+            : "Branche l'iPhone et appuie sur Faire confiance.");
+        status.className = "setup-status error";
+      }
+      if (nextBtn) nextBtn.disabled = true;
+    }
+
+    return result;
+  } catch {
+    onboardingUsbConnected = false;
+    if (status) {
+      status.textContent =
+        "Impossible de chercher l'iPhone. Rebranche le câble, puis Revérifier.";
+      status.className = "setup-status error";
+    }
+    if (nextBtn) nextBtn.disabled = true;
+    return { connected: false };
+  }
 }
 
-function enterMain() {
+function enterMain(options = {}) {
   if (!session) return;
+
+  if (!options.force && !hasInstalledIphone()) {
+    void startOnboarding();
+    return;
+  }
 
   stopUsbPoll();
   closeSetup();
 
   const email = session.user?.email || "...";
   $("profil-email").textContent = email;
+  void applyPlatformHints();
 
   showScreen("main");
   switchTab("carte");
@@ -770,6 +819,7 @@ async function onboardingInstall() {
 async function init() {
   restoreFavorites();
   renderSpots();
+  void applyPlatformHints();
 
   const saved = restoreSession();
   if (saved?.access_token) {
@@ -868,6 +918,7 @@ async function init() {
   });
   $("onboarding-install-btn")?.addEventListener("click", () => void onboardingInstall());
   $("onboarding-finish-btn")?.addEventListener("click", () => enterMain());
+  $("onboarding-skip")?.addEventListener("click", () => enterMain({ force: true }));
 
   // Setup modal (reinstall)
   $("open-setup-btn")?.addEventListener("click", () => void openSetup());
