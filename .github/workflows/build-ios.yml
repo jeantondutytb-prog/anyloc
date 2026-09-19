@@ -69,10 +69,17 @@ jobs:
             security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           elif [ -n "$APPLE_ID" ] && [ -n "$APPLE_APP_SPECIFIC_PASSWORD" ]; then
             echo "Storing Apple ID credentials for automatic provisioning..."
-            xcrun notarytool store-credentials "anyloc-ci" \
+            if ! xcrun notarytool store-credentials "anyloc-ci" \
               --apple-id "$APPLE_ID" \
               --team-id "$APPLE_DEVELOPMENT_TEAM" \
-              --password "$APPLE_APP_SPECIFIC_PASSWORD"
+              --password "$APPLE_APP_SPECIFIC_PASSWORD"; then
+              echo "::error::Connexion Apple refusée (401). Vérifie les secrets GitHub :"
+              echo "  • APPLE_ID = email Apple exact (ex. prenom@gmail.com)"
+              echo "  • APPLE_APP_SPECIFIC_PASSWORD = mot de passe APP (pas ton mot de passe Apple)"
+              echo "  • Génère-le sur https://appleid.apple.com → Connexion et sécurité → Mots de passe pour app"
+              echo "  • Recrée les deux secrets sans espace avant/après"
+              exit 1
+            fi
           else
             echo "::warning::Ni BUILD_CERTIFICATE_BASE64 ni APPLE_ID — le build peut échouer à la signature."
           fi

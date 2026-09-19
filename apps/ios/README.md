@@ -34,9 +34,21 @@ Ajoute ces secrets dans **GitHub → Settings → Secrets and variables → Acti
 |---|---|
 | `APPLE_DEVELOPMENT_TEAM` | Ton Team ID (10 caractères, ex. depuis Xcode → Accounts) |
 | `APPLE_ID` | Email de ton compte Apple |
-| `APPLE_APP_SPECIFIC_PASSWORD` | Mot de passe app généré sur [appleid.apple.com](https://appleid.apple.com) |
+| `APPLE_APP_SPECIFIC_PASSWORD` | Mot de passe **app** (pas ton mot de passe Apple) — [appleid.apple.com](https://appleid.apple.com) → Connexion et sécurité → Mots de passe pour app → Générer |
 
 Puis lance **Actions → Build iOS IPA** (ou push sur `apps/ios/`). L'IPA est publié sur GitHub Releases (`Anyloc.ipa`).
+
+### Erreur « Invalid credentials 401 »
+
+- Tu as probablement mis ton **mot de passe Apple normal** au lieu d'un **mot de passe pour app**
+- Regénère un mot de passe app et mets à jour le secret `APPLE_APP_SPECIFIC_PASSWORD`
+- Vérifie que `APPLE_ID` est bien l'email du compte Apple connecté dans Xcode
+
+### Alternative : certificat `.p12` (si Apple ID bloque en CI)
+
+1. Sur Mac : Keychain Access → certificat **Apple Development: ton@email.com** → Export → `.p12`
+2. `base64 -i cert.p12 | pbcopy`
+3. Secrets GitHub : `BUILD_CERTIFICATE_BASE64` + `BUILD_CERTIFICATE_PASSWORD`
 
 ### Build local (Mac)
 
