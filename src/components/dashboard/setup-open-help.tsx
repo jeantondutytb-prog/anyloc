@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Check, Copy, Mail, Monitor } from "lucide-react";
+import { Check, ChevronDown, Copy, Mail, Monitor, Terminal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SetupQrCode } from "@/components/dashboard/setup-qr-code";
 import { WindowsOpenHelp } from "@/components/dashboard/windows-open-help";
@@ -59,6 +59,60 @@ export function WrongDeviceNotice({
         ) : null}
       </div>
     </div>
+  );
+}
+
+const XATTR_COMMAND =
+  "xattr -cr /Applications/Anyloc.app && open /Applications/Anyloc.app";
+
+function MacGatekeeperFix() {
+  const [copied, setCopied] = useState(false);
+
+  const copy = async () => {
+    await navigator.clipboard.writeText(XATTR_COMMAND);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <details className="group mt-3 rounded-xl border border-amber-200 bg-amber-50">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-semibold text-amber-900 [&::-webkit-details-marker]:hidden">
+        <span>
+          Ça dit « endommagé » ou rien ne se passe ?
+        </span>
+        <ChevronDown className="h-4 w-4 shrink-0 text-amber-500 transition-transform group-open:rotate-180" />
+      </summary>
+      <div className="border-t border-amber-200 px-4 py-3 text-sm text-amber-900/90">
+        <p>
+          macOS bloque les apps téléchargées hors de l&apos;App Store. Ouvre{" "}
+          <strong>Terminal</strong> (cherche « Terminal » dans Spotlight) et
+          colle cette commande :
+        </p>
+        <div className="mt-2 flex items-center gap-2 rounded-lg bg-zinc-900 px-3 py-2">
+          <Terminal className="h-4 w-4 shrink-0 text-zinc-400" />
+          <code className="flex-1 break-all text-xs text-emerald-400">
+            {XATTR_COMMAND}
+          </code>
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          className="mt-2"
+          onClick={() => void copy()}
+        >
+          {copied ? (
+            <Check className="h-4 w-4" />
+          ) : (
+            <Copy className="h-4 w-4" />
+          )}
+          {copied ? "Copié !" : "Copier la commande"}
+        </Button>
+        <p className="mt-2 text-xs text-amber-800/80">
+          Appuie sur <strong>Entrée</strong>. L&apos;app s&apos;ouvre
+          directement après.
+        </p>
+      </div>
+    </details>
   );
 }
 
@@ -136,12 +190,7 @@ export function SetupOpenHelp({
               <strong>Ouvrir</strong> → <strong>Ouvrir</strong>
             </li>
           </ol>
-          <p className="mt-3 rounded-lg bg-white/80 px-3 py-2 text-sm text-zinc-700">
-            Ça dit <strong>« endommagé »</strong> ou rien ne se passe ? Ne
-            double-clique pas. <strong>Clic droit → Ouvrir → Ouvrir</strong>.
-            Sinon Réglages Mac → Confidentialité et sécurité →{" "}
-            <strong>Ouvrir quand même</strong>.
-          </p>
+          <MacGatekeeperFix />
         </>
       ) : (
         <div className="mt-3">
