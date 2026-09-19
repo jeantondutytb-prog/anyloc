@@ -19,18 +19,25 @@ type DestinationSidebarProps = {
   selectedName?: string;
   onSelect: (location: Location) => void;
   disabled?: boolean;
+  className?: string;
 };
 
 export function DestinationSidebar({
   selectedName,
   onSelect,
   disabled = false,
+  className,
 }: DestinationSidebarProps) {
   const [category, setCategory] = useState<SpotCategory>("all");
   const spots = useMemo(() => filterSpotsByCategory(category), [category]);
 
   return (
-    <aside className="flex h-full w-80 shrink-0 flex-col border-r border-zinc-200 bg-white">
+    <aside
+      className={cn(
+        "flex h-full w-80 shrink-0 flex-col border-r border-zinc-200 bg-white",
+        className
+      )}
+    >
       <div className="border-b border-zinc-100 px-5 py-4">
         <p className="text-xs font-semibold uppercase tracking-wide text-pink-600">
           Destinations
@@ -38,8 +45,8 @@ export function DestinationSidebar({
         <h2 className="text-lg font-bold text-zinc-900">Où veux-tu être ?</h2>
         <p className="mt-1 text-sm text-zinc-500">
           {disabled
-            ? "Installe d'abord l'app sur ton téléphone (en bas) — ensuite tu pourras cliquer ici."
-            : "Clique sur une ville, puis appuie sur « Changer ma loc » en bas."}
+            ? "Termine d'abord les étapes sur ton téléphone — ensuite tu pourras cliquer ici."
+            : "Clique sur une ville, puis allume ta fausse position en bas."}
         </p>
       </div>
 

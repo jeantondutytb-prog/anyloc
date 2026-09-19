@@ -1,3 +1,4 @@
+import { corsPreflightResponse, jsonWithCors } from "@/lib/cors";
 import { extractBearerToken } from "@/lib/device";
 import {
   getDeviceContext,
@@ -9,11 +10,15 @@ import {
   upsertLocationForUser,
 } from "@/lib/location-server";
 
+export function OPTIONS() {
+  return corsPreflightResponse();
+}
+
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
 
   if (!authHeader?.startsWith("Bearer ")) {
-    return Response.json(
+    return jsonWithCors(
       { error: "Authorization Bearer token requis." },
       { status: 401 }
     );
@@ -22,7 +27,7 @@ export async function GET(request: Request) {
   const token = extractBearerToken(request);
 
   if (!token) {
-    return Response.json(
+    return jsonWithCors(
       {
         error:
           "Token appareil invalide. Génère un code sur le dashboard (commence par anyloc_).",
@@ -34,18 +39,18 @@ export async function GET(request: Request) {
   const { device, error, inactive } = await getDeviceContext(token);
 
   if (!device) {
-    return Response.json({ error }, { status: 401 });
+    return jsonWithCors({ error }, { status: 401 });
   }
 
   if (error) {
-    return Response.json({ error, inactive }, { status: 403 });
+    return jsonWithCors({ error, inactive }, { status: 403 });
   }
 
   await touchDeviceLastSeen(device.id);
 
   const payload = await getLocationPayloadForUser(device.user_id);
 
-  return Response.json({
+  return jsonWithCors({
     device: {
       id: device.id,
       platform: device.platform,
