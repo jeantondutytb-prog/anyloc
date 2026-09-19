@@ -180,3 +180,32 @@ body {
     box-shadow: 0 0 0 0 rgba(20, 184, 166, 0);
   }
 }
+
+@keyframes wizard-step-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.wizard-step {
+  animation: wizard-step-in 0.35s ease;
+}
+
+@keyframes wizard-icon-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 12px rgba(236, 72, 153, 0);
+  }
+}
+
+.wizard-icon-pulse {
+  animation: wizard-icon-pulse 2s ease-in-out infinite;
+}

@@ -89,3 +89,69 @@ export function writeOnboardingState(state: OnboardingState) {
 
   window.localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(state));
 }
+
+export const INSTALL_WIZARD_SESSION_KEY = "anyloc-install-wizard";
+export const INSTALL_WIZARD_EVENT = "anyloc-install-wizard";
+
+export type InstallWizardSession = {
+  step: number;
+  platform: "ios" | "android";
+  downloaded: boolean;
+  passwordGate?: boolean;
+  iosInstallConfirmed?: boolean;
+};
+
+export function readInstallWizardSession(): InstallWizardSession | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const raw = window.sessionStorage.getItem(INSTALL_WIZARD_SESSION_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw) as Partial<InstallWizardSession>;
+    const platform =
+      parsed.platform === "android" || parsed.platform === "ios"
+        ? parsed.platform
+        : null;
+    const step = Number(parsed.step);
+
+    if (!platform || !Number.isInteger(step) || step < 1 || step > 5) {
+      return null;
+    }
+
+    return {
+      step,
+      platform,
+      downloaded: parsed.downloaded === true,
+      passwordGate: parsed.passwordGate === true,
+      iosInstallConfirmed: parsed.iosInstallConfirmed === true,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function writeInstallWizardSession(session: InstallWizardSession) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.sessionStorage.setItem(
+    INSTALL_WIZARD_SESSION_KEY,
+    JSON.stringify(session)
+  );
+  window.dispatchEvent(new Event(INSTALL_WIZARD_EVENT));
+}
+
+export function clearInstallWizardSession() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.sessionStorage.removeItem(INSTALL_WIZARD_SESSION_KEY);
+  window.dispatchEvent(new Event(INSTALL_WIZARD_EVENT));
+}

@@ -8,29 +8,41 @@ import {
   ChevronDown,
   Copy,
   Download,
-  Loader2,
+  KeyRound,
   Lock,
+  Mail,
+  MapPin,
+  Monitor,
   Smartphone,
-  Sparkles,
+  Usb,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 import { SetupQrCode } from "@/components/dashboard/setup-qr-code";
+import { WindowsOpenHelp } from "@/components/dashboard/windows-open-help";
+import { SetupPasswordForm } from "@/components/dashboard/setup-password-form";
 import {
-  AndroidOpenHelp,
-  ComputerOnlyHint,
-  SetupOpenHelp,
-  WrongDeviceNotice,
-} from "@/components/dashboard/setup-open-help";
+  WizardChecklist,
+  WizardInstruction,
+  WizardPrimaryButton,
+  WizardSecondaryButton,
+  WizardShell,
+  WizardSkipButton,
+  WizardStatusBox,
+  WizardSuccessCard,
+  WizardTip,
+  WIZARD_TOTAL_STEPS,
+  wizardPrimaryClassName,
+  wizardSecondaryClassName,
+} from "@/components/dashboard/installation-wizard-ui";
 import { useDownloads } from "@/hooks/use-downloads";
 import { useDashboardOnboarding } from "@/hooks/use-dashboard-onboarding";
-import { SetupPasswordForm } from "@/components/dashboard/setup-password-form";
+import { useInstallWizardSession } from "@/hooks/use-install-wizard-session";
 import { getCheckoutUrl } from "@/lib/constants";
 import {
   PAYMENT_SUCCESS_SESSION_KEY,
-  writeOnboardingState,
+  clearInstallWizardSession,
   readOnboardingState,
+  writeOnboardingState,
 } from "@/lib/dashboard-onboarding";
 import {
   buildMobileSetupLink,
@@ -68,34 +80,6 @@ function getInstallPageUrl(platform: Platform) {
   return `${window.location.origin}/dashboard?platform=${platform}`;
 }
 
-function StepCard({
-  number,
-  title,
-  children,
-}: {
-  number: number;
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <Card className="overflow-hidden border-zinc-200">
-      <div className="flex gap-4 p-5 sm:p-6">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pink-500 text-sm font-bold text-white">
-          {number}
-        </div>
-        <div className="min-w-0 flex-1">
-          <h3 className="text-base font-semibold text-zinc-900 sm:text-lg">
-            {title}
-          </h3>
-          <div className="mt-3 space-y-3 text-sm leading-relaxed text-zinc-600">
-            {children}
-          </div>
-        </div>
-      </div>
-    </Card>
-  );
-}
-
 function HelpDetails({
   title,
   children,
@@ -104,12 +88,12 @@ function HelpDetails({
   children: React.ReactNode;
 }) {
   return (
-    <details className="group rounded-xl border border-zinc-200 bg-zinc-50/80">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-medium text-zinc-700 [&::-webkit-details-marker]:hidden">
+    <details className="group rounded-xl border border-white/10 bg-white/5">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-medium text-zinc-300 [&::-webkit-details-marker]:hidden">
         {title}
-        <ChevronDown className="h-4 w-4 shrink-0 text-zinc-400 transition-transform group-open:rotate-180" />
+        <ChevronDown className="h-4 w-4 shrink-0 text-zinc-500 transition-transform group-open:rotate-180" />
       </summary>
-      <div className="border-t border-zinc-200 px-4 py-3 text-sm text-zinc-600">
+      <div className="border-t border-white/10 px-4 py-3 text-sm text-zinc-400">
         {children}
       </div>
     </details>
@@ -121,40 +105,33 @@ function DownloadButtons({
   hasAccess,
   preview = false,
   onDownload,
+  data,
+  loading,
+  error,
 }: {
   assetIds: string[];
   hasAccess: boolean;
   preview?: boolean;
   onDownload?: () => void;
+  data: ReturnType<typeof useDownloads>["data"];
+  loading: boolean;
+  error: string | null;
 }) {
-  const { data, loading, error } = useDownloads();
-
   if (preview) {
     return (
-      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+      <div className="space-y-2">
         {assetIds.map((id) => (
-          <Button key={id} className="w-full sm:w-auto" onClick={onDownload}>
+          <WizardPrimaryButton key={id} onClick={onDownload}>
             <Download className="h-4 w-4" />
-              {id === "apk" ? "Télécharger l'app" : "Télécharger Anyloc"}
-          </Button>
+            {id === "apk" ? "Télécharger l'app" : "Télécharger Anyloc"}
+          </WizardPrimaryButton>
         ))}
       </div>
     );
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center gap-2 text-sm text-zinc-500">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        Chargement...
-      </div>
-    );
-  }
-
-  if (error || !data) {
-    return (
-      <p className="text-sm text-red-600">{error ?? "Erreur de chargement."}</p>
-    );
+  if (loading || error || !data) {
+    return null;
   }
 
   const assets = data.assets.filter(
@@ -163,16 +140,16 @@ function DownloadButtons({
 
   if (!hasAccess) {
     return (
-      <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+      <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
         <div className="flex items-start gap-2">
-          <Lock className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+          <Lock className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
           <div>
-            <p className="font-medium text-amber-900">Abonnement requis</p>
-            <p className="mt-1 text-amber-800/90">
+            <p className="font-medium text-amber-100">Abonnement requis</p>
+            <p className="mt-1 text-sm text-amber-200/80">
               Les fichiers se débloquent dès que ton paiement est confirmé.
             </p>
             <Link href={getCheckoutUrl("annual")} className="mt-3 inline-block">
-              <Button size="sm">Voir les offres</Button>
+              <WizardPrimaryButton>Voir les offres</WizardPrimaryButton>
             </Link>
           </div>
         </div>
@@ -181,28 +158,22 @@ function DownloadButtons({
   }
 
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+    <div className="space-y-2">
       {assets.map((asset) =>
         asset.available ? (
           <a
             key={asset.id}
             href={asset.downloadPath}
             onClick={onDownload}
+            className={wizardPrimaryClassName}
           >
-            <Button className="w-full sm:w-auto">
-              <Download className="h-4 w-4" />
-              {asset.id === "apk" ? "Télécharger l'app" : "Télécharger Anyloc"}
-            </Button>
+            <Download className="h-4 w-4" />
+            {asset.id === "apk" ? "Télécharger l'app" : "Télécharger Anyloc"}
           </a>
         ) : (
-          <Button
-            key={asset.id}
-            disabled
-            variant="secondary"
-            className="w-full sm:w-auto"
-          >
+          <span key={asset.id} className={wizardSecondaryClassName}>
             {asset.label} — bientôt disponible
-          </Button>
+          </span>
         )
       )}
     </div>
@@ -358,8 +329,8 @@ function AndroidLinkStep({ preview = false }: { preview?: boolean }) {
 
   if (preview) {
     return (
-      <p>
-        Sur ce même téléphone, un bouton <strong>Ouvrir Anyloc</strong> et un QR
+      <p className="text-sm text-zinc-400">
+        Sur ce même téléphone, un bouton <strong className="text-white">Ouvrir Anyloc</strong> et un QR
         apparaissent ici. L&apos;app s&apos;ouvre déjà liée à ton compte.
       </p>
     );
@@ -367,27 +338,28 @@ function AndroidLinkStep({ preview = false }: { preview?: boolean }) {
 
   if (creating || !createdToken) {
     return (
-      <div className="flex items-center gap-2 text-sm text-zinc-500">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        Préparation du lien…
-      </div>
+      <WizardStatusBox
+        variant="searching"
+        title="Préparation du lien…"
+        hint="On génère le QR pour ton Android."
+      />
     );
   }
 
   if (error) {
     return (
       <div className="space-y-3">
-        <p className="text-sm text-red-600">{error}</p>
-        <Button size="sm" onClick={() => void createToken()}>
+        <WizardStatusBox variant="error" title={error} />
+        <WizardPrimaryButton onClick={() => void createToken()}>
           Réessayer
-        </Button>
+        </WizardPrimaryButton>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
-      <p>
+    <div className="space-y-4">
+      <p className="text-sm text-zinc-400">
         Sur ce même téléphone, appuie sur le bouton. Sinon, scanne le carré avec
         l&apos;appareil photo.
       </p>
@@ -397,23 +369,25 @@ function AndroidLinkStep({ preview = false }: { preview?: boolean }) {
             value={mobileSetupLink}
             label="Scanne avec l'appareil photo"
           />
-          <a href={mobileSetupLink} className="w-full sm:w-auto">
-            <Button className="w-full">
-              <Smartphone className="h-4 w-4" />
-              Ouvrir Anyloc sur mon tel
-            </Button>
+          <a href={mobileSetupLink} className={`w-full sm:flex-1 ${wizardPrimaryClassName}`}>
+            <Smartphone className="h-4 w-4" />
+            Ouvrir Anyloc sur mon tel
           </a>
         </div>
       ) : null}
 
       <HelpDetails title="Le bouton ne marche pas ? Copie le code à la main">
-        <code className="block break-all rounded-lg bg-white px-3 py-2 text-xs text-zinc-800">
+        <code className="block break-all rounded-lg bg-black/40 px-3 py-2 text-xs text-zinc-200">
           {createdToken.token}
         </code>
-        <Button size="sm" className="mt-3" onClick={() => void copyToken()}>
+        <button
+          type="button"
+          className="mt-3 inline-flex items-center gap-2 rounded-xl bg-pink-500 px-4 py-2 text-sm font-semibold text-white"
+          onClick={() => void copyToken()}
+        >
           <Copy className="h-4 w-4" />
           {copied ? "Copié" : "Copier le code"}
-        </Button>
+        </button>
         <p className="mt-2 text-xs text-zinc-500">
           Colle-le dans l&apos;app Anyloc, dans le champ prévu.
         </p>
@@ -422,223 +396,73 @@ function AndroidLinkStep({ preview = false }: { preview?: boolean }) {
   );
 }
 
-function IosGuide({
-  hasAccess,
-  preview = false,
-  forcePhone = false,
-  needsSetupPassword = false,
-  zipDownloadPath,
+function DeviceHandoff({
+  href,
+  title,
+  description,
+  copyLabel,
+  qrLabel,
 }: {
-  hasAccess: boolean;
-  preview?: boolean;
-  forcePhone?: boolean;
-  needsSetupPassword?: boolean;
-  zipDownloadPath?: string | null;
+  href: string;
+  title: string;
+  description: string;
+  copyLabel: string;
+  qrLabel?: string;
 }) {
-  const device = useSyncExternalStore(
-    () => () => {},
-    getClientDeviceSnapshot,
-    () => SERVER_CLIENT_DEVICE
-  );
-  const [desktopOs, setDesktopOs] = useState<DesktopOs | null>(null);
-  const [downloaded, setDownloaded] = useState(false);
-  const resolvedOs = desktopOs ?? device.desktopOs;
-  const installUrl = getInstallPageUrl("ios");
-  const isPhone = forcePhone || device.isPhone;
+  const [copied, setCopied] = useState(false);
+  const mailHref = `mailto:?subject=${encodeURIComponent("Anyloc — ouvre ça sur l'autre appareil")}&body=${encodeURIComponent(`Ouvre ce lien :\n${href}`)}`;
+
+  const copy = async () => {
+    await navigator.clipboard.writeText(href);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-zinc-600">
-        iPhone : télécharge <strong>Anyloc</strong> sur ton ordinateur (Mac ou
-        PC). Le guide complet est <strong>dans l&apos;app</strong> — branche
-        ton iPhone, installe en un clic, sans revenir sur le site.
-      </p>
-
-      {needsSetupPassword ? <SetupPasswordForm preview={preview} /> : null}
-
-      {isPhone ? (
-        <WrongDeviceNotice
-          title="Tu es sur ton téléphone — le fichier ne s'ouvre pas ici"
-          href={installUrl}
-          copyLabel="Copier le lien pour l'ordinateur"
-        >
-          <p>
-            Anyloc est un programme d&apos;ordinateur. Si tu le télécharges
-            ici, tu te retrouves avec un fichier qui ne s&apos;ouvre pas.
-          </p>
-          <p>
-            Ouvre ce lien sur ton Mac ou ton PC, puis télécharge Anyloc.
-          </p>
-        </WrongDeviceNotice>
-      ) : null}
-
-      <StepCard number={1} title="Télécharge Anyloc sur ton ordinateur">
-        {isPhone ? (
-          <ComputerOnlyHint />
-        ) : (
-          <>
-            <p>
-              {resolvedOs === "win" ? (
-                <>
-                  Windows va dire <strong>« Faites attention »</strong>. Clique{" "}
-                  <strong>Conserver</strong>, puis suis les étapes en dessous —
-                  ce n&apos;est pas un virus.
-                </>
-              ) : (
-                <>
-                  Un seul fichier. Il va dans <strong>Téléchargements</strong>{" "}
-                  — il ne s&apos;ouvre pas tout seul.
-                </>
-              )}
-            </p>
-            <DownloadButtons
-              assetIds={resolvedOs === "win" ? ["setup-win"] : ["setup-mac"]}
-              hasAccess={hasAccess}
-              preview={preview}
-              onDownload={() => setDownloaded(true)}
-            />
-            <button
-              type="button"
-              className="text-xs font-medium text-pink-600 underline-offset-2 hover:underline"
-              onClick={() =>
-                setDesktopOs(resolvedOs === "mac" ? "win" : "mac")
-              }
-            >
-              {resolvedOs === "mac" ? "J'ai un PC Windows" : "J'ai un Mac"}
-            </button>
-          </>
-        )}
-        <SetupOpenHelp
-          desktopOs={resolvedOs}
-          onDesktopOsChange={(os) => setDesktopOs(os)}
-          downloaded={downloaded}
-          zipDownloadPath={zipDownloadPath}
-        />
-      </StepCard>
-
-      <StepCard number={2} title="Ouvre Anyloc — le reste se fait dedans">
-        <p>
-          Lance Anyloc sur ton ordinateur. L&apos;app te guide{" "}
-          <strong>étape par étape</strong> :
-        </p>
-        <ol className="list-decimal space-y-2 pl-5">
-          <li>Connexion avec le même compte que le paiement</li>
-          <li>Branche l&apos;iPhone (câble USB)</li>
-          <li>Clique <strong>Installer</strong> — l&apos;app se met sur le tel</li>
-          <li>Ouvre Anyloc sur l&apos;iPhone et choisis une ville</li>
-        </ol>
-        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-          <strong>Laisse l&apos;iPhone branché</strong> et Anyloc ouvert sur
-          l&apos;ordi. Si tu débranches, Snap revoit ta vraie position.
-        </p>
-        {needsSetupPassword ? (
-          <p className="rounded-xl bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
-            Pas encore de mot de passe ? Choisis-en un dans{" "}
-            <strong>Mon compte</strong> avant d&apos;ouvrir Anyloc, ou utilise
-            le bouton Google (même email).
-          </p>
-        ) : null}
-        <HelpDetails title="Dans ~7 jours, l'app iPhone s'arrête ?">
-          <p className="mb-2">
-            Normal (limite Apple sans compte Developer payant). Installe{" "}
-            <strong>LocalDevVPN</strong> (App Store, gratuit), connecte le Wi-Fi,
-            puis dans Anyloc iPhone : <strong>Profil → Renouveler</strong>.
-            LocalDevVPN → <strong>Connect</strong>, puis le bouton Renouveler.
-            Pas besoin de rebrancher l&apos;ordi.
-          </p>
-        </HelpDetails>
-      </StepCard>
+      <WizardStatusBox title={title} hint={description} />
+      <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+        {qrLabel ? <SetupQrCode value={href} label={qrLabel} /> : null}
+        <div className="flex w-full flex-1 flex-col gap-2">
+          <WizardPrimaryButton onClick={() => void copy()}>
+            <Copy className="h-4 w-4" />
+            {copied ? "Lien copié" : copyLabel}
+          </WizardPrimaryButton>
+          <a href={mailHref} className={wizardSecondaryClassName}>
+            <Mail className="h-4 w-4" />
+            Se l&apos;envoyer par mail
+          </a>
+        </div>
+      </div>
     </div>
   );
 }
 
-function AndroidGuide({
-  hasAccess,
-  preview = false,
-  forceComputer = false,
-  forcePhone = false,
+function PlatformToggle({
+  platform,
+  onChange,
 }: {
-  hasAccess: boolean;
-  preview?: boolean;
-  forceComputer?: boolean;
-  forcePhone?: boolean;
+  platform: Platform;
+  onChange: (platform: Platform) => void;
 }) {
-  const device = useSyncExternalStore(
-    () => () => {},
-    getClientDeviceSnapshot,
-    () => SERVER_CLIENT_DEVICE
-  );
-  const [downloaded, setDownloaded] = useState(false);
-  const installUrl = getInstallPageUrl("android");
-  const onComputer = forceComputer || (!forcePhone && !device.isPhone);
-
   return (
-    <div className="space-y-4">
-      <p className="text-sm text-zinc-600">
-        Android : tout se fait sur le téléphone. Pas d&apos;ordinateur.
-      </p>
-
-      {onComputer ? (
-        <WrongDeviceNotice
-          title="Télécharge depuis ton Android, pas depuis l'ordinateur"
-          href={installUrl}
-          copyLabel="Copier le lien"
-          qrLabel="Scanne avec ton Android"
+    <div className="mb-6 flex gap-2 rounded-2xl border border-white/10 bg-white/5 p-1.5">
+      {(["ios", "android"] as const).map((value) => (
+        <button
+          key={value}
+          type="button"
+          onClick={() => onChange(value)}
+          className={cn(
+            "flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition-colors",
+            platform === value
+              ? "bg-white/10 text-pink-400 shadow-sm"
+              : "text-zinc-400 hover:text-white"
+          )}
         >
-          <p>
-            L&apos;app s&apos;installe sur le téléphone. Si tu télécharges ici,
-            tu te retrouves avec un fichier qui ne s&apos;ouvre pas.
-          </p>
-          <p>
-            Ouvre ce lien dans Chrome sur ton Android, puis appuie sur
-            Télécharger.
-          </p>
-        </WrongDeviceNotice>
-      ) : null}
-
-      <StepCard number={1} title="Télécharge, puis ouvre le fichier">
-        {onComputer ? (
-          <p className="text-xs text-zinc-500">
-            Les boutons ci-dessous sont pour quand tu es sur le téléphone.
-          </p>
-        ) : (
-          <p>
-            Appuie, puis ouvre le fichier dans{" "}
-            <strong>Téléchargements</strong>. Il ne s&apos;installe pas tout
-            seul.
-          </p>
-        )}
-        <DownloadButtons
-          assetIds={["apk"]}
-          hasAccess={hasAccess}
-          preview={preview}
-          onDownload={() => setDownloaded(true)}
-        />
-        <AndroidOpenHelp downloaded={downloaded} />
-      </StepCard>
-
-      <StepCard number={2} title="Ouvre Anyloc (le gros écran rose te guide)">
-        <AndroidLinkStep preview={preview} />
-        <p className="rounded-xl bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
-          L&apos;app te demande d&apos;autoriser la fausse position. Appuie sur
-          ses boutons — tu n&apos;as pas à chercher dans les réglages tout
-          seul.
-        </p>
-      </StepCard>
-
-      <StepCard number={3} title="Choisis une ville, vérifie dans Snap">
-        <ol className="list-decimal space-y-2 pl-5">
-          <li>Cherche une ville dans l&apos;app (Marbella, Paris…)</li>
-          <li>Ouvre Snap ou Maps — la loc a changé</li>
-        </ol>
-        <HelpDetails title="La loc ne change pas ?">
-          <ol className="list-decimal space-y-1.5 pl-5">
-            <li>Dans l&apos;app, suis l&apos;écran « Encore 1 étape »</li>
-            <li>Anyloc doit être l&apos;app de localisation fictive</li>
-            <li>Active le GPS, puis ferme et rouvre Snap</li>
-          </ol>
-        </HelpDetails>
-      </StepCard>
+          <Smartphone className="h-4 w-4" />
+          {value === "ios" ? "iPhone" : "Android"}
+        </button>
+      ))}
     </div>
   );
 }
@@ -648,7 +472,7 @@ export function InstallationGuideView({
   preview = false,
 }: { embedded?: boolean; preview?: boolean } = {}) {
   const searchParams = useSearchParams();
-  const { data, loading } = useDownloads();
+  const { data, loading, error: downloadsError } = useDownloads();
   const { completeStep, state } = useDashboardOnboarding();
   const urlPlatform = searchParams.get("platform");
   const platformFromUrl =
@@ -658,8 +482,21 @@ export function InstallationGuideView({
     detectDefaultPlatform,
     () => "ios" as Platform
   );
+  const device = useSyncExternalStore(
+    () => () => {},
+    getClientDeviceSnapshot,
+    () => SERVER_CLIENT_DEVICE
+  );
   const [manualPlatform, setManualPlatform] = useState<Platform | null>(null);
-  const platform = manualPlatform ?? platformFromUrl ?? detectedPlatform;
+  const { session, patch } = useInstallWizardSession();
+  const platform =
+    manualPlatform ?? session?.platform ?? platformFromUrl ?? detectedPlatform;
+  const step = session?.step ?? 1;
+  const downloaded = session?.downloaded ?? false;
+  const passwordGate = session?.passwordGate ?? false;
+  const iosInstallConfirmed = session?.iosInstallConfirmed ?? false;
+  const [replaying, setReplaying] = useState(false);
+  const [desktopOs, setDesktopOs] = useState<DesktopOs | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(() => {
     if (typeof window === "undefined") {
       return false;
@@ -667,6 +504,18 @@ export function InstallationGuideView({
 
     return window.sessionStorage.getItem(PAYMENT_SUCCESS_SESSION_KEY) === "true";
   });
+
+  const resolvedOs = desktopOs ?? device.desktopOs;
+  const installUrl = getInstallPageUrl(platform);
+  const forcePhone = preview && searchParams.get("device") === "phone";
+  const forceComputer = preview && searchParams.get("device") === "computer";
+  const isPhone = forcePhone || (!forceComputer && device.isPhone);
+  const needsSetupPassword = preview || Boolean(data?.needsSetupPassword);
+  const hasAccess = preview || (data?.hasAccess ?? false);
+  const alreadyDone = !replaying && state.steps.install;
+  const zipDownloadPath = data?.assets.find(
+    (asset) => asset.id === "setup-win-zip" && asset.available
+  )?.downloadPath;
 
   useEffect(() => {
     const sessionId = searchParams.get("session_id");
@@ -705,122 +554,671 @@ export function InstallationGuideView({
     }
   }, [searchParams]);
 
-  const hasAccess = preview || (data?.hasAccess ?? false);
+  const persist = useCallback(
+    (partial: Parameters<typeof patch>[0]) => {
+      patch({ platform, ...partial });
+    },
+    [patch, platform]
+  );
 
-  return (
-    <div className={embedded ? "" : "min-h-screen bg-background"}>
-      {!embedded && <DashboardPageHeader title="Installation" />}
+  const goToStep = useCallback(
+    (next: number) => {
+      persist({
+        step: Math.min(Math.max(next, 1), WIZARD_TOTAL_STEPS),
+        passwordGate: false,
+      });
+    },
+    [persist]
+  );
 
-      <main className={embedded ? "" : "p-4 pb-8 sm:p-6 lg:p-8"}>
-        {paymentSuccess && (
-          <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4 sm:px-5">
-            <div className="flex items-start gap-3">
-              <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
-              <div>
-                <p className="font-semibold text-emerald-900">C&apos;est payé — 3 étapes.</p>
-                <p className="mt-1 text-sm text-emerald-800">
-                  Choisis iPhone ou Android, puis suis uniquement les 3 cases
-                  ci-dessous.
-                </p>
-              </div>
-            </div>
-          </div>
+  const handleStart = () => {
+    if (needsSetupPassword) {
+      persist({ step: 2, passwordGate: true });
+      return;
+    }
+    goToStep(2);
+  };
+
+  const handlePasswordDone = useCallback(() => {
+    persist({ step: 2, passwordGate: false });
+  }, [persist]);
+
+  const handleSkip = () => {
+    completeStep("install");
+    clearInstallWizardSession();
+    setReplaying(false);
+  };
+
+  const handleComplete = () => {
+    completeStep("install");
+    clearInstallWizardSession();
+    setReplaying(false);
+  };
+
+  const handleReplay = () => {
+    setReplaying(true);
+    persist({
+      step: 1,
+      downloaded: false,
+      iosInstallConfirmed: false,
+      passwordGate: false,
+    });
+  };
+
+  const handlePlatformChange = (next: Platform) => {
+    setManualPlatform(next);
+    patch({
+      platform: next,
+      downloaded: false,
+      step: session?.step ?? 1,
+      passwordGate: false,
+    });
+  };
+
+  const showDone = alreadyDone;
+
+  function renderWelcome() {
+    const ios = platform === "ios";
+
+    return (
+      <WizardShell
+        step={1}
+        icon={MapPin}
+        title="Bienvenue sur Anyloc"
+        subtitle={
+          ios
+            ? "Configure ton iPhone en quelques minutes. On te guide étape par étape."
+            : "Configure ton Android en quelques minutes. On te guide étape par étape."
+        }
+        footer={
+          <>
+            <WizardPrimaryButton onClick={handleStart}>C&apos;est parti</WizardPrimaryButton>
+            <WizardSkipButton onClick={handleSkip}>
+              {ios
+                ? "J'ai déjà configuré mon iPhone"
+                : "J'ai déjà configuré mon Android"}
+            </WizardSkipButton>
+          </>
+        }
+      >
+        {paymentSuccess ? (
+          <p className="mb-4 text-sm font-medium text-emerald-400">
+            Paiement confirmé — on y va.
+          </p>
+        ) : null}
+        <PlatformToggle platform={platform} onChange={handlePlatformChange} />
+        <WizardChecklist
+          title="Ce dont tu as besoin"
+          items={
+            ios
+              ? [
+                  "Un iPhone (iOS 17, 18 ou 26)",
+                  "Un câble USB",
+                  resolvedOs === "win" ? "Ce PC Windows" : "Ce Mac",
+                  "5 minutes",
+                ]
+              : [
+                  "Un téléphone Android",
+                  "5 minutes",
+                  "Pas besoin d'ordinateur",
+                ]
+          }
+        />
+      </WizardShell>
+    );
+  }
+
+  function renderPasswordGate() {
+    return (
+      <WizardShell
+        step={1}
+        stepLabel="Avant de continuer"
+        icon={KeyRound}
+        title="Choisis un mot de passe"
+        subtitle="Tu as payé sans en créer un. Sans ça, Anyloc affiche « email ou mot de passe incorrect »."
+        onBack={() => goToStep(1)}
+        footer={
+          <p className="text-center text-xs text-zinc-500">
+            Enregistre-le pour débloquer l&apos;étape suivante.
+          </p>
+        }
+      >
+        <div className="overflow-hidden rounded-2xl bg-white">
+          <SetupPasswordForm
+            preview={preview}
+            onSuccess={handlePasswordDone}
+            hideIntro
+          />
+        </div>
+      </WizardShell>
+    );
+  }
+
+  function renderIosDownload() {
+    if (isPhone) {
+      return (
+        <WizardShell
+          step={2}
+          icon={Monitor}
+          title="Ouvre cette page sur l'ordinateur"
+          subtitle="Anyloc est un programme d'ordinateur. Si tu le télécharges ici, le fichier ne s'ouvre pas."
+          onBack={() => goToStep(1)}
+          footer={
+            <>
+              <WizardPrimaryButton onClick={() => goToStep(3)}>
+                J&apos;ai ouvert le lien sur l&apos;ordi
+              </WizardPrimaryButton>
+              <WizardSkipButton onClick={() => goToStep(3)}>
+                Continuer quand même
+              </WizardSkipButton>
+            </>
+          }
+        >
+          <DeviceHandoff
+            href={installUrl}
+            title="Tu es sur ton téléphone"
+            description="Ouvre ce lien sur ton Mac ou ton PC, puis télécharge Anyloc."
+            copyLabel="Copier le lien pour l'ordinateur"
+            qrLabel="Scanne depuis l'ordinateur"
+          />
+        </WizardShell>
+      );
+    }
+
+    const toolsReady = downloaded && hasAccess;
+    const toolsError = Boolean(downloadsError);
+
+    return (
+      <WizardShell
+        step={2}
+        icon={Monitor}
+        title="Préparation des outils"
+        subtitle="Télécharge Anyloc. L'app installera ensuite tout ce qu'il faut pour parler à ton iPhone."
+        onBack={() => goToStep(1)}
+        footer={
+          <>
+            <WizardPrimaryButton
+              disabled={!toolsReady}
+              onClick={() => goToStep(3)}
+            >
+              Continuer
+            </WizardPrimaryButton>
+            {toolsError ? (
+              <WizardSecondaryButton onClick={() => persist({ downloaded: false })}>
+                Réessayer
+              </WizardSecondaryButton>
+            ) : null}
+            {downloaded ? null : (
+              <WizardSkipButton
+                onClick={() => {
+                persist({ downloaded: true, step: 3, passwordGate: false });
+                }}
+              >
+                J&apos;ai déjà le fichier
+              </WizardSkipButton>
+            )}
+          </>
+        }
+      >
+        {loading && !preview ? (
+          <WizardStatusBox
+            variant="searching"
+            title="Vérification en cours..."
+            hint="Ça peut prendre 1-2 minutes la première fois."
+          />
+        ) : toolsError ? (
+          <WizardStatusBox
+            variant="error"
+            title="Impossible de préparer le téléchargement."
+            hint="Réessaie, ou passe par le guide si ça bloque."
+          />
+        ) : toolsReady ? (
+          <WizardStatusBox
+            variant="ok"
+            title="Fichier téléchargé"
+            hint="Il est dans Téléchargements. Passe à l'étape suivante pour l'ouvrir."
+          />
+        ) : (
+          <WizardStatusBox
+            variant="idle"
+            title="Prêt à télécharger"
+            hint={
+              resolvedOs === "win"
+                ? "Windows va dire « Faites attention ». Clique Conserver — ce n'est pas un virus."
+                : "Un seul fichier. Il va dans Téléchargements — il ne s'ouvre pas tout seul."
+            }
+          />
         )}
 
-        <div className="mx-auto max-w-3xl">
-          <p className="text-sm font-medium text-pink-600">Installation</p>
-          <h1 className="mt-1 text-2xl font-bold text-zinc-900 sm:text-3xl">
-            3 étapes, et ta loc change
-          </h1>
-          <p className="mt-3 text-zinc-600">
-            Un seul chemin. Choisis ton téléphone, puis fais les 3 étapes dans
-            l&apos;ordre.
-          </p>
-
-          <div className="mt-8 flex gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 p-1.5">
-            <button
-              type="button"
-              onClick={() => setManualPlatform("ios")}
-              className={cn(
-                "flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition-colors",
-                platform === "ios"
-                  ? "bg-white text-pink-600 shadow-sm"
-                  : "text-zinc-600 hover:text-zinc-900"
-              )}
-            >
-              <Smartphone className="h-4 w-4" />
-              iPhone
-            </button>
-            <button
-              type="button"
-              onClick={() => setManualPlatform("android")}
-              className={cn(
-                "flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition-colors",
-                platform === "android"
-                  ? "bg-white text-pink-600 shadow-sm"
-                  : "text-zinc-600 hover:text-zinc-900"
-              )}
-            >
-              <Smartphone className="h-4 w-4" />
-              Android
-            </button>
-          </div>
-
-          {loading && !preview ? (
-            <div className="mt-8 flex items-center justify-center gap-2 py-12 text-zinc-500">
-              <Loader2 className="h-5 w-5 animate-spin" />
-              Chargement du guide...
-            </div>
-          ) : platform === "ios" ? (
-            <div className="mt-8">
-              <IosGuide
-                hasAccess={hasAccess}
-                preview={preview}
-                forcePhone={preview && searchParams.get("device") === "phone"}
-                needsSetupPassword={
-                  preview || Boolean(data?.needsSetupPassword)
-                }
-                zipDownloadPath={
-                  data?.assets.find(
-                    (asset) => asset.id === "setup-win-zip" && asset.available
-                  )?.downloadPath
-                }
-              />
-            </div>
-          ) : (
-            <div className="mt-8">
-              <AndroidGuide
-                hasAccess={hasAccess}
-                preview={preview}
-                forceComputer={preview && searchParams.get("device") === "computer"}
-                forcePhone={preview && searchParams.get("device") === "phone"}
-              />
-            </div>
+        <div className="mt-4 space-y-3">
+          {downloaded ? null : (
+            <DownloadButtons
+              assetIds={resolvedOs === "win" ? ["setup-win"] : ["setup-mac"]}
+              hasAccess={hasAccess}
+              preview={preview}
+              onDownload={() => persist({ downloaded: true })}
+              data={data}
+              loading={loading}
+              error={downloadsError}
+            />
           )}
+          <button
+            type="button"
+            className="text-xs font-medium text-pink-400 underline-offset-2 hover:underline"
+            onClick={() =>
+              setDesktopOs(resolvedOs === "mac" ? "win" : "mac")
+            }
+          >
+            {resolvedOs === "mac" ? "J'ai un PC Windows" : "J'ai un Mac"}
+          </button>
+        </div>
+      </WizardShell>
+    );
+  }
 
-          {data?.isAdmin && (
-            <p className="mt-6 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-800">
-              Mode admin actif — accès dev sans abonnement.
+  function renderIosOpen() {
+    return (
+      <WizardShell
+        step={3}
+        icon={Download}
+        title="Ouvre Anyloc"
+        subtitle="Le fichier ne s'ouvre pas tout seul. Fais ça, puis reviens valider."
+        onBack={() => goToStep(2)}
+        footer={
+          <WizardPrimaryButton onClick={() => goToStep(4)}>
+            J&apos;ai ouvert Anyloc
+          </WizardPrimaryButton>
+        }
+      >
+        {resolvedOs === "mac" ? (
+          <>
+            <WizardInstruction number={1} title="Double-clique le fichier">
+              Une fenêtre s&apos;ouvre — on dirait un dossier.
+            </WizardInstruction>
+            <WizardInstruction number={2} title="Glisse Anyloc sur Applications">
+              Dépose l&apos;icône Anyloc dans le dossier Applications.
+            </WizardInstruction>
+            <WizardInstruction number={3} title="Clic droit → Ouvrir → Ouvrir">
+              Pas un double-clic. Sinon macOS peut dire « endommagé ».
+            </WizardInstruction>
+          </>
+        ) : (
+          <>
+            <WizardInstruction number={1} title="Chrome : flèche ▾ → Conserver">
+              Ne clique pas sur Jeter. Ce n&apos;est pas un virus.
+            </WizardInstruction>
+            <WizardInstruction number={2} title="Double-clique Anyloc-Setup">
+              Le fichier est dans Téléchargements.
+            </WizardInstruction>
+            <WizardInstruction number={3} title="Plus d'infos → Exécuter quand même">
+              Pas le bouton OK. Windows bloque les apps hors Store.
+            </WizardInstruction>
+          </>
+        )}
+        <div className="mt-4">
+          <HelpDetails title="Ça ne s'ouvre pas ?">
+            <div className="rounded-xl bg-white p-3 text-zinc-800">
+              {resolvedOs === "win" ? (
+                <WindowsOpenHelp
+                  compact
+                  downloaded={downloaded}
+                  zipDownloadPath={zipDownloadPath}
+                />
+              ) : (
+                <ol className="list-decimal space-y-1.5 pl-5 text-sm">
+                  <li>
+                    Réglages Mac → Confidentialité et sécurité →{" "}
+                    <strong>Ouvrir quand même</strong>
+                  </li>
+                  <li>
+                    Ou clic droit sur Anyloc → Ouvrir → Ouvrir
+                  </li>
+                </ol>
+              )}
+            </div>
+          </HelpDetails>
+        </div>
+      </WizardShell>
+    );
+  }
+
+  function renderIosConnect() {
+    return (
+      <WizardShell
+        step={4}
+        icon={Usb}
+        iconPulse
+        title="Branche ton iPhone"
+        subtitle={
+          <>
+            Connecte ton iPhone avec le câble USB, puis appuie sur{" "}
+            <strong className="text-white">Faire confiance</strong> sur l&apos;iPhone.
+            L&apos;app Anyloc te guide ensuite.
+          </>
+        }
+        onBack={() => goToStep(3)}
+        footer={
+          <WizardPrimaryButton onClick={() => goToStep(5)}>
+            C&apos;est branché, je continue
+          </WizardPrimaryButton>
+        }
+      >
+        <WizardInstruction number={1} title="Branche le câble USB">
+          Utilise le câble fourni avec ton iPhone (Lightning ou USB-C).
+        </WizardInstruction>
+        <WizardInstruction number={2} title="Appuie sur « Faire confiance »">
+          Un popup apparaît sur l&apos;iPhone. Appuie sur{" "}
+          <strong className="text-white">Faire confiance</strong> et entre ton code.
+        </WizardInstruction>
+        <WizardInstruction number={3} title="Active le mode développeur si demandé">
+          Réglages → Confidentialité et sécurité → Mode développeur. L&apos;iPhone
+          redémarre — c&apos;est normal.
+        </WizardInstruction>
+        <WizardTip>
+          Laisse l&apos;iPhone branché et Anyloc ouvert sur l&apos;ordi. Si tu
+          débranches, Snap revoit ta vraie position.
+        </WizardTip>
+      </WizardShell>
+    );
+  }
+
+  function renderIosInstall() {
+    if (iosInstallConfirmed || alreadyDone) {
+      return renderDone();
+    }
+
+    return (
+      <WizardShell
+        step={5}
+        icon={Smartphone}
+        title="Installe l'app sur ton iPhone"
+        subtitle="Dans Anyloc sur l'ordinateur, clique Installer. L'app se met directement sur le tel."
+        onBack={() => goToStep(4)}
+        footer={
+          <WizardPrimaryButton onClick={() => persist({ iosInstallConfirmed: true })}>
+            C&apos;est installé
+          </WizardPrimaryButton>
+        }
+      >
+        <WizardStatusBox
+          title="Prêt à installer"
+          hint="Un clic dans l'app ordinateur, et Anyloc apparaît sur l'iPhone."
+        />
+        <HelpDetails title="Dans ~7 jours, l'app iPhone s'arrête ?">
+          <p>
+            Normal (limite Apple). Installe <strong className="text-white">LocalDevVPN</strong>{" "}
+            (App Store, gratuit), connecte le Wi-Fi, puis dans Anyloc iPhone :{" "}
+            <strong className="text-white">Profil → Renouveler</strong>. Pas besoin de
+            rebrancher l&apos;ordi.
+          </p>
+        </HelpDetails>
+      </WizardShell>
+    );
+  }
+
+  function renderAndroidDownload() {
+    const onComputer = forceComputer || (!forcePhone && !device.isPhone);
+
+    if (onComputer) {
+      return (
+        <WizardShell
+          step={2}
+          icon={Smartphone}
+          title="Télécharge depuis ton Android"
+          subtitle="L'app s'installe sur le téléphone. Si tu télécharges ici, le fichier ne s'ouvre pas."
+          onBack={() => goToStep(1)}
+          footer={
+            <>
+              <WizardPrimaryButton onClick={() => goToStep(3)}>
+                J&apos;ai ouvert le lien sur mon Android
+              </WizardPrimaryButton>
+              <WizardSkipButton onClick={() => goToStep(3)}>
+                Continuer quand même
+              </WizardSkipButton>
+            </>
+          }
+        >
+          <DeviceHandoff
+            href={installUrl}
+            title="Tu es sur l'ordinateur"
+            description="Ouvre ce lien dans Chrome sur ton Android, puis appuie sur Télécharger."
+            copyLabel="Copier le lien"
+            qrLabel="Scanne avec ton Android"
+          />
+        </WizardShell>
+      );
+    }
+
+    const toolsReady = downloaded && hasAccess;
+
+    return (
+      <WizardShell
+        step={2}
+        icon={Download}
+        title="Télécharge l'app"
+        subtitle="Appuie, puis ouvre le fichier dans Téléchargements. Il ne s'installe pas tout seul."
+        onBack={() => goToStep(1)}
+        footer={
+          <>
+            <WizardPrimaryButton
+              disabled={!toolsReady}
+              onClick={() => goToStep(3)}
+            >
+              Continuer
+            </WizardPrimaryButton>
+            <WizardSkipButton
+              onClick={() => {
+                persist({ downloaded: true, step: 3, passwordGate: false });
+              }}
+            >
+              J&apos;ai déjà l&apos;app
+            </WizardSkipButton>
+          </>
+        }
+      >
+        {loading && !preview ? (
+          <WizardStatusBox
+            variant="searching"
+            title="Vérification en cours..."
+            hint="On prépare le fichier Android."
+          />
+        ) : toolsReady ? (
+          <WizardStatusBox
+            variant="ok"
+            title="Fichier téléchargé"
+            hint="Il est dans Téléchargements."
+          />
+        ) : (
+          <WizardStatusBox
+            title="Prêt à télécharger"
+            hint="Le fichier s'appelle Anyloc.apk."
+          />
+        )}
+        <div className="mt-4">
+          {downloaded ? null : (
+            <DownloadButtons
+              assetIds={["apk"]}
+              hasAccess={hasAccess}
+              preview={preview}
+              onDownload={() => persist({ downloaded: true })}
+              data={data}
+              loading={loading}
+              error={downloadsError}
+            />
+          )}
+        </div>
+      </WizardShell>
+    );
+  }
+
+  function renderAndroidInstall() {
+    return (
+      <WizardShell
+        step={3}
+        icon={Smartphone}
+        title="Installe le fichier"
+        subtitle="Le fichier ne s'ouvre pas tout seul. Fais ça, puis reviens valider."
+        onBack={() => goToStep(2)}
+        footer={
+          <WizardPrimaryButton onClick={() => goToStep(4)}>
+            C&apos;est installé
+          </WizardPrimaryButton>
+        }
+      >
+        <WizardInstruction number={1} title="Ouvre Téléchargements">
+          Ou l&apos;app Fichiers.
+        </WizardInstruction>
+        <WizardInstruction number={2} title="Appuie sur Anyloc.apk">
+          Android te demande d&apos;installer.
+        </WizardInstruction>
+        <WizardInstruction number={3} title="Autorise si Android bloque">
+          Autorise ton navigateur à installer des apps inconnues, puis reviens
+          sur le fichier.
+        </WizardInstruction>
+        <WizardInstruction number={4} title="Appuie sur Installer">
+          Ensuite ouvre Anyloc.
+        </WizardInstruction>
+      </WizardShell>
+    );
+  }
+
+  function renderAndroidLink() {
+    return (
+      <WizardShell
+        step={4}
+        icon={Smartphone}
+        title="Lie l'app à ton compte"
+        subtitle="L'app s'ouvre déjà liée. Si le bouton ne marche pas, scanne le carré."
+        onBack={() => goToStep(3)}
+        footer={
+          <WizardPrimaryButton onClick={() => goToStep(5)}>
+            J&apos;ai ouvert Anyloc
+          </WizardPrimaryButton>
+        }
+      >
+        <AndroidLinkStep preview={preview} />
+        <WizardTip>
+          L&apos;app te demande d&apos;autoriser la fausse position. Appuie sur
+          ses boutons — tu n&apos;as pas à chercher dans les réglages tout seul.
+        </WizardTip>
+      </WizardShell>
+    );
+  }
+
+  function renderAndroidFinish() {
+    if (alreadyDone) {
+      return renderDone();
+    }
+
+    return (
+      <WizardShell
+        step={5}
+        icon={MapPin}
+        title="Choisis une ville"
+        subtitle="Cherche une ville dans l'app (Marbella, Paris…), puis ouvre Snap ou Maps."
+        onBack={() => goToStep(4)}
+        footer={
+          <WizardPrimaryButton onClick={handleComplete}>
+            Oui, ça marche
+          </WizardPrimaryButton>
+        }
+      >
+        <WizardInstruction number={1} title="Cherche une ville dans l'app">
+          Marbella, Paris, Miami…
+        </WizardInstruction>
+        <WizardInstruction number={2} title="Vérifie dans Snap ou Maps">
+          La loc a changé. Si ce n&apos;est pas le cas, Anyloc doit être l&apos;app
+          de localisation fictive.
+        </WizardInstruction>
+        <HelpDetails title="La loc ne change pas ?">
+          <ol className="list-decimal space-y-1.5 pl-5">
+            <li>Dans l&apos;app, suis l&apos;écran « Encore 1 étape »</li>
+            <li>Anyloc doit être l&apos;app de localisation fictive</li>
+            <li>Active le GPS, puis ferme et rouvre Snap</li>
+          </ol>
+        </HelpDetails>
+      </WizardShell>
+    );
+  }
+
+  function renderDone() {
+    return (
+      <WizardShell
+        step={5}
+        icon={CheckCircle2}
+        title="C'est prêt !"
+        subtitle={
+          platform === "ios"
+            ? "Ouvre Anyloc sur ton iPhone et connecte-toi avec le même compte. Ta position se synchronise automatiquement."
+            : "Ouvre Anyloc sur ton Android, choisis une ville, et vérifie dans Snap."
+        }
+        footer={
+          <>
+            <WizardPrimaryButton onClick={handleComplete}>
+              Commencer à utiliser Anyloc
+            </WizardPrimaryButton>
+            <WizardSkipButton onClick={handleReplay}>
+              Revoir le guide
+            </WizardSkipButton>
+          </>
+        }
+      >
+        <WizardSuccessCard title="C'est prêt !">
+          {platform === "ios" ? (
+            <p>
+              Ouvre <strong className="text-white">Anyloc</strong> sur ton iPhone
+              et connecte-toi avec le <strong className="text-white">même compte</strong>.
+              Ta position se synchronise automatiquement.
+            </p>
+          ) : (
+            <p>
+              L&apos;app est liée. Choisis une ville, puis ouvre Snap ou Maps pour
+              vérifier.
             </p>
           )}
+        </WizardSuccessCard>
+        {data?.isAdmin ? (
+          <p className="mt-4 text-center text-xs text-violet-300">
+            Mode admin actif — accès dev sans abonnement.
+          </p>
+        ) : null}
+      </WizardShell>
+    );
+  }
 
-          {!state.steps.install && (
-            <Card className="mt-8 border-emerald-200 bg-emerald-50/50 p-5 sm:p-6">
-              <h3 className="font-semibold text-zinc-900">
-                Ta loc a changé ?
-              </h3>
-              <p className="mt-2 text-sm text-zinc-600">
-                Confirme seulement si tu as vu la nouvelle position dans Maps ou
-                Snap.
-              </p>
-              <div className="mt-4">
-                <Button onClick={() => completeStep("install")}>
-                  <CheckCircle2 className="h-4 w-4" />
-                  Oui, ça marche
-                </Button>
-              </div>
-            </Card>
-          )}
+  function renderStep() {
+    if (showDone && !replaying) {
+      return renderDone();
+    }
+
+    if (step === 1) {
+      return renderWelcome();
+    }
+
+    if (passwordGate) {
+      return renderPasswordGate();
+    }
+
+    if (platform === "ios") {
+      if (step === 2) return renderIosDownload();
+      if (step === 3) return renderIosOpen();
+      if (step === 4) return renderIosConnect();
+      return renderIosInstall();
+    }
+
+    if (step === 2) return renderAndroidDownload();
+    if (step === 3) return renderAndroidInstall();
+    if (step === 4) return renderAndroidLink();
+    return renderAndroidFinish();
+  }
+
+  return (
+    <div className={embedded ? "" : "min-h-screen bg-zinc-950 text-white"}>
+      {!embedded && <DashboardPageHeader tone="dark" />}
+
+      <main className={embedded ? "" : "px-4 py-8 sm:px-6 lg:px-8"}>
+        <div key={`${platform}-${passwordGate ? "password" : step}-${iosInstallConfirmed ? "done" : "flow"}`}>
+          {renderStep()}
         </div>
       </main>
     </div>
