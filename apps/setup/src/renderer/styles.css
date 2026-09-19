@@ -520,9 +520,17 @@ body {
   overflow-y: auto;
 }
 
-.onboarding-card {
-  width: 100%;
-  max-width: 520px;
+.guide-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 8px 0 8px;
+  text-align: center;
+}
+.onboarding-card > .setup-subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+  text-align: center;
 }
 
 .onboarding-kicker {

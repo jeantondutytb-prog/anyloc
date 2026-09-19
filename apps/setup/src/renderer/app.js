@@ -166,13 +166,21 @@ async function handleOAuth(provider) {
   afterAuth();
 }
 
+function continueFromGuide() {
+  if (session) {
+    afterAuth();
+    return;
+  }
+  showScreen("login");
+}
+
 function afterAuth() {
   try {
     if (hasInstalledIphone()) {
       enterMain();
       return;
     }
-    startOnboarding();
+    void startOnboarding();
   } catch {
     void startOnboarding();
   }
@@ -251,6 +259,8 @@ async function applyPlatformHints() {
   document.body.dataset.platform = desktopPlatform;
   const hint = $("onboarding-win-hint");
   if (hint) hint.hidden = desktopPlatform !== "win";
+  const guideHint = $("guide-win-hint");
+  if (guideHint) guideHint.hidden = desktopPlatform !== "win";
   const deviceLabel = $("profil-device");
   if (deviceLabel) {
     deviceLabel.textContent = desktopPlatform === "win" ? "Windows" : "Mac";
@@ -342,7 +352,7 @@ function logout() {
   clearSession();
   activeSpoof = null;
   selectedPosition = null;
-  showScreen("login");
+  showScreen("guide");
   $("login-email").value = "";
   $("login-password").value = "";
   $("login-error").textContent = "";
@@ -827,11 +837,12 @@ async function init() {
     if (verified.ok) {
       session = verified.session || saved;
       persistSession(session);
-      afterAuth();
     } else {
       clearSession();
     }
   }
+
+  showScreen("guide");
 
   // Handle launch config
   const launchConfig = await window.anylocSetup.getLaunchConfig();
@@ -842,6 +853,8 @@ async function init() {
   });
 
   // ── Event listeners ──
+
+  $("guide-continue")?.addEventListener("click", () => continueFromGuide());
 
   // Login
   $("login-form").addEventListener("submit", (e) => {
