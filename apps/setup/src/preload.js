@@ -8,6 +8,13 @@ contextBridge.exposeInMainWorld("anylocSetup", {
     ipcRenderer.on("setup:launch-config", listener);
     return () => ipcRenderer.removeListener("setup:launch-config", listener);
   },
+  ensureTools: () => ipcRenderer.invoke("setup:ensure-tools"),
+  toolsReady: () => ipcRenderer.invoke("setup:tools-ready"),
+  onToolsProgress: (callback) => {
+    const listener = (_event, progress) => callback(progress);
+    ipcRenderer.on("setup:tools-progress", listener);
+    return () => ipcRenderer.removeListener("setup:tools-progress", listener);
+  },
   checkUsb: (payload) => ipcRenderer.invoke("setup:check-usb", payload),
   openExternal: (url) => ipcRenderer.invoke("setup:open-external", url),
   ensureIpa: () => ipcRenderer.invoke("setup:ensure-ipa"),

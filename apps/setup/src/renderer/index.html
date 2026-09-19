@@ -279,45 +279,34 @@
           <button class="guide-btn-skip" id="guide-skip-btn">J'ai déjà configuré mon iPhone</button>
         </div>
 
-        <!-- Step 2: Install tools -->
+        <!-- Step 2: Install tools (automatic) -->
         <div class="guide-step-content" id="guide-step-2" hidden>
           <div class="guide-icon-wrap">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
           </div>
-          <h2 class="guide-title">Installe les outils USB</h2>
-          <p class="guide-subtitle">Anyloc a besoin de <strong>pymobiledevice3</strong> pour communiquer avec ton iPhone.</p>
-
-          <div class="guide-instruction-card" id="guide-tools-card">
-            <div class="guide-instruction-num">1</div>
-            <div>
-              <h3>Ouvre le Terminal</h3>
-              <p id="guide-terminal-hint">Cherche « Terminal » dans Spotlight (⌘ + Espace).</p>
-            </div>
-          </div>
-          <div class="guide-instruction-card">
-            <div class="guide-instruction-num">2</div>
-            <div>
-              <h3>Copie et colle cette commande</h3>
-              <div class="guide-code-block" id="guide-install-cmd">
-                <code id="guide-cmd-text">pip3 install pymobiledevice3</code>
-                <button class="guide-copy-btn" id="guide-copy-cmd">Copier</button>
-              </div>
-              <p class="guide-hint" id="guide-install-hint">Attends que l'installation se termine (1-2 min).</p>
-            </div>
-          </div>
+          <h2 class="guide-title">Préparation des outils</h2>
+          <p class="guide-subtitle">Anyloc installe automatiquement ce qu'il faut pour communiquer avec ton iPhone.</p>
 
           <div class="guide-status-box" id="guide-tools-status">
-            <div class="guide-status-icon" id="guide-tools-icon">
+            <div class="guide-status-icon searching" id="guide-tools-icon">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
             </div>
             <div>
               <div class="guide-status-text" id="guide-tools-text">Vérification en cours...</div>
-              <div class="guide-status-hint" id="guide-tools-hint">On vérifie si pymobiledevice3 est déjà installé.</div>
+              <div class="guide-status-hint" id="guide-tools-hint">Ça peut prendre 1-2 minutes la première fois.</div>
             </div>
           </div>
 
+          <div class="guide-progress" id="guide-tools-progress" hidden>
+            <div class="guide-progress-bar" id="guide-tools-progress-bar" style="width: 0%"></div>
+          </div>
+
+          <div class="guide-tip-box" id="guide-tools-error" hidden>
+            <p id="guide-tools-error-text"></p>
+          </div>
+
           <button class="guide-btn-primary" id="guide-tools-next" disabled>Continuer</button>
-          <button class="guide-btn-secondary" id="guide-tools-recheck">Revérifier</button>
+          <button class="guide-btn-secondary" id="guide-tools-retry" hidden>Réessayer</button>
         </div>
 
         <!-- Step 3: Connect iPhone -->

@@ -2,6 +2,8 @@ const { spawn, spawnSync } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
 
+const pythonSetup = require("./python-setup");
+
 let cachedCli = null;
 let cachedPython = null;
 
@@ -263,8 +265,13 @@ function getSpawnEnv() {
   const isWin = process.platform === "win32";
   const sep = isWin ? ";" : ":";
 
+  const bundledCli = pythonSetup.getBundledCli();
+  const bundledDir = path.dirname(bundledCli);
+
   const extraPaths = isWin
     ? [
+        bundledDir,
+        path.join(pythonSetup.getEnvDir()),
         path.join(process.env.LOCALAPPDATA || "", "Programs", "Python", "Python314", "Scripts"),
         path.join(process.env.LOCALAPPDATA || "", "Programs", "Python", "Python313", "Scripts"),
         path.join(process.env.LOCALAPPDATA || "", "Programs", "Python", "Python312", "Scripts"),
@@ -282,6 +289,7 @@ function getSpawnEnv() {
         "C:\\Python312",
       ]
     : [
+        bundledDir,
         "/Library/Frameworks/Python.framework/Versions/3.14/bin",
         "/Library/Frameworks/Python.framework/Versions/3.13/bin",
         "/Library/Frameworks/Python.framework/Versions/3.12/bin",
@@ -301,11 +309,13 @@ function getSpawnEnv() {
 function getCliCandidates() {
   const home = process.env.HOME || process.env.USERPROFILE || "";
   const isWin = process.platform === "win32";
+  const bundledCli = pythonSetup.getBundledCli();
 
   if (isWin) {
     const localAppData = process.env.LOCALAPPDATA || "";
     const appData = process.env.APPDATA || "";
     return [
+      bundledCli,
       process.env.ANYLOC_PMD3,
       path.join(localAppData, "Programs", "Python", "Python314", "Scripts", "pymobiledevice3.exe"),
       path.join(localAppData, "Programs", "Python", "Python313", "Scripts", "pymobiledevice3.exe"),
@@ -321,6 +331,7 @@ function getCliCandidates() {
   }
 
   return [
+    bundledCli,
     process.env.ANYLOC_PMD3,
     "/Library/Frameworks/Python.framework/Versions/3.14/bin/pymobiledevice3",
     "/Library/Frameworks/Python.framework/Versions/3.13/bin/pymobiledevice3",
@@ -357,10 +368,12 @@ function resolvePymobiledevice3Cli() {
 function getPythonCandidates() {
   const home = process.env.HOME || process.env.USERPROFILE || "";
   const isWin = process.platform === "win32";
+  const bundledPython = pythonSetup.getBundledPython();
 
   if (isWin) {
     const localAppData = process.env.LOCALAPPDATA || "";
     return [
+      bundledPython,
       process.env.ANYLOC_PYTHON,
       path.join(localAppData, "Programs", "Python", "Python314", "python.exe"),
       path.join(localAppData, "Programs", "Python", "Python313", "python.exe"),
@@ -374,6 +387,7 @@ function getPythonCandidates() {
   }
 
   return [
+    bundledPython,
     process.env.ANYLOC_PYTHON,
     "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3",
     "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
@@ -1032,6 +1046,11 @@ async function clearGpsLocation({ udid }) {
   return runSimulateLocation({ type: "clear" }, udid);
 }
 
+function clearCachedPaths() {
+  cachedCli = null;
+  cachedPython = null;
+}
+
 module.exports = {
   detectUsbDevice,
   installIosApp,
@@ -1043,6 +1062,7 @@ module.exports = {
   savePairingLocalCopy,
   resolvePythonExecutable,
   resolvePymobiledevice3Cli,
+  clearCachedPaths,
   getSpawnEnv,
   getScriptsDir,
 };

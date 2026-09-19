@@ -599,37 +599,59 @@ async function initGuideToolsStep() {
   const text = $("guide-tools-text");
   const hint = $("guide-tools-hint");
   const nextBtn = $("guide-tools-next");
+  const retryBtn = $("guide-tools-retry");
+  const progressWrap = $("guide-tools-progress");
+  const progressBar = $("guide-tools-progress-bar");
+  const errorBox = $("guide-tools-error");
 
-  // Platform-specific instructions
-  if (guidePlatform === "win") {
-    $("guide-terminal-hint").textContent = "Cherche « cmd » ou « PowerShell » dans le menu Démarrer.";
-    $("guide-cmd-text").textContent = "pip install pymobiledevice3";
-    $("guide-install-hint").textContent = "Si pip n'est pas reconnu, installe Python depuis python.org et coche « Add to PATH ».";
-  }
-
-  // Check if tools already installed
-  text.textContent = "Vérification en cours...";
-  hint.textContent = "On vérifie si pymobiledevice3 est déjà installé.";
-  icon.className = "guide-status-icon searching";
-  statusBox.className = "guide-status-box";
   nextBtn.disabled = true;
+  retryBtn.hidden = true;
+  errorBox.hidden = true;
 
-  const result = await window.anylocSetup.checkUsb();
-
-  if (result.connected || !result.message?.includes("introuvable")) {
-    text.textContent = "pymobiledevice3 est installé";
-    hint.textContent = "Les outils USB sont prêts. Tu peux continuer.";
+  const alreadyReady = await window.anylocSetup.toolsReady();
+  if (alreadyReady) {
+    text.textContent = "Outils USB prêts";
+    hint.textContent = "Tout est installé. Tu peux continuer.";
     icon.className = "guide-status-icon ok";
     icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>';
     statusBox.className = "guide-status-box ok";
     nextBtn.disabled = false;
+    return;
+  }
+
+  text.textContent = "Installation en cours...";
+  hint.textContent = "Ça peut prendre 1-2 minutes la première fois.";
+  icon.className = "guide-status-icon searching";
+  statusBox.className = "guide-status-box";
+  progressWrap.hidden = false;
+  progressBar.style.width = "5%";
+
+  const cleanupProgress = window.anylocSetup.onToolsProgress((progress) => {
+    if (progress.message) text.textContent = progress.message;
+    if (progress.pct) progressBar.style.width = progress.pct + "%";
+  });
+
+  const result = await window.anylocSetup.ensureTools();
+  cleanupProgress();
+
+  if (result.ok) {
+    text.textContent = "Outils USB prêts !";
+    hint.textContent = "Tout est installé. Tu peux continuer.";
+    icon.className = "guide-status-icon ok";
+    icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>';
+    statusBox.className = "guide-status-box ok";
+    progressBar.style.width = "100%";
+    nextBtn.disabled = false;
   } else {
-    text.textContent = "pymobiledevice3 non détecté";
-    hint.textContent = "Installe-le avec la commande ci-dessus, puis clique Revérifier.";
+    text.textContent = "Échec de l'installation";
+    hint.textContent = "Vérifie ta connexion internet et réessaie.";
     icon.className = "guide-status-icon error";
     icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>';
     statusBox.className = "guide-status-box error";
-    nextBtn.disabled = true;
+    progressWrap.hidden = true;
+    errorBox.hidden = false;
+    $("guide-tools-error-text").textContent = result.message || "Erreur inconnue";
+    retryBtn.hidden = false;
   }
 }
 
@@ -845,18 +867,11 @@ async function init() {
     enterMain();
   });
   $("guide-tools-next").addEventListener("click", guideNext);
-  $("guide-tools-recheck").addEventListener("click", initGuideToolsStep);
+  $("guide-tools-retry").addEventListener("click", initGuideToolsStep);
   $("guide-usb-next").addEventListener("click", guideNext);
   $("guide-devmode-next").addEventListener("click", guideNext);
   $("guide-install-btn").addEventListener("click", guideInstallApp);
   $("guide-finish-btn").addEventListener("click", guideFinish);
-  $("guide-copy-cmd").addEventListener("click", () => {
-    const cmd = $("guide-cmd-text").textContent;
-    navigator.clipboard.writeText(cmd).then(() => {
-      $("guide-copy-cmd").textContent = "Copié !";
-      setTimeout(() => { $("guide-copy-cmd").textContent = "Copier"; }, 2000);
-    });
-  });
 
   // Profile: reopen guide
   $("reopen-guide-btn").addEventListener("click", () => {

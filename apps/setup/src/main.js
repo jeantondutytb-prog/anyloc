@@ -18,6 +18,7 @@ const {
   getSpawnEnv,
   getScriptsDir,
 } = require("./usb");
+const { ensurePymobiledevice3, isBundleReady } = require("./python-setup");
 
 const SUPABASE_URL =
   process.env.ANYLOC_SUPABASE_URL || "https://gqkxnktprctdvpwvnqli.supabase.co";
@@ -526,6 +527,19 @@ ipcMain.handle("setup:get-launch-config", () => {
 });
 
 // ── USB / install ──
+
+ipcMain.handle("setup:ensure-tools", async (event) => {
+  const { clearCachedPaths } = require("./usb");
+  const result = await ensurePymobiledevice3((progress) => {
+    try { event.sender.send("setup:tools-progress", progress); } catch {}
+  });
+  if (result.ok) clearCachedPaths();
+  return result;
+});
+
+ipcMain.handle("setup:tools-ready", () => {
+  return isBundleReady() || !!resolvePymobiledevice3Cli();
+});
 
 ipcMain.handle("setup:check-usb", async (_event, payload) => {
   return detectUsbDevice({
