@@ -13,6 +13,8 @@ const {
   clearGpsLocation,
   resolvePythonExecutable,
   resolvePymobiledevice3Cli,
+  getPmd3Invocation,
+  missingToolsMessage,
   getSpawnEnv,
   getScriptsDir,
 } = require("./usb");
@@ -75,19 +77,29 @@ function clearSessionFile() {
 }
 
 function applySpoofOnce(lat, lng) {
-  const cli = resolvePymobiledevice3Cli();
-  if (!cli) return false;
+  const invocation = getPmd3Invocation();
+  if (!invocation) return false;
 
   if (autoSyncSpoofChild) {
     try { autoSyncSpoofChild.kill("SIGTERM"); } catch {}
     autoSyncSpoofChild = null;
   }
 
-  const args = ["developer", "dvt", "simulate-location", "set", "--", String(lat), String(lng)];
+  const args = [
+    ...invocation.prefix,
+    "developer",
+    "dvt",
+    "simulate-location",
+    "set",
+    "--",
+    String(lat),
+    String(lng),
+  ];
 
-  const child = spawnChild(cli, args, {
+  const child = spawnChild(invocation.command, args, {
     env: getSpawnEnv(),
     stdio: ["ignore", "pipe", "pipe"],
+    windowsHide: true,
   });
 
   autoSyncSpoofChild = child;
@@ -259,14 +271,7 @@ function createTray() {
       { type: "separator" },
       {
         label: "Ouvrir la fenêtre",
-        click: () => {
-          if (mainWindowRef) {
-            mainWindowRef.show();
-            mainWindowRef.focus();
-          } else {
-            createWindow();
-          }
-        },
+        click: () => revealMainWindow(),
       },
       { type: "separator" },
       {
@@ -282,6 +287,23 @@ function createTray() {
 
   updateTrayMenu();
   setInterval(updateTrayMenu, 5000);
+  tray.on("click", () => revealMainWindow());
+  tray.on("double-click", () => revealMainWindow());
+}
+
+function revealMainWindow() {
+  const wasHidden =
+    !mainWindowRef || mainWindowRef.isDestroyed() || !mainWindowRef.isVisible();
+
+  if (!mainWindowRef || mainWindowRef.isDestroyed()) {
+    createWindow();
+  }
+  if (mainWindowRef.isMinimized()) mainWindowRef.restore();
+  mainWindowRef.show();
+  mainWindowRef.focus();
+  if (wasHidden && !mainWindowRef.webContents.isLoading()) {
+    mainWindowRef.webContents.send("app:show-guide");
+  }
 }
 
 function createWindow() {
@@ -331,6 +353,7 @@ if (!gotTheLock) {
       entry.startsWith("anyloc-setup://")
     );
     if (setupUrl) handleSetupUrl(setupUrl);
+    revealMainWindow();
   });
 }
 
@@ -492,6 +515,8 @@ ipcMain.handle("setup:get-platform", () => {
   return process.platform;
 });
 
+ipcMain.handle("setup:get-version", () => app.getVersion());
+
 ipcMain.handle("setup:get-launch-config", () => {
   const config = pendingLaunchConfig;
   pendingLaunchConfig = null;
@@ -500,8 +525,23 @@ ipcMain.handle("setup:get-launch-config", () => {
 
 // ── USB / install ──
 
-ipcMain.handle("setup:check-usb", async () => {
-  return detectUsbDevice();
+ipcMain.handle("setup:check-usb", async (_event, payload) => {
+  return detectUsbDevice({
+    installTools: payload?.installTools !== false,
+  });
+});
+
+ipcMain.handle("setup:open-external", async (_event, url) => {
+  const allowed = new Set([
+    "https://www.python.org/downloads/windows/",
+    "https://apps.microsoft.com/detail/9np83lwlpz9k",
+    "ms-windows-store://pdp/?ProductId=9NP83LWLPZ9K",
+  ]);
+  if (!allowed.has(String(url || ""))) {
+    return { ok: false };
+  }
+  await shell.openExternal(url);
+  return { ok: true };
 });
 
 ipcMain.handle("setup:ensure-ipa", async () => {
@@ -538,7 +578,7 @@ ipcMain.handle("setup:apply-gps-direct", async (_event, payload) => {
 
   const python = resolvePythonExecutable();
   if (!python) {
-    return { ok: false, message: "Python avec pymobiledevice3 introuvable." };
+    return { ok: false, message: missingToolsMessage() };
   }
 
   const scriptPath = path.join(getScriptsDir(), "spoof_loop.py");
@@ -549,6 +589,7 @@ ipcMain.handle("setup:apply-gps-direct", async (_event, payload) => {
     const child = spawnChild(python, args, {
       env: getSpawnEnv(),
       stdio: ["ignore", "pipe", "pipe"],
+      windowsHide: true,
     });
 
     let stdout = "";
@@ -668,6 +709,10 @@ app.whenReady().then(() => {
     if (setupUrl) handleSetupUrl(setupUrl);
   }
 
+  if (process.platform === "win32") {
+    Menu.setApplicationMenu(null);
+  }
+
   if (process.platform === "win32" || process.platform === "linux") {
     app.setAsDefaultProtocolClient("anyloc-setup");
   } else {
@@ -692,12 +737,7 @@ app.whenReady().then(() => {
   mainWindowRef?.show();
 
   app.on("activate", () => {
-    if (mainWindowRef) {
-      mainWindowRef.show();
-      mainWindowRef.focus();
-    } else {
-      createWindow();
-    }
+    revealMainWindow();
   });
 });
 

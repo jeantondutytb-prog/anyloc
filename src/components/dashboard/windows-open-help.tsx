@@ -13,7 +13,9 @@ function ChromeDownloadWarningMock() {
           EXE
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-zinc-900">Anyloc.exe</p>
+          <p className="truncate text-sm font-medium text-zinc-900">
+            Anyloc-Setup.exe
+          </p>
           <p className="text-xs leading-snug text-amber-800">
             Faites attention. Ce type de fichier peut endommager votre
             ordinateur.
@@ -48,7 +50,7 @@ function SmartScreenMock() {
           application non reconnue.
         </p>
         <p>
-          <span className="text-zinc-500">Application :</span> Anyloc.exe
+          <span className="text-zinc-500">Application :</span> Anyloc-Setup.exe
         </p>
         <p>
           <span className="text-zinc-500">Éditeur :</span> Éditeur inconnu
@@ -105,6 +107,7 @@ export function WindowsOpenHelp({
       ) : null}
 
       {compact ? (
+        <>
         <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-zinc-800">
           <li>
             En bas de Chrome : flèche <strong>▾</strong> →{" "}
@@ -112,7 +115,7 @@ export function WindowsOpenHelp({
           </li>
           <li>
             Dossier <strong>Téléchargements</strong> → double-clic{" "}
-            <strong>Anyloc</strong>
+            <strong>Anyloc-Setup</strong>
           </li>
           <li>
             Écran bleu : <strong>Plus d&apos;infos</strong> →{" "}
@@ -120,6 +123,12 @@ export function WindowsOpenHelp({
             <span className="text-zinc-500"> — pas OK</span>
           </li>
         </ol>
+        <p className="mt-2 text-xs text-zinc-600">
+          Déjà installé ? Icône près de l&apos;horloge → clic droit →{" "}
+          <strong>Quitter</strong>, sinon tu n&apos;as pas l&apos;écran « 4
+          étapes ».
+        </p>
+        </>
       ) : (
         <div className="mt-4 space-y-4">
           <section className="space-y-2">
@@ -148,7 +157,7 @@ export function WindowsOpenHelp({
                 Ouvre le dossier <strong>Téléchargements</strong>
               </li>
               <li>
-                Double-clique <strong>Anyloc.exe</strong>
+                Double-clique <strong>Anyloc-Setup.exe</strong>
               </li>
             </ol>
           </section>
@@ -166,6 +175,18 @@ export function WindowsOpenHelp({
                 Clique <strong>Exécuter quand même</strong>
               </li>
             </ol>
+          </section>
+
+          <section className="rounded-lg bg-white/80 px-3 py-3 text-sm text-zinc-700">
+            <p className="font-medium text-zinc-900">
+              Anyloc est déjà installé ?
+            </p>
+            <p className="mt-1">
+              En bas à droite, près de l&apos;horloge : icône Anyloc → clic
+              droit → <strong>Quitter</strong>. Sinon l&apos;ancien programme
+              reste ouvert et tu n&apos;as jamais l&apos;écran{" "}
+              <strong>4 étapes</strong>.
+            </p>
           </section>
 
           <section className="rounded-lg bg-white/80 px-3 py-3 text-sm text-zinc-700">
@@ -195,7 +216,7 @@ export function WindowsOpenHelp({
           >
             Télécharge le zip
           </a>
-          , ouvre-le, puis double-clique <strong>Anyloc.exe</strong>.
+          , ouvre-le, puis double-clique <strong>Anyloc-Setup.exe</strong>.
         </p>
       ) : null}
     </div>

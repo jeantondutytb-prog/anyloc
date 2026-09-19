@@ -8,7 +8,8 @@ contextBridge.exposeInMainWorld("anylocSetup", {
     ipcRenderer.on("setup:launch-config", listener);
     return () => ipcRenderer.removeListener("setup:launch-config", listener);
   },
-  checkUsb: () => ipcRenderer.invoke("setup:check-usb"),
+  checkUsb: (payload) => ipcRenderer.invoke("setup:check-usb", payload),
+  openExternal: (url) => ipcRenderer.invoke("setup:open-external", url),
   ensureIpa: () => ipcRenderer.invoke("setup:ensure-ipa"),
   installIos: (payload) => ipcRenderer.invoke("setup:install-ios", payload),
   applyGps: (payload) => ipcRenderer.invoke("setup:apply-gps", payload),
@@ -27,5 +28,11 @@ contextBridge.exposeInMainWorld("anylocSetup", {
     const listener = (_event, status) => callback(status);
     ipcRenderer.on("autosync:status", listener);
     return () => ipcRenderer.removeListener("autosync:status", listener);
+  },
+  getVersion: () => ipcRenderer.invoke("setup:get-version"),
+  onShowGuide: (callback) => {
+    const listener = () => callback();
+    ipcRenderer.on("app:show-guide", listener);
+    return () => ipcRenderer.removeListener("app:show-guide", listener);
   },
 });

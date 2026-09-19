@@ -114,10 +114,10 @@ jobs:
       - name: Zip installer (Chrome fallback)
         shell: pwsh
         run: |
-          if (-not (Test-Path "apps/setup/dist/Anyloc.exe")) {
-            throw "Anyloc.exe missing after Windows build"
+          if (-not (Test-Path "apps/setup/dist/Anyloc-Setup.exe")) {
+            throw "Anyloc-Setup.exe missing after Windows build"
           }
-          Compress-Archive -Path "apps/setup/dist/Anyloc.exe" -DestinationPath "apps/setup/dist/Anyloc-Setup.zip" -Force
+          Compress-Archive -Path "apps/setup/dist/Anyloc-Setup.exe" -DestinationPath "apps/setup/dist/Anyloc-Setup.zip" -Force
 
       - name: Install root deps
         shell: bash
@@ -129,7 +129,7 @@ jobs:
         shell: bash
         run: |
           if [ -n "$BLOB_READ_WRITE_TOKEN" ]; then
-            node scripts/upload-release.mjs setup-win apps/setup/dist/Anyloc.exe
+            node scripts/upload-release.mjs setup-win apps/setup/dist/Anyloc-Setup.exe
             node scripts/upload-release.mjs setup-win-zip apps/setup/dist/Anyloc-Setup.zip
           else
             echo "BLOB_READ_WRITE_TOKEN absent — skip upload Blob"
@@ -143,7 +143,7 @@ jobs:
         run: |
           TAG="setup-v0.1.${{ github.run_number }}"
           gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "Anyloc Setup v0.1.${{ github.run_number }}" --generate-notes
-          gh release upload "$TAG" apps/setup/dist/Anyloc.exe apps/setup/dist/Anyloc-Setup.zip --clobber
+          gh release upload "$TAG" apps/setup/dist/Anyloc-Setup.exe apps/setup/dist/Anyloc-Setup.zip --clobber
 
       - name: Upload EXE artifact
         continue-on-error: true
@@ -151,6 +151,6 @@ jobs:
         with:
           name: anyloc-setup-win
           path: |
-            apps/setup/dist/Anyloc.exe
+            apps/setup/dist/Anyloc-Setup.exe
             apps/setup/dist/Anyloc-Setup.zip
           if-no-files-found: error

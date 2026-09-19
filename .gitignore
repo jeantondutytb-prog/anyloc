@@ -42,6 +42,10 @@ yarn-error.log*
 next-env.d.ts
 tmp/
 
+# Python
+__pycache__/
+*.pyc
+
 # Native apps
 apps/setup/node_modules/
 apps/setup/dist/

@@ -29,7 +29,7 @@ const TARGETS = {
   },
   "setup-win": {
     envKey: "ANYLOC_DOWNLOAD_SETUP_WIN",
-    blobPath: "releases/Anyloc.exe",
+    blobPath: "releases/Anyloc-Setup.exe",
     contentType: "application/vnd.microsoft.portable-executable",
   },
   "setup-win-zip": {
@@ -74,7 +74,7 @@ async function main() {
     token,
     addRandomSuffix: false,
     allowOverwrite: true,
-    cacheControlMaxAge: 31536000,
+    cacheControlMaxAge: 60,
     contentType: target.contentType,
   });
 

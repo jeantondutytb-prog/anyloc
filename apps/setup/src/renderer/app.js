@@ -89,6 +89,10 @@ function showScreen(name) {
   $(name + "-screen").classList.add("active");
 }
 
+function showLaunchGuide() {
+  showScreen("guide");
+}
+
 function showToast(message, type = "info", duration = 3000) {
   const toast = $("status-toast");
   if (!toast) return;
@@ -246,7 +250,7 @@ async function startOnboarding() {
   void refreshOnboardingUsb();
   stopUsbPoll();
   usbPollTimer = setInterval(() => {
-    void refreshOnboardingUsb();
+    void refreshOnboardingUsb({ installTools: false });
   }, 2500);
 }
 
@@ -267,12 +271,33 @@ async function applyPlatformHints() {
   }
 }
 
-async function refreshOnboardingUsb() {
+async function fillGuideVersion() {
+  const el = $("guide-version");
+  if (!el) return;
+  try {
+    const version = await window.anylocSetup.getVersion();
+    if (version) el.textContent = `Anyloc ${version}`;
+  } catch {
+    // Version is only a sanity check that this is the new build.
+  }
+}
+
+async function refreshOnboardingUsb(options = {}) {
   const status = $("onboarding-usb-status");
   const nextBtn = $("onboarding-next-plug");
+  const recheck = $("onboarding-recheck-plug");
+  if (recheck) recheck.disabled = true;
+  if (status) {
+    status.textContent = options.installTools === false
+      ? "Recherche de l'iPhone…"
+      : "Recherche de l'iPhone…";
+    status.className = "setup-status info";
+  }
 
   try {
-    const result = await window.anylocSetup.checkUsb();
+    const result = await window.anylocSetup.checkUsb({
+      installTools: options.installTools !== false,
+    });
     onboardingUsbConnected = Boolean(result.connected);
 
     if (result.connected) {
@@ -303,6 +328,8 @@ async function refreshOnboardingUsb() {
     }
     if (nextBtn) nextBtn.disabled = true;
     return { connected: false };
+  } finally {
+    if (recheck) recheck.disabled = false;
   }
 }
 
@@ -352,7 +379,7 @@ function logout() {
   clearSession();
   activeSpoof = null;
   selectedPosition = null;
-  showScreen("guide");
+  showLaunchGuide();
   $("login-email").value = "";
   $("login-password").value = "";
   $("login-error").textContent = "";
@@ -664,18 +691,43 @@ function stopUsbPoll() {
   }
 }
 
-async function refreshUsbStatus() {
-  const result = await window.anylocSetup.checkUsb();
-  if (result.connected) {
-    $("setup-usb-status").textContent = `${result.deviceName} — iPhone détecté`;
-    $("setup-usb-status").className = "setup-status ok";
-    $("setup-install-btn").disabled = false;
-  } else {
-    $("setup-usb-status").textContent = result.message || "Branche l'iPhone et appuie sur Faire confiance.";
-    $("setup-usb-status").className = "setup-status error";
-    $("setup-install-btn").disabled = true;
+function updateWinTools(result) {
+  const tools = $("setup-win-tools");
+  if (!tools) return;
+  const message = result?.message || "";
+  const show =
+    desktopPlatform === "win" &&
+    !result?.connected &&
+    /Python|Apple Devices|pymobiledevice3|outil iPhone|python.org/i.test(message);
+  tools.hidden = !show;
+}
+
+async function refreshUsbStatus(options = {}) {
+  const status = $("setup-usb-status");
+  const recheck = $("setup-recheck-btn");
+  if (status) {
+    status.textContent = "Recherche de l'iPhone…";
+    status.className = "setup-status info";
   }
-  return result;
+  if (recheck) recheck.disabled = true;
+  try {
+    const result = await window.anylocSetup.checkUsb({
+      installTools: options.installTools !== false,
+    });
+    if (result.connected) {
+      $("setup-usb-status").textContent = `${result.deviceName} — iPhone détecté`;
+      $("setup-usb-status").className = "setup-status ok";
+      $("setup-install-btn").disabled = false;
+    } else {
+      $("setup-usb-status").textContent = result.message || "Branche l'iPhone et appuie sur Faire confiance.";
+      $("setup-usb-status").className = "setup-status error";
+      $("setup-install-btn").disabled = true;
+    }
+    updateWinTools(result);
+    return result;
+  } finally {
+    if (recheck) recheck.disabled = false;
+  }
 }
 
 async function openSetup() {
@@ -689,7 +741,7 @@ async function openSetup() {
   await refreshUsbStatus();
   stopUsbPoll();
   usbPollTimer = setInterval(() => {
-    void refreshUsbStatus();
+    void refreshUsbStatus({ installTools: false });
   }, 2500);
 }
 
@@ -827,22 +879,32 @@ async function onboardingInstall() {
 // ── Init ──
 
 async function init() {
+  showLaunchGuide();
   restoreFavorites();
-  renderSpots();
+  try {
+    renderSpots();
+  } catch {
+    // Spots live on the main screen; a missing node must not skip the guide.
+  }
   void applyPlatformHints();
+  void fillGuideVersion();
 
-  const saved = restoreSession();
-  if (saved?.access_token) {
-    const verified = await window.anylocSetup.auth("verify", { session: saved });
-    if (verified.ok) {
-      session = verified.session || saved;
-      persistSession(session);
-    } else {
-      clearSession();
+  try {
+    const saved = restoreSession();
+    if (saved?.access_token) {
+      const verified = await window.anylocSetup.auth("verify", { session: saved });
+      if (verified.ok) {
+        session = verified.session || saved;
+        persistSession(session);
+      } else {
+        clearSession();
+      }
     }
+  } catch {
+    clearSession();
   }
 
-  showScreen("guide");
+  showLaunchGuide();
 
   // Handle launch config
   const launchConfig = await window.anylocSetup.getLaunchConfig();
@@ -851,6 +913,8 @@ async function init() {
   window.anylocSetup.onLaunchConfig((config) => {
     if (config?.token && session) showToast("Configuration reçue.", "ok");
   });
+
+  window.anylocSetup.onShowGuide?.(() => showLaunchGuide());
 
   // ── Event listeners ──
 
@@ -924,7 +988,7 @@ async function init() {
   });
 
   // Onboarding
-  $("onboarding-recheck-plug")?.addEventListener("click", () => void refreshOnboardingUsb());
+  $("onboarding-recheck-plug")?.addEventListener("click", () => void refreshOnboardingUsb({ installTools: true }));
   $("onboarding-next-plug")?.addEventListener("click", () => {
     if (!onboardingUsbConnected) return;
     showOnboardingPanel("install", 3);
@@ -937,16 +1001,23 @@ async function init() {
   $("open-setup-btn")?.addEventListener("click", () => void openSetup());
   $("open-setup-from-profil")?.addEventListener("click", () => void openSetup());
   $("setup-install-btn").addEventListener("click", setupInstall);
-  $("setup-recheck-btn")?.addEventListener("click", () => void refreshUsbStatus());
+  $("setup-recheck-btn")?.addEventListener("click", () => void refreshUsbStatus({ installTools: true }));
   $("setup-close-btn").addEventListener("click", closeSetup);
+  $("setup-close-x")?.addEventListener("click", closeSetup);
+  $("setup-open-python")?.addEventListener("click", () => {
+    void window.anylocSetup.openExternal("https://www.python.org/downloads/windows/");
+  });
+  $("setup-open-apple-devices")?.addEventListener("click", () => {
+    void window.anylocSetup.openExternal("ms-windows-store://pdp/?ProductId=9NP83LWLPZ9K");
+  });
   $("setup-done-btn")?.addEventListener("click", closeSetup);
   $("setup-reinstall-btn")?.addEventListener("click", () => {
     showSetupInstallFlow();
     $("setup-install-status").textContent = "";
-    void refreshUsbStatus();
+    void refreshUsbStatus({ installTools: true });
     stopUsbPoll();
     usbPollTimer = setInterval(() => {
-      void refreshUsbStatus();
+      void refreshUsbStatus({ installTools: false });
     }, 2500);
   });
 }

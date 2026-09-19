@@ -5,11 +5,11 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
 import subprocess
-import sys
 import urllib.error
 import urllib.request
+
+from pmd3_cmd import pmd3_argv
 
 
 def fetch_location(api_base_url: str, token: str) -> dict:
@@ -46,12 +46,6 @@ def fetch_location(api_base_url: str, token: str) -> dict:
 
 
 def run_pmd3(command: list[str]) -> dict:
-    if not shutil.which("pymobiledevice3"):
-        return {
-            "ok": False,
-            "message": "pymobiledevice3 introuvable. Terminal : pip3 install pymobiledevice3",
-        }
-
     result = subprocess.run(command, capture_output=True, text=True, check=False)
     output = (result.stderr or result.stdout or "").strip()
 
@@ -74,7 +68,7 @@ def build_location_command(
     latitude: float | None = None,
     longitude: float | None = None,
 ) -> list[str]:
-    command = ["pymobiledevice3", "developer", "dvt", "simulate-location", action]
+    command = pmd3_argv("developer", "dvt", "simulate-location", action)
 
     if userspace:
         command.append("--userspace")

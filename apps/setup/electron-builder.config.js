@@ -40,6 +40,9 @@ module.exports = {
   },
   win: {
     target: ["nsis"],
+    // Distinct from the installed Anyloc.exe so: Chrome cache of the old
+    // installer is bypassed, and NSIS can taskkill the running app safely.
+    artifactName: "Anyloc-Setup.${ext}",
     // Keep rcedit so the EXE has ProductName / CompanyName even when unsigned.
     // Signing still skips unless WIN_CSC_LINK (or CSC_LINK) is provided in CI.
     signAndEditExecutable: true,
@@ -56,6 +59,8 @@ module.exports = {
     shortcutName: "Anyloc",
     uninstallDisplayName: "Anyloc",
     installerLanguages: ["fr_FR", "en_US"],
+    include: path.join(__dirname, "build", "installer.nsh"),
+    runAfterFinish: true,
   },
   protocols: [
     {
