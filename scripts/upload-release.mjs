@@ -30,7 +30,12 @@ const TARGETS = {
   "setup-win": {
     envKey: "ANYLOC_DOWNLOAD_SETUP_WIN",
     blobPath: "releases/Anyloc.exe",
-    contentType: "application/octet-stream",
+    contentType: "application/vnd.microsoft.portable-executable",
+  },
+  "setup-win-zip": {
+    envKey: "ANYLOC_DOWNLOAD_SETUP_WIN_ZIP",
+    blobPath: "releases/Anyloc-Setup.zip",
+    contentType: "application/zip",
   },
 };
 
@@ -40,7 +45,7 @@ async function main() {
 
   if (!targetKey || !filePath) {
     console.error(
-      "Usage: BLOB_READ_WRITE_TOKEN=xxx node scripts/upload-release.mjs <android|ios|setup-mac|setup-win> <file-path>"
+      "Usage: BLOB_READ_WRITE_TOKEN=xxx node scripts/upload-release.mjs <android|ios|setup-mac|setup-win|setup-win-zip> <file-path>"
     );
     process.exit(1);
   }

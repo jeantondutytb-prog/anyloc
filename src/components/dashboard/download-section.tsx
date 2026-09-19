@@ -1,13 +1,21 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import { Download, Loader2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { WindowsOpenHelp } from "@/components/dashboard/windows-open-help";
 import { getCheckoutUrl } from "@/lib/constants";
 import { useDownloads } from "@/hooks/use-downloads";
+import { getClientDeviceSnapshot, SERVER_CLIENT_DEVICE } from "@/lib/platform";
 
 export function DownloadSection() {
+  const device = useSyncExternalStore(
+    () => () => {},
+    getClientDeviceSnapshot,
+    () => SERVER_CLIENT_DEVICE
+  );
   const { data, loading, error } = useDownloads();
 
   if (loading) {
@@ -73,7 +81,9 @@ export function DownloadSection() {
       )}
 
       <ul className="mt-4 space-y-3">
-        {data.assets.map((asset) => (
+        {data.assets
+          .filter((asset) => !asset.hidden)
+          .map((asset) => (
           <li
             key={asset.id}
             className="rounded-xl border border-zinc-200 bg-zinc-50/60 p-4"
@@ -105,6 +115,18 @@ export function DownloadSection() {
                 </Button>
               )}
             </div>
+            {asset.id === "setup-win" && device.desktopOs === "win" ? (
+              <div className="mt-3">
+                <WindowsOpenHelp
+                  compact
+                  zipDownloadPath={
+                    data.assets.find(
+                      (item) => item.id === "setup-win-zip" && item.available
+                    )?.downloadPath
+                  }
+                />
+              </div>
+            ) : null}
           </li>
         ))}
       </ul>

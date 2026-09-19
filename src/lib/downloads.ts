@@ -1,4 +1,9 @@
-export type DownloadPlatform = "setup-mac" | "setup-win" | "apk" | "ipa";
+export type DownloadPlatform =
+  | "setup-mac"
+  | "setup-win"
+  | "setup-win-zip"
+  | "apk"
+  | "ipa";
 
 export type DownloadAsset = {
   id: DownloadPlatform;
@@ -9,6 +14,7 @@ export type DownloadAsset = {
   blobPath: string;
   alternateFilenames?: string[];
   alternateBlobPaths?: string[];
+  hidden?: boolean;
 };
 
 export const DOWNLOAD_ASSETS: DownloadAsset[] = [
@@ -29,8 +35,18 @@ export const DOWNLOAD_ASSETS: DownloadAsset[] = [
     filename: "Anyloc.exe",
     envKey: "ANYLOC_DOWNLOAD_SETUP_WIN",
     blobPath: "releases/Anyloc.exe",
-    alternateFilenames: ["Anyloc-Setup.exe"],
+    alternateFilenames: ["Anyloc-Setup.exe", "anyloc-setup.exe"],
     alternateBlobPaths: ["releases/Anyloc-Setup.exe"],
+  },
+  {
+    id: "setup-win-zip",
+    label: "Anyloc (Windows, zip)",
+    description:
+      "Même programme, dans un zip — si Chrome refuse le .exe",
+    filename: "Anyloc-Setup.zip",
+    envKey: "ANYLOC_DOWNLOAD_SETUP_WIN_ZIP",
+    blobPath: "releases/Anyloc-Setup.zip",
+    hidden: true,
   },
   {
     id: "apk",

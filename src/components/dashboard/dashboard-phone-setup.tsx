@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SetupQrCode } from "@/components/dashboard/setup-qr-code";
+import { WindowsOpenHelp } from "@/components/dashboard/windows-open-help";
 import { useDownloads } from "@/hooks/use-downloads";
 import type { DeviceItem } from "@/hooks/use-device-status";
 import {
@@ -117,6 +118,7 @@ export function DashboardPhoneSetup({
   );
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [downloaded, setDownloaded] = useState(false);
   const { data: downloads, loading: downloadsLoading } = useDownloads();
 
   const linkedForPlatform = devices.find((device) => device.platform === platform);
@@ -197,6 +199,9 @@ export function DashboardPhoneSetup({
     platform === "ios"
       ? asset.id === (isMac ? "setup-mac" : "setup-win")
       : asset.id === "apk"
+  );
+  const zipDownload = downloads?.assets.find(
+    (asset) => asset.id === "setup-win-zip" && asset.available
   );
 
   const copyToken = async () => {
@@ -297,11 +302,18 @@ export function DashboardPhoneSetup({
               <StepBox number={1} title="Sur l'ordinateur : installe l'app">
                 <p>
                   Télécharge <strong>Anyloc</strong>. Le fichier va dans
-                  Téléchargements et <strong>ne s&apos;ouvre pas tout seul</strong>.
+                  Téléchargements et <strong>ne s&apos;ouvre pas tout seul</strong>
+                  {isMac
+                    ? "."
+                    : ". Windows va dire « Faites attention » — clique Conserver."}
                 </p>
                 <div className="flex flex-col gap-2 sm:flex-row">
                   {setupDownload?.available ? (
-                    <a href={setupDownload.downloadPath} className="flex-1">
+                    <a
+                      href={setupDownload.downloadPath}
+                      className="flex-1"
+                      onClick={() => setDownloaded(true)}
+                    >
                       <Button size="sm" className="w-full">
                         <Download className="h-4 w-4" />
                         Télécharger pour {isMac ? "Mac" : "Windows"}
@@ -334,10 +346,11 @@ export function DashboardPhoneSetup({
                     </li>
                   </ol>
                 ) : (
-                  <ol className="list-decimal space-y-1.5 pl-5 text-xs text-zinc-500">
-                    <li>Double-clique le fichier dans Téléchargements</li>
-                    <li>Plus d&apos;infos → Exécuter quand même</li>
-                  </ol>
+                  <WindowsOpenHelp
+                    compact
+                    downloaded={downloaded}
+                    zipDownloadPath={zipDownload?.downloadPath}
+                  />
                 )}
               </StepBox>
 

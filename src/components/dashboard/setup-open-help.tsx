@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { Check, Copy, Mail, Monitor } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SetupQrCode } from "@/components/dashboard/setup-qr-code";
+import { WindowsOpenHelp } from "@/components/dashboard/windows-open-help";
 import type { DesktopOs } from "@/lib/platform";
 import { cn } from "@/lib/utils";
 
@@ -65,10 +66,12 @@ export function SetupOpenHelp({
   desktopOs,
   onDesktopOsChange,
   downloaded,
+  zipDownloadPath,
 }: {
   desktopOs: DesktopOs;
   onDesktopOsChange: (os: DesktopOs) => void;
   downloaded: boolean;
+  zipDownloadPath?: string | null;
 }) {
   return (
     <div
@@ -76,16 +79,24 @@ export function SetupOpenHelp({
         "rounded-xl border px-4 py-4",
         downloaded
           ? "border-emerald-200 bg-emerald-50"
-          : "border-zinc-200 bg-zinc-50"
+          : desktopOs === "win"
+            ? "border-amber-200 bg-amber-50"
+            : "border-zinc-200 bg-zinc-50"
       )}
     >
       <p className="font-semibold text-zinc-900">
-        {downloaded
-          ? "C'est dans Téléchargements — ouvre-le comme ça"
-          : "Après le téléchargement, ouvre le fichier comme ça"}
+        {desktopOs === "win"
+          ? downloaded
+            ? "C'est téléchargé — Windows dit « Faites attention » ? Suis ça"
+            : "Windows va dire « Faites attention » — c'est normal"
+          : downloaded
+            ? "C'est dans Téléchargements — ouvre-le comme ça"
+            : "Après le téléchargement, ouvre le fichier comme ça"}
       </p>
       <p className="mt-1 text-xs text-zinc-500">
-        Le fichier ne s&apos;ouvre pas tout seul. C&apos;est normal.
+        {desktopOs === "win"
+          ? "Ce n'est pas un virus. Chrome et Windows le disent pour les apps hors Microsoft Store."
+          : "Le fichier ne s'ouvre pas tout seul. C'est normal."}
       </p>
 
       <div className="mt-3 inline-flex rounded-full border border-zinc-200 bg-white p-1">
@@ -107,55 +118,40 @@ export function SetupOpenHelp({
       </div>
 
       {desktopOs === "mac" ? (
-        <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-zinc-700">
-          <li>
-            Ouvre <strong>Téléchargements</strong> (icône en bas, ou Finder)
-          </li>
-          <li>
-            Double-clique <strong>Anyloc</strong> — une fenêtre s&apos;ouvre
-            (on dirait un dossier)
-          </li>
-          <li>
-            Glisse <strong>Anyloc</strong> sur le dossier{" "}
-            <strong>Applications</strong>
-          </li>
-          <li>
-            Va dans Applications → <strong>clic droit</strong> sur Anyloc →{" "}
-            <strong>Ouvrir</strong> → <strong>Ouvrir</strong>
-          </li>
-        </ol>
-      ) : (
-        <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-zinc-700">
-          <li>
-            Ouvre le dossier <strong>Téléchargements</strong>
-          </li>
-          <li>
-            Double-clique <strong>Anyloc</strong>
-          </li>
-          <li>
-            Si Windows bloque : <strong>Plus d&apos;infos</strong> →{" "}
-            <strong>Exécuter quand même</strong>
-          </li>
-        </ol>
-      )}
-
-      <p className="mt-3 rounded-lg bg-white/80 px-3 py-2 text-sm text-zinc-700">
-        {desktopOs === "mac" ? (
-          <>
+        <>
+          <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-zinc-700">
+            <li>
+              Ouvre <strong>Téléchargements</strong> (icône en bas, ou Finder)
+            </li>
+            <li>
+              Double-clique <strong>Anyloc</strong> — une fenêtre s&apos;ouvre
+              (on dirait un dossier)
+            </li>
+            <li>
+              Glisse <strong>Anyloc</strong> sur le dossier{" "}
+              <strong>Applications</strong>
+            </li>
+            <li>
+              Va dans Applications → <strong>clic droit</strong> sur Anyloc →{" "}
+              <strong>Ouvrir</strong> → <strong>Ouvrir</strong>
+            </li>
+          </ol>
+          <p className="mt-3 rounded-lg bg-white/80 px-3 py-2 text-sm text-zinc-700">
             Ça dit <strong>« endommagé »</strong> ou rien ne se passe ? Ne
             double-clique pas. <strong>Clic droit → Ouvrir → Ouvrir</strong>.
             Sinon Réglages Mac → Confidentialité et sécurité →{" "}
             <strong>Ouvrir quand même</strong>.
-          </>
-        ) : (
-          <>
-            Rien ne se passe ? Clic droit sur le fichier →{" "}
-            <strong>Exécuter en tant qu&apos;administrateur</strong>. Si SmartScreen
-            bloque encore : <strong>Plus d&apos;infos</strong> →{" "}
-            <strong>Exécuter quand même</strong>.
-          </>
-        )}
-      </p>
+          </p>
+        </>
+      ) : (
+        <div className="mt-3">
+          <WindowsOpenHelp
+            downloaded={downloaded}
+            zipDownloadPath={zipDownloadPath}
+            embedded
+          />
+        </div>
+      )}
     </div>
   );
 }

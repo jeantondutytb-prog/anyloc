@@ -107,7 +107,17 @@ jobs:
         working-directory: apps/setup
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
+          CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
         run: npm run build:win
+
+      - name: Zip installer (Chrome fallback)
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "apps/setup/dist/Anyloc.exe")) {
+            throw "Anyloc.exe missing after Windows build"
+          }
+          Compress-Archive -Path "apps/setup/dist/Anyloc.exe" -DestinationPath "apps/setup/dist/Anyloc-Setup.zip" -Force
 
       - name: Install root deps
         shell: bash
@@ -120,6 +130,7 @@ jobs:
         run: |
           if [ -n "$BLOB_READ_WRITE_TOKEN" ]; then
             node scripts/upload-release.mjs setup-win apps/setup/dist/Anyloc.exe
+            node scripts/upload-release.mjs setup-win-zip apps/setup/dist/Anyloc-Setup.zip
           else
             echo "BLOB_READ_WRITE_TOKEN absent — skip upload Blob"
           fi
@@ -132,12 +143,14 @@ jobs:
         run: |
           TAG="setup-v0.1.${{ github.run_number }}"
           gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "Anyloc Setup v0.1.${{ github.run_number }}" --generate-notes
-          gh release upload "$TAG" apps/setup/dist/Anyloc.exe --clobber
+          gh release upload "$TAG" apps/setup/dist/Anyloc.exe apps/setup/dist/Anyloc-Setup.zip --clobber
 
       - name: Upload EXE artifact
         continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: anyloc-setup-win
-          path: apps/setup/dist/Anyloc.exe
+          path: |
+            apps/setup/dist/Anyloc.exe
+            apps/setup/dist/Anyloc-Setup.zip
           if-no-files-found: error

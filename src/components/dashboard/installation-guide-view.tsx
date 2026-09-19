@@ -157,7 +157,9 @@ function DownloadButtons({
     );
   }
 
-  const assets = data.assets.filter((asset) => assetIds.includes(asset.id));
+  const assets = data.assets.filter(
+    (asset) => assetIds.includes(asset.id) && !asset.hidden
+  );
 
   if (!hasAccess) {
     return (
@@ -425,11 +427,13 @@ function IosGuide({
   preview = false,
   forcePhone = false,
   needsSetupPassword = false,
+  zipDownloadPath,
 }: {
   hasAccess: boolean;
   preview?: boolean;
   forcePhone?: boolean;
   needsSetupPassword?: boolean;
+  zipDownloadPath?: string | null;
 }) {
   const device = useSyncExternalStore(
     () => () => {},
@@ -474,8 +478,18 @@ function IosGuide({
         ) : (
           <>
             <p>
-              Un seul fichier. Il va dans <strong>Téléchargements</strong> — il
-              ne s&apos;ouvre pas tout seul.
+              {resolvedOs === "win" ? (
+                <>
+                  Windows va dire <strong>« Faites attention »</strong>. Clique{" "}
+                  <strong>Conserver</strong>, puis suis les étapes en dessous —
+                  ce n&apos;est pas un virus.
+                </>
+              ) : (
+                <>
+                  Un seul fichier. Il va dans <strong>Téléchargements</strong>{" "}
+                  — il ne s&apos;ouvre pas tout seul.
+                </>
+              )}
             </p>
             <DownloadButtons
               assetIds={resolvedOs === "win" ? ["setup-win"] : ["setup-mac"]}
@@ -498,6 +512,7 @@ function IosGuide({
           desktopOs={resolvedOs}
           onDesktopOsChange={(os) => setDesktopOs(os)}
           downloaded={downloaded}
+          zipDownloadPath={zipDownloadPath}
         />
       </StepCard>
 
@@ -764,6 +779,11 @@ export function InstallationGuideView({
                 forcePhone={preview && searchParams.get("device") === "phone"}
                 needsSetupPassword={
                   preview || Boolean(data?.needsSetupPassword)
+                }
+                zipDownloadPath={
+                  data?.assets.find(
+                    (asset) => asset.id === "setup-win-zip" && asset.available
+                  )?.downloadPath
                 }
               />
             </div>
