@@ -7,24 +7,16 @@ which keeps the DVT tunnel open and the location locked.
 
 import json
 import subprocess
-import shutil
 import signal
 import sys
 import time
 
 
-def find_pmd3():
-    paths = [
-        "/Library/Frameworks/Python.framework/Versions/3.14/bin/pymobiledevice3",
-        "/Library/Frameworks/Python.framework/Versions/3.13/bin/pymobiledevice3",
-        "/Library/Frameworks/Python.framework/Versions/3.12/bin/pymobiledevice3",
-        "/opt/homebrew/bin/pymobiledevice3",
-        "/usr/local/bin/pymobiledevice3",
-    ]
-    for p in paths:
-        if shutil.which(p):
-            return p
-    return shutil.which("pymobiledevice3")
+from pmd3_cmd import pmd3_argv
+
+
+def find_pmd3_cmd(extra_args):
+    return pmd3_argv(*extra_args)
 
 
 def main():
@@ -44,12 +36,7 @@ def main():
         print(json.dumps({"ok": False, "message": "Missing --lat= or --lng="}))
         sys.exit(1)
 
-    pmd3 = find_pmd3()
-    if not pmd3:
-        print(json.dumps({"ok": False, "message": "pymobiledevice3 introuvable."}))
-        sys.exit(1)
-
-    cmd = [pmd3, "developer", "dvt", "simulate-location", "set"]
+    cmd = find_pmd3_cmd(["developer", "dvt", "simulate-location", "set"])
     if udid:
         cmd.extend(["--udid", udid])
     cmd.extend(["--", lat, lng])

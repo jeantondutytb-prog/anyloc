@@ -329,6 +329,7 @@
     <!-- ── Setup Modal ── -->
     <div id="setup-overlay" class="setup-overlay" hidden>
       <div class="setup-modal">
+        <button type="button" class="setup-modal-close" id="setup-close-x" aria-label="Fermer">&times;</button>
         <div id="setup-install-flow">
           <h2>Installe Anyloc sur l'iPhone</h2>
           <p class="setup-subtitle">3 minutes. Un câble. Un bouton.</p>
@@ -336,10 +337,14 @@
           <div class="setup-step"><div class="setup-step-num">2</div><div><h3>Mode développeur si iOS le demande</h3><p>Réglages → Confidentialité et sécurité → Mode développeur → ON, puis redémarre.</p></div></div>
           <div class="setup-step"><div class="setup-step-num">3</div><div><h3>Clique Installer</h3><p>Le bouton s'active dès que l'iPhone est détecté. Laisse le câble branché ensuite.</p></div></div>
           <p id="setup-usb-status" class="setup-status info">Recherche de l'iPhone…</p>
+          <div class="setup-win-tools" id="setup-win-tools" hidden>
+            <button type="button" class="btn btn-ghost" id="setup-open-python">Installer Python</button>
+            <button type="button" class="btn btn-ghost" id="setup-open-apple-devices">Installer Apple Devices</button>
+          </div>
           <div class="setup-actions">
-            <button class="btn btn-accent" id="setup-install-btn" disabled style="flex:1">Installer l'app iPhone</button>
-            <button class="btn btn-ghost" id="setup-recheck-btn" style="flex:0 0 auto">Revérifier</button>
-            <button class="btn btn-ghost" id="setup-close-btn" style="flex:0 0 auto">Fermer</button>
+            <button class="btn btn-accent" id="setup-install-btn" disabled>Installer l'app iPhone</button>
+            <button class="btn btn-ghost" id="setup-recheck-btn">Revérifier</button>
+            <button class="btn btn-ghost" id="setup-close-btn">Fermer</button>
           </div>
           <p id="setup-install-status" class="setup-status"></p>
         </div>

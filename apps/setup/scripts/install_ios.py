@@ -5,20 +5,14 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
 import subprocess
-import sys
 from pathlib import Path
+
+from pmd3_cmd import pmd3_argv
 
 
 def install_with_pymobiledevice3(ipa_path: Path, udid: str | None) -> dict:
-    if not shutil.which("pymobiledevice3"):
-        return {
-            "ok": False,
-            "message": "pymobiledevice3 non installé. Lance: pip install pymobiledevice3",
-        }
-
-    command = ["pymobiledevice3", "apps", "install", str(ipa_path)]
+    command = pmd3_argv("apps", "install", str(ipa_path))
 
     if udid:
         command.extend(["--udid", udid])

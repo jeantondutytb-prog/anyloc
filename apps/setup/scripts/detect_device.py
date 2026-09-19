@@ -10,16 +10,15 @@ import subprocess
 import sys
 
 
+from pmd3_cmd import pmd3_argv
+
+
 def run_cli(args: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(args, capture_output=True, text=True, check=False)
 
 
 def detect_with_pymobiledevice3_cli() -> dict | None:
-    cli = shutil.which("pymobiledevice3")
-    if not cli:
-        return None
-
-    result = run_cli([cli, "usbmux", "list"])
+    result = run_cli(pmd3_argv("usbmux", "list"))
     if result.returncode != 0:
         return None
 
@@ -34,8 +33,8 @@ def detect_with_pymobiledevice3_cli() -> dict | None:
             "udid": None,
             "deviceName": None,
             "message": (
-                "Aucun iPhone en USB. Déverrouille l'iPhone, branche-le, ouvre le Finder "
-                "(ou Xcode) pour déclencher « Faire confiance », puis Revérifier."
+                "Aucun iPhone en USB. Déverrouille l'iPhone, branche-le, appuie sur "
+                "« Faire confiance », puis Revérifier."
             ),
         }
 
@@ -100,8 +99,7 @@ def detect_with_idevice_id() -> dict | None:
             "udid": None,
             "deviceName": None,
             "message": (
-                "Aucun iPhone en USB. Ouvre le Finder avec l'iPhone branché pour "
-                "déclencher « Faire confiance »."
+                "Aucun iPhone en USB. Branche-le, déverrouille, appuie sur « Faire confiance »."
             ),
         }
 
@@ -129,8 +127,8 @@ def detect() -> dict:
         "udid": None,
         "deviceName": None,
         "message": (
-            "Outils USB non installés sur ton Mac. Ouvre Terminal et lance : "
-            "pip3 install pymobiledevice3 — puis relance Anyloc Setup."
+            "Outils USB non installés. Sur Windows : installe Python 3 (coche Add to PATH) "
+            "et Apple Devices, puis relance Anyloc. Sur Mac : pip3 install pymobiledevice3."
         ),
     }
 

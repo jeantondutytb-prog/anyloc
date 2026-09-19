@@ -8,7 +8,8 @@ contextBridge.exposeInMainWorld("anylocSetup", {
     ipcRenderer.on("setup:launch-config", listener);
     return () => ipcRenderer.removeListener("setup:launch-config", listener);
   },
-  checkUsb: () => ipcRenderer.invoke("setup:check-usb"),
+  checkUsb: (payload) => ipcRenderer.invoke("setup:check-usb", payload),
+  openExternal: (url) => ipcRenderer.invoke("setup:open-external", url),
   ensureIpa: () => ipcRenderer.invoke("setup:ensure-ipa"),
   installIos: (payload) => ipcRenderer.invoke("setup:install-ios", payload),
   applyGps: (payload) => ipcRenderer.invoke("setup:apply-gps", payload),
