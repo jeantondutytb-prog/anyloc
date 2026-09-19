@@ -82,7 +82,7 @@ jobs:
 
       - name: Upload DMG artifact
         continue-on-error: true
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: anyloc-setup-mac
           path: apps/setup/dist/Anyloc.dmg
@@ -147,7 +147,7 @@ jobs:
 
       - name: Upload EXE artifact
         continue-on-error: true
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: anyloc-setup-win
           path: |
