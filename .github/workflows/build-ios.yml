@@ -43,37 +43,48 @@ jobs:
           BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
           BUILD_CERTIFICATE_PASSWORD: ${{ secrets.BUILD_CERTIFICATE_PASSWORD }}
         run: |
-          KEYCHAIN=build.keychain
+          set -euo pipefail
+
+          KEYCHAIN_PATH="$RUNNER_TEMP/signing.keychain-db"
           KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
 
-          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
-          security set-keychain-settings -lut 21600 "$KEYCHAIN"
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
-          security list-keychains -d user -s "$KEYCHAIN" login.keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH" "$HOME/Library/Keychains/login.keychain-db"
+          security default-keychain -s "$KEYCHAIN_PATH"
 
           if [ -n "$BUILD_CERTIFICATE_BASE64" ]; then
             echo "Importing signing certificate from BUILD_CERTIFICATE_BASE64..."
-            echo "$BUILD_CERTIFICATE_BASE64" | base64 --decode > /tmp/build_cert.p12
-            security import /tmp/build_cert.p12 \
-              -k "$KEYCHAIN" \
+            CERT_PATH="$RUNNER_TEMP/build_certificate.p12"
+            echo "$BUILD_CERTIFICATE_BASE64" | base64 --decode > "$CERT_PATH"
+            security import "$CERT_PATH" \
+              -k "$KEYCHAIN_PATH" \
               -P "${BUILD_CERTIFICATE_PASSWORD:-}" \
+              -A \
               -T /usr/bin/codesign \
               -T /usr/bin/security \
               -T /usr/bin/xcodebuild
-            rm -f /tmp/build_cert.p12
-            security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+            rm -f "$CERT_PATH"
+            security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           elif [ -n "$APPLE_ID" ] && [ -n "$APPLE_APP_SPECIFIC_PASSWORD" ]; then
             echo "Storing Apple ID credentials for automatic provisioning..."
-            xcrun notarytool store-credentials "anyloc-ci" \
+            if ! xcrun notarytool store-credentials "anyloc-ci" \
               --apple-id "$APPLE_ID" \
               --team-id "$APPLE_DEVELOPMENT_TEAM" \
-              --password "$APPLE_APP_SPECIFIC_PASSWORD" \
-              --keychain "$KEYCHAIN"
+              --password "$APPLE_APP_SPECIFIC_PASSWORD"; then
+              echo "::error::Connexion Apple refusée (401). Vérifie les secrets GitHub :"
+              echo "  • APPLE_ID = email Apple exact (ex. prenom@gmail.com)"
+              echo "  • APPLE_APP_SPECIFIC_PASSWORD = mot de passe APP (pas ton mot de passe Apple)"
+              echo "  • Génère-le sur https://appleid.apple.com → Connexion et sécurité → Mots de passe pour app"
+              echo "  • Recrée les deux secrets sans espace avant/après"
+              exit 1
+            fi
           else
-            echo "::warning::Ni BUILD_CERTIFICATE_BASE64 ni APPLE_ID — xcodebuild tentera -allowProvisioningUpdates sans auth explicite."
+            echo "::warning::Ni BUILD_CERTIFICATE_BASE64 ni APPLE_ID — le build peut échouer à la signature."
           fi
 
-          echo "KEYCHAIN=$KEYCHAIN" >> "$GITHUB_ENV"
+          echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
           echo "KEYCHAIN_PASSWORD=$KEYCHAIN_PASSWORD" >> "$GITHUB_ENV"
 
       - name: Install XcodeGen
@@ -84,7 +95,13 @@ jobs:
         if: steps.team.outputs.has_team == 'true'
         env:
           APPLE_DEVELOPMENT_TEAM: ${{ secrets.APPLE_DEVELOPMENT_TEAM }}
-        run: chmod +x scripts/build-ios-ipa.sh && ./scripts/build-ios-ipa.sh
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+        run: |
+          set -euo pipefail
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          chmod +x scripts/build-ios-ipa.sh
+          ./scripts/build-ios-ipa.sh
 
       - uses: actions/setup-node@v4
         if: steps.team.outputs.has_team == 'true'
