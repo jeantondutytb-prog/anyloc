@@ -34,6 +34,10 @@ fi
 /usr/libexec/PlistBuddy -c "Delete :teamID" "$EXPORT_OPTIONS" 2>/dev/null || true
 /usr/libexec/PlistBuddy -c "Add :teamID string $APPLE_DEVELOPMENT_TEAM" "$EXPORT_OPTIONS"
 
+if [[ -n "${KEYCHAIN_PATH:-}" && -n "${KEYCHAIN_PASSWORD:-}" ]]; then
+  security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+fi
+
 echo "→ Archive Anyloc (Release)"
 xcodebuild \
   -project Anyloc.xcodeproj \
@@ -42,6 +46,7 @@ xcodebuild \
   -destination "generic/platform=iOS" \
   -archivePath "$ARCHIVE_PATH" \
   archive \
+  -allowProvisioningUpdates \
   CODE_SIGN_STYLE=Automatic \
   DEVELOPMENT_TEAM="$APPLE_DEVELOPMENT_TEAM"
 
