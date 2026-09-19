@@ -1,12 +1,17 @@
 const { spawn, spawnSync } = require("node:child_process");
+const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 const os = require("node:os");
 
 const PYTHON_VERSION = "3.12.7";
 const PYTHON_TAG = "312";
+const PMD3_VERSION = "4.14.16";
 const WIN_EMBED_URL = `https://www.python.org/ftp/python/${PYTHON_VERSION}/python-${PYTHON_VERSION}-embed-amd64.zip`;
-const GET_PIP_URL = "https://bootstrap.pypa.io/get-pip.py";
+const WIN_EMBED_SHA256 =
+  "0d57bb6cb078b74d23dbfe91f77d6780d45bed328911609f1f7ee2ba1606bf44";
+const GET_PIP_URL =
+  "https://bootstrap.pypa.io/pip/get-pip.py";
 
 function isWin() {
   return process.platform === "win32";
@@ -81,27 +86,49 @@ function spawnAsync(cmd, args, opts = {}) {
   });
 }
 
-async function downloadFile(url, dest) {
+function sha256(buf) {
+  return crypto.createHash("sha256").update(buf).digest("hex");
+}
+
+async function downloadFile(url, dest, expectedHash) {
   const res = await fetch(url, { headers: { "User-Agent": "anyloc-setup" } });
   if (!res.ok) throw new Error(`Download failed: ${res.status} ${url}`);
   const buf = Buffer.from(await res.arrayBuffer());
+  if (expectedHash && sha256(buf) !== expectedHash) {
+    throw new Error(`Integrity check failed for ${path.basename(dest)}`);
+  }
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   fs.writeFileSync(dest, buf);
+}
+
+async function extractZip(zipPath, destDir) {
+  fs.mkdirSync(destDir, { recursive: true });
+
+  if (isWin()) {
+    const r = await spawnAsync("powershell", [
+      "-NoProfile", "-Command",
+      "Expand-Archive -Path $env:ANYLOC_ZIP -DestinationPath $env:ANYLOC_DEST -Force",
+    ], {
+      timeout: 120_000,
+      env: { ...process.env, ANYLOC_ZIP: zipPath, ANYLOC_DEST: destDir },
+    });
+    if (r.code !== 0) throw new Error("Extraction failed");
+  } else {
+    const r = await spawnAsync("unzip", ["-o", zipPath, "-d", destDir], {
+      timeout: 120_000,
+    });
+    if (r.code !== 0) throw new Error("Extraction failed");
+  }
 }
 
 async function setupWindowsEmbed(envDir, onProgress) {
   const zipPath = path.join(os.tmpdir(), `python-embed-${Date.now()}.zip`);
 
   onProgress?.({ pct: 10, message: "Téléchargement de Python..." });
-  await downloadFile(WIN_EMBED_URL, zipPath);
+  await downloadFile(WIN_EMBED_URL, zipPath, WIN_EMBED_SHA256);
 
   onProgress?.({ pct: 30, message: "Extraction..." });
-  fs.mkdirSync(envDir, { recursive: true });
-  const ps = await spawnAsync("powershell", [
-    "-NoProfile", "-Command",
-    `Expand-Archive -Path '${zipPath}' -DestinationPath '${envDir}' -Force`,
-  ], { timeout: 120_000 });
-  if (ps.code !== 0) throw new Error("Extraction failed");
+  await extractZip(zipPath, envDir);
 
   const pthFile = path.join(envDir, `python${PYTHON_TAG}._pth`);
   if (fs.existsSync(pthFile)) {
@@ -155,7 +182,8 @@ async function installPmd3(envDir, onProgress) {
   const pythonExe = fs.existsSync(rootPython) ? rootPython : venvPython;
 
   const r = await spawnAsync(pythonExe, [
-    "-m", "pip", "install", "pymobiledevice3", "--no-warn-script-location",
+    "-m", "pip", "install", `pymobiledevice3==${PMD3_VERSION}`,
+    "--no-warn-script-location",
   ], { timeout: 600_000 });
 
   if (r.code !== 0) throw new Error(`pymobiledevice3 install failed: ${r.stderr.slice(0, 400)}`);

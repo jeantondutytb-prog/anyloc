@@ -1,3 +1,4 @@
+const { execFileSync } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
 
@@ -35,8 +36,24 @@ module.exports = {
   mac: {
     category: "public.app-category.utilities",
     target: ["dmg"],
-    identity: null,
+    identity: process.env.APPLE_IDENTITY || null,
     gatekeeperAssess: false,
+    notarize: process.env.APPLE_ID
+      ? { teamId: process.env.APPLE_TEAM_ID }
+      : false,
+  },
+  afterPack(context) {
+    if (process.platform !== "darwin") return;
+    if (process.env.APPLE_IDENTITY) return;
+    const appPath = path.join(
+      context.appOutDir,
+      `${context.packager.appInfo.productFilename}.app`
+    );
+    try {
+      execFileSync("codesign", ["--deep", "--force", "--sign", "-", appPath], {
+        stdio: "inherit",
+      });
+    } catch {}
   },
   win: {
     target: ["nsis"],
