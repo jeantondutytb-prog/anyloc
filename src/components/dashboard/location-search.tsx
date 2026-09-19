@@ -214,7 +214,7 @@ export const LocationSearch = forwardRef<LocationSearchHandle, LocationSearchPro
           }}
           placeholder={
             disabled
-              ? "D'abord installe l'app sur ton téléphone (instructions en bas)…"
+              ? "Termine d'abord les étapes sur ton téléphone…"
               : "Ville, adresse ou coordonnées GPS (ex. 34.08, -118.48)…"
           }
           className={cn(

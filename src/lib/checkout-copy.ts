@@ -63,7 +63,7 @@ export const CHECKOUT_COPY = {
     {
       q: "Ça marche sur quelles apps ?",
       a:
-        "Toutes celles qui lisent le GPS de ton tel : Snapchat, Insta, Tinder, Bumble, Pokémon GO, Life360, etc. Anyloc agit au niveau du système, pas dans une seule app.",
+        "Snapchat, Instagram et Tinder depuis le navigateur de ton téléphone. Après l’essai, le guide dans le site t’indique exactement comment les ouvrir.",
     },
     {
       q: "Mes potes peuvent capter que c'est fake ?",
@@ -73,7 +73,7 @@ export const CHECKOUT_COPY = {
     {
       q: "Ça passe sur iPhone et Android ?",
       a:
-        "Oui. Sur Android : 3 étapes sur le tel. Sur iPhone : un Mac ou un PC une seule fois (limite Apple), puis tu gères ta loc depuis l'iPhone — sans rebrancher l'ordi.",
+        "Oui — même chemin pour tout le monde. Après l’essai, un guide dans le site t’accompagne étape par étape, puis tu choisis ta ville sur la carte. Pas besoin d’ordi ni d’app à installer.",
     },
   ],
   proofTitle: "Même pin sur Snap et sur Plans",
