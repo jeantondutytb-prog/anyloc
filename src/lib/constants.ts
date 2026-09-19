@@ -275,7 +275,7 @@ export const FAQ = [
   {
     q: "Windows dit « Faites attention » et je n'arrive pas à ouvrir Anyloc ?",
     a:
-      "Normal : Windows et Chrome disent ça pour toute app qui n'est pas dans le Microsoft Store. En bas de Chrome, clique la flèche à droite du fichier → Conserver (pas Jeter). Puis Téléchargements → double-clic Anyloc. Si l'écran bleu « Windows a protégé votre ordinateur » apparaît : Plus d'infos → Exécuter quand même (pas OK). Toujours bloqué : clic droit → Propriétés → case Débloquer.",
+      "Normal : Windows et Chrome disent ça pour toute app qui n'est pas dans le Microsoft Store. En bas de Chrome, clique la flèche à droite du fichier → Conserver (pas Jeter). Puis Téléchargements → double-clic Anyloc-Setup. Si l'écran bleu « Windows a protégé votre ordinateur » apparaît : Plus d'infos → Exécuter quand même (pas OK). Si Anyloc est déjà dans la barre en bas à droite : clic droit → Quitter, sinon tu réouvres l'ancienne fenêtre sans le tuto « 4 étapes ». Toujours bloqué : clic droit → Propriétés → case Débloquer.",
   },
   {
     q: "Ça passe sur iPhone et Android ?",

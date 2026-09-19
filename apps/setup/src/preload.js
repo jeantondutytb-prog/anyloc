@@ -28,4 +28,10 @@ contextBridge.exposeInMainWorld("anylocSetup", {
     ipcRenderer.on("autosync:status", listener);
     return () => ipcRenderer.removeListener("autosync:status", listener);
   },
+  getVersion: () => ipcRenderer.invoke("setup:get-version"),
+  onShowGuide: (callback) => {
+    const listener = () => callback();
+    ipcRenderer.on("app:show-guide", listener);
+    return () => ipcRenderer.removeListener("app:show-guide", listener);
+  },
 });

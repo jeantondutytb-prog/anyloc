@@ -43,7 +43,14 @@ export async function GET(_request: Request, context: RouteContext) {
     );
   }
 
-  return Response.redirect(downloadUrl, 302);
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: downloadUrl,
+      "Cache-Control": "no-store, no-cache, must-revalidate",
+      Pragma: "no-cache",
+    },
+  });
 }
 
 export async function HEAD(_request: Request, context: RouteContext) {
@@ -65,5 +72,11 @@ export async function HEAD(_request: Request, context: RouteContext) {
     return new Response(null, { status: 503 });
   }
 
-  return new Response(null, { status: 200 });
+  return new Response(null, {
+    status: 200,
+    headers: {
+      "Cache-Control": "no-store, no-cache, must-revalidate",
+      Pragma: "no-cache",
+    },
+  });
 }

@@ -89,6 +89,10 @@ function showScreen(name) {
   $(name + "-screen").classList.add("active");
 }
 
+function showLaunchGuide() {
+  showScreen("guide");
+}
+
 function showToast(message, type = "info", duration = 3000) {
   const toast = $("status-toast");
   if (!toast) return;
@@ -267,6 +271,17 @@ async function applyPlatformHints() {
   }
 }
 
+async function fillGuideVersion() {
+  const el = $("guide-version");
+  if (!el) return;
+  try {
+    const version = await window.anylocSetup.getVersion();
+    if (version) el.textContent = `Anyloc ${version}`;
+  } catch {
+    // Version is only a sanity check that this is the new build.
+  }
+}
+
 async function refreshOnboardingUsb() {
   const status = $("onboarding-usb-status");
   const nextBtn = $("onboarding-next-plug");
@@ -352,7 +367,7 @@ function logout() {
   clearSession();
   activeSpoof = null;
   selectedPosition = null;
-  showScreen("guide");
+  showLaunchGuide();
   $("login-email").value = "";
   $("login-password").value = "";
   $("login-error").textContent = "";
@@ -827,22 +842,32 @@ async function onboardingInstall() {
 // ── Init ──
 
 async function init() {
+  showLaunchGuide();
   restoreFavorites();
-  renderSpots();
+  try {
+    renderSpots();
+  } catch {
+    // Spots live on the main screen; a missing node must not skip the guide.
+  }
   void applyPlatformHints();
+  void fillGuideVersion();
 
-  const saved = restoreSession();
-  if (saved?.access_token) {
-    const verified = await window.anylocSetup.auth("verify", { session: saved });
-    if (verified.ok) {
-      session = verified.session || saved;
-      persistSession(session);
-    } else {
-      clearSession();
+  try {
+    const saved = restoreSession();
+    if (saved?.access_token) {
+      const verified = await window.anylocSetup.auth("verify", { session: saved });
+      if (verified.ok) {
+        session = verified.session || saved;
+        persistSession(session);
+      } else {
+        clearSession();
+      }
     }
+  } catch {
+    clearSession();
   }
 
-  showScreen("guide");
+  showLaunchGuide();
 
   // Handle launch config
   const launchConfig = await window.anylocSetup.getLaunchConfig();
@@ -851,6 +876,8 @@ async function init() {
   window.anylocSetup.onLaunchConfig((config) => {
     if (config?.token && session) showToast("Configuration reçue.", "ok");
   });
+
+  window.anylocSetup.onShowGuide?.(() => showLaunchGuide());
 
   // ── Event listeners ──
 

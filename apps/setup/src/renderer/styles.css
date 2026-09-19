@@ -589,6 +589,14 @@ body {
   margin-bottom: 14px;
 }
 
+.guide-version {
+  margin-top: 14px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+}
+
 .onboarding-skip {
   display: block;
   width: 100%;

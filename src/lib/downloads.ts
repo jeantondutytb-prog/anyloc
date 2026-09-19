@@ -32,11 +32,11 @@ export const DOWNLOAD_ASSETS: DownloadAsset[] = [
     id: "setup-win",
     label: "Anyloc (Windows)",
     description: "Windows 10 ou plus récent — branche ton iPhone et installe en un clic",
-    filename: "Anyloc.exe",
+    filename: "Anyloc-Setup.exe",
     envKey: "ANYLOC_DOWNLOAD_SETUP_WIN",
-    blobPath: "releases/Anyloc.exe",
-    alternateFilenames: ["Anyloc-Setup.exe", "anyloc-setup.exe"],
-    alternateBlobPaths: ["releases/Anyloc-Setup.exe"],
+    blobPath: "releases/Anyloc-Setup.exe",
+    alternateFilenames: ["Anyloc.exe", "anyloc-setup.exe"],
+    alternateBlobPaths: ["releases/Anyloc.exe"],
   },
   {
     id: "setup-win-zip",
@@ -179,7 +179,7 @@ async function fetchGithubReleaseAssets() {
           "User-Agent": "anyloc-downloads",
           ...(githubToken ? { Authorization: `Bearer ${githubToken}` } : {}),
         },
-        next: { revalidate: 600 },
+        next: { revalidate: 120 },
       }
     );
 
@@ -200,7 +200,7 @@ async function fetchGithubReleaseAssets() {
     }
 
     githubReleaseCache = {
-      expiresAt: now + 10 * 60 * 1000,
+      expiresAt: now + 2 * 60 * 1000,
       assets,
     };
 
@@ -230,22 +230,7 @@ async function resolvePrivateBlobUrl(url: string): Promise<string> {
   return getBlobDownloadUrl(url);
 }
 
-export async function resolveDownloadUrl(platform: DownloadPlatform) {
-  const envUrl = getDownloadUrl(platform);
-  if (envUrl) {
-    return resolvePrivateBlobUrl(envUrl);
-  }
-
-  const asset = getDownloadAsset(platform);
-  if (!asset) {
-    return null;
-  }
-
-  const blobUrl = await resolveFromBlob(asset);
-  if (blobUrl) {
-    return blobUrl;
-  }
-
+async function resolveFromGithub(asset: DownloadAsset) {
   const releaseAssets = await fetchGithubReleaseAssets();
   const filenames = [
     asset.filename,
@@ -259,6 +244,28 @@ export async function resolveDownloadUrl(platform: DownloadPlatform) {
   }
 
   return null;
+}
+
+export async function resolveDownloadUrl(platform: DownloadPlatform) {
+  const envUrl = getDownloadUrl(platform);
+  if (envUrl) {
+    return resolvePrivateBlobUrl(envUrl);
+  }
+
+  const asset = getDownloadAsset(platform);
+  if (!asset) {
+    return null;
+  }
+
+  // GitHub first: each release has a unique URL. The Vercel Blob object
+  // `releases/Anyloc.exe` was uploaded with a 1-year cache, so reinstalls
+  // kept getting an old installer that never showed the launch tutorial.
+  const githubUrl = await resolveFromGithub(asset);
+  if (githubUrl) {
+    return githubUrl;
+  }
+
+  return resolveFromBlob(asset);
 }
 
 export async function isDownloadAvailable(platform: DownloadPlatform) {

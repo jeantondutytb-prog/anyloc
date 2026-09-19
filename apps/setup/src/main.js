@@ -259,14 +259,7 @@ function createTray() {
       { type: "separator" },
       {
         label: "Ouvrir la fenêtre",
-        click: () => {
-          if (mainWindowRef) {
-            mainWindowRef.show();
-            mainWindowRef.focus();
-          } else {
-            createWindow();
-          }
-        },
+        click: () => revealMainWindow(),
       },
       { type: "separator" },
       {
@@ -282,6 +275,23 @@ function createTray() {
 
   updateTrayMenu();
   setInterval(updateTrayMenu, 5000);
+  tray.on("click", () => revealMainWindow());
+  tray.on("double-click", () => revealMainWindow());
+}
+
+function revealMainWindow() {
+  const wasHidden =
+    !mainWindowRef || mainWindowRef.isDestroyed() || !mainWindowRef.isVisible();
+
+  if (!mainWindowRef || mainWindowRef.isDestroyed()) {
+    createWindow();
+  }
+  if (mainWindowRef.isMinimized()) mainWindowRef.restore();
+  mainWindowRef.show();
+  mainWindowRef.focus();
+  if (wasHidden && !mainWindowRef.webContents.isLoading()) {
+    mainWindowRef.webContents.send("app:show-guide");
+  }
 }
 
 function createWindow() {
@@ -331,6 +341,7 @@ if (!gotTheLock) {
       entry.startsWith("anyloc-setup://")
     );
     if (setupUrl) handleSetupUrl(setupUrl);
+    revealMainWindow();
   });
 }
 
@@ -491,6 +502,8 @@ ipcMain.handle("setup:get-platform", () => {
   if (process.platform === "win32") return "win";
   return process.platform;
 });
+
+ipcMain.handle("setup:get-version", () => app.getVersion());
 
 ipcMain.handle("setup:get-launch-config", () => {
   const config = pendingLaunchConfig;
@@ -692,12 +705,7 @@ app.whenReady().then(() => {
   mainWindowRef?.show();
 
   app.on("activate", () => {
-    if (mainWindowRef) {
-      mainWindowRef.show();
-      mainWindowRef.focus();
-    } else {
-      createWindow();
-    }
+    revealMainWindow();
   });
 });
 
