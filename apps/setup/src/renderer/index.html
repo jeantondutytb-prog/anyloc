@@ -10,8 +10,34 @@
   </head>
   <body>
 
+    <!-- ── Launch tutorial (every start) ── -->
+    <div id="guide-screen" class="screen onboarding-screen active">
+      <div class="onboarding-card">
+        <p class="onboarding-kicker">Tuto — à chaque ouverture</p>
+        <div class="logo-big">Any<span>loc</span></div>
+        <h2 class="guide-title">4 étapes, et ta loc change</h2>
+        <p class="setup-subtitle">Lis ça avant de te connecter. L’iPhone reste branché ensuite.</p>
+        <ol class="guide-track">
+          <li class="current"><strong>1. Connecte-toi</strong> — le même compte que sur anyloc.io</li>
+          <li><strong>2. Branche l’iPhone</strong> — câble USB, déverrouille, « Faire confiance »</li>
+          <li><strong>3. Installe</strong> — un bouton dans cette app, l’app se met sur le tel</li>
+          <li><strong>4. Ouvre Anyloc sur l’iPhone</strong> — choisis une ville. Ne débranche pas.</li>
+        </ol>
+        <p id="guide-win-hint" class="setup-hint" hidden>
+          Sur Windows : installe <strong>Apple Devices</strong> (Microsoft Store) ou iTunes, sinon l’iPhone n’est pas détecté.
+        </p>
+        <p class="setup-step setup-step-warn" style="margin-top: 12px">
+          <span class="setup-step-num">!</span>
+          <span><strong>Laisse Anyloc ouvert</strong> et le câble branché. Si tu débranches, Snap revoit ta vraie position.</span>
+        </p>
+        <div class="setup-actions" style="margin-top: 18px">
+          <button type="button" class="btn btn-accent" id="guide-continue" style="flex:1">C’est compris — continuer</button>
+        </div>
+      </div>
+    </div>
+
     <!-- ── Login Screen ── -->
-    <div id="login-screen" class="screen login-screen active">
+    <div id="login-screen" class="screen login-screen">
       <div class="login-card">
         <p class="onboarding-kicker">Étape 1 sur 4 — connexion</p>
         <div class="logo-big">Any<span>loc</span></div>
