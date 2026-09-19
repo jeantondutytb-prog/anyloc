@@ -4,7 +4,6 @@ const path = require("node:path");
 
 let cachedCli = null;
 let cachedPython = null;
-let pipAttempted = false;
 
 const DEVICE_TOKEN_PREFIX = "anyloc_";
 
@@ -20,17 +19,6 @@ const IPA_FILENAME = "Anyloc.ipa";
 const MIN_IPA_BYTES = 100_000;
 
 let ipaDownloadPromise = null;
-let ipaAuth = {
-  accessToken: "",
-  apiBaseUrl: DEFAULT_API_BASE_URL,
-};
-
-function setIpaDownloadAuth({ accessToken, apiBaseUrl } = {}) {
-  ipaAuth = {
-    accessToken: accessToken ? String(accessToken) : "",
-    apiBaseUrl: normalizeApiBaseUrl(apiBaseUrl || DEFAULT_API_BASE_URL),
-  };
-}
 
 function normalizeHost(hostname) {
   return String(hostname || "").trim().toLowerCase().replace(/\.$/, "");
@@ -162,31 +150,6 @@ function isValidIpaFile(filePath) {
   return fs.existsSync(filePath) && fs.statSync(filePath).size >= MIN_IPA_BYTES;
 }
 
-async function downloadIpaFromAnyloc() {
-  if (!ipaAuth.accessToken) {
-    return null;
-  }
-
-  try {
-    const response = await fetch(`${ipaAuth.apiBaseUrl}/api/downloads/ipa`, {
-      headers: {
-        Authorization: `Bearer ${ipaAuth.accessToken}`,
-        "User-Agent": "anyloc-setup",
-      },
-      redirect: "follow",
-    });
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const buffer = Buffer.from(await response.arrayBuffer());
-    return buffer.length >= MIN_IPA_BYTES ? buffer : null;
-  } catch {
-    return null;
-  }
-}
-
 async function resolveIpaDownloadUrl() {
   if (process.env.ANYLOC_IPA_URL?.trim()) {
     return process.env.ANYLOC_IPA_URL.trim();
@@ -239,30 +202,20 @@ async function ensureIpaAvailable() {
   }
 
   ipaDownloadPromise = (async () => {
+    const downloadUrl = await resolveIpaDownloadUrl();
+
+    if (!downloadUrl) {
+      return {
+        ok: false,
+        message:
+          "L'app iPhone est en cours de publication. Réessaie dans quelques minutes.",
+      };
+    }
+
     const targetPath = getCachedIpaPath();
 
     try {
       fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-
-      const apiBuffer = await downloadIpaFromAnyloc();
-      if (apiBuffer) {
-        fs.writeFileSync(targetPath, apiBuffer);
-        return {
-          ok: true,
-          path: targetPath,
-          source: "download",
-        };
-      }
-
-      const downloadUrl = await resolveIpaDownloadUrl();
-
-      if (!downloadUrl) {
-        return {
-          ok: false,
-          message:
-            "L'app iPhone est en cours de publication. Réessaie dans quelques minutes.",
-        };
-      }
 
       const response = await fetch(downloadUrl, {
         headers: {
@@ -306,62 +259,38 @@ async function ensureIpaAvailable() {
 
   return ipaDownloadPromise;
 }
-function isWin() {
-  return process.platform === "win32";
-}
-
-function listSubdirs(dir) {
-  try {
-    return fs
-      .readdirSync(dir, { withFileTypes: true })
-      .filter((entry) => entry.isDirectory())
-      .map((entry) => path.join(dir, entry.name));
-  } catch {
-    return [];
-  }
-}
-
-function windowsPythonHomes() {
-  const local = process.env.LOCALAPPDATA || "";
-  const roaming = process.env.APPDATA || "";
-  const homes = [];
-
-  for (const root of [
-    path.join(local, "Programs", "Python"),
-    path.join(roaming, "Python"),
-  ]) {
-    for (const dir of listSubdirs(root)) {
-      homes.push(dir);
-    }
-  }
-
-  return homes;
-}
-
-function extraBinDirs() {
-  if (isWin()) {
-    const dirs = [];
-    for (const home of windowsPythonHomes()) {
-      dirs.push(home);
-      dirs.push(path.join(home, "Scripts"));
-    }
-    return dirs;
-  }
-
-  return [
-    "/Library/Frameworks/Python.framework/Versions/3.14/bin",
-    "/Library/Frameworks/Python.framework/Versions/3.13/bin",
-    "/Library/Frameworks/Python.framework/Versions/3.12/bin",
-    "/opt/homebrew/bin",
-    "/usr/local/bin",
-  ];
-}
-
 function getSpawnEnv() {
+  const isWin = process.platform === "win32";
+  const sep = isWin ? ";" : ":";
+
+  const extraPaths = isWin
+    ? [
+        path.join(process.env.LOCALAPPDATA || "", "Programs", "Python", "Python314", "Scripts"),
+        path.join(process.env.LOCALAPPDATA || "", "Programs", "Python", "Python313", "Scripts"),
+        path.join(process.env.LOCALAPPDATA || "", "Programs", "Python", "Python312", "Scripts"),
+        path.join(process.env.LOCALAPPDATA || "", "Programs", "Python", "Python314"),
+        path.join(process.env.LOCALAPPDATA || "", "Programs", "Python", "Python313"),
+        path.join(process.env.LOCALAPPDATA || "", "Programs", "Python", "Python312"),
+        path.join(process.env.APPDATA || "", "Python", "Python314", "Scripts"),
+        path.join(process.env.APPDATA || "", "Python", "Python313", "Scripts"),
+        path.join(process.env.APPDATA || "", "Python", "Python312", "Scripts"),
+        "C:\\Python314\\Scripts",
+        "C:\\Python313\\Scripts",
+        "C:\\Python312\\Scripts",
+        "C:\\Python314",
+        "C:\\Python313",
+        "C:\\Python312",
+      ]
+    : [
+        "/Library/Frameworks/Python.framework/Versions/3.14/bin",
+        "/Library/Frameworks/Python.framework/Versions/3.13/bin",
+        "/Library/Frameworks/Python.framework/Versions/3.12/bin",
+        "/opt/homebrew/bin",
+        "/usr/local/bin",
+      ];
+
   const currentPath = process.env.PATH || "";
-  const mergedPath = [...extraBinDirs(), currentPath]
-    .filter(Boolean)
-    .join(path.delimiter);
+  const mergedPath = [...extraPaths, currentPath].join(sep);
 
   return {
     ...process.env,
@@ -369,119 +298,38 @@ function getSpawnEnv() {
   };
 }
 
-function runHidden(command, args, timeout = 8000) {
-  try {
-    return spawnSync(command, args, {
-      env: getSpawnEnv(),
-      timeout,
-      windowsHide: true,
-      encoding: "utf8",
-    });
-  } catch {
-    return { status: 1, stdout: "", stderr: "" };
-  }
-}
-
-function isUsablePythonPath(filePath) {
-  if (!filePath || !fs.existsSync(filePath)) {
-    return false;
-  }
-
-  try {
-    const stat = fs.statSync(filePath);
-    if (stat.size < 4096 && /WindowsApps/i.test(filePath)) {
-      return false;
-    }
-  } catch {
-    return false;
-  }
-
-  return true;
-}
-
 function getCliCandidates() {
   const home = process.env.HOME || process.env.USERPROFILE || "";
-  const names = isWin()
-    ? ["pymobiledevice3.exe", "pymobiledevice3"]
-    : ["pymobiledevice3"];
-  const fromPythonHomes = isWin()
-    ? windowsPythonHomes().flatMap((dir) =>
-        names.map((name) => path.join(dir, "Scripts", name))
-      )
-    : [];
+  const isWin = process.platform === "win32";
+
+  if (isWin) {
+    const localAppData = process.env.LOCALAPPDATA || "";
+    const appData = process.env.APPDATA || "";
+    return [
+      process.env.ANYLOC_PMD3,
+      path.join(localAppData, "Programs", "Python", "Python314", "Scripts", "pymobiledevice3.exe"),
+      path.join(localAppData, "Programs", "Python", "Python313", "Scripts", "pymobiledevice3.exe"),
+      path.join(localAppData, "Programs", "Python", "Python312", "Scripts", "pymobiledevice3.exe"),
+      path.join(appData, "Python", "Python314", "Scripts", "pymobiledevice3.exe"),
+      path.join(appData, "Python", "Python313", "Scripts", "pymobiledevice3.exe"),
+      path.join(appData, "Python", "Python312", "Scripts", "pymobiledevice3.exe"),
+      "C:\\Python314\\Scripts\\pymobiledevice3.exe",
+      "C:\\Python313\\Scripts\\pymobiledevice3.exe",
+      "C:\\Python312\\Scripts\\pymobiledevice3.exe",
+      "pymobiledevice3",
+    ].filter(Boolean);
+  }
 
   return [
     process.env.ANYLOC_PMD3,
-    ...fromPythonHomes,
     "/Library/Frameworks/Python.framework/Versions/3.14/bin/pymobiledevice3",
     "/Library/Frameworks/Python.framework/Versions/3.13/bin/pymobiledevice3",
     "/Library/Frameworks/Python.framework/Versions/3.12/bin/pymobiledevice3",
     "/opt/homebrew/bin/pymobiledevice3",
     "/usr/local/bin/pymobiledevice3",
     path.join(home, ".local", "bin", "pymobiledevice3"),
-    ...names,
+    "pymobiledevice3",
   ].filter(Boolean);
-}
-
-function getPythonCandidates() {
-  const home = process.env.HOME || process.env.USERPROFILE || "";
-  const fromPythonHomes = isWin()
-    ? windowsPythonHomes().map((dir) => path.join(dir, "python.exe"))
-    : [];
-
-  return [
-    process.env.ANYLOC_PYTHON,
-    ...fromPythonHomes,
-    "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3",
-    "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
-    "/Library/Frameworks/Python.framework/Versions/3.12/bin/python3",
-    "/opt/homebrew/bin/python3",
-    "/usr/local/bin/python3",
-    path.join(home, ".local", "bin", "python3"),
-    isWin() ? "py" : null,
-    isWin() ? "python" : null,
-    "python3",
-  ].filter(Boolean);
-}
-
-function pythonExecutableFrom(command) {
-  if (command === "py") {
-    const probed = runHidden("py", ["-3", "-c", "import sys; print(sys.executable)"]);
-    const resolved = String(probed.stdout || "").trim();
-    if (probed.status === 0 && isUsablePythonPath(resolved)) {
-      return resolved;
-    }
-    return null;
-  }
-
-  if (isWin() && /\.exe$/i.test(command) && !isUsablePythonPath(command)) {
-    return null;
-  }
-
-  const probed = runHidden(command, ["-c", "import sys; print(sys.executable)"]);
-  const resolved = String(probed.stdout || "").trim();
-  if (probed.status === 0 && resolved) {
-    if (isWin() && !isUsablePythonPath(resolved) && resolved !== command) {
-      return null;
-    }
-    return resolved;
-  }
-
-  return null;
-}
-
-function resolveAnyPython() {
-  for (const candidate of getPythonCandidates()) {
-    const executable = pythonExecutableFrom(candidate);
-    if (executable) {
-      return executable;
-    }
-  }
-  return null;
-}
-
-function pythonHasPymobiledevice3(python) {
-  return runHidden(python, ["-c", "import pymobiledevice3"]).status === 0;
 }
 
 function resolvePymobiledevice3Cli() {
@@ -489,11 +337,14 @@ function resolvePymobiledevice3Cli() {
     return cachedCli;
   }
 
+  const env = getSpawnEnv();
+
   for (const cli of getCliCandidates()) {
-    if (cli === "py") {
-      continue;
-    }
-    const result = runHidden(cli, ["usbmux", "list"]);
+    const result = spawnSync(cli, ["usbmux", "list"], {
+      env,
+      timeout: 8000,
+    });
+
     if (result.status === 0) {
       cachedCli = cli;
       return cli;
@@ -503,142 +354,79 @@ function resolvePymobiledevice3Cli() {
   return null;
 }
 
+function getPythonCandidates() {
+  const home = process.env.HOME || process.env.USERPROFILE || "";
+  const isWin = process.platform === "win32";
+
+  if (isWin) {
+    const localAppData = process.env.LOCALAPPDATA || "";
+    return [
+      process.env.ANYLOC_PYTHON,
+      path.join(localAppData, "Programs", "Python", "Python314", "python.exe"),
+      path.join(localAppData, "Programs", "Python", "Python313", "python.exe"),
+      path.join(localAppData, "Programs", "Python", "Python312", "python.exe"),
+      "C:\\Python314\\python.exe",
+      "C:\\Python313\\python.exe",
+      "C:\\Python312\\python.exe",
+      "python",
+      "python3",
+    ].filter(Boolean);
+  }
+
+  return [
+    process.env.ANYLOC_PYTHON,
+    "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3",
+    "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+    "/Library/Frameworks/Python.framework/Versions/3.12/bin/python3",
+    "/opt/homebrew/bin/python3",
+    "/usr/local/bin/python3",
+    path.join(home, ".local", "bin", "python3"),
+    "python3",
+  ].filter(Boolean);
+}
+
 function resolvePythonExecutable() {
   if (cachedPython) {
     return cachedPython;
   }
 
-  for (const candidate of getPythonCandidates()) {
-    const executable = pythonExecutableFrom(candidate);
-    if (executable && pythonHasPymobiledevice3(executable)) {
-      cachedPython = executable;
-      return executable;
-    }
-  }
+  const env = getSpawnEnv();
 
-  return null;
-}
-
-function windowsHasAppleUsb() {
-  if (!isWin()) {
-    return false;
-  }
-
-  const result = runHidden(
-    "powershell.exe",
-    [
-      "-NoProfile",
-      "-Command",
-      "Get-PnpDevice -PresentOnly | Where-Object { $_.InstanceId -match 'VID_05AC' } | Select-Object -First 1 -ExpandProperty FriendlyName",
-    ],
-    12000
-  );
-  return result.status === 0 && String(result.stdout || "").trim().length > 0;
-}
-
-function missingToolsMessage() {
-  if (isWin()) {
-    if (windowsHasAppleUsb()) {
-      return (
-        "L'iPhone est bien branché, mais Anyloc n'a pas l'outil pour lui parler. " +
-        "Installe Python 3 (python.org) en cochant « Add python.exe to PATH », relance Anyloc, puis Revérifier."
-      );
-    }
-    return (
-      "Anyloc n'arrive pas à parler à l'iPhone : Python manque. " +
-      "Installe Python 3 (python.org) en cochant « Add python.exe to PATH », " +
-      "installe Apple Devices dans le Microsoft Store, relance Anyloc, puis Revérifier."
+  for (const python of getPythonCandidates()) {
+    const result = spawnSync(
+      python,
+      ["-c", "import pymobiledevice3"],
+      {
+        env,
+        timeout: 8000,
+      }
     );
-  }
 
-  return "Outils USB manquants. Terminal : pip3 install pymobiledevice3 — puis relance Anyloc.";
-}
-
-function installPymobiledevice3(python) {
-  runHidden(python, ["-m", "ensurepip", "--upgrade"], 120000);
-  const pip = runHidden(
-    python,
-    ["-m", "pip", "install", "--user", "pymobiledevice3"],
-    180000
-  );
-  cachedCli = null;
-  cachedPython = null;
-  return pip.status === 0;
-}
-
-async function ensurePymobiledevice3({ installTools = true } = {}) {
-  if (resolvePymobiledevice3Cli() || resolvePythonExecutable()) {
-    return { ok: true };
-  }
-
-  const python = resolveAnyPython();
-  if (!python) {
-    return { ok: false, message: missingToolsMessage() };
-  }
-
-  if (!installTools || pipAttempted) {
-    return {
-      ok: false,
-      message: isWin()
-        ? "Impossible d'installer l'outil iPhone tout seul. Ouvre PowerShell et lance : py -3 -m pip install pymobiledevice3 — puis relance Anyloc."
-        : "Impossible d'installer pymobiledevice3. Terminal : pip3 install pymobiledevice3",
-    };
-  }
-
-  pipAttempted = true;
-  const installed = installPymobiledevice3(python);
-  if (!installed || !(resolvePymobiledevice3Cli() || resolvePythonExecutable())) {
-    return {
-      ok: false,
-      message: isWin()
-        ? "Impossible d'installer l'outil iPhone tout seul. Ouvre PowerShell et lance : py -3 -m pip install pymobiledevice3 — puis relance Anyloc."
-        : "Impossible d'installer pymobiledevice3. Terminal : pip3 install pymobiledevice3",
-    };
-  }
-
-  return { ok: true };
-}
-
-function getPmd3Invocation() {
-  const cli = resolvePymobiledevice3Cli();
-  if (cli) {
-    return { command: cli, prefix: [] };
-  }
-
-  const python = resolvePythonExecutable();
-  if (python) {
-    return { command: python, prefix: ["-m", "pymobiledevice3"] };
+    if (result.status === 0) {
+      cachedPython = python;
+      return python;
+    }
   }
 
   return null;
 }
 
-function runCli(args, options = {}) {
-  return new Promise(async (resolve) => {
-    const tools = await ensurePymobiledevice3(options);
-    if (!tools.ok) {
+function runCli(args) {
+  return new Promise((resolve) => {
+    const cli = resolvePymobiledevice3Cli();
+
+    if (!cli) {
       resolve({
         ok: false,
         stdout: "",
-        stderr: tools.message,
+        stderr:
+          "pymobiledevice3 introuvable. Terminal : pip3 install pymobiledevice3",
       });
       return;
     }
 
-    const invocation = getPmd3Invocation();
-
-    if (!invocation) {
-      resolve({
-        ok: false,
-        stdout: "",
-        stderr: missingToolsMessage(),
-      });
-      return;
-    }
-
-    const child = spawn(invocation.command, [...invocation.prefix, ...args], {
+    const child = spawn(cli, args, {
       env: getSpawnEnv(),
-      windowsHide: true,
     });
 
     let stdout = "";
@@ -672,7 +460,8 @@ function runPython(scriptName, args = []) {
         ok: false,
         udid: null,
         deviceName: null,
-        message: missingToolsMessage(),
+        message:
+          "Python avec pymobiledevice3 introuvable. Terminal : pip3 install pymobiledevice3",
       });
       return;
     }
@@ -681,7 +470,6 @@ function runPython(scriptName, args = []) {
     const child = spawn(python, [scriptPath, ...args], {
       cwd: getScriptsDir(),
       env: getSpawnEnv(),
-      windowsHide: true,
     });
 
     let stdout = "";
@@ -775,20 +563,9 @@ async function getInstallAvailabilityAsync() {
   };
 }
 
-async function detectUsbDevice(options = {}) {
-  const tools = await ensurePymobiledevice3(options);
-  if (!tools.ok) {
-    return {
-      connected: false,
-      udid: null,
-      deviceName: null,
-      message: tools.message,
-      needsPython: isWin(),
-    };
-  }
-
+async function detectUsbDevice() {
   const installAvailability = await getInstallAvailabilityAsync();
-  const result = await runCli(["usbmux", "list"], options);
+  const result = await runCli(["usbmux", "list"]);
 
   if (!result.ok) {
     return {
@@ -810,9 +587,7 @@ async function detectUsbDevice(options = {}) {
         udid: null,
         deviceName: null,
         message:
-          process.platform === "win32"
-            ? "Aucun iPhone en USB. Installe Apple Devices (Microsoft Store) ou iTunes, déverrouille l'iPhone, appuie sur Faire confiance, puis Revérifier."
-            : "Aucun iPhone en USB. Déverrouille l'iPhone, branche-le, appuie sur Faire confiance, puis Revérifier.",
+          "Aucun iPhone en USB. Déverrouille l'iPhone, branche-le, ouvre le Finder pour « Faire confiance », puis Revérifier.",
       };
     }
 
@@ -957,11 +732,13 @@ async function applyGpsLocation({ udid, token, apiBaseUrl }) {
     };
   }
 
-  const tools = await ensurePymobiledevice3();
-  if (!tools.ok) {
+  const cli = resolvePymobiledevice3Cli();
+
+  if (!cli) {
     return {
       ok: false,
-      message: tools.message,
+      message:
+        "pymobiledevice3 introuvable. Terminal : pip3 install pymobiledevice3 puis relance Anyloc Setup avec :\nPATH=\"/Library/Frameworks/Python.framework/Versions/3.14/bin:$PATH\" open -a \"Anyloc Setup\"",
     };
   }
 
@@ -1203,7 +980,7 @@ async function installIosApp({ udid }) {
   if (result.ok) {
     return {
       ok: true,
-      message: "C'est installé. Si l'app refuse de s'ouvrir : Réglages → Général → VPN et gestion de l'appareil → Faire confiance. Laisse l'iPhone branché.",
+      message: "Anyloc installé sur ton iPhone. Ouvre l'app et colle ton token.",
       udid,
       output: result.stdout.trim(),
     };
@@ -1223,11 +1000,11 @@ async function applyGpsDirect({ udid, lat, lng }) {
     return { ok: false, message: "Coordonnées manquantes." };
   }
 
-  const tools = await ensurePymobiledevice3();
-  if (!tools.ok) {
+  const cli = resolvePymobiledevice3Cli();
+  if (!cli) {
     return {
       ok: false,
-      message: tools.message,
+      message: "pymobiledevice3 introuvable. Terminal : pip3 install pymobiledevice3",
     };
   }
 
@@ -1244,11 +1021,11 @@ async function applyGpsDirect({ udid, lat, lng }) {
 }
 
 async function clearGpsLocation({ udid }) {
-  const tools = await ensurePymobiledevice3();
-  if (!tools.ok) {
+  const cli = resolvePymobiledevice3Cli();
+  if (!cli) {
     return {
       ok: false,
-      message: tools.message,
+      message: "pymobiledevice3 introuvable. Terminal : pip3 install pymobiledevice3",
     };
   }
 
@@ -1262,13 +1039,10 @@ module.exports = {
   applyGpsDirect,
   clearGpsLocation,
   ensureIpaAvailable,
-  setIpaDownloadAuth,
   exportPairingFile,
   savePairingLocalCopy,
   resolvePythonExecutable,
   resolvePymobiledevice3Cli,
-  getPmd3Invocation,
-  missingToolsMessage,
   getSpawnEnv,
   getScriptsDir,
 };

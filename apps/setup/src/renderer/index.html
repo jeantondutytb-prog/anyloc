@@ -10,39 +10,11 @@
   </head>
   <body>
 
-    <!-- ── Launch tutorial (every start) ── -->
-    <div id="guide-screen" class="screen onboarding-screen active">
-      <div class="onboarding-card">
-        <p class="onboarding-kicker">Tuto — à chaque ouverture</p>
-        <div class="logo-big">Any<span>loc</span></div>
-        <h2 class="guide-title">4 étapes, et ta loc change</h2>
-        <p class="setup-subtitle">Lis ça avant de te connecter. L’iPhone reste branché ensuite.</p>
-        <ol class="guide-track">
-          <li class="current"><strong>1. Connecte-toi</strong> — le même compte que sur anyloc.io</li>
-          <li><strong>2. Branche l’iPhone</strong> — câble USB, déverrouille, « Faire confiance »</li>
-          <li><strong>3. Installe</strong> — un bouton dans cette app, l’app se met sur le tel</li>
-          <li><strong>4. Ouvre Anyloc sur l’iPhone</strong> — choisis une ville. Ne débranche pas.</li>
-        </ol>
-        <p id="guide-win-hint" class="setup-hint" hidden>
-          Sur Windows : installe <strong>Apple Devices</strong> (Microsoft Store) ou iTunes, sinon l’iPhone n’est pas détecté.
-        </p>
-        <p class="setup-step setup-step-warn" style="margin-top: 12px">
-          <span class="setup-step-num">!</span>
-          <span><strong>Laisse Anyloc ouvert</strong> et le câble branché. Si tu débranches, Snap revoit ta vraie position.</span>
-        </p>
-        <div class="setup-actions" style="margin-top: 18px">
-          <button type="button" class="btn btn-accent" id="guide-continue" style="flex:1">C’est compris — continuer</button>
-        </div>
-        <p id="guide-version" class="guide-version"></p>
-      </div>
-    </div>
-
     <!-- ── Login Screen ── -->
-    <div id="login-screen" class="screen login-screen">
+    <div id="login-screen" class="screen login-screen active">
       <div class="login-card">
-        <p class="onboarding-kicker">Étape 1 sur 4 — connexion</p>
         <div class="logo-big">Any<span>loc</span></div>
-        <p class="tagline">Connecte-toi avec le même compte que sur le site.</p>
+        <p class="tagline">Change ta position. Partout dans le monde.</p>
 
         <div class="oauth-buttons">
           <button class="oauth-btn" id="login-google">
@@ -65,60 +37,8 @@
         </form>
 
         <p class="login-toggle">
-          Payé sans mot de passe ? Va sur <strong>anyloc.io</strong> → Mon compte → choisis-en un, puis reviens ici.
-        </p>
-        <p class="login-toggle">
           Pas encore de compte ? <a id="toggle-signup">Créer un compte</a>
         </p>
-      </div>
-    </div>
-
-    <!-- ── Onboarding (iPhone install wizard) ── -->
-    <div id="onboarding-screen" class="screen onboarding-screen">
-      <div class="onboarding-card">
-        <p class="onboarding-kicker" id="onboarding-kicker">Étape 2 sur 4</p>
-
-        <div id="onboarding-step-plug" class="onboarding-panel">
-          <h2>Branche ton iPhone</h2>
-          <p class="setup-subtitle">On installe Anyloc sur le tel. Sans le câble, Snap garde ta vraie position.</p>
-          <ol class="guide-track">
-            <li class="done"><strong>Connexion</strong> — c'est fait</li>
-            <li class="current"><strong>Câble USB</strong> — déverrouille, puis « Faire confiance »</li>
-            <li><strong>Installer</strong> — un bouton, on s'occupe du reste</li>
-            <li><strong>Ouvre Anyloc</strong> sur l'iPhone — laisse le câble</li>
-          </ol>
-          <p id="onboarding-win-hint" class="setup-hint" hidden>
-            Sur Windows : installe <strong>Apple Devices</strong> (Microsoft Store) ou iTunes. Sinon l'iPhone n'est pas détecté.
-          </p>
-          <p id="onboarding-usb-status" class="setup-status info">Recherche de l'iPhone…</p>
-          <div class="setup-actions">
-            <button type="button" class="btn btn-accent" id="onboarding-next-plug" disabled style="flex:1">Suivant</button>
-            <button type="button" class="btn btn-ghost" id="onboarding-recheck-plug">Revérifier</button>
-          </div>
-          <button type="button" class="onboarding-skip" id="onboarding-skip">L'app est déjà sur mon iPhone — passer</button>
-        </div>
-
-        <div id="onboarding-step-install" class="onboarding-panel" hidden>
-          <h2>Installe Anyloc sur l'iPhone</h2>
-          <p class="setup-subtitle">Un bouton. Laisse le câble branché.</p>
-          <div class="setup-step"><div class="setup-step-num">1</div><div><h3>Si iOS demande le mode développeur</h3><p>Réglages → Confidentialité et sécurité → Mode développeur → ON, puis redémarre l'iPhone et rebranche.</p></div></div>
-          <div class="setup-step"><div class="setup-step-num">2</div><div><h3>Clique Installer</h3><p>Le bouton s'active quand l'iPhone est détecté. Ça prend 1 à 2 minutes.</p></div></div>
-          <p id="onboarding-install-status" class="setup-status"></p>
-          <div class="setup-actions">
-            <button type="button" class="btn btn-accent" id="onboarding-install-btn" style="flex:1">Installer sur l'iPhone</button>
-          </div>
-        </div>
-
-        <div id="onboarding-step-done" class="onboarding-panel" hidden>
-          <h2>C'est sur ton iPhone</h2>
-          <p class="setup-subtitle">Ne ferme pas Anyloc. Ne débranche pas le câble.</p>
-          <div class="setup-step"><div class="setup-step-num">1</div><div><h3>Si l'app est grise</h3><p>Réglages → Général → VPN et gestion de l'appareil → Anyloc → Faire confiance.</p></div></div>
-          <div class="setup-step"><div class="setup-step-num">2</div><div><h3>Ouvre Anyloc sur l'iPhone</h3><p>Même compte Google, ou email + mot de passe du site.</p></div></div>
-          <div class="setup-step setup-step-warn"><div class="setup-step-num">3</div><div><h3>Laisse le câble branché</h3><p>Si tu débranches, Snap revoit ta vraie position.</p></div></div>
-          <div class="setup-actions">
-            <button type="button" class="btn btn-accent" id="onboarding-finish-btn" style="flex:1">Terminer — ouvrir la carte</button>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -137,14 +57,6 @@
           </div>
           <div id="search-results" class="search-results" hidden></div>
           <div id="map"></div>
-
-          <div id="iphone-setup-banner" class="iphone-setup-banner">
-            <div class="iphone-setup-banner-copy">
-              <strong id="iphone-setup-banner-title">Première étape</strong>
-              <p id="iphone-setup-banner-text">Branche ton iPhone, puis clique Installer — un seul bouton.</p>
-            </div>
-            <button type="button" class="btn btn-accent" id="open-setup-btn">Installer l'app iPhone</button>
-          </div>
 
           <!-- Bottom sheet -->
           <div id="bottom-sheet" class="bottom-sheet">
@@ -289,13 +201,13 @@
               </div>
             </div>
 
-            <!-- Déconnexion -->
+            <!-- Actions -->
             <div class="settings-section">
               <div class="section-label">ACTIONS</div>
               <div class="settings-card">
-                <button class="logout-row" id="open-setup-from-profil">
-                  <span class="logout-icon">📱</span>
-                  <span>Installer l'app iPhone</span>
+                <button class="action-row" id="reopen-guide-btn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="1" width="14" height="22" rx="3"/><path d="M12 18h.01"/></svg>
+                  <span>Reconfigurer l'iPhone</span>
                   <span class="chevron">›</span>
                 </button>
                 <button class="logout-row" id="logout-btn">
@@ -326,37 +238,175 @@
       </div>
     </div>
 
-    <!-- ── Setup Modal ── -->
-    <div id="setup-overlay" class="setup-overlay" hidden>
-      <div class="setup-modal">
-        <button type="button" class="setup-modal-close" id="setup-close-x" aria-label="Fermer">&times;</button>
-        <div id="setup-install-flow">
-          <h2>Installe Anyloc sur l'iPhone</h2>
-          <p class="setup-subtitle">3 minutes. Un câble. Un bouton.</p>
-          <div class="setup-step"><div class="setup-step-num">1</div><div><h3>Branche l'iPhone</h3><p>Câble USB. Déverrouille. Appuie sur « Faire confiance ».</p></div></div>
-          <div class="setup-step"><div class="setup-step-num">2</div><div><h3>Mode développeur si iOS le demande</h3><p>Réglages → Confidentialité et sécurité → Mode développeur → ON, puis redémarre.</p></div></div>
-          <div class="setup-step"><div class="setup-step-num">3</div><div><h3>Clique Installer</h3><p>Le bouton s'active dès que l'iPhone est détecté. Laisse le câble branché ensuite.</p></div></div>
-          <p id="setup-usb-status" class="setup-status info">Recherche de l'iPhone…</p>
-          <div class="setup-win-tools" id="setup-win-tools" hidden>
-            <button type="button" class="btn btn-ghost" id="setup-open-python">Installer Python</button>
-            <button type="button" class="btn btn-ghost" id="setup-open-apple-devices">Installer Apple Devices</button>
-          </div>
-          <div class="setup-actions">
-            <button class="btn btn-accent" id="setup-install-btn" disabled>Installer l'app iPhone</button>
-            <button class="btn btn-ghost" id="setup-recheck-btn">Revérifier</button>
-            <button class="btn btn-ghost" id="setup-close-btn">Fermer</button>
-          </div>
-          <p id="setup-install-status" class="setup-status"></p>
+    <!-- ── Onboarding Guide (full-screen wizard) ── -->
+    <div id="guide-screen" class="screen guide-screen">
+      <div class="guide-container">
+        <!-- Progress bar -->
+        <div class="guide-progress">
+          <div class="guide-progress-bar" id="guide-progress-bar"></div>
         </div>
-        <div id="setup-done-flow" hidden>
-          <h2>C'est sur l'iPhone</h2>
-          <p class="setup-subtitle">Ne ferme pas Anyloc. Ne débranche pas.</p>
-          <div class="setup-step"><div class="setup-step-num">1</div><div><h3>Si l'app est grise</h3><p>Réglages → Général → VPN et gestion de l'appareil → Anyloc → Faire confiance.</p></div></div>
-          <div class="setup-step"><div class="setup-step-num">2</div><div><h3>Ouvre Anyloc</h3><p>Même Google, ou l'email + le mot de passe du site.</p></div></div>
-          <div class="setup-step setup-step-warn"><div class="setup-step-num">3</div><div><h3>Laisse le câble</h3><p>Si tu débranches, Snap revoit ta vraie position. C'est normal.</p></div></div>
-          <div class="setup-actions">
-            <button class="btn btn-accent" id="setup-done-btn" style="flex:1">J'ai compris, je laisse branché</button>
-            <button class="btn btn-ghost" id="setup-reinstall-btn" style="flex:0 0 auto">Réinstaller</button>
+        <div class="guide-step-label" id="guide-step-label">Étape 1 / 5</div>
+
+        <!-- Step 1: Welcome -->
+        <div class="guide-step-content" id="guide-step-1">
+          <div class="guide-icon-wrap">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+          </div>
+          <h2 class="guide-title">Bienvenue sur Anyloc</h2>
+          <p class="guide-subtitle">Configure ton iPhone en quelques minutes. On te guide étape par étape.</p>
+
+          <div class="guide-checklist">
+            <div class="guide-checklist-title">Ce dont tu as besoin</div>
+            <div class="guide-check-item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--accent)"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+              <span>Un iPhone (iOS 17, 18 ou 26)</span>
+            </div>
+            <div class="guide-check-item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--accent)"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+              <span>Un câble USB</span>
+            </div>
+            <div class="guide-check-item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--accent)"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+              <span id="guide-platform-req">Cet ordinateur</span>
+            </div>
+            <div class="guide-check-item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--accent)"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+              <span>5 minutes</span>
+            </div>
+          </div>
+
+          <button class="guide-btn-primary" id="guide-start-btn">C'est parti</button>
+          <button class="guide-btn-skip" id="guide-skip-btn">J'ai déjà configuré mon iPhone</button>
+        </div>
+
+        <!-- Step 2: Install tools -->
+        <div class="guide-step-content" id="guide-step-2" hidden>
+          <div class="guide-icon-wrap">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          </div>
+          <h2 class="guide-title">Installe les outils USB</h2>
+          <p class="guide-subtitle">Anyloc a besoin de <strong>pymobiledevice3</strong> pour communiquer avec ton iPhone.</p>
+
+          <div class="guide-instruction-card" id="guide-tools-card">
+            <div class="guide-instruction-num">1</div>
+            <div>
+              <h3>Ouvre le Terminal</h3>
+              <p id="guide-terminal-hint">Cherche « Terminal » dans Spotlight (⌘ + Espace).</p>
+            </div>
+          </div>
+          <div class="guide-instruction-card">
+            <div class="guide-instruction-num">2</div>
+            <div>
+              <h3>Copie et colle cette commande</h3>
+              <div class="guide-code-block" id="guide-install-cmd">
+                <code id="guide-cmd-text">pip3 install pymobiledevice3</code>
+                <button class="guide-copy-btn" id="guide-copy-cmd">Copier</button>
+              </div>
+              <p class="guide-hint" id="guide-install-hint">Attends que l'installation se termine (1-2 min).</p>
+            </div>
+          </div>
+
+          <div class="guide-status-box" id="guide-tools-status">
+            <div class="guide-status-icon" id="guide-tools-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            </div>
+            <div>
+              <div class="guide-status-text" id="guide-tools-text">Vérification en cours...</div>
+              <div class="guide-status-hint" id="guide-tools-hint">On vérifie si pymobiledevice3 est déjà installé.</div>
+            </div>
+          </div>
+
+          <button class="guide-btn-primary" id="guide-tools-next" disabled>Continuer</button>
+          <button class="guide-btn-secondary" id="guide-tools-recheck">Revérifier</button>
+        </div>
+
+        <!-- Step 3: Connect iPhone -->
+        <div class="guide-step-content" id="guide-step-3" hidden>
+          <div class="guide-icon-wrap pulse">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><rect x="5" y="1" width="14" height="22" rx="3"/><path d="M12 18h.01"/></svg>
+          </div>
+          <h2 class="guide-title">Branche ton iPhone</h2>
+          <p class="guide-subtitle">Connecte ton iPhone avec le câble USB, puis appuie sur <strong>Faire confiance</strong> sur l'iPhone.</p>
+
+          <div class="guide-instruction-card">
+            <div class="guide-instruction-num">1</div>
+            <div><h3>Branche le câble USB</h3><p>Utilise le câble fourni avec ton iPhone (Lightning ou USB-C).</p></div>
+          </div>
+          <div class="guide-instruction-card">
+            <div class="guide-instruction-num">2</div>
+            <div><h3>Appuie sur « Faire confiance »</h3><p>Un popup apparaît sur l'iPhone. Appuie sur <strong>Faire confiance</strong> et entre ton code.</p></div>
+          </div>
+
+          <div class="guide-status-box" id="guide-usb-status">
+            <div class="guide-status-icon searching" id="guide-usb-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            </div>
+            <div>
+              <div class="guide-status-text" id="guide-usb-text">Recherche d'un iPhone...</div>
+              <div class="guide-status-hint" id="guide-usb-hint">Branche ton iPhone en USB pour continuer.</div>
+            </div>
+          </div>
+
+          <button class="guide-btn-primary" id="guide-usb-next" disabled>Continuer</button>
+        </div>
+
+        <!-- Step 4: Developer mode -->
+        <div class="guide-step-content" id="guide-step-4" hidden>
+          <div class="guide-icon-wrap">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          </div>
+          <h2 class="guide-title">Active le mode développeur</h2>
+          <p class="guide-subtitle">C'est nécessaire pour qu'Anyloc puisse modifier la position GPS.</p>
+
+          <div class="guide-instruction-card">
+            <div class="guide-instruction-num">1</div>
+            <div><h3>Sur ton iPhone, va dans :</h3><p><strong>Réglages → Confidentialité et sécurité → Mode développeur</strong></p></div>
+          </div>
+          <div class="guide-instruction-card">
+            <div class="guide-instruction-num">2</div>
+            <div><h3>Active le mode développeur</h3><p>L'iPhone va redémarrer. C'est normal.</p></div>
+          </div>
+
+          <div class="guide-tip-box">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--accent)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+            <span>Le « Mode développeur » n'apparaît qu'après avoir branché l'iPhone à un ordinateur au moins une fois.</span>
+          </div>
+
+          <button class="guide-btn-primary" id="guide-devmode-next">J'ai activé le mode développeur</button>
+        </div>
+
+        <!-- Step 5: Install app + Done -->
+        <div class="guide-step-content" id="guide-step-5" hidden>
+          <div class="guide-icon-wrap" id="guide-final-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </div>
+          <h2 class="guide-title" id="guide-final-title">Installe l'app sur ton iPhone</h2>
+          <p class="guide-subtitle" id="guide-final-subtitle">Un clic et Anyloc s'installe directement sur ton iPhone.</p>
+
+          <div id="guide-install-area">
+            <div class="guide-status-box" id="guide-install-status-box">
+              <div class="guide-status-icon" id="guide-install-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              </div>
+              <div>
+                <div class="guide-status-text" id="guide-install-text">Prêt à installer</div>
+                <div class="guide-status-hint" id="guide-install-hint">Clique sur le bouton ci-dessous.</div>
+              </div>
+            </div>
+
+            <button class="guide-btn-primary" id="guide-install-btn">Installer l'app iPhone</button>
+          </div>
+
+          <div id="guide-done-area" hidden>
+            <div class="guide-success-card">
+              <div class="guide-success-icon">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+              </div>
+              <h3>C'est prêt !</h3>
+              <p>Ouvre <strong>Anyloc</strong> sur ton iPhone et connecte-toi avec le <strong>même compte</strong>. Ta position se synchronise automatiquement.</p>
+            </div>
+
+            <button class="guide-btn-primary" id="guide-finish-btn">Commencer à utiliser Anyloc</button>
           </div>
         </div>
       </div>

@@ -307,6 +307,7 @@ function revealMainWindow() {
 }
 
 function createWindow() {
+  const isMac = process.platform === "darwin";
   const window = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -314,8 +315,9 @@ function createWindow() {
     minHeight: 600,
     show: false,
     title: "Anyloc",
-    titleBarStyle: "hiddenInset",
-    trafficLightPosition: { x: 16, y: 16 },
+    ...(isMac
+      ? { titleBarStyle: "hiddenInset", trafficLightPosition: { x: 16, y: 16 } }
+      : { autoHideMenuBar: true }),
     backgroundColor: "#0a0a0f",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
@@ -721,8 +723,12 @@ app.whenReady().then(() => {
     ]);
   }
 
-  // Auto-launch at Mac startup
-  app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true });
+  // Auto-launch at startup
+  if (process.platform === "darwin") {
+    app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true });
+  } else {
+    app.setLoginItemSettings({ openAtLogin: true });
+  }
 
   // Tray icon in menu bar (no visible window)
   createTray();
@@ -747,5 +753,9 @@ app.on("open-url", (event, url) => {
 });
 
 app.on("window-all-closed", () => {
-  // Don't quit on macOS — tray keeps running
+  // On macOS, the tray keeps running. On Windows/Linux, quit when all windows close.
+  if (process.platform !== "darwin") {
+    stopAutoSync();
+    app.quit();
+  }
 });
