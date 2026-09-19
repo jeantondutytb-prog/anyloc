@@ -28,27 +28,33 @@ Sans xcodegen : crée un projet iOS App dans Xcode et ajoute les fichiers sous `
 
 ### CI GitHub Actions (recommandé)
 
-Ajoute ces secrets dans **GitHub → Settings → Secrets and variables → Actions** :
+La CI GitHub **ne peut pas signer avec Apple ID + mot de passe app seuls**. Il faut exporter ton certificat de développement (compte Apple **gratuit** OK).
+
+**Sur ton Mac** (Xcode connecté avec ton Apple ID) :
+
+```bash
+chmod +x scripts/prepare-ios-ci-secrets.sh
+./scripts/prepare-ios-ci-secrets.sh
+```
+
+Puis ajoute dans **GitHub → Settings → Secrets → Actions** :
 
 | Secret | Valeur |
 |---|---|
-| `APPLE_DEVELOPMENT_TEAM` | Ton Team ID (10 caractères, ex. depuis Xcode → Accounts) |
-| `APPLE_ID` | Email de ton compte Apple |
-| `APPLE_APP_SPECIFIC_PASSWORD` | Mot de passe **app** (pas ton mot de passe Apple) — [appleid.apple.com](https://appleid.apple.com) → Connexion et sécurité → Mots de passe pour app → Générer |
+| `APPLE_DEVELOPMENT_TEAM` | `9Y84R64D72` |
+| `BUILD_CERTIFICATE_BASE64` | contenu de `.ios-ci-secrets/BUILD_CERTIFICATE_BASE64.txt` |
+| `BUILD_CERTIFICATE_PASSWORD` | mot de passe choisi à l'export `.p12` |
+| `BUILD_PROVISION_PROFILE_BASE64` | (optionnel) contenu de `.ios-ci-secrets/BUILD_PROVISION_PROFILE_BASE64.txt` |
 
-Puis lance **Actions → Build iOS IPA** (ou push sur `apps/ios/`). L'IPA est publié sur GitHub Releases (`Anyloc.ipa`).
+Lance **Actions → Build iOS IPA**. L'IPA est publié sur GitHub Releases (`Anyloc.ipa`).
 
-### Erreur « Invalid credentials 401 »
+### Build local + upload manuel (sans CI)
 
-- Tu as probablement mis ton **mot de passe Apple normal** au lieu d'un **mot de passe pour app**
-- Regénère un mot de passe app et mets à jour le secret `APPLE_APP_SPECIFIC_PASSWORD`
-- Vérifie que `APPLE_ID` est bien l'email du compte Apple connecté dans Xcode
-
-### Alternative : certificat `.p12` (si Apple ID bloque en CI)
-
-1. Sur Mac : Keychain Access → certificat **Apple Development: ton@email.com** → Export → `.p12`
-2. `base64 -i cert.p12 | pbcopy`
-3. Secrets GitHub : `BUILD_CERTIFICATE_BASE64` + `BUILD_CERTIFICATE_PASSWORD`
+```bash
+export APPLE_DEVELOPMENT_TEAM=9Y84R64D72
+./scripts/build-ios-ipa.sh
+gh release create ios-manual --title "Anyloc iOS" apps/ios/dist/Anyloc.ipa
+```
 
 ### Build local (Mac)
 
