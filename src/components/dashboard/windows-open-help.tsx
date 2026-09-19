@@ -107,6 +107,7 @@ export function WindowsOpenHelp({
       ) : null}
 
       {compact ? (
+        <>
         <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-zinc-800">
           <li>
             En bas de Chrome : flèche <strong>▾</strong> →{" "}
@@ -127,6 +128,7 @@ export function WindowsOpenHelp({
           <strong>Quitter</strong>, sinon tu n&apos;as pas l&apos;écran « 4
           étapes ».
         </p>
+        </>
       ) : (
         <div className="mt-4 space-y-4">
           <section className="space-y-2">
