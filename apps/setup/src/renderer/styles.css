@@ -492,7 +492,7 @@ body {
   top: 64px;
   left: 16px;
   right: 16px;
-  z-index: 500;
+  z-index: 1100;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -500,7 +500,7 @@ body {
   gap: 12px;
   padding: 14px 16px;
   background: var(--bg-surface);
-  border: 1px solid var(--border);
+  border: 1px solid rgba(236, 72, 153, 0.45);
   border-radius: 14px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
 }
@@ -517,6 +517,7 @@ body {
   background: var(--bg);
   width: 100%;
   padding: 24px;
+  overflow-y: auto;
 }
 
 .onboarding-card {
@@ -545,6 +546,55 @@ body {
   color: var(--text-muted);
   margin-bottom: 20px;
 }
+
+.guide-track {
+  list-style: none;
+  margin: 0 0 18px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.guide-track li {
+  padding: 12px 14px;
+  font-size: 13px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  line-height: 1.4;
+}
+.guide-track li:last-child { border-bottom: none; }
+.guide-track li.done { color: var(--success); }
+.guide-track li.current {
+  color: var(--text);
+  background: var(--accent-bg);
+}
+.guide-track strong { font-weight: 600; }
+
+.setup-hint {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text);
+  background: var(--accent-bg);
+  border: 1px solid rgba(236, 72, 153, 0.35);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+
+.onboarding-skip {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.onboarding-skip:hover { color: var(--text-muted); }
 
 /* ── Setup modal ── */
 .setup-overlay {

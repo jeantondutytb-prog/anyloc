@@ -13,7 +13,7 @@
     <!-- ── Login Screen ── -->
     <div id="login-screen" class="screen login-screen active">
       <div class="login-card">
-        <p class="onboarding-kicker">Étape 1 sur 4</p>
+        <p class="onboarding-kicker">Étape 1 sur 4 — connexion</p>
         <div class="logo-big">Any<span>loc</span></div>
         <p class="tagline">Connecte-toi avec le même compte que sur le site.</p>
 
@@ -53,17 +53,29 @@
 
         <div id="onboarding-step-plug" class="onboarding-panel">
           <h2>Branche ton iPhone</h2>
-          <p class="setup-subtitle">Câble USB. Déverrouille. Appuie sur « Faire confiance » sur l'iPhone.</p>
+          <p class="setup-subtitle">On installe Anyloc sur le tel. Sans le câble, Snap garde ta vraie position.</p>
+          <ol class="guide-track">
+            <li class="done"><strong>Connexion</strong> — c'est fait</li>
+            <li class="current"><strong>Câble USB</strong> — déverrouille, puis « Faire confiance »</li>
+            <li><strong>Installer</strong> — un bouton, on s'occupe du reste</li>
+            <li><strong>Ouvre Anyloc</strong> sur l'iPhone — laisse le câble</li>
+          </ol>
+          <p id="onboarding-win-hint" class="setup-hint" hidden>
+            Sur Windows : installe <strong>Apple Devices</strong> (Microsoft Store) ou iTunes. Sinon l'iPhone n'est pas détecté.
+          </p>
           <p id="onboarding-usb-status" class="setup-status info">Recherche de l'iPhone…</p>
           <div class="setup-actions">
             <button type="button" class="btn btn-accent" id="onboarding-next-plug" disabled style="flex:1">Suivant</button>
             <button type="button" class="btn btn-ghost" id="onboarding-recheck-plug">Revérifier</button>
           </div>
+          <button type="button" class="onboarding-skip" id="onboarding-skip">L'app est déjà sur mon iPhone — passer</button>
         </div>
 
         <div id="onboarding-step-install" class="onboarding-panel" hidden>
           <h2>Installe Anyloc sur l'iPhone</h2>
-          <p class="setup-subtitle">Un bouton — on s'occupe du reste en arrière-plan.</p>
+          <p class="setup-subtitle">Un bouton. Laisse le câble branché.</p>
+          <div class="setup-step"><div class="setup-step-num">1</div><div><h3>Si iOS demande le mode développeur</h3><p>Réglages → Confidentialité et sécurité → Mode développeur → ON, puis redémarre l'iPhone et rebranche.</p></div></div>
+          <div class="setup-step"><div class="setup-step-num">2</div><div><h3>Clique Installer</h3><p>Le bouton s'active quand l'iPhone est détecté. Ça prend 1 à 2 minutes.</p></div></div>
           <p id="onboarding-install-status" class="setup-status"></p>
           <div class="setup-actions">
             <button type="button" class="btn btn-accent" id="onboarding-install-btn" style="flex:1">Installer sur l'iPhone</button>
@@ -245,7 +257,7 @@
                 </div>
                 <div class="info-row no-border">
                   <span class="info-label">Appareil</span>
-                  <span class="info-value">Mac</span>
+                  <span class="info-value" id="profil-device">—</span>
                 </div>
               </div>
             </div>
