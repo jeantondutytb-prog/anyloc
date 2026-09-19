@@ -671,7 +671,8 @@ export function InstallationGuideView({
   function renderPasswordGate() {
     return (
       <WizardShell
-        step={2}
+        step={1}
+        stepLabel="Avant de continuer"
         icon={KeyRound}
         title="Choisis un mot de passe"
         subtitle="Tu as payé sans en créer un. Sans ça, Anyloc affiche « email ou mot de passe incorrect »."
@@ -683,7 +684,11 @@ export function InstallationGuideView({
         }
       >
         <div className="overflow-hidden rounded-2xl bg-white">
-          <SetupPasswordForm preview={preview} onSuccess={handlePasswordDone} />
+          <SetupPasswordForm
+            preview={preview}
+            onSuccess={handlePasswordDone}
+            hideIntro
+          />
         </div>
       </WizardShell>
     );
@@ -786,15 +791,17 @@ export function InstallationGuideView({
         )}
 
         <div className="mt-4 space-y-3">
-          <DownloadButtons
-            assetIds={resolvedOs === "win" ? ["setup-win"] : ["setup-mac"]}
-            hasAccess={hasAccess}
-            preview={preview}
-            onDownload={() => persist({ downloaded: true })}
-            data={data}
-            loading={loading}
-            error={downloadsError}
-          />
+          {downloaded ? null : (
+            <DownloadButtons
+              assetIds={resolvedOs === "win" ? ["setup-win"] : ["setup-mac"]}
+              hasAccess={hasAccess}
+              preview={preview}
+              onDownload={() => persist({ downloaded: true })}
+              data={data}
+              loading={loading}
+              error={downloadsError}
+            />
+          )}
           <button
             type="button"
             className="text-xs font-medium text-pink-400 underline-offset-2 hover:underline"
@@ -1028,15 +1035,17 @@ export function InstallationGuideView({
           />
         )}
         <div className="mt-4">
-          <DownloadButtons
-            assetIds={["apk"]}
-            hasAccess={hasAccess}
-            preview={preview}
-            onDownload={() => persist({ downloaded: true })}
-            data={data}
-            loading={loading}
-            error={downloadsError}
-          />
+          {downloaded ? null : (
+            <DownloadButtons
+              assetIds={["apk"]}
+              hasAccess={hasAccess}
+              preview={preview}
+              onDownload={() => persist({ downloaded: true })}
+              data={data}
+              loading={loading}
+              error={downloadsError}
+            />
+          )}
         </div>
       </WizardShell>
     );

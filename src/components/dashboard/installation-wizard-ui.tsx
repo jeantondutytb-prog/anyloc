@@ -17,6 +17,7 @@ export function WizardShell({
   children,
   footer,
   onBack,
+  stepLabel,
 }: {
   step: number;
   total?: number;
@@ -27,6 +28,7 @@ export function WizardShell({
   children?: ReactNode;
   footer: ReactNode;
   onBack?: () => void;
+  stepLabel?: string;
 }) {
   return (
     <div className="wizard-step mx-auto w-full max-w-[520px]">
@@ -38,7 +40,7 @@ export function WizardShell({
       </div>
       <div className="mt-3 flex items-center justify-between gap-3">
         <p className="text-[11px] font-semibold uppercase tracking-[0.8px] text-zinc-500">
-          Étape {step} / {total}
+          {stepLabel ?? `Étape ${step} / ${total}`}
         </p>
         {onBack ? (
           <button
