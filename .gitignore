@@ -24,6 +24,7 @@
 .DS_Store
 *.pem
 .ios-ci-secrets/
+apps/ios/build/
 
 # debug
 npm-debug.log*

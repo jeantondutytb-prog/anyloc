@@ -56,7 +56,12 @@ jobs:
             echo "::error::BUILD_CERTIFICATE_BASE64 manquant."
             echo "Sur ton Mac : ./scripts/prepare-ios-ci-secrets.sh"
             echo "Puis ajoute BUILD_CERTIFICATE_BASE64 + BUILD_CERTIFICATE_PASSWORD dans GitHub Secrets."
-            echo "(APPLE_ID / mot de passe app ne suffisent pas pour signer en CI — il faut exporter le certificat .p12)"
+            exit 1
+          fi
+
+          if [ -z "$BUILD_PROVISION_PROFILE_BASE64" ]; then
+            echo "::error::BUILD_PROVISION_PROFILE_BASE64 manquant."
+            echo "Relance ./scripts/prepare-ios-ci-secrets.sh sur ton Mac — il génère aussi le profil io.anyloc.app."
             exit 1
           fi
 
@@ -73,18 +78,18 @@ jobs:
           rm -f "$CERT_PATH"
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 
-          if [ -n "$BUILD_PROVISION_PROFILE_BASE64" ]; then
-            echo "Installing provisioning profile..."
-            PP_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
-            mkdir -p "$PP_DIR"
-            PP_PATH="$RUNNER_TEMP/anyloc.mobileprovision"
-            echo "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode > "$PP_PATH"
-            PP_UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" /dev/stdin <<< "$(security cms -D -i "$PP_PATH")")
-            cp "$PP_PATH" "$PP_DIR/${PP_UUID}.mobileprovision"
-          fi
+          echo "Installing provisioning profile..."
+          PP_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
+          mkdir -p "$PP_DIR"
+          PP_PATH="$RUNNER_TEMP/anyloc.mobileprovision"
+          echo "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode > "$PP_PATH"
+          PP_UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" /dev/stdin <<< "$(security cms -D -i "$PP_PATH")")
+          cp "$PP_PATH" "$PP_DIR/${PP_UUID}.mobileprovision"
+          echo "Provisioning profile UUID: $PP_UUID"
 
           echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
           echo "KEYCHAIN_PASSWORD=$KEYCHAIN_PASSWORD" >> "$GITHUB_ENV"
+          echo "PROVISIONING_PROFILE_UUID=$PP_UUID" >> "$GITHUB_ENV"
 
       - name: Install XcodeGen
         if: steps.team.outputs.has_team == 'true'
@@ -94,6 +99,7 @@ jobs:
         if: steps.team.outputs.has_team == 'true'
         env:
           APPLE_DEVELOPMENT_TEAM: ${{ secrets.APPLE_DEVELOPMENT_TEAM }}
+          PROVISIONING_PROFILE_UUID: ${{ env.PROVISIONING_PROFILE_UUID }}
         run: |
           set -euo pipefail
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"

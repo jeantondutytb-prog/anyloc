@@ -6,6 +6,9 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT_DIR="${1:-$ROOT/.ios-ci-secrets}"
+IOS_DIR="$ROOT/apps/ios"
+BUNDLE_ID="io.anyloc.app"
+TEAM_ID="${APPLE_DEVELOPMENT_TEAM:-9Y84R64D72}"
 
 if [[ "$(uname -s)" != "Darwin" ]]; then
   echo "Ce script doit être lancé sur macOS."
@@ -13,6 +16,11 @@ if [[ "$(uname -s)" != "Darwin" ]]; then
 fi
 
 mkdir -p "$OUT_DIR"
+
+find_profile() {
+  find "$HOME/Library/MobileDevice/Provisioning Profiles" -name "*.mobileprovision" -print0 2>/dev/null \
+    | xargs -0 grep -l "$BUNDLE_ID" 2>/dev/null | head -n 1 || true
+}
 
 echo "→ Recherche du certificat Apple Development dans le trousseau..."
 CERT_SHA=$(security find-identity -v -p codesigning login.keychain-db 2>/dev/null \
@@ -39,33 +47,50 @@ fi
 
 security export -k login.keychain-db -t identities -f pkcs12 -P "$P12_PASSWORD" -o "$P12_PATH" "$CERT_SHA"
 
-echo "→ Export provisioning profile io.anyloc.app (si présent)..."
+echo "→ Export provisioning profile $BUNDLE_ID..."
 PROFILE_PATH="$OUT_DIR/anyloc.mobileprovision"
-PROFILE_SRC=$(find "$HOME/Library/MobileDevice/Provisioning Profiles" -name "*.mobileprovision" -print0 2>/dev/null \
-  | xargs -0 grep -l "io.anyloc.app" 2>/dev/null | head -n 1 || true)
+PROFILE_SRC=$(find_profile)
 
-if [[ -n "$PROFILE_SRC" ]]; then
-  cp "$PROFILE_SRC" "$PROFILE_PATH"
-  echo "   Copié : $PROFILE_SRC"
-else
-  echo "   Aucun profil io.anyloc.app — build une fois dans Xcode pour en générer un."
-  PROFILE_PATH=""
+if [[ -z "$PROFILE_SRC" ]]; then
+  echo "   Profil absent — génération via xcodebuild (une fois)..."
+  if ! command -v xcodegen >/dev/null 2>&1; then
+    echo "Installe xcodegen : brew install xcodegen"
+    exit 1
+  fi
+  cd "$IOS_DIR"
+  xcodegen generate
+  xcodebuild \
+    -project Anyloc.xcodeproj \
+    -scheme Anyloc \
+    -configuration Release \
+    -destination "generic/platform=iOS" \
+    -allowProvisioningUpdates \
+    CODE_SIGN_STYLE=Automatic \
+    DEVELOPMENT_TEAM="$TEAM_ID" \
+    build
+  cd "$ROOT"
+  PROFILE_SRC=$(find_profile)
 fi
 
+if [[ -z "$PROFILE_SRC" ]]; then
+  echo "Profil $BUNDLE_ID introuvable."
+  echo "Ouvre apps/ios/Anyloc.xcodeproj dans Xcode, sélectionne ton Team, puis Product → Build."
+  exit 1
+fi
+
+cp "$PROFILE_SRC" "$PROFILE_PATH"
+echo "   Copié : $PROFILE_SRC"
+
 B64_CERT="$OUT_DIR/BUILD_CERTIFICATE_BASE64.txt"
+B64_PROFILE="$OUT_DIR/BUILD_PROVISION_PROFILE_BASE64.txt"
 base64 -i "$P12_PATH" | tr -d '\n' > "$B64_CERT"
+base64 -i "$PROFILE_PATH" | tr -d '\n' > "$B64_PROFILE"
 
 echo
 echo "✓ Fichiers générés dans $OUT_DIR"
 echo
 echo "Ajoute ces secrets GitHub (Settings → Secrets → Actions) :"
-echo "  BUILD_CERTIFICATE_BASE64     ← contenu de $B64_CERT"
-echo "  BUILD_CERTIFICATE_PASSWORD   ← mot de passe du .p12 choisi ci-dessus"
-if [[ -n "$PROFILE_PATH" && -f "$PROFILE_PATH" ]]; then
-  B64_PROFILE="$OUT_DIR/BUILD_PROVISION_PROFILE_BASE64.txt"
-  base64 -i "$PROFILE_PATH" | tr -d '\n' > "$B64_PROFILE"
-  echo "  BUILD_PROVISION_PROFILE_BASE64 ← contenu de $B64_PROFILE"
-fi
-echo
-echo "Garde aussi APPLE_DEVELOPMENT_TEAM=9Y84R64D72"
-echo "Tu peux retirer APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD une fois le certificat configuré."
+echo "  BUILD_CERTIFICATE_BASE64          ← $B64_CERT"
+echo "  BUILD_CERTIFICATE_PASSWORD        ← mot de passe du .p12 choisi ci-dessus"
+echo "  BUILD_PROVISION_PROFILE_BASE64    ← $B64_PROFILE"
+echo "  APPLE_DEVELOPMENT_TEAM            ← $TEAM_ID"
