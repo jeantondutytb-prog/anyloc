@@ -26,9 +26,25 @@ Sans xcodegen : crée un projet iOS App dans Xcode et ajoute les fichiers sous `
 
 ## Build IPA (pour Anyloc Setup)
 
-1. Configure ton Team / signing dans Xcode
-2. Product → Archive → Distribute App → Development / Ad Hoc
-3. Exporte `Anyloc.ipa` vers `apps/ios/dist/Anyloc.ipa`
+### CI GitHub Actions (recommandé)
+
+Ajoute ces secrets dans **GitHub → Settings → Secrets and variables → Actions** :
+
+| Secret | Valeur |
+|---|---|
+| `APPLE_DEVELOPMENT_TEAM` | Ton Team ID (10 caractères, ex. depuis Xcode → Accounts) |
+| `APPLE_ID` | Email de ton compte Apple |
+| `APPLE_APP_SPECIFIC_PASSWORD` | Mot de passe app généré sur [appleid.apple.com](https://appleid.apple.com) |
+
+Puis lance **Actions → Build iOS IPA** (ou push sur `apps/ios/`). L'IPA est publié sur GitHub Releases (`Anyloc.ipa`).
+
+### Build local (Mac)
+
+```bash
+export APPLE_DEVELOPMENT_TEAM=XXXXXXXXXX
+./scripts/build-ios-ipa.sh
+gh release upload ios-v0.1.XXX apps/ios/dist/Anyloc.ipa --clobber
+```
 
 Anyloc Setup installera ce fichier via USB.
 
