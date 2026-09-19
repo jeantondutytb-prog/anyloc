@@ -273,6 +273,11 @@ export const FAQ = [
       "Un VPN cache ton IP, pas ta position. Les apps sociales checkent le capteur GPS du tel. Anyloc intervient pile là.",
   },
   {
+    q: "Windows dit « Faites attention » et je n'arrive pas à ouvrir Anyloc ?",
+    a:
+      "Normal : Windows et Chrome disent ça pour toute app qui n'est pas dans le Microsoft Store. En bas de Chrome, clique la flèche à droite du fichier → Conserver (pas Jeter). Puis Téléchargements → double-clic Anyloc. Si l'écran bleu « Windows a protégé votre ordinateur » apparaît : Plus d'infos → Exécuter quand même (pas OK). Toujours bloqué : clic droit → Propriétés → case Débloquer.",
+  },
+  {
     q: "Ça passe sur iPhone et Android ?",
     a:
       "Oui. Sur Android : 3 étapes sur le tel. Sur iPhone : un Mac ou un PC une seule fois (limite Apple), puis tu gères ta loc depuis l'iPhone. Le renouvellement (~7 jours) se fait avec LocalDevVPN, sans rebrancher l'ordi.",

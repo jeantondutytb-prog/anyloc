@@ -9,6 +9,7 @@ export type DownloadAssetInfo = {
   filename: string;
   available: boolean;
   downloadPath: string;
+  hidden?: boolean;
 };
 
 export type DownloadsResponse = {

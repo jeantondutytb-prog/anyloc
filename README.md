@@ -148,6 +148,8 @@ BLOB_READ_WRITE_TOKEN=xxx node scripts/upload-release.mjs android dist/android/A
 Configure les URLs des binaires dans `.env.local` :
 
 - `ANYLOC_DOWNLOAD_SETUP_MAC` — Anyloc Setup `.dmg`
+- `ANYLOC_DOWNLOAD_SETUP_WIN` — Anyloc Setup `.exe`
+- `ANYLOC_DOWNLOAD_SETUP_WIN_ZIP` — même installeur en `.zip` (si Chrome bloque le `.exe`)
 - `ANYLOC_DOWNLOAD_APK` — APK Android
 
 Les liens `/api/downloads/{platform}` redirigent vers ces URLs si l'abonnement est actif (`subscription_status` = `active`), ou si le compte est admin (`ANYLOC_ADMIN_EMAILS`).

@@ -22,6 +22,7 @@ export async function GET() {
       filename: asset.filename,
       available: await isDownloadAvailable(asset.id),
       downloadPath: `/api/downloads/${asset.id}`,
+      hidden: Boolean(asset.hidden),
     }))
   );
 

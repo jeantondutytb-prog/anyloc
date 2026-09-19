@@ -55,6 +55,9 @@ jobs:
           elif [ -f /tmp/seed/Anyloc-Setup.exe ]; then
             node scripts/upload-release.mjs setup-win /tmp/seed/Anyloc-Setup.exe
           fi
+          if [ -f /tmp/seed/Anyloc-Setup.zip ]; then
+            node scripts/upload-release.mjs setup-win-zip /tmp/seed/Anyloc-Setup.zip
+          fi
           if [ -f /tmp/seed/Anyloc.apk ]; then
             node scripts/upload-release.mjs android /tmp/seed/Anyloc.apk
           fi

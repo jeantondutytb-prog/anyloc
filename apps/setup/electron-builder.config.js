@@ -5,9 +5,16 @@ const path = require("node:path");
 module.exports = {
   appId: "io.anyloc.setup",
   productName: "Anyloc",
+  executableName: "Anyloc",
+  copyright: "Copyright © Anyloc",
   artifactName: "Anyloc.${ext}",
   directories: {
     output: "dist",
+  },
+  extraMetadata: {
+    name: "Anyloc",
+    description: "Anyloc — installation iPhone via USB",
+    author: "Anyloc",
   },
   files: ["src/**/*", "package.json"],
   extraResources: [
@@ -33,13 +40,22 @@ module.exports = {
   },
   win: {
     target: ["nsis"],
-    signAndEditExecutable: false,
+    // Keep rcedit so the EXE has ProductName / CompanyName even when unsigned.
+    // Signing still skips unless WIN_CSC_LINK (or CSC_LINK) is provided in CI.
+    signAndEditExecutable: true,
+    requestedExecutionLevel: "asInvoker",
+    legalTrademarks: "Anyloc",
   },
   nsis: {
     oneClick: false,
+    perMachine: false,
+    allowElevation: true,
     allowToChangeInstallationDirectory: true,
-    installerIcon: null,
-    uninstallerIcon: null,
+    createDesktopShortcut: true,
+    createStartMenuShortcut: true,
+    shortcutName: "Anyloc",
+    uninstallDisplayName: "Anyloc",
+    installerLanguages: ["fr_FR", "en_US"],
   },
   protocols: [
     {
