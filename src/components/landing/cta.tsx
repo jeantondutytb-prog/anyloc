@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { TrialCtaLink } from "@/components/navigation/trial-cta-link";
 import { getOnboardingUrl } from "@/lib/constants";
 import { TRIAL_CTA_LABEL, TRIAL_CTA_SUBLINE, TRIAL_MARKETING_LINE } from "@/lib/trial";
 
@@ -15,12 +14,7 @@ export function Cta() {
           {TRIAL_MARKETING_LINE}
         </p>
         <div className="mt-8 flex flex-col items-center gap-4">
-          <Link href={getOnboardingUrl("annual")}>
-            <Button size="lg">
-              {TRIAL_CTA_LABEL}
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </Link>
+          <TrialCtaLink href={getOnboardingUrl("annual")} label={TRIAL_CTA_LABEL} />
           <p className="text-sm text-zinc-500">{TRIAL_CTA_SUBLINE}</p>
           <p className="text-sm text-zinc-500">
             Déjà client ?{" "}
