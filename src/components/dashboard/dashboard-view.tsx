@@ -1,21 +1,28 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MapPin, MapPinOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DashboardMenu } from "@/components/dashboard/dashboard-menu";
-import { DashboardPhoneSetup } from "@/components/dashboard/dashboard-phone-setup";
 import { DestinationSidebar } from "@/components/dashboard/destination-sidebar";
 import {
   LocationSearch,
   type LocationSearchHandle,
 } from "@/components/dashboard/location-search";
+import {
+  WebGpsShortcutBar,
+  WebSetupWizard,
+} from "@/components/dashboard/web-setup-wizard";
 import { useDashboardOnboarding } from "@/hooks/use-dashboard-onboarding";
-import { useDeviceStatus } from "@/hooks/use-device-status";
 import { useLocationSync } from "@/hooks/use-location-sync";
+import { useWebSetup } from "@/hooks/use-web-setup";
+import { DESTINATION_SPOTS } from "@/lib/destination-spots";
+import { installGeolocationSpoof } from "@/lib/geolocation-spoof";
 import { DEFAULT_LOCATION } from "@/lib/location";
 import { cn } from "@/lib/utils";
+import { buildWebSpoofBookmarklet } from "@/lib/web-spoof-bookmarklet";
+import { readWebSpoofToken } from "@/lib/web-setup";
 
 const LocationMap = dynamic(
   () => import("@/components/dashboard/location-map"),
@@ -29,14 +36,26 @@ const LocationMap = dynamic(
   }
 );
 
-export function DashboardView() {
-  const { hydrated, completeStep } = useDashboardOnboarding();
+type DashboardViewProps = {
+  preview?: boolean;
+  paymentSuccess?: boolean;
+  forceSetup?: boolean;
+  onSetupComplete?: () => void;
+};
+
+export function DashboardView({
+  preview = false,
+  paymentSuccess = false,
+  forceSetup = false,
+  onSetupComplete,
+}: DashboardViewProps) {
+  const { completeStep } = useDashboardOnboarding();
   const {
-    devices,
-    phoneOnline,
-    hasLinkedDevice,
-    reload: reloadDevices,
-  } = useDeviceStatus();
+    hydrated: setupHydrated,
+    completeStep: completeSetupStep,
+    completeSetup,
+    isComplete: setupComplete,
+  } = useWebSetup({ preview });
 
   const { location, error, saveLocation, saving } = useLocationSync({
     onSynced: () => completeStep("activate"),
@@ -48,11 +67,22 @@ export function DashboardView() {
     lat: DEFAULT_LOCATION.lat,
     lng: DEFAULT_LOCATION.lng,
   });
+  const [copiedShortcut, setCopiedShortcut] = useState(false);
   const initialLocationRef = useRef(selected);
   const hasHydratedLocationRef = useRef(false);
   const locationSearchRef = useRef<LocationSearchHandle>(null);
+  const coordsRef = useRef<{ lat: number; lng: number; accuracy: number } | null>(
+    null
+  );
+
+  const wizardOpen = setupHydrated && (forceSetup || !setupComplete);
 
   useEffect(() => {
+    if (preview) {
+      hasHydratedLocationRef.current = true;
+      return;
+    }
+
     if (!location || hasHydratedLocationRef.current) {
       return;
     }
@@ -73,22 +103,25 @@ export function DashboardView() {
     if (location.isActive) {
       completeStep("activate");
     }
-  }, [location, completeStep]);
+  }, [completeStep, location, preview]);
 
   useEffect(() => {
-    if (!hydrated) {
+    if (active) {
+      coordsRef.current = {
+        lat: selected.lat,
+        lng: selected.lng,
+        accuracy: location?.accuracy ?? DEFAULT_LOCATION.accuracy,
+      };
       return;
     }
 
-    const changed =
-      selected.name !== initialLocationRef.current.name ||
-      selected.lat !== initialLocationRef.current.lat ||
-      selected.lng !== initialLocationRef.current.lng;
+    coordsRef.current = null;
+  }, [active, location?.accuracy, selected.lat, selected.lng]);
 
-    if (changed) {
-      completeStep("chooseSpot");
-    }
-  }, [completeStep, hydrated, selected]);
+  useEffect(() => {
+    const uninstall = installGeolocationSpoof(() => coordsRef.current);
+    return uninstall;
+  }, []);
 
   const persistLocation = useCallback(
     async (
@@ -97,6 +130,11 @@ export function DashboardView() {
     ) => {
       setSelected(nextLocation);
       setActive(isActive);
+
+      if (preview) {
+        completeStep("activate");
+        return;
+      }
 
       try {
         const saved = await saveLocation({
@@ -117,28 +155,20 @@ export function DashboardView() {
         setActive(false);
       }
     },
-    [saveLocation]
+    [completeStep, preview, saveLocation]
   );
 
   const handleSelectLocation = useCallback(
     async (nextLocation: { name: string; lat: number; lng: number }) => {
-      if (!phoneOnline) {
-        return;
-      }
-
       await persistLocation(nextLocation, true);
+      completeStep("chooseSpot");
     },
-    [persistLocation, phoneOnline]
+    [completeStep, persistLocation]
   );
-
 
   const handleToggleLocation = useCallback(async () => {
     if (active) {
       await persistLocation(selected, false);
-      return;
-    }
-
-    if (!phoneOnline) {
       return;
     }
 
@@ -148,18 +178,41 @@ export function DashboardView() {
     }
 
     await persistLocation(selected, true);
-  }, [active, persistLocation, phoneOnline, selected]);
+  }, [active, persistLocation, selected]);
 
-  const handleDeviceLinked = useCallback(() => {
-    completeStep("install");
-    void reloadDevices();
-  }, [completeStep, reloadDevices]);
-
-  useEffect(() => {
-    if (hasLinkedDevice) {
-      completeStep("install");
+  const bookmarklet = useMemo(() => {
+    if (typeof window === "undefined") {
+      return null;
     }
-  }, [completeStep, hasLinkedDevice]);
+
+    const token = preview ? "anyloc_preview" : readWebSpoofToken();
+    if (!token) {
+      return null;
+    }
+
+    return buildWebSpoofBookmarklet({
+      origin: window.location.origin,
+      token,
+      lat: selected.lat,
+      lng: selected.lng,
+      accuracy: location?.accuracy ?? DEFAULT_LOCATION.accuracy,
+      name: selected.name,
+    });
+  }, [location?.accuracy, preview, selected.lat, selected.lng, selected.name]);
+
+  async function copyShortcut() {
+    if (!bookmarklet) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(bookmarklet);
+      setCopiedShortcut(true);
+      window.setTimeout(() => setCopiedShortcut(false), 2500);
+    } catch {
+      setCopiedShortcut(false);
+    }
+  }
 
   const lastSyncedLabel = location?.updatedAt
     ? new Date(location.updatedAt).toLocaleString("fr-FR", {
@@ -168,21 +221,34 @@ export function DashboardView() {
       })
     : null;
 
-  const canPickLocation = phoneOnline;
   const statusLabel = active
-    ? phoneOnline
-      ? "Ta fausse position est allumée sur ton téléphone"
-      : "Position enregistrée — ouvre l'app Anyloc sur ton tel"
-    : phoneOnline
-      ? "Choisis où tu veux apparaître"
-      : "Commence par installer l'app sur ton téléphone (en bas)";
+    ? "Ta fausse position est allumée"
+    : "Choisis où tu veux apparaître";
 
   return (
     <div className="flex h-[100dvh] overflow-hidden bg-background">
+      <WebSetupWizard
+        open={wizardOpen}
+        paymentSuccess={paymentSuccess}
+        preview={preview}
+        location={{
+          name: selected.name,
+          lat: selected.lat,
+          lng: selected.lng,
+          accuracy: location?.accuracy ?? DEFAULT_LOCATION.accuracy,
+        }}
+        onStepComplete={completeSetupStep}
+        onComplete={() => {
+          completeSetup();
+          completeStep("install");
+          onSetupComplete?.();
+        }}
+      />
+
       <DestinationSidebar
+        className="hidden lg:flex"
         selectedName={selected.name}
-            onSelect={handleSelectLocation}
-        disabled={!canPickLocation}
+        onSelect={handleSelectLocation}
       />
 
       <div className="relative min-w-0 flex-1">
@@ -194,7 +260,6 @@ export function DashboardView() {
                 ref={locationSearchRef}
                 variant="top"
                 onSelect={handleSelectLocation}
-                disabled={!canPickLocation}
               />
             </div>
             <div
@@ -223,76 +288,98 @@ export function DashboardView() {
           />
         </div>
 
-        {!canPickLocation && (
-          <div className="pointer-events-none absolute inset-0 z-10 bg-zinc-900/10 backdrop-blur-[1px]" />
-        )}
-
-        {error && (
+        {error && !preview ? (
           <div className="absolute left-4 right-4 top-20 z-20 rounded-xl border border-red-200 bg-red-50/95 px-4 py-3 text-sm text-red-700 shadow-sm backdrop-blur-sm sm:top-16 sm:max-w-sm">
             {error}
           </div>
-        )}
+        ) : null}
 
         <div className="absolute inset-x-0 bottom-0 z-20 px-4 pb-4 pt-3">
-          <div className="mx-auto max-w-3xl rounded-2xl border border-zinc-200/80 bg-white/95 p-4 shadow-xl backdrop-blur-md">
-            {!phoneOnline ? (
-              <DashboardPhoneSetup
-                devices={devices}
-                phoneOnline={phoneOnline}
-                onLinked={handleDeviceLinked}
-                compact
+          <div className="mx-auto max-w-3xl space-y-3">
+            {active ? (
+              <WebGpsShortcutBar
+                bookmarklet={bookmarklet}
+                copied={copiedShortcut}
+                onCopy={() => void copyShortcut()}
               />
-            ) : (
-              <>
-                <div className="mb-4 flex items-start gap-3">
-                  <div
-                    className={cn(
-                      "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl",
-                      active ? "bg-pink-500/10" : "bg-zinc-100"
-                    )}
-                  >
-                    <MapPin
-                      className={cn(
-                        "h-5 w-5",
-                        active ? "text-pink-600" : "text-zinc-500"
-                      )}
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-                      {statusLabel}
-                    </p>
-                    <p className="truncate text-base font-semibold text-zinc-900">
-                      {selected.name}
-                    </p>
-                    {lastSyncedLabel && (
-                      <p className="mt-0.5 text-xs text-zinc-400">
-                        Dernière mise à jour : {lastSyncedLabel}
-                      </p>
-                    )}
-                  </div>
-                </div>
+            ) : null}
 
-                <Button
-                  className="w-full"
-                  variant={active ? "secondary" : "default"}
-                  onClick={() => void handleToggleLocation()}
-                  disabled={saving || !phoneOnline}
-                >
-                  {active ? (
-                    <>
-                      <MapPinOff className="h-4 w-4" />
-                      Arrêter — revenir à ma vraie position
-                    </>
-                  ) : (
-                    <>
-                      <MapPin className="h-4 w-4" />
-                      Clique une ville à gauche pour t&apos;y téléporter
-                    </>
+            <div className="rounded-2xl border border-zinc-200/80 bg-white/95 p-4 shadow-xl backdrop-blur-md">
+              <div className="mb-3 lg:hidden">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-pink-600">
+                  Destinations
+                </p>
+                <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {DESTINATION_SPOTS.map((spot) => {
+                    const isSelected = selected.name === spot.name;
+                    return (
+                      <button
+                        key={spot.name}
+                        type="button"
+                        onClick={() => void handleSelectLocation(spot)}
+                        className={cn(
+                          "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+                          isSelected
+                            ? "bg-pink-500 text-white shadow-sm"
+                            : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                        )}
+                      >
+                        {spot.emoji ? `${spot.emoji} ` : ""}
+                        {spot.name.split(" — ")[0]}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="mb-4 flex items-start gap-3">
+                <div
+                  className={cn(
+                    "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl",
+                    active ? "bg-pink-500/10" : "bg-zinc-100"
                   )}
-                </Button>
-              </>
-            )}
+                >
+                  <MapPin
+                    className={cn(
+                      "h-5 w-5",
+                      active ? "text-pink-600" : "text-zinc-500"
+                    )}
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                    {statusLabel}
+                  </p>
+                  <p className="truncate text-base font-semibold text-zinc-900">
+                    {selected.name}
+                  </p>
+                  {lastSyncedLabel && (
+                    <p className="mt-0.5 text-xs text-zinc-400">
+                      Dernière mise à jour : {lastSyncedLabel}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <Button
+                className="w-full"
+                variant={active ? "secondary" : "default"}
+                onClick={() => void handleToggleLocation()}
+                disabled={saving}
+              >
+                {active ? (
+                  <>
+                    <MapPinOff className="h-4 w-4" />
+                    Arrêter — revenir à ma vraie position
+                  </>
+                ) : (
+                  <>
+                    <MapPin className="h-4 w-4" />
+                    Clique une ville pour t&apos;y téléporter
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
