@@ -84,8 +84,16 @@ function MacGatekeeperFix() {
       </summary>
       <div className="border-t border-amber-200 px-4 py-3 text-sm text-amber-900/90">
         <p>
-          macOS bloque les apps téléchargées hors de l&apos;App Store. Ouvre{" "}
-          <strong>Terminal</strong> (cherche « Terminal » dans Spotlight) et
+          macOS bloque les apps hors App Store. Dans le DMG, double-clique
+          sur{" "}
+          <strong>
+            Installer Anyloc (double-clic).command
+          </strong>{" "}
+          — ça copie l&apos;app dans Applications et l&apos;ouvre
+          automatiquement.
+        </p>
+        <p className="mt-2 text-xs text-amber-800/80">
+          Si ça ne marche toujours pas, ouvre <strong>Terminal</strong> et
           colle cette commande :
         </p>
         <div className="mt-2 flex items-center gap-2 rounded-lg bg-zinc-900 px-3 py-2">
@@ -107,10 +115,6 @@ function MacGatekeeperFix() {
           )}
           {copied ? "Copié !" : "Copier la commande"}
         </Button>
-        <p className="mt-2 text-xs text-amber-800/80">
-          Appuie sur <strong>Entrée</strong>. L&apos;app s&apos;ouvre
-          directement après.
-        </p>
       </div>
     </details>
   );
