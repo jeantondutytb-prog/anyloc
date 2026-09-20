@@ -865,11 +865,8 @@ async function guideInstallApp() {
   const result = await window.anylocSetup.installIos({ udid: guideDetectedUdid });
 
   if (result.ok) {
-    $("guide-install-area").hidden = true;
-    $("guide-done-area").hidden = false;
-    $("guide-final-title").textContent = "C'est prêt !";
-    $("guide-final-subtitle").textContent = "";
-    $("guide-final-icon").innerHTML = '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>';
+    markIphoneInstalled();
+    showReadyScreen();
   } else {
     text.textContent = "Échec de l'installation";
     hint.textContent = result.message;
@@ -881,11 +878,23 @@ async function guideInstallApp() {
   }
 }
 
-function guideFinish() {
-  markGuideComplete();
+function showReadyScreen() {
   stopGuideUsbPolling();
-  // Re-enter main which will now pass the isGuideComplete check
+  stopStatusUsbPolling();
+  showScreen("ready");
+}
+
+function finishReadyScreen(defaultTab = "statut") {
+  markGuideComplete();
+  markIphoneInstalled();
   enterMain();
+  if (defaultTab !== "statut") {
+    switchTab(defaultTab);
+  }
+}
+
+function guideFinish() {
+  finishReadyScreen("statut");
 }
 
 // ── Init ──
@@ -1021,7 +1030,9 @@ async function init() {
   $("guide-usb-next").addEventListener("click", guideNext);
   $("guide-devmode-next").addEventListener("click", guideNext);
   $("guide-install-btn").addEventListener("click", guideInstallApp);
-  $("guide-finish-btn").addEventListener("click", guideFinish);
+  $("guide-finish-btn")?.addEventListener("click", guideFinish);
+  $("ready-dashboard-btn")?.addEventListener("click", () => finishReadyScreen("statut"));
+  $("ready-try-btn")?.addEventListener("click", () => finishReadyScreen("spots"));
 
   // Profile: reopen guide
   $("reopen-guide-btn").addEventListener("click", () => {

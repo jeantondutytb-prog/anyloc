@@ -392,6 +392,51 @@
       </div>
     </div>
 
+    <!-- ── Post-install: C'est prêt ── -->
+    <div id="ready-screen" class="screen ready-screen">
+      <div class="ready-container">
+        <div class="ready-hero">
+          <div class="ready-icon-wrap">
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+          </div>
+          <h2 class="ready-title">C'est prêt !</h2>
+          <p class="ready-subtitle">Ton iPhone est configuré. Voici comment utiliser Anyloc au quotidien.</p>
+        </div>
+
+        <div class="ready-steps">
+          <div class="ready-step">
+            <div class="ready-step-num">1</div>
+            <div>
+              <h3>Ouvre Anyloc sur ton iPhone</h3>
+              <p>Connecte-toi avec le <strong>même compte</strong> que sur ce Mac.</p>
+            </div>
+          </div>
+          <div class="ready-step">
+            <div class="ready-step-num">2</div>
+            <div>
+              <h3>Choisis ta destination</h3>
+              <p>Sur l'iPhone, dans <strong>Découvrir</strong>, ou ici sur le Mac.</p>
+            </div>
+          </div>
+          <div class="ready-step">
+            <div class="ready-step-num">3</div>
+            <div>
+              <h3>Le Mac applique le GPS</h3>
+              <p>Garde cette app ouverte (barre de menus) — ta fausse position se met à jour toute seule sur Snap, Insta, Tinder…</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="ready-note">
+          <span class="ready-note-icon">💡</span>
+          <span>Laisse Anyloc Setup tourner en arrière-plan tant que tu utilises la fausse position.</span>
+        </div>
+
+        <button type="button" class="guide-btn-primary" id="ready-dashboard-btn">Voir mon tableau de bord</button>
+        <button type="button" class="guide-btn-secondary" id="ready-try-btn">Choisir une destination maintenant</button>
+      </div>
+    </div>
+
     <script src="./leaflet.js"></script>
     <script src="./app.js"></script>
   </body>
