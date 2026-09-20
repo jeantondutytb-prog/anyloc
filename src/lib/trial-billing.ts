@@ -464,13 +464,6 @@ export async function processDueTrialCharges() {
   return { processed, failed };
 }
 
-const UNPAID_SUBSCRIPTION_STATUSES = new Set([
-  "incomplete",
-  "incomplete_expired",
-  "past_due",
-  "unpaid",
-]);
-
 async function listAllSubscriptionsByStatus(
   status: Stripe.Subscription.Status
 ) {
@@ -500,131 +493,122 @@ async function listAllSubscriptionsByStatus(
   return subscriptions;
 }
 
-async function syncLocalProfileFromSubscription(
-  subscription: Stripe.Subscription
-) {
-  if (!isSupabaseAdminConfigured()) {
-    return;
-  }
-
-  const admin = createAdminClient();
-  const userId = subscription.metadata?.supabase_user_id ?? null;
-  const customerId =
-    typeof subscription.customer === "string"
-      ? subscription.customer
-      : subscription.customer?.id;
-  const patch = {
-    ...getTrialProfilePatchFromSubscription(subscription),
-    updated_at: new Date().toISOString(),
-  };
-
-  if (userId) {
-    await admin.from("profiles").upsert(
-      {
-        id: userId,
-        stripe_customer_id: customerId ?? null,
-        ...patch,
-      },
-      { onConflict: "id" }
-    );
-    return;
-  }
-
-  if (!customerId) {
-    return;
-  }
-
-  await admin
-    .from("profiles")
-    .update(patch)
-    .eq("stripe_customer_id", customerId);
-}
-
 async function markLocalProfileCanceled(subscription: Stripe.Subscription) {
   if (!isSupabaseAdminConfigured()) {
     return;
   }
 
   const admin = createAdminClient();
-  const userId = subscription.metadata?.supabase_user_id ?? null;
-  const customerId =
-    typeof subscription.customer === "string"
-      ? subscription.customer
-      : subscription.customer?.id;
   const patch = {
     subscription_status: "canceled",
     trial_status: "cancelled" as TrialStatus,
     updated_at: new Date().toISOString(),
   };
 
-  if (userId) {
-    await admin.from("profiles").update(patch).eq("id", userId);
-    return;
-  }
+  // Only the row that still points at this subscription — never overwrite a
+  // profile whose current Stripe sub is a different, already-paid one.
+  const { error } = await admin
+    .from("profiles")
+    .update(patch)
+    .eq("stripe_subscription_id", subscription.id);
 
-  if (customerId) {
-    await admin
-      .from("profiles")
-      .update(patch)
-      .eq("stripe_customer_id", customerId);
-  }
-
-  if (subscription.id) {
-    await admin
-      .from("profiles")
-      .update(patch)
-      .eq("stripe_subscription_id", subscription.id);
+  if (error) {
+    throw new Error(`Failed to mark profile canceled: ${error.message}`);
   }
 }
 
+async function listAllOpenInvoices() {
+  if (!stripe) {
+    return [] as Stripe.Invoice[];
+  }
+
+  const invoices: Stripe.Invoice[] = [];
+  let startingAfter: string | undefined;
+
+  for (;;) {
+    const page = await stripe.invoices.list({
+      status: "open",
+      limit: 100,
+      ...(startingAfter ? { starting_after: startingAfter } : {}),
+    });
+
+    invoices.push(...page.data);
+
+    if (!page.has_more || page.data.length === 0) {
+      break;
+    }
+
+    startingAfter = page.data[page.data.length - 1]?.id;
+  }
+
+  return invoices;
+}
+
+const KEEP_OPEN_INVOICE_SUB_STATUSES = new Set(["active", "trialing"]);
+
+async function voidOrphanOpenInvoices() {
+  if (!stripe) {
+    return { voided: [] as string[], skipped: 0, errors: [] as Array<{ invoiceId: string; error: string }> };
+  }
+
+  const voided: string[] = [];
+  const errors: Array<{ invoiceId: string; error: string }> = [];
+  let skipped = 0;
+
+  const invoices = await listAllOpenInvoices();
+
+  for (const invoice of invoices) {
+    if (!invoice.id) {
+      continue;
+    }
+
+    const subscriptionId = getInvoiceSubscriptionId(invoice);
+
+    if (subscriptionId) {
+      try {
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+
+        if (KEEP_OPEN_INVOICE_SUB_STATUSES.has(subscription.status)) {
+          skipped += 1;
+          continue;
+        }
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Failed to load subscription.";
+        errors.push({ invoiceId: invoice.id, error: message });
+        continue;
+      }
+    }
+
+    try {
+      const voidedInvoice = await stripe.invoices.voidInvoice(invoice.id);
+
+      if (voidedInvoice.status === "void") {
+        voided.push(invoice.id);
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to void invoice.";
+      errors.push({ invoiceId: invoice.id, error: message });
+      console.error(`[trial-billing] Failed to void invoice ${invoice.id}`, error);
+    }
+  }
+
+  return { voided, skipped, errors };
+}
+
 /**
- * Ends open trials immediately (attempts first charge), then cancels
- * subscriptions that remain unpaid / past_due / incomplete.
+ * Cancels unpaid / past_due / incomplete subscriptions and voids leftover
+ * open invoices. Does not refund, cancel, or otherwise change active paid
+ * subscriptions (including duplicate paid ones).
  */
 export async function enforcePaidSubscriptions() {
   if (!stripe) {
     throw new Error("Stripe is not configured.");
   }
 
-  const charged: string[] = [];
-  const chargeFailed: string[] = [];
   const canceled: string[] = [];
-  const errors: Array<{ subscriptionId: string; error: string }> = [];
-
-  const trialing = await listAllSubscriptionsByStatus("trialing");
-
-  for (const subscription of trialing) {
-    try {
-      const updated = await stripe.subscriptions.update(subscription.id, {
-        trial_end: "now",
-        proration_behavior: "none",
-      });
-
-      if (updated.status === "active") {
-        charged.push(updated.id);
-        await syncLocalProfileFromSubscription(updated);
-        continue;
-      }
-
-      if (UNPAID_SUBSCRIPTION_STATUSES.has(updated.status)) {
-        chargeFailed.push(updated.id);
-        const canceledSub = await stripe.subscriptions.cancel(updated.id);
-        canceled.push(canceledSub.id);
-        await markLocalProfileCanceled(canceledSub);
-        continue;
-      }
-
-      await syncLocalProfileFromSubscription(updated);
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to end trial.";
-      errors.push({ subscriptionId: subscription.id, error: message });
-      console.error(
-        `[trial-billing] Failed to charge trial ${subscription.id}`,
-        error
-      );
-    }
-  }
+  const errors: Array<{ subscriptionId?: string; invoiceId?: string; error: string }> = [];
 
   for (const status of ["past_due", "unpaid", "incomplete"] as const) {
     const unpaid = await listAllSubscriptionsByStatus(status);
@@ -635,40 +619,10 @@ export async function enforcePaidSubscriptions() {
       }
 
       try {
-        const invoices = await stripe.invoices.list({
-          subscription: subscription.id,
-          status: "open",
-          limit: 3,
+        const canceledSub = await stripe.subscriptions.cancel(subscription.id, {
+          invoice_now: false,
+          prorate: false,
         });
-
-        let paid = false;
-
-        for (const invoice of invoices.data) {
-          try {
-            const paidInvoice = await stripe.invoices.pay(invoice.id);
-            if (paidInvoice.status === "paid") {
-              paid = true;
-            }
-          } catch (payError) {
-            console.warn(
-              `[trial-billing] Invoice pay failed for ${invoice.id}`,
-              payError
-            );
-          }
-        }
-
-        if (paid) {
-          const refreshed = await stripe.subscriptions.retrieve(
-            subscription.id
-          );
-          if (refreshed.status === "active") {
-            charged.push(refreshed.id);
-            await syncLocalProfileFromSubscription(refreshed);
-            continue;
-          }
-        }
-
-        const canceledSub = await stripe.subscriptions.cancel(subscription.id);
         canceled.push(canceledSub.id);
         await markLocalProfileCanceled(canceledSub);
       } catch (error) {
@@ -683,25 +637,20 @@ export async function enforcePaidSubscriptions() {
     }
   }
 
-  if (isSupabaseAdminConfigured()) {
-    const admin = createAdminClient();
-    await admin
-      .from("profiles")
-      .update({
-        subscription_status: "canceled",
-        trial_status: "cancelled",
-        updated_at: new Date().toISOString(),
-      })
-      .in("subscription_status", ["past_due", "unpaid", "incomplete"]);
-  }
+  const voidResult = await voidOrphanOpenInvoices();
+  errors.push(
+    ...voidResult.errors.map((item) => ({
+      invoiceId: item.invoiceId,
+      error: item.error,
+    }))
+  );
 
   return {
-    trialingFound: trialing.length,
-    charged: charged.length,
-    chargeFailed: chargeFailed.length,
     canceled: canceled.length,
-    chargedIds: charged,
     canceledIds: canceled,
+    voided: voidResult.voided.length,
+    voidedIds: voidResult.voided,
+    openInvoicesKept: voidResult.skipped,
     errors,
   };
 }
