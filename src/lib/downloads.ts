@@ -59,7 +59,7 @@ export const DOWNLOAD_ASSETS: DownloadAsset[] = [
   {
     id: "ipa",
     label: "Anyloc (iPhone)",
-    description: "App iPhone installée par Anyloc sur ordinateur via USB",
+    description: "App iPhone — installation directe sur ton téléphone",
     filename: "Anyloc.ipa",
     envKey: "ANYLOC_DOWNLOAD_IPA",
     blobPath: "releases/Anyloc.ipa",

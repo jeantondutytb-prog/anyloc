@@ -19,7 +19,6 @@ import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-heade
 import { SetupQrCode } from "@/components/dashboard/setup-qr-code";
 import {
   AndroidOpenHelp,
-  ComputerOnlyHint,
   SetupOpenHelp,
   WrongDeviceNotice,
 } from "@/components/dashboard/setup-open-help";
@@ -116,6 +115,14 @@ function HelpDetails({
   );
 }
 
+function getDownloadButtonLabel(assetId: string) {
+  if (assetId === "apk" || assetId === "ipa") {
+    return "Télécharger l'app";
+  }
+
+  return "Télécharger Anyloc";
+}
+
 function DownloadButtons({
   assetIds,
   hasAccess,
@@ -135,7 +142,7 @@ function DownloadButtons({
         {assetIds.map((id) => (
           <Button key={id} className="w-full sm:w-auto" onClick={onDownload}>
             <Download className="h-4 w-4" />
-              {id === "apk" ? "Télécharger l'app" : "Télécharger Anyloc"}
+            {getDownloadButtonLabel(id)}
           </Button>
         ))}
       </div>
@@ -191,7 +198,7 @@ function DownloadButtons({
           >
             <Button className="w-full sm:w-auto">
               <Download className="h-4 w-4" />
-              {asset.id === "apk" ? "Télécharger l'app" : "Télécharger Anyloc"}
+              {getDownloadButtonLabel(asset.id)}
             </Button>
           </a>
         ) : (
@@ -422,6 +429,79 @@ function AndroidLinkStep({ preview = false }: { preview?: boolean }) {
   );
 }
 
+function IosOtaInstallButton({
+  hasAccess,
+  preview = false,
+}: {
+  hasAccess: boolean;
+  preview?: boolean;
+}) {
+  const [installing, setInstalling] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const startInstall = async () => {
+    if (preview) {
+      return;
+    }
+
+    setInstalling(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/ios/install-link", { method: "POST" });
+      const data = (await response.json()) as {
+        installUrl?: string;
+        error?: string;
+      };
+
+      if (!response.ok || !data.installUrl) {
+        throw new Error(data.error ?? "Impossible de lancer l'installation.");
+      }
+
+      window.location.href = data.installUrl;
+    } catch (installError) {
+      setError(
+        installError instanceof Error
+          ? installError.message
+          : "Impossible de lancer l'installation."
+      );
+    } finally {
+      setInstalling(false);
+    }
+  };
+
+  if (preview) {
+    return (
+      <Button className="w-full sm:w-auto">
+        <Smartphone className="h-4 w-4" />
+        Installer Anyloc
+      </Button>
+    );
+  }
+
+  if (!hasAccess) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-2">
+      <Button
+        className="w-full sm:w-auto"
+        disabled={installing}
+        onClick={() => void startInstall()}
+      >
+        {installing ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Smartphone className="h-4 w-4" />
+        )}
+        {installing ? "Préparation…" : "Installer Anyloc"}
+      </Button>
+      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+    </div>
+  );
+}
+
 function IosGuide({
   hasAccess,
   preview = false,
@@ -446,68 +526,143 @@ function IosGuide({
   const installUrl = getInstallPageUrl("ios");
   const isPhone = forcePhone || device.isPhone;
 
-  return (
-    <div className="space-y-4">
-      <p className="text-sm text-zinc-600">
-        iPhone : télécharge <strong>Anyloc</strong> sur ton ordinateur (Mac ou
-        PC). Le guide complet est <strong>dans l&apos;app</strong> — branche
-        ton iPhone, installe en un clic, sans revenir sur le site.
-      </p>
+  if (isPhone) {
+    return (
+      <div className="space-y-4">
+        <p className="text-sm text-zinc-600">
+          iPhone : installe <strong>Anyloc</strong> directement sur ton
+          téléphone — comme sur Android, sans ordinateur.
+        </p>
 
-      {needsSetupPassword ? <SetupPasswordForm preview={preview} /> : null}
+        {needsSetupPassword ? <SetupPasswordForm preview={preview} /> : null}
 
-      {isPhone ? (
-        <WrongDeviceNotice
-          title="Tu es sur ton téléphone — le fichier ne s'ouvre pas ici"
-          href={installUrl}
-          copyLabel="Copier le lien pour l'ordinateur"
-        >
+        <StepCard number={1} title="Installe l'app sur ton iPhone">
           <p>
-            Anyloc est un programme d&apos;ordinateur. Si tu le télécharges
-            ici, tu te retrouves avec un fichier qui ne s&apos;ouvre pas.
+            Appuie sur <strong>Installer Anyloc</strong>. Safari te demandera de
+            confirmer — accepte, puis attends la fin du téléchargement.
           </p>
-          <p>
-            Ouvre ce lien sur ton Mac ou ton PC, puis télécharge Anyloc.
-          </p>
-        </WrongDeviceNotice>
-      ) : null}
-
-      <StepCard number={1} title="Télécharge Anyloc sur ton ordinateur">
-        {isPhone ? (
-          <ComputerOnlyHint />
-        ) : (
-          <>
-            <p>
-              {resolvedOs === "win" ? (
-                <>
-                  Windows va dire <strong>« Faites attention »</strong>. Clique{" "}
-                  <strong>Conserver</strong>, puis suis les étapes en dessous —
-                  ce n&apos;est pas un virus.
-                </>
-              ) : (
-                <>
-                  Un seul fichier. Il va dans <strong>Téléchargements</strong>{" "}
-                  — il ne s&apos;ouvre pas tout seul.
-                </>
-              )}
-            </p>
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <IosOtaInstallButton hasAccess={hasAccess} preview={preview} />
             <DownloadButtons
-              assetIds={resolvedOs === "win" ? ["setup-win"] : ["setup-mac"]}
+              assetIds={["ipa"]}
               hasAccess={hasAccess}
               preview={preview}
               onDownload={() => setDownloaded(true)}
             />
-            <button
-              type="button"
-              className="text-xs font-medium text-pink-600 underline-offset-2 hover:underline"
-              onClick={() =>
-                setDesktopOs(resolvedOs === "mac" ? "win" : "mac")
-              }
-            >
-              {resolvedOs === "mac" ? "J'ai un PC Windows" : "J'ai un Mac"}
-            </button>
-          </>
-        )}
+          </div>
+          <HelpDetails title="L'installation ne démarre pas ?">
+            <ol className="list-decimal space-y-1.5 pl-5">
+              <li>
+                Va dans <strong>Réglages → Général → VPN et gestion de
+                l&apos;appareil</strong> et fais confiance au développeur Anyloc
+              </li>
+              <li>
+                Si le bouton ne réagit pas, télécharge l&apos;IPA puis réessaie
+                dans quelques minutes
+              </li>
+              <li>
+                Tu as un Mac ou PC ? Utilise Anyloc Setup via USB (voir en bas)
+              </li>
+            </ol>
+          </HelpDetails>
+        </StepCard>
+
+        <StepCard number={2} title="Ouvre Anyloc et connecte-toi">
+          <p>
+            Lance l&apos;app sur ton iPhone et connecte-toi avec{" "}
+            <strong>le même email</strong> que ton paiement Anyloc.
+          </p>
+          {needsSetupPassword ? (
+            <p className="rounded-xl bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
+              Pas encore de mot de passe ? Choisis-en un dans{" "}
+              <strong>Mon compte</strong> avant d&apos;ouvrir Anyloc, ou utilise
+              le bouton Google (même email).
+            </p>
+          ) : null}
+        </StepCard>
+
+        <StepCard number={3} title="Choisis une ville, vérifie dans Snap">
+          <ol className="list-decimal space-y-2 pl-5">
+            <li>Cherche une ville dans l&apos;app (Marbella, Paris…)</li>
+            <li>Ouvre Snap ou Maps — la loc a changé</li>
+          </ol>
+          <HelpDetails title="Dans ~7 jours, l'app iPhone s'arrête ?">
+            <p className="mb-2">
+              Normal (limite Apple sans compte Developer payant). Installe{" "}
+              <strong>LocalDevVPN</strong> (App Store, gratuit), connecte le
+              Wi-Fi, puis dans Anyloc iPhone :{" "}
+              <strong>Profil → Renouveler</strong>.
+            </p>
+          </HelpDetails>
+        </StepCard>
+
+        <HelpDetails title="Tu as un Mac ou PC ? Installation via USB">
+          <p className="mb-3">
+            Ouvre ce lien sur ton ordinateur pour télécharger Anyloc Setup,
+            branche l&apos;iPhone et installe en un clic.
+          </p>
+          <WrongDeviceNotice
+            title="Lien à ouvrir sur Mac ou PC"
+            href={installUrl}
+            copyLabel="Copier le lien"
+          >
+            <p>Anyloc Setup installe l&apos;app via câble USB.</p>
+          </WrongDeviceNotice>
+        </HelpDetails>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-zinc-600">
+        iPhone : ouvre ce guide <strong>sur ton téléphone</strong> pour
+        installer l&apos;app directement. Ou télécharge Anyloc Setup ici pour
+        une installation USB.
+      </p>
+
+      {needsSetupPassword ? <SetupPasswordForm preview={preview} /> : null}
+
+      <WrongDeviceNotice
+        title="Pour installer sur iPhone, ouvre ce lien sur ton tel"
+        href={installUrl}
+        copyLabel="Copier le lien"
+        qrLabel="Scanne avec ton iPhone"
+      >
+        <p>
+          L&apos;installation se fait depuis Safari sur ton iPhone — pas depuis
+          l&apos;ordinateur.
+        </p>
+      </WrongDeviceNotice>
+
+      <StepCard number={1} title="Alternative : Anyloc Setup sur ordinateur">
+        <p>
+          {resolvedOs === "win" ? (
+            <>
+              Windows va dire <strong>« Faites attention »</strong>. Clique{" "}
+              <strong>Conserver</strong>, puis suis les étapes en dessous —
+              ce n&apos;est pas un virus.
+            </>
+          ) : (
+            <>
+              Un seul fichier. Il va dans <strong>Téléchargements</strong> — il
+              ne s&apos;ouvre pas tout seul.
+            </>
+          )}
+        </p>
+        <DownloadButtons
+          assetIds={resolvedOs === "win" ? ["setup-win"] : ["setup-mac"]}
+          hasAccess={hasAccess}
+          preview={preview}
+          onDownload={() => setDownloaded(true)}
+        />
+        <button
+          type="button"
+          className="text-xs font-medium text-pink-600 underline-offset-2 hover:underline"
+          onClick={() => setDesktopOs(resolvedOs === "mac" ? "win" : "mac")}
+        >
+          {resolvedOs === "mac" ? "J'ai un PC Windows" : "J'ai un Mac"}
+        </button>
         <SetupOpenHelp
           desktopOs={resolvedOs}
           onDesktopOsChange={(os) => setDesktopOs(os)}
@@ -516,37 +671,13 @@ function IosGuide({
         />
       </StepCard>
 
-      <StepCard number={2} title="Ouvre Anyloc — le reste se fait dedans">
-        <p>
-          Lance Anyloc sur ton ordinateur. L&apos;app te guide{" "}
-          <strong>étape par étape</strong> :
-        </p>
+      <StepCard number={2} title="Branche l'iPhone et installe">
         <ol className="list-decimal space-y-2 pl-5">
-          <li>Connexion avec le même compte que le paiement</li>
+          <li>Lance Anyloc Setup et connecte-toi</li>
           <li>Branche l&apos;iPhone (câble USB)</li>
           <li>Clique <strong>Installer</strong> — l&apos;app se met sur le tel</li>
           <li>Ouvre Anyloc sur l&apos;iPhone et choisis une ville</li>
         </ol>
-        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-          <strong>Laisse l&apos;iPhone branché</strong> et Anyloc ouvert sur
-          l&apos;ordi. Si tu débranches, Snap revoit ta vraie position.
-        </p>
-        {needsSetupPassword ? (
-          <p className="rounded-xl bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
-            Pas encore de mot de passe ? Choisis-en un dans{" "}
-            <strong>Mon compte</strong> avant d&apos;ouvrir Anyloc, ou utilise
-            le bouton Google (même email).
-          </p>
-        ) : null}
-        <HelpDetails title="Dans ~7 jours, l'app iPhone s'arrête ?">
-          <p className="mb-2">
-            Normal (limite Apple sans compte Developer payant). Installe{" "}
-            <strong>LocalDevVPN</strong> (App Store, gratuit), connecte le Wi-Fi,
-            puis dans Anyloc iPhone : <strong>Profil → Renouveler</strong>.
-            LocalDevVPN → <strong>Connect</strong>, puis le bouton Renouveler.
-            Pas besoin de rebrancher l&apos;ordi.
-          </p>
-        </HelpDetails>
       </StepCard>
     </div>
   );
