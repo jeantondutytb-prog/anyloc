@@ -305,6 +305,84 @@ export async function cancelActiveTrialForUser(userId: string) {
   }
 }
 
+function getInvoiceSubscriptionId(invoice: Stripe.Invoice): string | null {
+  const parentSubscription = invoice.parent?.subscription_details?.subscription;
+
+  if (typeof parentSubscription === "string") {
+    return parentSubscription;
+  }
+
+  if (parentSubscription && typeof parentSubscription === "object") {
+    return parentSubscription.id ?? null;
+  }
+
+  return null;
+}
+
+/**
+ * Stripe leaves subscription invoices in draft for ~1 hour before auto-charging.
+ * Pay immediately on invoice.created so the post-trial (and renewal) charge
+ * happens at trial_end / period end instead of ~60 minutes later.
+ *
+ * @see https://docs.stripe.com/billing/subscriptions/trials/free-trials
+ */
+export async function chargeSubscriptionInvoiceImmediately(
+  invoice: Stripe.Invoice
+) {
+  if (!stripe) {
+    return { attempted: false, paid: false, reason: "stripe_unconfigured" as const };
+  }
+
+  if (!invoice.id) {
+    return { attempted: false, paid: false, reason: "missing_invoice_id" as const };
+  }
+
+  if (invoice.collection_method !== "charge_automatically") {
+    return { attempted: false, paid: false, reason: "manual_collection" as const };
+  }
+
+  if ((invoice.amount_due ?? 0) <= 0) {
+    return { attempted: false, paid: false, reason: "zero_amount" as const };
+  }
+
+  if (invoice.status === "paid" || invoice.status === "void") {
+    return { attempted: false, paid: false, reason: "already_settled" as const };
+  }
+
+  if (invoice.status !== "draft" && invoice.status !== "open") {
+    return { attempted: false, paid: false, reason: "not_payable" as const };
+  }
+
+  const subscriptionId = getInvoiceSubscriptionId(invoice);
+
+  if (!subscriptionId) {
+    return { attempted: false, paid: false, reason: "not_subscription" as const };
+  }
+
+  try {
+    const paidInvoice = await stripe.invoices.pay(invoice.id);
+
+    if (paidInvoice.status === "paid") {
+      console.info(
+        `[trial-billing] Charged invoice ${invoice.id} immediately (subscription ${subscriptionId}, reason=${invoice.billing_reason}).`
+      );
+      return { attempted: true, paid: true, reason: "paid" as const };
+    }
+
+    console.warn(
+      `[trial-billing] Immediate pay left invoice ${invoice.id} in status=${paidInvoice.status}.`
+    );
+    return { attempted: true, paid: false, reason: "not_paid" as const };
+  } catch (error) {
+    // Card declines / missing PM still surface via subscription.updated → past_due.
+    console.error(
+      `[trial-billing] Immediate invoice pay failed for ${invoice.id}`,
+      error
+    );
+    return { attempted: true, paid: false, reason: "pay_failed" as const };
+  }
+}
+
 /** Legacy fallback for profiles created before Stripe-native trials. */
 export async function processDueTrialCharges() {
   if (!isSupabaseAdminConfigured() || !stripe) {
