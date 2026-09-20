@@ -4,7 +4,10 @@ import {
   syncProfileFromCheckoutSession,
   syncProfileFromSubscription,
 } from "@/lib/billing";
-import { syncProfileFromTrialSetupSession } from "@/lib/trial-billing";
+import {
+  chargeSubscriptionInvoiceImmediately,
+  syncProfileFromTrialSetupSession,
+} from "@/lib/trial-billing";
 import { capturePostHogEvent, capturePostHogException } from "@/lib/posthog/server";
 import { stripe } from "@/lib/stripe";
 import {
@@ -98,6 +101,13 @@ export async function POST(request: Request) {
       case "customer.subscription.deleted":
         await syncProfileFromSubscription(
           event.data.object as Stripe.Subscription
+        );
+        break;
+      case "invoice.created":
+        // Bypass Stripe's ~1h draft window so trial-end / renewal charges
+        // run at the intended time (e.g. 10:10, not ~11:10).
+        await chargeSubscriptionInvoiceImmediately(
+          event.data.object as Stripe.Invoice
         );
         break;
       default:
