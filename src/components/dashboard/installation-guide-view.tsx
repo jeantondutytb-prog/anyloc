@@ -529,62 +529,43 @@ function IosGuide({
   if (isPhone) {
     return (
       <div className="space-y-4">
-        <p className="text-sm text-zinc-600">
-          iPhone : installe <strong>Anyloc</strong> directement sur ton
-          téléphone — comme sur Android, sans ordinateur.
-        </p>
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <p className="font-medium">iPhone = il te faut un Mac ou PC</p>
+          <p className="mt-1 text-amber-800/90">
+            Apple verrouille le GPS. Pour le changer vraiment (Snap Map, Maps,
+            toutes tes apps), Anyloc passe par un logiciel sur ton ordi — une
+            seule fois pour installer, puis ton iPhone sert de télécommande.
+          </p>
+        </div>
 
         {needsSetupPassword ? <SetupPasswordForm preview={preview} /> : null}
 
-        <StepCard number={1} title="Installe l'app sur ton iPhone">
+        <StepCard number={1} title="Télécharge Anyloc sur ton Mac ou PC">
           <p>
-            Appuie sur <strong>Installer Anyloc</strong>. Safari te demandera de
-            confirmer — accepte, puis attends la fin du téléchargement.
+            Ouvre ce lien sur ton ordinateur pour télécharger le logiciel.
           </p>
-          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-            <IosOtaInstallButton hasAccess={hasAccess} preview={preview} />
-            <DownloadButtons
-              assetIds={["ipa"]}
-              hasAccess={hasAccess}
-              preview={preview}
-              onDownload={() => setDownloaded(true)}
-            />
-          </div>
-          <HelpDetails title="L'installation ne démarre pas ?">
-            <ol className="list-decimal space-y-1.5 pl-5">
-              <li>
-                Va dans <strong>Réglages → Général → VPN et gestion de
-                l&apos;appareil</strong> et fais confiance au développeur Anyloc
-              </li>
-              <li>
-                Si le bouton ne réagit pas, télécharge l&apos;IPA puis réessaie
-                dans quelques minutes
-              </li>
-              <li>
-                Tu as un Mac ou PC ? Utilise Anyloc Setup via USB (voir en bas)
-              </li>
-            </ol>
-          </HelpDetails>
+          <WrongDeviceNotice
+            title="Lien à ouvrir sur Mac ou PC"
+            href={installUrl}
+            copyLabel="Copier le lien"
+          >
+            <p>Anyloc s&apos;installe sur l&apos;ordi, pas sur le téléphone.</p>
+          </WrongDeviceNotice>
         </StepCard>
 
-        <StepCard number={2} title="Ouvre Anyloc et connecte-toi">
-          <p>
-            Lance l&apos;app sur ton iPhone et connecte-toi avec{" "}
-            <strong>le même email</strong> que ton paiement Anyloc.
-          </p>
-          {needsSetupPassword ? (
-            <p className="rounded-xl bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
-              Pas encore de mot de passe ? Choisis-en un dans{" "}
-              <strong>Mon compte</strong> avant d&apos;ouvrir Anyloc, ou utilise
-              le bouton Google (même email).
-            </p>
-          ) : null}
+        <StepCard number={2} title="Branche ton iPhone et installe l'app">
+          <ol className="list-decimal space-y-2 pl-5">
+            <li>Ouvre Anyloc sur ton ordi et connecte-toi (même email que ton paiement)</li>
+            <li>Branche l&apos;iPhone en USB, déverrouille-le et appuie <strong>Faire confiance</strong></li>
+            <li>Clique <strong>Installer</strong> dans Anyloc — l&apos;app se met sur ton tel</li>
+          </ol>
         </StepCard>
 
         <StepCard number={3} title="Choisis une ville, vérifie dans Snap">
           <ol className="list-decimal space-y-2 pl-5">
-            <li>Cherche une ville dans l&apos;app (Marbella, Paris…)</li>
-            <li>Ouvre Snap ou Maps — la loc a changé</li>
+            <li>Dans Anyloc (ordi ou app iPhone), choisis Marbella, Paris…</li>
+            <li>Ouvre Snap ou Maps sur l&apos;iPhone — ta position a changé</li>
+            <li>L&apos;ordi garde le GPS actif tant que l&apos;iPhone est branché</li>
           </ol>
           <HelpDetails title="Dans ~7 jours, l'app iPhone s'arrête ?">
             <p className="mb-2">
@@ -595,20 +576,6 @@ function IosGuide({
             </p>
           </HelpDetails>
         </StepCard>
-
-        <HelpDetails title="Tu as un Mac ou PC ? Installation via USB">
-          <p className="mb-3">
-            Ouvre ce lien sur ton ordinateur pour télécharger Anyloc Setup,
-            branche l&apos;iPhone et installe en un clic.
-          </p>
-          <WrongDeviceNotice
-            title="Lien à ouvrir sur Mac ou PC"
-            href={installUrl}
-            copyLabel="Copier le lien"
-          >
-            <p>Anyloc Setup installe l&apos;app via câble USB.</p>
-          </WrongDeviceNotice>
-        </HelpDetails>
       </div>
     );
   }
@@ -616,26 +583,13 @@ function IosGuide({
   return (
     <div className="space-y-4">
       <p className="text-sm text-zinc-600">
-        iPhone : ouvre ce guide <strong>sur ton téléphone</strong> pour
-        installer l&apos;app directement. Ou télécharge Anyloc Setup ici pour
-        une installation USB.
+        iPhone : télécharge Anyloc sur ton ordi, branche l&apos;iPhone en
+        USB, et le GPS change sur toutes tes apps — Snap Map, Maps, Tinder.
       </p>
 
       {needsSetupPassword ? <SetupPasswordForm preview={preview} /> : null}
 
-      <WrongDeviceNotice
-        title="Pour installer sur iPhone, ouvre ce lien sur ton tel"
-        href={installUrl}
-        copyLabel="Copier le lien"
-        qrLabel="Scanne avec ton iPhone"
-      >
-        <p>
-          L&apos;installation se fait depuis Safari sur ton iPhone — pas depuis
-          l&apos;ordinateur.
-        </p>
-      </WrongDeviceNotice>
-
-      <StepCard number={1} title="Alternative : Anyloc Setup sur ordinateur">
+      <StepCard number={1} title="Télécharge Anyloc">
         <p>
           {resolvedOs === "win" ? (
             <>
@@ -673,11 +627,26 @@ function IosGuide({
 
       <StepCard number={2} title="Branche l'iPhone et installe">
         <ol className="list-decimal space-y-2 pl-5">
-          <li>Lance Anyloc Setup et connecte-toi</li>
-          <li>Branche l&apos;iPhone (câble USB)</li>
+          <li>Lance Anyloc et connecte-toi (même email que ton paiement)</li>
+          <li>Branche l&apos;iPhone en USB, déverrouille-le et appuie <strong>Faire confiance</strong></li>
           <li>Clique <strong>Installer</strong> — l&apos;app se met sur le tel</li>
-          <li>Ouvre Anyloc sur l&apos;iPhone et choisis une ville</li>
         </ol>
+      </StepCard>
+
+      <StepCard number={3} title="Choisis une ville, vérifie dans Snap">
+        <ol className="list-decimal space-y-2 pl-5">
+          <li>Dans Anyloc (ordi ou app iPhone), choisis Marbella, Paris…</li>
+          <li>Ouvre Snap ou Maps sur l&apos;iPhone — ta position a changé</li>
+          <li>L&apos;ordi garde le GPS actif tant que l&apos;iPhone est branché</li>
+        </ol>
+        <HelpDetails title="Dans ~7 jours, l'app iPhone s'arrête ?">
+          <p className="mb-2">
+            Normal (limite Apple sans compte Developer payant). Installe{" "}
+            <strong>LocalDevVPN</strong> (App Store, gratuit), connecte le
+            Wi-Fi, puis dans Anyloc iPhone :{" "}
+            <strong>Profil → Renouveler</strong>.
+          </p>
+        </HelpDetails>
       </StepCard>
     </div>
   );
