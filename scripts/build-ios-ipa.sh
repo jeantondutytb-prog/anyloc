@@ -40,33 +40,29 @@ if [[ -n "${KEYCHAIN_PATH:-}" && -n "${KEYCHAIN_PASSWORD:-}" ]]; then
   security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 fi
 
-USE_MANUAL_SIGNING=0
+IS_CI=0
 if [[ -n "${PROVISIONING_PROFILE_UUID:-}" ]]; then
-  USE_MANUAL_SIGNING=1
+  IS_CI=1
 fi
 
-if [[ "$USE_MANUAL_SIGNING" == "1" ]]; then
-  echo "→ Mode signature manuelle (CI)"
+if [[ "$IS_CI" == "1" ]]; then
+  echo "→ Mode CI (signature automatique avec profil pré-installé)"
+  # Free Personal Team profiles are Xcode-managed — use automatic signing
+  # The profile is already installed by the CI setup step
   /usr/libexec/PlistBuddy -c "Delete :signingStyle" "$EXPORT_OPTIONS" 2>/dev/null || true
-  /usr/libexec/PlistBuddy -c "Add :signingStyle string manual" "$EXPORT_OPTIONS"
   /usr/libexec/PlistBuddy -c "Delete :provisioningProfiles" "$EXPORT_OPTIONS" 2>/dev/null || true
-  /usr/libexec/PlistBuddy -c "Add :provisioningProfiles dict" "$EXPORT_OPTIONS"
-  /usr/libexec/PlistBuddy -c "Add :provisioningProfiles:$BUNDLE_ID string $PROVISIONING_PROFILE_UUID" "$EXPORT_OPTIONS"
 
   ARCHIVE_SIGN_ARGS=(
-    CODE_SIGN_STYLE=Manual
+    CODE_SIGN_STYLE=Automatic
     CODE_SIGN_IDENTITY="Apple Development"
-    PROVISIONING_PROFILE_SPECIFIER="$PROVISIONING_PROFILE_UUID"
     DEVELOPMENT_TEAM="$APPLE_DEVELOPMENT_TEAM"
   )
-  ARCHIVE_EXTRA=()
 else
   echo "→ Mode signature automatique (Mac local)"
   ARCHIVE_SIGN_ARGS=(
     CODE_SIGN_STYLE=Automatic
     DEVELOPMENT_TEAM="$APPLE_DEVELOPMENT_TEAM"
   )
-  ARCHIVE_EXTRA=(-allowProvisioningUpdates)
 fi
 
 echo "→ Archive Anyloc (Release)"
@@ -77,27 +73,17 @@ xcodebuild \
   -destination "generic/platform=iOS" \
   -archivePath "$ARCHIVE_PATH" \
   archive \
-  "${ARCHIVE_EXTRA[@]}" \
   "${ARCHIVE_SIGN_ARGS[@]}"
 
 rm -rf "$EXPORT_DIR"
 mkdir -p "$EXPORT_DIR"
 
 echo "→ Export IPA (development)"
-if [[ "$USE_MANUAL_SIGNING" == "1" ]]; then
-  xcodebuild \
-    -exportArchive \
-    -archivePath "$ARCHIVE_PATH" \
-    -exportPath "$EXPORT_DIR" \
-    -exportOptionsPlist "$EXPORT_OPTIONS"
-else
-  xcodebuild \
-    -exportArchive \
-    -archivePath "$ARCHIVE_PATH" \
-    -exportPath "$EXPORT_DIR" \
-    -exportOptionsPlist "$EXPORT_OPTIONS" \
-    -allowProvisioningUpdates
-fi
+xcodebuild \
+  -exportArchive \
+  -archivePath "$ARCHIVE_PATH" \
+  -exportPath "$EXPORT_DIR" \
+  -exportOptionsPlist "$EXPORT_OPTIONS"
 
 IPA=$(find "$EXPORT_DIR" -maxdepth 1 -name "*.ipa" | head -n 1)
 
