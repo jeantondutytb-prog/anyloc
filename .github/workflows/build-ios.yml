@@ -80,11 +80,13 @@ jobs:
 
           echo "Installing provisioning profile..."
           PP_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
-          mkdir -p "$PP_DIR"
+          PP_DIR_XCODE="$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"
+          mkdir -p "$PP_DIR" "$PP_DIR_XCODE"
           PP_PATH="$RUNNER_TEMP/anyloc.mobileprovision"
           echo "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode > "$PP_PATH"
           PP_UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" /dev/stdin <<< "$(security cms -D -i "$PP_PATH")")
           cp "$PP_PATH" "$PP_DIR/${PP_UUID}.mobileprovision"
+          cp "$PP_PATH" "$PP_DIR_XCODE/${PP_UUID}.mobileprovision"
           echo "Provisioning profile UUID: $PP_UUID"
 
           echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
