@@ -1,23 +1,23 @@
-import { CreditCard, MapPin, Smartphone } from "lucide-react";
+import { Download, MapPin, CreditCard } from "lucide-react";
 
 const steps = [
   {
     icon: CreditCard,
     title: "Crée ton compte",
     description:
-      "Choisis ta formule, lance l’essai gratuit — ton accès Anyloc est prêt en quelques secondes.",
+      "Choisis ta formule, valide en ligne — ton accès Anyloc est prêt en quelques secondes.",
   },
   {
-    icon: Smartphone,
-    title: "4 étapes sur ton tel",
+    icon: Download,
+    title: "3 étapes sur ton tel",
     description:
-      "iPhone ou Android, c’est le même chemin : on t’ouvre un guide dans le site, tu valides chaque étape.",
+      "Android : installe l'app, autorise la fausse loc, ouvre Anyloc. iPhone : un ordi une fois, puis c'est bon.",
   },
   {
     icon: MapPin,
     title: "Choisis sur la carte",
     description:
-      "Depuis ton dashboard, cherche une ville ou clique sur la carte — tes apps web suivent en direct.",
+      "Depuis ton dashboard, cherche une ville ou clique sur la carte — ton téléphone suit en direct.",
   },
 ];
 

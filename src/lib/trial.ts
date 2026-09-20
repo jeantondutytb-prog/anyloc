@@ -24,10 +24,10 @@ export const TRIAL_CTA_SUBLINE =
   `0 € maintenant · ${TRIAL_DURATION_LABEL} pour tester · annule quand tu veux`;
 
 export const TRIAL_MARKETING_LINE =
-  `Teste Anyloc gratuitement pendant ${TRIAL_DURATION_LABEL} — Snap, Insta et Tinder depuis Safari ou Chrome, iPhone comme Android.`;
+  `Teste Anyloc gratuitement pendant ${TRIAL_DURATION_LABEL} sur le plan de ton choix — Snap, Insta, Tinder et toutes tes apps.`;
 
 export const TRIAL_SELECT_SUBLINE =
-  `Essaie gratuitement pendant ${TRIAL_DURATION_LABEL} sur tous les plans — même accès sur Snap, Insta et Tinder Web. Seule la durée facturée change après l'essai.`;
+  `Essaie gratuitement pendant ${TRIAL_DURATION_LABEL} sur tous les plans — même accès complet sur Snap, Insta, Tinder et toutes tes apps. Seule la durée facturée change après l'essai.`;
 
 export type TrialStatus = "active" | "converted" | "cancelled" | "charge_failed";
 

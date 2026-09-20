@@ -19,10 +19,10 @@ const MAP_VIEWBOX = { width: 400, height: 176 };
 const TRAVEL_DURATION = 1.5;
 
 const APPS = [
-  { label: "SNAP WEB", pinClass: "text-yellow-500" },
+  { label: "SNAP MAP", pinClass: "text-yellow-500" },
   { label: "INSTAGRAM", pinClass: "text-pink-500" },
-  { label: "TINDER WEB", pinClass: "text-rose-500" },
-  { label: "MAPS", pinClass: "text-emerald-500" },
+  { label: "TINDER", pinClass: "text-rose-500" },
+  { label: "LIFE360", pinClass: "text-emerald-500" },
 ];
 
 const PHASE_CONFIG: Record<

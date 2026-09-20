@@ -12,25 +12,25 @@ export const CHECKOUT_COPY = {
   scarcity: TRIAL_CTA_SUBLINE,
   h1a: "Fake ta loc",
   h1b: "alors que t'es chez toi.",
-  subA: `${SITE.name} change ta loc sur Snap, Insta, Tinder : un réglage et `,
-  subHl: "tu apparais où tu veux",
-  subB: ". Pas de screen, pas de montage — depuis Safari ou Chrome, iPhone comme Android.",
-  valueTitle: "Un seul cheat code, iPhone comme Android",
+  subA: `${SITE.name} hack ton GPS — Snap, Insta, Tinder, jeux : un réglage et `,
+  subHl: "tout ton tel déménage",
+  subB: ". Pas de screen, pas de montage — le même signal que si t'étais sur place.",
+  valueTitle: "Un seul cheat code pour tout ton tel",
   included: [
     {
-      t: "Snap, Insta, Tinder",
+      t: "Multi-apps native",
       d:
-        "Tu les ouvres dans le navigateur, tu tapes le bouton GPS Anyloc — ta fausse loc part avec.",
+        "Fini les apps qui marchent que sur Snap. Un réglage, toutes les apps impactées.",
     },
     {
-      t: "Sans ordi, sans app à installer",
+      t: "Signal GPS réel",
       d:
-        "Pas de câble, pas d’APK, pas d’App Store. Le guide dans le site suffit.",
+        "Les autres solutions trichent en surface. Anyloc modifie le signal que ton tel envoie vraiment.",
     },
     {
       t: "Opérationnel en quelques minutes",
       d:
-        "4 étapes après l’essai, puis tu choisis ta ville sur la carte.",
+        "Pas besoin d'être un crack en tech. On te guide de l'inscription à ta première loc.",
     },
     {
       t: "Annule quand tu veux",
@@ -63,22 +63,22 @@ export const CHECKOUT_COPY = {
     {
       q: "Ça marche sur quelles apps ?",
       a:
-        "Snapchat, Instagram et Tinder depuis le navigateur de ton téléphone. Après l’essai, le guide dans le site t’indique exactement comment les ouvrir.",
+        "Toutes celles qui lisent le GPS de ton tel : Snapchat, Insta, Tinder, Bumble, Pokémon GO, Life360, etc. Anyloc agit au niveau du système, pas dans une seule app.",
     },
     {
       q: "Mes potes peuvent capter que c'est fake ?",
       a:
-        "Ils voient un pin GPS normal, mis à jour en temps réel — le même point que si tu ouvrais Snap / Tinder Web depuis cette ville. Pas de screen, pas de montage.",
+        "Ils voient un pin GPS normal, mis à jour en temps réel — le même signal que ton tel enverrait s'il était vraiment sur place. Pas de screen, pas de montage.",
     },
     {
       q: "Ça passe sur iPhone et Android ?",
       a:
-        "Oui — même chemin pour tout le monde. Après l’essai, un guide dans le site t’accompagne étape par étape, puis tu choisis ta ville sur la carte. Pas besoin d’ordi ni d’app à installer.",
+        "Oui. Sur Android : 3 étapes sur le tel. Sur iPhone : un Mac ou un PC une seule fois (limite Apple), puis tu gères ta loc depuis l'iPhone — sans rebrancher l'ordi.",
     },
   ],
-  proofTitle: "Même pin sur Snap Web et sur la carte",
+  proofTitle: "Même pin sur Snap et sur Plans",
   proofSub:
-    "Tu choisis la ville dans Anyloc, Snap / Tinder Web affichent le même point — pas un screenshot.",
+    "La map sociale et le GPS système affichent le même point — c'est ça la différence avec un screenshot.",
   reviewsTitle: "Ils l'ont fait",
   reviewsVerified: "Abonné vérifié",
   destinationLabel: "Ta prochaine loc",
@@ -113,9 +113,9 @@ export const CHECKOUT_PLAN_IDS = PLAN_IDS;
 export const CHECKOUT_BASE_PERKS = PLAN_VALUE_STACK;
 
 export const CHECKOUT_ANNUAL_EXTRA_PERKS = [
-  "Le meilleur prix sur l'année",
+  "App iPhone incluse — change de ville depuis ton lit",
   "Tarif bloqué 12 mois",
-  "Accès immédiat après l’essai",
+  "Meilleur prix sur l'année",
 ] as const;
 
 /** Paires Snap Map + Plans Apple, swipables sur le checkout. */

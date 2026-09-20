@@ -8,7 +8,7 @@ import { createPageMetadata } from "@/lib/seo";
 export const metadata = createPageMetadata({
   title: `Tarifs ${SITE.name} — Plans GPS spoof dès 9,90€/mois`,
   description:
-    "Compare les plans Anyloc : mensuel, 6 mois ou annuel. GPS spoofé sur Snap, Insta et Tinder Web, iPhone comme Android, sans app à installer.",
+    "Compare les plans Anyloc : mensuel, 6 mois ou annuel. GPS spoofé sur Snap, Insta, Tinder et toutes tes apps, sans jailbreak.",
   path: "/pricing",
 });
 
