@@ -8,7 +8,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT_DIR="${1:-$ROOT/.ios-ci-secrets}"
 IOS_DIR="$ROOT/apps/ios"
 BUNDLE_ID="io.anyloc.app"
-TEAM_ID="${APPLE_DEVELOPMENT_TEAM:-9Y84R64D72}"
+TEAM_ID="${APPLE_DEVELOPMENT_TEAM:-U284BGAVKL}"
 
 if [[ "$(uname -s)" != "Darwin" ]]; then
   echo "Ce script doit être lancé sur macOS."
