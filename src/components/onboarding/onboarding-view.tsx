@@ -261,8 +261,8 @@ function StepPreview({
           <span className="gradient-text">{destination.city}</span>
         </h1>
         <p className="mt-3 text-sm text-zinc-500 sm:text-base">
-          Regarde le signal GPS se mettre à jour en direct sur Snap, Insta, Tinder
-          et toutes tes apps.
+          Regarde le pin se mettre à jour en direct — ensuite tu l’envoies sur
+          Snap, Insta et Tinder Web.
         </p>
       </div>
 
@@ -273,7 +273,7 @@ function StepPreview({
       />
 
       <p className="mt-6 text-center text-sm text-zinc-500">
-        Même signal que si ton tel était vraiment sur place.
+        Même pin que si tu ouvrais Snap Web depuis cette ville.
       </p>
 
       <Button className="mt-6 h-14 w-full text-base" onClick={onContinue}>

@@ -8,7 +8,7 @@ import { createPageMetadata } from "@/lib/seo";
 export const metadata = createPageMetadata({
   title: `À propos — ${SITE.name}`,
   description:
-    "Découvre la mission d'Anyloc : un outil simple pour contrôler ta localisation GPS sur toutes tes apps.",
+    "Découvre la mission d'Anyloc : un outil simple pour contrôler ta localisation GPS sur Snap, Insta et Tinder Web.",
   path: "/a-propos",
 });
 
@@ -22,19 +22,18 @@ export default function AProposPage() {
         <StaticSection title="Notre mission">
           <p>
             {SITE.name} est né d&apos;un constat simple : modifier sa localisation
-            sur Snapchat, Instagram, Tinder ou les jeux mobiles ne devrait pas
-            être compliqué. Nous avons créé un outil qui agit au niveau du
-            système, pour que toutes tes apps voient la même position — en un
-            clic.
+            sur Snapchat, Instagram ou Tinder ne devrait pas demander un
+            ordinateur ni une app obscure. Nous avons créé un outil qui se
+            pilote depuis le navigateur — iPhone comme Android, en quelques
+            minutes.
           </p>
         </StaticSection>
 
         <StaticSection title="Ce qu'on propose">
           <p>
-            Un service numérique accessible depuis ton espace client, avec des
-            guides d&apos;installation pas à pas pour iOS et Android, un
-            dashboard pour gérer tes spots favoris et des plans flexibles sans
-            engagement long terme.
+            Un service numérique accessible depuis ton espace client : un guide
+            en 4 étapes, une carte pour choisir ta ville, et des plans flexibles
+            sans engagement long terme.
           </p>
         </StaticSection>
 

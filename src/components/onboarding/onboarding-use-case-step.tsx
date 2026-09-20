@@ -5,7 +5,6 @@ import {
   ONBOARDING_USE_CASES,
   type OnboardingUseCase,
 } from "@/lib/onboarding-use-cases";
-import { cn } from "@/lib/utils";
 
 function UseCaseCard({
   useCase,
@@ -58,7 +57,8 @@ export function OnboardingUseCaseStep({
       </div>
 
       <p className="mt-6 text-center text-xs text-zinc-400">
-        Anyloc modifie le GPS de tout ton tel — une loc pour toutes tes apps.
+        Anyloc change ta loc sur Snap, Insta et Tinder — depuis Safari ou
+        Chrome, iPhone comme Android.
       </p>
     </div>
   );

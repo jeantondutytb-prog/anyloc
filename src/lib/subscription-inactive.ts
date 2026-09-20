@@ -57,7 +57,7 @@ const REASON_COPY: Record<
   payment_failed: {
     title: "Paiement refusé",
     description:
-      "Ton dernier prélèvement n'a pas abouti. Ton accès Anyloc est suspendu. Reprends un abonnement pour revenir sur Snap, Insta et toutes tes apps.",
+      "Ton dernier prélèvement n'a pas abouti. Ton accès Anyloc est suspendu. Reprends un abonnement pour revenir sur Snap, Insta et Tinder Web.",
     ctaLabel: "Reprendre mon abonnement",
   },
   trial_cancelled: {
