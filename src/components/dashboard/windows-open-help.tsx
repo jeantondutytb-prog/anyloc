@@ -125,7 +125,7 @@ export function WindowsOpenHelp({
         </ol>
         <p className="mt-2 text-xs text-zinc-600">
           Déjà installé ? Icône près de l&apos;horloge → clic droit →{" "}
-          <strong>Quitter</strong>, sinon tu n&apos;as pas l&apos;écran « 4
+          <strong>Quitter</strong>, sinon tu n&apos;as pas le guide « 3
           étapes ».
         </p>
         </>
@@ -184,8 +184,8 @@ export function WindowsOpenHelp({
             <p className="mt-1">
               En bas à droite, près de l&apos;horloge : icône Anyloc → clic
               droit → <strong>Quitter</strong>. Sinon l&apos;ancien programme
-              reste ouvert et tu n&apos;as jamais l&apos;écran{" "}
-              <strong>4 étapes</strong>.
+              reste ouvert et tu n&apos;as jamais le guide{" "}
+              <strong>3 étapes</strong>.
             </p>
           </section>
 
