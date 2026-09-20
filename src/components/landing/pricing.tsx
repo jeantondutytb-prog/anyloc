@@ -1,7 +1,6 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { TrialCtaLink } from "@/components/navigation/trial-cta-link";
 import { getOnboardingUrl, PLANS } from "@/lib/constants";
 import { PaywallValueStack } from "@/components/pricing/paywall-value-stack";
 import { PlanPrice } from "@/components/pricing/plan-price";
@@ -62,14 +61,14 @@ export function Pricing() {
                 showHeading
               />
 
-              <Link href={getOnboardingUrl(plan.id)} className="mt-6 block">
-                <Button
-                  className="w-full"
-                  variant={plan.popular ? "default" : "secondary"}
-                >
-                  {plan.ctaLabel}
-                </Button>
-              </Link>
+              <TrialCtaLink
+                href={getOnboardingUrl(plan.id)}
+                label={plan.ctaLabel}
+                variant={plan.popular ? "default" : "secondary"}
+                showArrow={false}
+                className="mt-6 block"
+                buttonClassName="w-full"
+              />
             </Card>
           ))}
         </div>
