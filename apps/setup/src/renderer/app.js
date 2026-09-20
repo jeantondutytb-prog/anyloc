@@ -71,6 +71,10 @@ let favorites = [];
 let toastTimer = null;
 let selectedCategory = "all";
 let desktopPlatform = "mac";
+let usbConnected = false;
+let usbDeviceName = null;
+let lastSyncAt = null;
+let statusUsbInterval = null;
 
 // ── Helpers ──
 
@@ -124,8 +128,105 @@ function switchTab(tabName) {
   $("tab-" + tabName)?.classList.add("active");
   document.querySelector(`.tab-btn[data-tab="${tabName}"]`)?.classList.add("active");
 
+  if (tabName === "statut") {
+    void refreshUsbStatus();
+  }
+
   if (tabName === "carte" && !map) initMap();
   if (tabName === "carte" && map) setTimeout(() => map.invalidateSize(), 50);
+}
+
+function formatRelativeSync(date) {
+  if (!date) return "Sync automatique en attente";
+  const seconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
+  if (seconds < 5) return "Dernière sync : à l'instant";
+  if (seconds < 60) return `Dernière sync : il y a ${seconds} sec`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `Dernière sync : il y a ${minutes} min`;
+  return `Dernière sync : il y a ${Math.floor(minutes / 60)} h`;
+}
+
+function setStatusCardState(cardId, dotId, state, valueText) {
+  const card = $(cardId);
+  const dot = $(dotId);
+  const value = $(valueText);
+  if (!card || !dot || !value) return;
+
+  card.classList.remove("ok", "warn", "error");
+  dot.classList.remove("ok", "warn", "error");
+  if (state) {
+    card.classList.add(state);
+    dot.classList.add(state);
+  }
+}
+
+function updateStatusDashboard() {
+  const iphoneText = $("status-iphone-text");
+  const gpsText = $("status-gps-text");
+  const locationName = $("status-location-name");
+  const locationMeta = $("status-location-meta");
+  const syncText = $("status-sync-text");
+  const locationPanel = $("status-location-panel");
+  const stopBtn = $("status-stop-btn");
+
+  if (!iphoneText) return;
+
+  if (usbConnected) {
+    setStatusCardState("status-iphone-card", "status-iphone-dot", "ok", "status-iphone-text");
+    iphoneText.textContent = usbDeviceName ? `${usbDeviceName} — connecté` : "iPhone connecté";
+  } else {
+    setStatusCardState("status-iphone-card", "status-iphone-dot", "warn", "status-iphone-text");
+    iphoneText.textContent = "Non connecté — branche ton iPhone en USB";
+  }
+
+  if (activeSpoof) {
+    setStatusCardState("status-gps-card", "status-gps-dot", "ok", "status-gps-text");
+    gpsText.textContent = "Actif sur ton iPhone";
+    locationPanel?.classList.add("active");
+    locationName.textContent = activeSpoof.name || "Destination active";
+    locationMeta.textContent = `${activeSpoof.lat.toFixed(4)}, ${activeSpoof.lng.toFixed(4)}`;
+    if (stopBtn) stopBtn.hidden = false;
+  } else {
+    setStatusCardState("status-gps-card", "status-gps-dot", "warn", "status-gps-text");
+    gpsText.textContent = usbConnected ? "En attente d'une destination" : "Inactif";
+    locationPanel?.classList.remove("active");
+    locationName.textContent = "Aucune destination active";
+    locationMeta.textContent = usbConnected
+      ? "Choisis un lieu sur ton iPhone ou via la carte."
+      : "Branche ton iPhone pour appliquer une fausse position.";
+    if (stopBtn) stopBtn.hidden = true;
+  }
+
+  if (syncText) {
+    syncText.textContent = formatRelativeSync(lastSyncAt);
+  }
+}
+
+async function refreshUsbStatus() {
+  try {
+    const result = await window.anylocSetup.checkUsb();
+    usbConnected = Boolean(result?.connected);
+    usbDeviceName = result?.deviceName || null;
+  } catch {
+    usbConnected = false;
+    usbDeviceName = null;
+  }
+  updateStatusDashboard();
+}
+
+function startStatusUsbPolling() {
+  stopStatusUsbPolling();
+  void refreshUsbStatus();
+  statusUsbInterval = setInterval(() => {
+    void refreshUsbStatus();
+  }, 3000);
+}
+
+function stopStatusUsbPolling() {
+  if (statusUsbInterval) {
+    clearInterval(statusUsbInterval);
+    statusUsbInterval = null;
+  }
 }
 
 // ── Auth ──
@@ -211,14 +312,15 @@ function enterMain() {
   }
 
   showScreen("main");
-  switchTab("carte");
+  switchTab("statut");
+  startStatusUsbPolling();
 
   window.anylocSetup.startAutoSync({ session });
   window.anylocSetup.onAutoSyncStatus((status) => {
     if (status.error) {
       showToast(status.message, "error");
     } else if (status.message) {
-      showToast(status.message, "ok");
+      lastSyncAt = new Date();
       if (status.location?.is_active) {
         const loc = status.location;
         const name = loc.name || `${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`;
@@ -226,20 +328,31 @@ function enterMain() {
         if (map) map.setView([loc.lat, loc.lng], 14);
         activeSpoof = { lat: loc.lat, lng: loc.lng, name };
         updateBottomSheet();
+        showToast(`GPS appliqué : ${name}`, "ok");
       } else if (status.location && !status.location.is_active) {
         activeSpoof = null;
         updateBottomSheet();
+        showToast("GPS réinitialisé", "ok");
+      } else {
+        showToast(status.message, "ok");
       }
+      updateStatusDashboard();
     }
   });
+
+  updateStatusDashboard();
 }
 
 function logout() {
   window.anylocSetup.stopAutoSync();
   stopGuideUsbPolling();
+  stopStatusUsbPolling();
   clearSession();
   activeSpoof = null;
   selectedPosition = null;
+  lastSyncAt = null;
+  usbConnected = false;
+  usbDeviceName = null;
   showScreen("login");
   $("login-email").value = "";
   $("login-password").value = "";
@@ -424,8 +537,10 @@ async function teleportViaSupabase() {
 
     if (res.ok) {
       activeSpoof = { ...selectedPosition };
+      lastSyncAt = new Date();
       showToast(`Téléporté à ${selectedPosition.name}`, "ok");
       updateBottomSheet();
+      updateStatusDashboard();
     } else {
       showToast("Erreur de téléportation", "error");
     }
@@ -464,8 +579,10 @@ async function stopSpoofViaSupabase() {
 
     if (res.ok) {
       activeSpoof = null;
+      lastSyncAt = new Date();
       showToast("GPS réinitialisé", "ok");
       updateBottomSheet();
+      updateStatusDashboard();
     }
   } catch {}
 }
@@ -565,6 +682,7 @@ function clearGuideComplete() {
 }
 
 function showGuide() {
+  stopStatusUsbPolling();
   guideStep = 1;
   guideDetectedUdid = null;
   showScreen("guide");
@@ -806,6 +924,13 @@ async function init() {
   document.querySelectorAll(".tab-btn").forEach((btn) => {
     btn.addEventListener("click", () => switchTab(btn.dataset.tab));
   });
+
+  // Status dashboard actions
+  $("status-change-btn")?.addEventListener("click", () => switchTab("carte"));
+  $("status-stop-btn")?.addEventListener("click", () => {
+    void stopSpoofViaSupabase();
+  });
+  $("status-reconfig-btn")?.addEventListener("click", () => showGuide());
 
   // Logout
   $("logout-btn").addEventListener("click", logout);

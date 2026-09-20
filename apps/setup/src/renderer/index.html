@@ -42,11 +42,68 @@
       </div>
     </div>
 
-    <!-- ── Main App (3 tabs like iOS) ── -->
+    <!-- ── Main App ── -->
     <div id="main-screen" class="screen main-screen">
 
+      <!-- Tab: Statut (home) -->
+      <div id="tab-statut" class="tab-content active">
+        <div class="status-page">
+          <header class="status-header">
+            <div class="status-logo">Any<span>loc</span></div>
+            <p class="status-tagline">Pont entre ton Mac et ton iPhone</p>
+          </header>
+
+          <div class="status-grid">
+            <div class="status-card" id="status-iphone-card">
+              <div class="status-card-icon" id="status-iphone-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="1" width="14" height="22" rx="3"/><path d="M12 18h.01"/></svg>
+              </div>
+              <div class="status-card-body">
+                <div class="status-card-label">iPhone</div>
+                <div class="status-card-value" id="status-iphone-text">Vérification…</div>
+              </div>
+              <span class="status-dot" id="status-iphone-dot" aria-hidden="true"></span>
+            </div>
+
+            <div class="status-card" id="status-gps-card">
+              <div class="status-card-icon" id="status-gps-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06z"/></svg>
+              </div>
+              <div class="status-card-body">
+                <div class="status-card-label">GPS simulé</div>
+                <div class="status-card-value" id="status-gps-text">Inactif</div>
+              </div>
+              <span class="status-dot" id="status-gps-dot" aria-hidden="true"></span>
+            </div>
+          </div>
+
+          <div class="status-location-panel" id="status-location-panel">
+            <div class="status-location-label">Position actuelle</div>
+            <div class="status-location-name" id="status-location-name">Aucune destination active</div>
+            <div class="status-location-meta" id="status-location-meta">Choisis un lieu sur ton iPhone ou via la carte.</div>
+            <div class="status-sync-line" id="status-sync-text">Sync automatique en attente</div>
+          </div>
+
+          <div class="status-actions">
+            <button type="button" class="status-btn status-btn-primary" id="status-change-btn">
+              Changer de destination
+            </button>
+            <button type="button" class="status-btn status-btn-danger" id="status-stop-btn" hidden>
+              Arrêter la fausse position
+            </button>
+            <button type="button" class="status-btn status-btn-secondary" id="status-reconfig-btn">
+              Reconfigurer l'iPhone
+            </button>
+          </div>
+
+          <p class="status-footnote">
+            Choisis ta destination sur l'app <strong>Anyloc iPhone</strong> — cette app Mac l'applique automatiquement sur ton téléphone via USB.
+          </p>
+        </div>
+      </div>
+
       <!-- Tab: Carte -->
-      <div id="tab-carte" class="tab-content active">
+      <div id="tab-carte" class="tab-content">
         <div class="map-container">
           <div class="map-search">
             <div class="search-icon">
@@ -223,7 +280,11 @@
 
       <!-- Tab Bar (bottom) -->
       <div class="tab-bar">
-        <button class="tab-btn active" data-tab="carte">
+        <button class="tab-btn active" data-tab="statut">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+          <span>Statut</span>
+        </button>
+        <button class="tab-btn" data-tab="carte">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>
           <span>Carte</span>
         </button>
