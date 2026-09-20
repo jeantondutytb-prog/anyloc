@@ -691,6 +691,7 @@ let guidePlatform = "mac";
 let guideDetectedUdid = null;
 
 const GUIDE_DONE_KEY = "anyloc.guideComplete";
+const GUIDE_TOTAL_STEPS = 3;
 
 function isGuideComplete() {
   try { return localStorage.getItem(GUIDE_DONE_KEY) === "true"; } catch { return false; }
@@ -713,22 +714,22 @@ function showGuide() {
 }
 
 function updateGuideStep() {
-  for (let i = 1; i <= 5; i++) {
+  for (let i = 1; i <= GUIDE_TOTAL_STEPS; i++) {
     const el = $(`guide-step-${i}`);
     if (el) el.hidden = i !== guideStep;
   }
 
-  const pct = (guideStep / 5) * 100;
+  const pct = (guideStep / GUIDE_TOTAL_STEPS) * 100;
   $("guide-progress-bar").style.width = pct + "%";
-  $("guide-step-label").textContent = `Étape ${guideStep} / 5`;
+  $("guide-step-label").textContent = `Étape ${guideStep} / ${GUIDE_TOTAL_STEPS}`;
 
-  if (guideStep === 2) initGuideToolsStep();
-  if (guideStep === 3) startGuideUsbPolling();
+  if (guideStep === 1) initGuideToolsStep();
+  if (guideStep === 2) startGuideUsbPolling();
   else stopGuideUsbPolling();
 }
 
 function guideNext() {
-  if (guideStep < 5) {
+  if (guideStep < GUIDE_TOTAL_STEPS) {
     guideStep++;
     updateGuideStep();
   }
@@ -893,10 +894,6 @@ function finishReadyScreen(defaultTab = "statut") {
   }
 }
 
-function guideFinish() {
-  finishReadyScreen("statut");
-}
-
 // ── Init ──
 
 async function init() {
@@ -1017,20 +1014,20 @@ async function init() {
   // Guide
   window.anylocSetup.getPlatform().then((p) => {
     guidePlatform = p;
-    $("guide-platform-req").textContent = p === "win" ? "Ce PC Windows" : "Ce Mac";
+    const platformReq = $("guide-platform-req");
+    if (platformReq) {
+      platformReq.textContent = p === "win" ? "ce PC Windows" : "ce Mac";
+    }
   });
 
-  $("guide-start-btn").addEventListener("click", guideNext);
-  $("guide-skip-btn").addEventListener("click", () => {
+  $("guide-skip-btn")?.addEventListener("click", () => {
     markGuideComplete();
     enterMain();
   });
-  $("guide-tools-next").addEventListener("click", guideNext);
-  $("guide-tools-retry").addEventListener("click", initGuideToolsStep);
-  $("guide-usb-next").addEventListener("click", guideNext);
-  $("guide-devmode-next").addEventListener("click", guideNext);
-  $("guide-install-btn").addEventListener("click", guideInstallApp);
-  $("guide-finish-btn")?.addEventListener("click", guideFinish);
+  $("guide-tools-next")?.addEventListener("click", guideNext);
+  $("guide-tools-retry")?.addEventListener("click", initGuideToolsStep);
+  $("guide-usb-next")?.addEventListener("click", guideNext);
+  $("guide-install-btn")?.addEventListener("click", guideInstallApp);
   $("ready-dashboard-btn")?.addEventListener("click", () => finishReadyScreen("statut"));
   $("ready-try-btn")?.addEventListener("click", () => finishReadyScreen("spots"));
 
