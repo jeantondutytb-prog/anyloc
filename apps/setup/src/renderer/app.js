@@ -12,6 +12,55 @@ const STORAGE_KEYS = {
 
 const API_BASE_URL = "https://www.anyloc.io";
 
+// ── Spots data (same as iOS) ──
+const spotCategories = [
+  { id: "all", label: "Tout" },
+  { id: "villes", label: "Villes" },
+  { id: "plages", label: "Plages" },
+  { id: "fetes", label: "Fêtes" },
+  { id: "luxe", label: "Luxe" },
+  { id: "asie", label: "Asie" },
+  { id: "aeroports", label: "Aéroports" },
+];
+
+const allSpots = [
+  { name: "Dubai Marina", country: "Émirats", lat: 25.0805, lng: 55.1403, category: "luxe", emoji: "🇦🇪" },
+  { name: "Burj Khalifa", country: "Émirats", lat: 25.1972, lng: 55.2744, category: "luxe", emoji: "🇦🇪" },
+  { name: "Palm Jumeirah", country: "Émirats", lat: 25.1124, lng: 55.139, category: "luxe", emoji: "🇦🇪" },
+  { name: "Miami Beach", country: "États-Unis", lat: 25.7907, lng: -80.13, category: "plages", emoji: "🇺🇸" },
+  { name: "South Beach", country: "États-Unis", lat: 25.7826, lng: -80.1341, category: "plages", emoji: "🇺🇸" },
+  { name: "Ibiza Town", country: "Espagne", lat: 38.9067, lng: 1.4206, category: "fetes", emoji: "🇪🇸" },
+  { name: "Playa d'en Bossa", country: "Espagne", lat: 38.8767, lng: 1.4024, category: "fetes", emoji: "🇪🇸" },
+  { name: "Marbella", country: "Espagne", lat: 36.5099, lng: -4.8862, category: "plages", emoji: "🇪🇸" },
+  { name: "Puerto Banús", country: "Espagne", lat: 36.4848, lng: -4.9526, category: "luxe", emoji: "🇪🇸" },
+  { name: "Mykonos", country: "Grèce", lat: 37.4467, lng: 25.3289, category: "fetes", emoji: "🇬🇷" },
+  { name: "Santorin", country: "Grèce", lat: 36.3932, lng: 25.4615, category: "plages", emoji: "🇬🇷" },
+  { name: "Monaco", country: "Monaco", lat: 43.7384, lng: 7.4246, category: "luxe", emoji: "🇲🇨" },
+  { name: "Paris", country: "France", lat: 48.8584, lng: 2.2945, category: "villes", emoji: "🇫🇷" },
+  { name: "Saint-Tropez", country: "France", lat: 43.2727, lng: 6.6407, category: "luxe", emoji: "🇫🇷" },
+  { name: "Courchevel", country: "France", lat: 45.4151, lng: 6.6347, category: "luxe", emoji: "🇫🇷" },
+  { name: "Londres", country: "Royaume-Uni", lat: 51.5007, lng: -0.1246, category: "villes", emoji: "🇬🇧" },
+  { name: "New York", country: "États-Unis", lat: 40.758, lng: -73.9855, category: "villes", emoji: "🇺🇸" },
+  { name: "Los Angeles", country: "États-Unis", lat: 34.0195, lng: -118.4912, category: "villes", emoji: "🇺🇸" },
+  { name: "Las Vegas", country: "États-Unis", lat: 36.1147, lng: -115.1728, category: "fetes", emoji: "🇺🇸" },
+  { name: "Tokyo", country: "Japon", lat: 35.6595, lng: 139.7005, category: "asie", emoji: "🇯🇵" },
+  { name: "Bali", country: "Indonésie", lat: -8.6912, lng: 115.1682, category: "plages", emoji: "🇮🇩" },
+  { name: "Phuket", country: "Thaïlande", lat: 7.8966, lng: 98.2969, category: "plages", emoji: "🇹🇭" },
+  { name: "Bangkok", country: "Thaïlande", lat: 13.7397, lng: 100.5599, category: "asie", emoji: "🇹🇭" },
+  { name: "Singapour", country: "Singapour", lat: 1.2834, lng: 103.8607, category: "asie", emoji: "🇸🇬" },
+  { name: "Barcelone", country: "Espagne", lat: 41.3784, lng: 2.1925, category: "villes", emoji: "🇪🇸" },
+  { name: "Marrakech", country: "Maroc", lat: 31.6295, lng: -7.9811, category: "villes", emoji: "🇲🇦" },
+  { name: "Cancún", country: "Mexique", lat: 21.1619, lng: -86.8515, category: "plages", emoji: "🇲🇽" },
+  { name: "Tulum", country: "Mexique", lat: 20.2114, lng: -87.4654, category: "plages", emoji: "🇲🇽" },
+  { name: "Rio", country: "Brésil", lat: -22.9711, lng: -43.1822, category: "plages", emoji: "🇧🇷" },
+  { name: "Sydney", country: "Australie", lat: -33.8915, lng: 151.2767, category: "plages", emoji: "🇦🇺" },
+  { name: "CDG Paris", country: "France", lat: 49.0097, lng: 2.5479, category: "aeroports", emoji: "✈️" },
+  { name: "JFK New York", country: "États-Unis", lat: 40.6413, lng: -73.7781, category: "aeroports", emoji: "✈️" },
+  { name: "LAX Los Angeles", country: "États-Unis", lat: 33.9425, lng: -118.408, category: "aeroports", emoji: "✈️" },
+  { name: "DXB Dubai", country: "Émirats", lat: 25.2532, lng: 55.3657, category: "aeroports", emoji: "✈️" },
+  { name: "Heathrow", country: "Royaume-Uni", lat: 51.47, lng: -0.4543, category: "aeroports", emoji: "✈️" },
+];
+
 let map = null;
 let marker = null;
 let selectedPosition = null;
@@ -20,6 +69,7 @@ let searchTimeout = null;
 let session = null;
 let favorites = [];
 let toastTimer = null;
+let selectedCategory = "all";
 let desktopPlatform = "mac";
 let usbConnected = false;
 let usbDeviceName = null;
@@ -547,6 +597,80 @@ async function stopSpoofViaSupabase() {
   } catch {}
 }
 
+// ── Spots tab ──
+
+function renderSpots() {
+  const pills = $("category-pills");
+  if (!pills) return;
+
+  pills.innerHTML = spotCategories.map((c) =>
+    `<button class="pill-btn ${c.id === selectedCategory ? "active" : ""}" data-cat="${c.id}">${c.label}</button>`
+  ).join("");
+
+  const filtered = selectedCategory === "all" ? allSpots : allSpots.filter((s) => s.category === selectedCategory);
+  const grid = $("spots-grid");
+  if (!grid) return;
+
+  grid.innerHTML = filtered.map((s, i) =>
+    `<div class="spot-card" data-spot="${i}">
+      <div class="spot-emoji">${s.emoji}</div>
+      <div class="spot-name">${escapeHtml(s.name)}</div>
+      <div class="spot-country">${escapeHtml(s.country)}</div>
+    </div>`
+  ).join("");
+}
+
+async function teleportSpot(spot) {
+  if (!session) return;
+  const status = $("spots-status");
+
+  try {
+    const url = `https://gqkxnktprctdvpwvnqli.supabase.co/rest/v1/location_settings?on_conflict=user_id`;
+    const body = {
+      user_id: session.user.id,
+      name: spot.name,
+      lat: spot.lat,
+      lng: spot.lng,
+      is_active: true,
+      accuracy: 10,
+    };
+
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        apikey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdxa3hua3RwcmN0ZHZwd3ZucWxpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3ODUxMTgsImV4cCI6MjEwNDM2MTExOH0.7kOHGgU1s1EDr0luSvDxvcGj3pyOt-8_79dX4sg8kXA",
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+        Prefer: "resolution=merge-duplicates,return=representation",
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (res.ok) {
+      activeSpoof = { lat: spot.lat, lng: spot.lng, name: spot.name };
+      lastSyncAt = new Date();
+      setSelectedPosition(spot.lat, spot.lng, spot.name);
+      if (map) map.setView([spot.lat, spot.lng], 12);
+      updateStatusDashboard();
+      status.textContent = `Destination activée : ${spot.name}`;
+      status.className = "spots-status ok";
+      showToast(`GPS appliqué : ${spot.name}`, "ok");
+      setTimeout(() => switchTab("statut"), 600);
+    } else {
+      status.textContent = "Erreur lors de l'activation";
+      status.className = "spots-status error";
+    }
+  } catch (err) {
+    status.textContent = err.message;
+    status.className = "spots-status error";
+  }
+
+  if (status) {
+    status.hidden = false;
+    setTimeout(() => { status.hidden = true; }, 3000);
+  }
+}
+
 // ── Favorites ──
 
 function saveFavorite() {
@@ -768,6 +892,11 @@ function guideFinish() {
 
 async function init() {
   restoreFavorites();
+  try {
+    renderSpots();
+  } catch {
+    // Spots tab may be unavailable during early init.
+  }
   void applyPlatformHints();
   void fillGuideVersion();
 
@@ -859,6 +988,21 @@ async function init() {
     if (!e.target.closest(".map-search") && !e.target.closest(".search-results")) {
       $("search-results").hidden = true;
     }
+  });
+
+  $("category-pills")?.addEventListener("click", (e) => {
+    const btn = e.target.closest(".pill-btn");
+    if (!btn) return;
+    selectedCategory = btn.dataset.cat;
+    renderSpots();
+  });
+
+  $("spots-grid")?.addEventListener("click", (e) => {
+    const card = e.target.closest(".spot-card");
+    if (!card) return;
+    const filtered = selectedCategory === "all" ? allSpots : allSpots.filter((s) => s.category === selectedCategory);
+    const spot = filtered[parseInt(card.dataset.spot, 10)];
+    if (spot) void teleportSpot(spot);
   });
 
   // Guide

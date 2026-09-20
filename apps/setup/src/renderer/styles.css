@@ -505,6 +505,7 @@ html {
   -webkit-app-region: drag;
 }
 .spots-header h2 { font-size: 20px; font-weight: 700; }
+.spots-header p { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
 
 .category-pills {
   display: flex; gap: 8px;
