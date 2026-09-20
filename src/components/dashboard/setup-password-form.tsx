@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { CheckCircle2, KeyRound, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AuthPasswordInput } from "@/components/auth/auth-input";
@@ -14,8 +14,12 @@ const initialActionState: SettingsActionState = {};
 
 export function SetupPasswordForm({
   preview = false,
+  onSuccess,
+  hideIntro = false,
 }: {
   preview?: boolean;
+  onSuccess?: () => void;
+  hideIntro?: boolean;
 }) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -26,6 +30,12 @@ export function SetupPasswordForm({
   );
 
   const done = preview ? previewDone : Boolean(passwordState.success);
+
+  useEffect(() => {
+    if (done) {
+      onSuccess?.();
+    }
+  }, [done, onSuccess]);
 
   if (done) {
     return (
@@ -45,17 +55,21 @@ export function SetupPasswordForm({
 
   return (
     <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-950">
-      <p className="flex items-center gap-2 font-semibold">
-        <KeyRound className="h-4 w-4 shrink-0" />
-        Avant d&apos;ouvrir Anyloc : choisis un mot de passe
-      </p>
-      <p className="mt-1 text-amber-900/90">
-        Tu as payé sans en créer un. Sans ça, Setup affiche « email ou mot de
-        passe incorrect » — on dirait que ça marche pas.
-      </p>
+      {hideIntro ? null : (
+        <>
+          <p className="flex items-center gap-2 font-semibold">
+            <KeyRound className="h-4 w-4 shrink-0" />
+            Avant d&apos;ouvrir Anyloc : choisis un mot de passe
+          </p>
+          <p className="mt-1 text-amber-900/90">
+            Tu as payé sans en créer un. Sans ça, Setup affiche « email ou mot de
+            passe incorrect » — on dirait que ça marche pas.
+          </p>
+        </>
+      )}
 
       <form
-        className="mt-4 space-y-3"
+        className={hideIntro ? "space-y-3" : "mt-4 space-y-3"}
         action={preview ? undefined : passwordAction}
         onSubmit={
           preview
