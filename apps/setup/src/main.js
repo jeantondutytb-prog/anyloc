@@ -92,6 +92,7 @@ function applySpoofOnce(lat, lng) {
     "dvt",
     "simulate-location",
     "set",
+    "--userspace",
     "--",
     String(lat),
     String(lng),

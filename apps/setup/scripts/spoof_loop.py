@@ -37,6 +37,7 @@ def main():
         sys.exit(1)
 
     cmd = find_pmd3_cmd(["developer", "dvt", "simulate-location", "set"])
+    cmd.append("--userspace")
     if udid:
         cmd.extend(["--udid", udid])
     cmd.extend(["--", lat, lng])

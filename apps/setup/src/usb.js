@@ -425,7 +425,7 @@ function resolvePythonExecutable() {
   return null;
 }
 
-function runCli(args) {
+function runCli(args, timeoutMs = 30000) {
   return new Promise((resolve) => {
     const cli = resolvePymobiledevice3Cli();
 
@@ -445,6 +445,17 @@ function runCli(args) {
 
     let stdout = "";
     let stderr = "";
+    let killed = false;
+
+    const timer = setTimeout(() => {
+      killed = true;
+      try { child.kill("SIGTERM"); } catch {}
+      resolve({
+        ok: false,
+        stdout,
+        stderr: stderr || "Timeout — la commande a pris trop de temps.",
+      });
+    }, timeoutMs);
 
     child.stdout.on("data", (chunk) => {
       stdout += chunk.toString();
@@ -455,6 +466,8 @@ function runCli(args) {
     });
 
     child.on("close", (code) => {
+      if (killed) return;
+      clearTimeout(timer);
       resolve({
         ok: code === 0,
         stdout,
@@ -691,9 +704,7 @@ function buildSimulateLocationArgs(action, udid, mode) {
     args.push("set");
   }
 
-  if (mode === "native") {
-    args.push("--native");
-  } else if (mode === "userspace") {
+  if (mode === "userspace") {
     args.push("--userspace");
   }
 
@@ -711,10 +722,7 @@ function buildSimulateLocationArgs(action, udid, mode) {
 }
 
 async function runSimulateLocation(action, udid) {
-  const modes =
-    process.platform === "darwin"
-      ? ["default", "native", "userspace"]
-      : ["default", "userspace"];
+  const modes = ["userspace", "default"];
 
   let lastError = "Impossible d'appliquer la position GPS sur l'iPhone.";
 
@@ -1051,6 +1059,34 @@ function clearCachedPaths() {
   cachedPython = null;
 }
 
+function getPmd3Invocation() {
+  const cli = resolvePymobiledevice3Cli();
+  if (cli) {
+    return { command: cli, prefix: [] };
+  }
+
+  const python = resolvePythonExecutable();
+  if (python) {
+    return { command: python, prefix: ["-m", "pymobiledevice3"] };
+  }
+
+  return null;
+}
+
+function missingToolsMessage() {
+  return "pymobiledevice3 introuvable. Relance Anyloc — il s'installe automatiquement au premier lancement.";
+}
+
+let ipaDownloadAuth = null;
+
+function setIpaDownloadAuth(auth) {
+  ipaDownloadAuth = auth || null;
+}
+
+function getIpaDownloadAuth() {
+  return ipaDownloadAuth;
+}
+
 module.exports = {
   detectUsbDevice,
   installIosApp,
@@ -1062,6 +1098,10 @@ module.exports = {
   savePairingLocalCopy,
   resolvePythonExecutable,
   resolvePymobiledevice3Cli,
+  getPmd3Invocation,
+  missingToolsMessage,
+  setIpaDownloadAuth,
+  getIpaDownloadAuth,
   clearCachedPaths,
   getSpawnEnv,
   getScriptsDir,
