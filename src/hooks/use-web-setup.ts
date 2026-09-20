@@ -104,7 +104,12 @@ export function useWebSetup({ preview = false }: { preview?: boolean } = {}) {
   }, [raw]);
 
   const [previewState, setPreviewState] = useState(DEFAULT_WEB_SETUP_STATE);
+  const [hydrated, setHydrated] = useState(preview);
   const state = preview ? previewState : stored;
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   useEffect(() => {
     if (preview || stored.completed) {
@@ -183,7 +188,7 @@ export function useWebSetup({ preview = false }: { preview?: boolean } = {}) {
   );
 
   return {
-    hydrated: true,
+    hydrated,
     state,
     currentStep,
     completeStep,

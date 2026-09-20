@@ -37,7 +37,7 @@ export function PlatformConstraintNotice({
         <MonitorSmartphone className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-amber-950">
-            Avant de payer, vérifie ton appareil
+            iPhone ou Android, même chemin
           </p>
 
           <div className="mt-3 inline-flex rounded-full border border-amber-200 bg-white p-1">
@@ -68,8 +68,8 @@ export function PlatformConstraintNotice({
 
           {!compact && isIos ? (
             <p className="mt-2 text-xs text-amber-800/80">
-              Si tu n&apos;as pas accès à un ordinateur, Anyloc ne sera pas adapté à ton
-              usage iPhone.
+              Tu ouvres Snap, Insta ou Tinder dans Safari — pas l&apos;icône de
+              l&apos;app.
             </p>
           ) : null}
         </div>

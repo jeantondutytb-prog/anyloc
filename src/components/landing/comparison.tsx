@@ -20,8 +20,8 @@ export function Comparison() {
             Pourquoi Anyloc c&apos;est validé
           </h2>
           <p className="mt-4 text-zinc-600">
-            Les autres solutions trichent en surface. Anyloc modifie le signal
-            que ton tel envoie vraiment.
+            Snap, Insta, Tinder depuis le navigateur. Pas d&apos;ordinateur, pas
+            d&apos;app à installer — iPhone comme Android.
           </p>
         </div>
 

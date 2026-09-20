@@ -99,7 +99,7 @@ export function createPageMetadata({
 }
 
 export const rootMetadata: Metadata = createPageMetadata({
-  title: `${SITE.name} — Fake ta loc sur toutes tes apps`,
+  title: `${SITE.name} — Fake ta loc sur Snap, Insta et Tinder`,
   description: SITE.description,
   path: "/",
 });

@@ -44,8 +44,8 @@ export function CancelSubscriptionConfirmDialog({
 
   const description = isTrial
     ? trialRemainingMs && trialRemainingMs > 0
-      ? `Si tu annules maintenant, ton accès est coupé tout de suite — même s'il te reste ${formatTrialRemaining(trialRemainingMs)} sur l'essai. Tu ne pourras plus tester Anyloc sur Snap, Insta et toutes tes apps.`
-      : "Si tu annules maintenant, ton accès est coupé immédiatement. Tu ne pourras plus tester Anyloc sur Snap, Insta et toutes tes apps."
+      ? `Si tu annules maintenant, ton accès est coupé tout de suite — même s'il te reste ${formatTrialRemaining(trialRemainingMs)} sur l'essai. Tu ne pourras plus tester Anyloc sur Snap, Insta et Tinder Web.`
+      : "Si tu annules maintenant, ton accès est coupé immédiatement. Tu ne pourras plus tester Anyloc sur Snap, Insta et Tinder Web."
     : "La résiliation prend effet immédiatement. Tu ne pourras plus changer ta position GPS, ni accéder au dashboard, aux guides et aux téléchargements.";
 
   const confirmLabel = isTrial

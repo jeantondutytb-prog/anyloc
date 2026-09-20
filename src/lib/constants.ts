@@ -6,7 +6,7 @@ export const SITE = {
   domain: "anyloc.io",
   tagline: "Ton GPS. Ton délire. Partout.",
   description:
-    "Anyloc te fait choisir où ton tel se croit — Snap, Insta, apps de rencontre, jeux : une loc pour tout l'appareil.",
+    "Anyloc te fait choisir où tu apparais sur Snap, Insta et Tinder — depuis Safari ou Chrome, iPhone comme Android, sans app à installer.",
 };
 
 export const DESTINATIONS = [
@@ -55,7 +55,7 @@ export const PAYWALL_TESTIMONIALS = [
     city: "Lyon",
   },
   {
-    quote: "Install en 10 min sur Android, loc à Marbella direct.",
+    quote: "4 étapes dans le site, loc à Marbella direct sur Snap Web.",
     author: "Inès",
     city: "Paris",
   },
@@ -65,7 +65,7 @@ export const PAYWALL_TESTIMONIALS = [
     city: "Marseille",
   },
   {
-    quote: "Setup iPhone en 15 min, loc à Bali sur Snap direct.",
+    quote: "Sur iPhone, sans ordi. Loc à Bali sur Snap Web direct.",
     author: "Théo",
     city: "Bordeaux",
   },
@@ -75,12 +75,12 @@ export const PAYWALL_TESTIMONIALS = [
     city: "Toulouse",
   },
   {
-    quote: "Snap + Plans Apple nickel, mes potes ont flipé.",
+    quote: "Snap Web nickel, mes potes ont flipé.",
     author: "Rayan",
     city: "Nice",
   },
   {
-    quote: "Android galé un peu mais le tutoriel m'a sauvé.",
+    quote: "Le tuto dans le site m’a sauvé, même pas besoin d’app.",
     author: "Sofia",
     city: "Nantes",
   },
@@ -156,7 +156,7 @@ export const PLANS = [
     perDayLabel: "€/jour",
     billedNote: "Facturé 49,90 € une fois par an.",
     compare: "Tu gardes 69 € sur l'année",
-    badge: "App iPhone incluse",
+    badge: "Le plus choisi",
     description: "Le meilleur deal si t'es un habitué.",
     savings: "Tu gardes 69 € sur l'année · -58 % vs mensuel",
     features: PLAN_VALUE_STACK,
@@ -213,28 +213,28 @@ export function getCheckoutUrl(plan: string = "annual") {
 
 export const COMPARISON = [
   {
-    feature: "Modifie le GPS de tout le tel",
+    feature: "Sans ordinateur ni app à installer",
     anyloc: true,
-    vpn: false,
+    vpn: true,
     fakeGps: false,
-    screenshot: false,
+    screenshot: true,
   },
   {
-    feature: "Snap, Insta, Tinder, jeux en même temps",
+    feature: "Snap, Insta, Tinder dans le navigateur",
     anyloc: true,
     vpn: false,
     fakeGps: "partial",
     screenshot: false,
   },
   {
-    feature: "Reste actif en arrière-plan",
+    feature: "iPhone et Android, même chemin",
     anyloc: true,
-    vpn: false,
-    fakeGps: "partial",
-    screenshot: false,
+    vpn: true,
+    fakeGps: false,
+    screenshot: true,
   },
   {
-    feature: "Signal GPS réel (pas une image)",
+    feature: "Signal GPS (pas une image)",
     anyloc: true,
     vpn: false,
     fakeGps: false,
@@ -248,11 +248,11 @@ export const COMPARISON = [
     screenshot: false,
   },
   {
-    feature: "Trajet simulé crédible",
+    feature: "Marche tout de suite après l’essai",
     anyloc: true,
-    vpn: false,
+    vpn: true,
     fakeGps: false,
-    screenshot: false,
+    screenshot: true,
   },
 ];
 
@@ -265,7 +265,7 @@ export const FAQ = [
   {
     q: "Mes potes peuvent capter que c'est fake ?",
     a:
-      "Ils voient un pin GPS normal, mis à jour en temps réel — le même signal que ton tel enverrait s'il était vraiment sur place. Pas de screen, pas de montage.",
+      "Ils voient un pin GPS normal, mis à jour en temps réel — le même point que si tu ouvrais Snap / Tinder Web depuis cette ville. Pas de screen, pas de montage.",
   },
   {
     q: "Ça passe sur iPhone et Android ?",
@@ -302,16 +302,16 @@ export const FEATURES = [
     icon: "MapPin",
   },
   {
-    title: "Multi-apps native",
+    title: "Snap, Insta, Tinder",
     description:
-      "Un réglage, toutes les apps impactées — réseaux sociaux, rencontres, jeux, tout passe par le même GPS.",
+      "Ouvre-les dans Safari ou Chrome, tape le bouton GPS Anyloc — ta fausse loc part avec.",
     icon: "Smartphone",
   },
   {
-    title: "Trajets simulés",
+    title: "Sans ordi, sans APK",
     description:
-      "Trace un parcours entre deux points, règle la vitesse et mets des pauses pour un déplacement crédible.",
-    icon: "Route",
+      "iPhone et Android, même chemin. Pas d’App Store, pas de câble, pas de fichier à installer.",
+    icon: "Globe",
   },
   {
     title: "Spots enregistrés",
@@ -320,15 +320,15 @@ export const FEATURES = [
     icon: "Bookmark",
   },
   {
-    title: "Version web incluse",
+    title: "Guide en 4 étapes",
     description:
-      "Étends aussi ta loc aux interfaces web de Snapchat et d'autres services connectés.",
-    icon: "Globe",
+      "Après l’essai, on t’accompagne dans le site : icône, bouton GPS, puis ta première ville.",
+    icon: "Route",
   },
   {
-    title: "Pilotage centralisé",
+    title: "Carte toujours sous la main",
     description:
-      "Gère ton GPS depuis ton tel, ton Mac ou ton PC — un compte, tous tes appareils.",
+      "Change de ville depuis le dashboard, sur ton tel ou ton ordi — un compte, une loc.",
     icon: "Monitor",
   },
 ];

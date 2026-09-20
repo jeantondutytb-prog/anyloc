@@ -28,7 +28,7 @@ export function Hero() {
           transition={{ duration: 0.6 }}
           className="mx-auto max-w-3xl text-center"
         >
-          <Badge className="mb-6">GPS spoofé · toutes tes apps</Badge>
+          <Badge className="mb-6">GPS spoofé · Snap, Insta, Tinder</Badge>
 
           <h1 className="text-4xl font-bold tracking-tight text-zinc-900 sm:text-6xl sm:leading-[1.1]">
             Fake ta loc à{" "}
@@ -40,8 +40,8 @@ export function Hero() {
           </h1>
 
           <p className="mt-6 text-lg text-zinc-600 sm:text-xl">
-            {SITE.name} hack ton GPS — Snap, Insta, Tinder, jeux : un réglage
-            et tout ton tel déménage.
+            {SITE.name} change ta loc sur Snap, Insta et Tinder depuis Safari
+            ou Chrome — iPhone comme Android, sans app à installer.
           </p>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
@@ -81,7 +81,7 @@ export function Hero() {
             </span>
             <span className="flex items-center gap-1.5">
               <Check className="h-4 w-4 text-pink-600" />
-              GPS natif
+              Sans ordi
             </span>
             <span className="flex items-center gap-1.5">
               <Check className="h-4 w-4 text-pink-600" />
@@ -89,7 +89,7 @@ export function Hero() {
             </span>
             <span className="flex items-center gap-1.5">
               <Check className="h-4 w-4 text-pink-600" />
-              Multi-apps
+              Snap / Insta / Tinder
             </span>
             <span className="flex items-center gap-1.5">
               <Check className="h-4 w-4 text-pink-600" />
