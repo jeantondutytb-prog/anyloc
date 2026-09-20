@@ -4,12 +4,15 @@ import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
+  ArrowLeft,
+  ArrowRight,
   CheckCircle2,
   ChevronDown,
   Copy,
   Download,
   Loader2,
   Lock,
+  Monitor,
   Smartphone,
   Sparkles,
 } from "lucide-react";
@@ -67,33 +70,79 @@ function getInstallPageUrl(platform: Platform) {
   return `${window.location.origin}/dashboard?platform=${platform}`;
 }
 
-function StepCard({
-  number,
-  title,
-  children,
-}: {
-  number: number;
-  title: string;
-  children: React.ReactNode;
-}) {
+// ── Wizard chrome ──
+
+function WizardProgress({ current, total }: { current: number; total: number }) {
   return (
-    <Card className="overflow-hidden border-zinc-200">
-      <div className="flex gap-4 p-5 sm:p-6">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pink-500 text-sm font-bold text-white">
-          {number}
-        </div>
-        <div className="min-w-0 flex-1">
-          <h3 className="text-base font-semibold text-zinc-900 sm:text-lg">
-            {title}
-          </h3>
-          <div className="mt-3 space-y-3 text-sm leading-relaxed text-zinc-600">
-            {children}
-          </div>
-        </div>
+    <div className="flex items-center gap-3">
+      <span className="text-xs font-medium text-zinc-500">
+        {current + 1}/{total}
+      </span>
+      <div className="flex flex-1 gap-1.5">
+        {Array.from({ length: total }, (_, i) => (
+          <div
+            key={i}
+            className={cn(
+              "h-2 flex-1 rounded-full transition-all duration-300",
+              i <= current ? "bg-pink-500" : "bg-zinc-200"
+            )}
+          />
+        ))}
       </div>
-    </Card>
+    </div>
   );
 }
+
+function WizardNav({
+  step,
+  total,
+  onNext,
+  onBack,
+  nextLabel,
+  nextDisabled = false,
+  hideNext = false,
+}: {
+  step: number;
+  total: number;
+  onNext: () => void;
+  onBack: () => void;
+  nextLabel?: string;
+  nextDisabled?: boolean;
+  hideNext?: boolean;
+}) {
+  return (
+    <div className="mt-8 flex items-center gap-3">
+      {step > 0 ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onBack}
+          className="text-zinc-500"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Retour
+        </Button>
+      ) : (
+        <div />
+      )}
+      <div className="flex-1" />
+      {!hideNext && (
+        <Button
+          type="button"
+          onClick={onNext}
+          disabled={nextDisabled}
+          className="px-6"
+        >
+          {nextLabel ?? "Suivant"}
+          <ArrowRight className="h-4 w-4" />
+        </Button>
+      )}
+    </div>
+  );
+}
+
+// ── Shared helpers ──
 
 function HelpDetails({
   title,
@@ -502,17 +551,71 @@ function IosOtaInstallButton({
   );
 }
 
-function IosGuide({
+// ── Wizard step pages ──
+
+function PlatformPickStep({
+  platform,
+  onPick,
+}: {
+  platform: Platform;
+  onPick: (p: Platform) => void;
+}) {
+  return (
+    <div className="space-y-6">
+      <div className="text-center">
+        <h2 className="text-xl font-bold text-zinc-900 sm:text-2xl">
+          C&apos;est pour quel téléphone ?
+        </h2>
+        <p className="mt-2 text-sm text-zinc-500">
+          Choisis pour avoir les bonnes étapes.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        {(["ios", "android"] as const).map((p) => (
+          <button
+            key={p}
+            type="button"
+            onClick={() => onPick(p)}
+            className={cn(
+              "flex flex-col items-center gap-3 rounded-2xl border-2 p-6 transition-all",
+              platform === p
+                ? "border-pink-500 bg-pink-50 shadow-sm"
+                : "border-zinc-200 bg-white hover:border-zinc-300"
+            )}
+          >
+            <Smartphone
+              className={cn(
+                "h-8 w-8",
+                platform === p ? "text-pink-500" : "text-zinc-400"
+              )}
+            />
+            <span
+              className={cn(
+                "text-base font-semibold",
+                platform === p ? "text-pink-600" : "text-zinc-700"
+              )}
+            >
+              {p === "ios" ? "iPhone" : "Android"}
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function IosDownloadStep({
   hasAccess,
-  preview = false,
-  forcePhone = false,
-  needsSetupPassword = false,
+  preview,
+  isPhone,
+  needsSetupPassword,
   zipDownloadPath,
 }: {
   hasAccess: boolean;
-  preview?: boolean;
-  forcePhone?: boolean;
-  needsSetupPassword?: boolean;
+  preview: boolean;
+  isPhone: boolean;
+  needsSetupPassword: boolean;
   zipDownloadPath?: string | null;
 }) {
   const device = useSyncExternalStore(
@@ -524,224 +627,339 @@ function IosGuide({
   const [downloaded, setDownloaded] = useState(false);
   const resolvedOs = desktopOs ?? device.desktopOs;
   const installUrl = getInstallPageUrl("ios");
-  const isPhone = forcePhone || device.isPhone;
 
   if (isPhone) {
     return (
       <div className="space-y-4">
+        <div className="text-center">
+          <h2 className="text-xl font-bold text-zinc-900 sm:text-2xl">
+            Télécharge Anyloc sur ton ordi
+          </h2>
+          <p className="mt-2 text-sm text-zinc-500">
+            iPhone a besoin d&apos;un Mac ou PC pour changer le GPS.
+          </p>
+        </div>
+
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <p className="font-medium">iPhone = il te faut un Mac ou PC</p>
+          <p className="font-medium">Pourquoi un ordinateur ?</p>
           <p className="mt-1 text-amber-800/90">
-            Apple verrouille le GPS. Pour le changer vraiment (Snap Map, Maps,
-            toutes tes apps), Anyloc passe par un logiciel sur ton ordi — une
-            seule fois pour installer, puis ton iPhone sert de télécommande.
+            Apple verrouille le GPS. Anyloc passe par un logiciel sur ton
+            ordi pour le changer vraiment (Snap Map, Maps, toutes tes apps).
           </p>
         </div>
 
         {needsSetupPassword ? <SetupPasswordForm preview={preview} /> : null}
 
-        <StepCard number={1} title="Télécharge Anyloc sur ton Mac ou PC">
-          <p>
-            Ouvre ce lien sur ton ordinateur pour télécharger le logiciel.
-          </p>
-          <WrongDeviceNotice
-            title="Lien à ouvrir sur Mac ou PC"
-            href={installUrl}
-            copyLabel="Copier le lien"
-          >
-            <p>Anyloc s&apos;installe sur l&apos;ordi, pas sur le téléphone.</p>
-          </WrongDeviceNotice>
-        </StepCard>
-
-        <StepCard number={2} title="Branche ton iPhone et installe l'app">
-          <ol className="list-decimal space-y-2 pl-5">
-            <li>Ouvre Anyloc sur ton ordi et connecte-toi (même email que ton paiement)</li>
-            <li>Branche l&apos;iPhone en USB, déverrouille-le et appuie <strong>Faire confiance</strong></li>
-            <li>Clique <strong>Installer</strong> dans Anyloc — l&apos;app se met sur ton tel</li>
-          </ol>
-        </StepCard>
-
-        <StepCard number={3} title="Choisis une ville, vérifie dans Snap">
-          <ol className="list-decimal space-y-2 pl-5">
-            <li>Dans Anyloc (ordi ou app iPhone), choisis Marbella, Paris…</li>
-            <li>Ouvre Snap ou Maps sur l&apos;iPhone — ta position a changé</li>
-            <li>L&apos;ordi garde le GPS actif tant que l&apos;iPhone est branché</li>
-          </ol>
-          <HelpDetails title="Dans ~7 jours, l'app iPhone s'arrête ?">
-            <p className="mb-2">
-              Normal (limite Apple sans compte Developer payant). Installe{" "}
-              <strong>LocalDevVPN</strong> (App Store, gratuit), connecte le
-              Wi-Fi, puis dans Anyloc iPhone :{" "}
-              <strong>Profil → Renouveler</strong>.
-            </p>
-          </HelpDetails>
-        </StepCard>
+        <WrongDeviceNotice
+          title="Ouvre ce lien sur ton Mac ou PC"
+          href={installUrl}
+          copyLabel="Copier le lien"
+        >
+          <p>Anyloc s&apos;installe sur l&apos;ordi, pas sur le téléphone.</p>
+        </WrongDeviceNotice>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-zinc-600">
-        iPhone : télécharge Anyloc sur ton ordi, branche l&apos;iPhone en
-        USB, et le GPS change sur toutes tes apps — Snap Map, Maps, Tinder.
-      </p>
+      <div className="text-center">
+        <h2 className="text-xl font-bold text-zinc-900 sm:text-2xl">
+          Télécharge Anyloc
+        </h2>
+        <p className="mt-2 text-sm text-zinc-500">
+          Un seul fichier à installer sur ton {resolvedOs === "win" ? "PC" : "Mac"}.
+        </p>
+      </div>
 
       {needsSetupPassword ? <SetupPasswordForm preview={preview} /> : null}
 
-      <StepCard number={1} title="Télécharge Anyloc">
-        <p>
+      <Card className="p-5">
+        <p className="text-sm text-zinc-600">
           {resolvedOs === "win" ? (
             <>
               Windows va dire <strong>« Faites attention »</strong>. Clique{" "}
-              <strong>Conserver</strong>, puis suis les étapes en dessous —
-              ce n&apos;est pas un virus.
+              <strong>Conserver</strong> — ce n&apos;est pas un virus.
             </>
           ) : (
             <>
-              Un seul fichier. Il va dans <strong>Téléchargements</strong> — il
-              ne s&apos;ouvre pas tout seul.
+              Le fichier va dans <strong>Téléchargements</strong>. Il ne
+              s&apos;ouvre pas tout seul.
             </>
           )}
         </p>
-        <DownloadButtons
-          assetIds={resolvedOs === "win" ? ["setup-win"] : ["setup-mac"]}
-          hasAccess={hasAccess}
-          preview={preview}
-          onDownload={() => setDownloaded(true)}
-        />
+        <div className="mt-4">
+          <DownloadButtons
+            assetIds={resolvedOs === "win" ? ["setup-win"] : ["setup-mac"]}
+            hasAccess={hasAccess}
+            preview={preview}
+            onDownload={() => setDownloaded(true)}
+          />
+        </div>
         <button
           type="button"
-          className="text-xs font-medium text-pink-600 underline-offset-2 hover:underline"
+          className="mt-3 text-xs font-medium text-pink-600 underline-offset-2 hover:underline"
           onClick={() => setDesktopOs(resolvedOs === "mac" ? "win" : "mac")}
         >
           {resolvedOs === "mac" ? "J'ai un PC Windows" : "J'ai un Mac"}
         </button>
-        <SetupOpenHelp
-          desktopOs={resolvedOs}
-          onDesktopOsChange={(os) => setDesktopOs(os)}
-          downloaded={downloaded}
-          zipDownloadPath={zipDownloadPath}
-        />
-      </StepCard>
+      </Card>
 
-      <StepCard number={2} title="Branche l'iPhone et installe">
-        <ol className="list-decimal space-y-2 pl-5">
-          <li>Lance Anyloc et connecte-toi (même email que ton paiement)</li>
-          <li>Branche l&apos;iPhone en USB, déverrouille-le et appuie <strong>Faire confiance</strong></li>
-          <li>Clique <strong>Installer</strong> — l&apos;app se met sur le tel</li>
-        </ol>
-      </StepCard>
-
-      <StepCard number={3} title="Choisis une ville, vérifie dans Snap">
-        <ol className="list-decimal space-y-2 pl-5">
-          <li>Dans Anyloc (ordi ou app iPhone), choisis Marbella, Paris…</li>
-          <li>Ouvre Snap ou Maps sur l&apos;iPhone — ta position a changé</li>
-          <li>L&apos;ordi garde le GPS actif tant que l&apos;iPhone est branché</li>
-        </ol>
-        <HelpDetails title="Dans ~7 jours, l'app iPhone s'arrête ?">
-          <p className="mb-2">
-            Normal (limite Apple sans compte Developer payant). Installe{" "}
-            <strong>LocalDevVPN</strong> (App Store, gratuit), connecte le
-            Wi-Fi, puis dans Anyloc iPhone :{" "}
-            <strong>Profil → Renouveler</strong>.
-          </p>
-        </HelpDetails>
-      </StepCard>
+      <SetupOpenHelp
+        desktopOs={resolvedOs}
+        onDesktopOsChange={(os) => setDesktopOs(os)}
+        downloaded={downloaded}
+        zipDownloadPath={zipDownloadPath}
+      />
     </div>
   );
 }
 
-function AndroidGuide({
-  hasAccess,
-  preview = false,
-  forceComputer = false,
-  forcePhone = false,
-}: {
-  hasAccess: boolean;
-  preview?: boolean;
-  forceComputer?: boolean;
-  forcePhone?: boolean;
-}) {
-  const device = useSyncExternalStore(
-    () => () => {},
-    getClientDeviceSnapshot,
-    () => SERVER_CLIENT_DEVICE
-  );
-  const [downloaded, setDownloaded] = useState(false);
-  const installUrl = getInstallPageUrl("android");
-  const onComputer = forceComputer || (!forcePhone && !device.isPhone);
-
+function IosInstallStep({ isPhone }: { isPhone: boolean }) {
   return (
     <div className="space-y-4">
-      <p className="text-sm text-zinc-600">
-        Android : tout se fait sur le téléphone. Pas d&apos;ordinateur.
-      </p>
+      <div className="text-center">
+        <h2 className="text-xl font-bold text-zinc-900 sm:text-2xl">
+          Branche ton iPhone et installe
+        </h2>
+        <p className="mt-2 text-sm text-zinc-500">
+          Un câble USB, 30 secondes.
+        </p>
+      </div>
 
-      {onComputer ? (
+      <Card className="p-5">
+        <ol className="list-decimal space-y-4 pl-5 text-sm text-zinc-700">
+          <li>
+            <strong>Ouvre Anyloc</strong> sur ton {isPhone ? "ordi" : "ordinateur"} et
+            connecte-toi avec le même email que ton paiement
+          </li>
+          <li>
+            <strong>Branche l&apos;iPhone</strong> en USB, déverrouille-le et
+            appuie <strong>Faire confiance</strong> sur l&apos;écran de
+            l&apos;iPhone
+          </li>
+          <li>
+            Clique <strong>Installer</strong> dans Anyloc — l&apos;app se met
+            sur ton téléphone
+          </li>
+        </ol>
+      </Card>
+
+      <HelpDetails title="L'iPhone n'est pas détecté ?">
+        <ol className="list-decimal space-y-1.5 pl-5">
+          <li>
+            Essaie un autre câble USB (certains ne font que charger)
+          </li>
+          <li>
+            Déverrouille l&apos;iPhone et appuie <strong>Faire confiance</strong>{" "}
+            quand ça apparaît
+          </li>
+          <li>Débranche et rebranche le câble</li>
+        </ol>
+      </HelpDetails>
+    </div>
+  );
+}
+
+function IosVerifyStep() {
+  return (
+    <div className="space-y-4">
+      <div className="text-center">
+        <h2 className="text-xl font-bold text-zinc-900 sm:text-2xl">
+          Choisis une ville, vérifie dans Snap
+        </h2>
+        <p className="mt-2 text-sm text-zinc-500">
+          C&apos;est le moment de tester.
+        </p>
+      </div>
+
+      <Card className="p-5">
+        <ol className="list-decimal space-y-4 pl-5 text-sm text-zinc-700">
+          <li>
+            Dans Anyloc (ordi ou app iPhone), choisis{" "}
+            <strong>Marbella</strong>, <strong>Paris</strong>…
+          </li>
+          <li>
+            Ouvre <strong>Snap</strong> ou <strong>Maps</strong> sur
+            l&apos;iPhone — ta position a changé
+          </li>
+          <li className="text-zinc-500">
+            L&apos;ordi garde le GPS actif tant que l&apos;iPhone est branché
+          </li>
+        </ol>
+      </Card>
+
+      <HelpDetails title="Dans ~7 jours, l'app iPhone s'arrête ?">
+        <p className="mb-2">
+          Normal (limite Apple sans compte Developer payant). Installe{" "}
+          <strong>LocalDevVPN</strong> (App Store, gratuit), connecte le Wi-Fi,
+          puis dans Anyloc iPhone : <strong>Profil → Renouveler</strong>.
+        </p>
+      </HelpDetails>
+    </div>
+  );
+}
+
+function AndroidDownloadStep({
+  hasAccess,
+  preview,
+  isPhone,
+}: {
+  hasAccess: boolean;
+  preview: boolean;
+  isPhone: boolean;
+}) {
+  const [downloaded, setDownloaded] = useState(false);
+  const installUrl = getInstallPageUrl("android");
+
+  if (!isPhone) {
+    return (
+      <div className="space-y-4">
+        <div className="text-center">
+          <h2 className="text-xl font-bold text-zinc-900 sm:text-2xl">
+            Télécharge sur ton Android
+          </h2>
+          <p className="mt-2 text-sm text-zinc-500">
+            L&apos;app s&apos;installe depuis le téléphone, pas l&apos;ordi.
+          </p>
+        </div>
+
         <WrongDeviceNotice
-          title="Télécharge depuis ton Android, pas depuis l'ordinateur"
+          title="Ouvre ce lien sur ton Android"
           href={installUrl}
           copyLabel="Copier le lien"
           qrLabel="Scanne avec ton Android"
         >
           <p>
-            L&apos;app s&apos;installe sur le téléphone. Si tu télécharges ici,
-            tu te retrouves avec un fichier qui ne s&apos;ouvre pas.
-          </p>
-          <p>
             Ouvre ce lien dans Chrome sur ton Android, puis appuie sur
             Télécharger.
           </p>
         </WrongDeviceNotice>
-      ) : null}
+      </div>
+    );
+  }
 
-      <StepCard number={1} title="Télécharge, puis ouvre le fichier">
-        {onComputer ? (
-          <p className="text-xs text-zinc-500">
-            Les boutons ci-dessous sont pour quand tu es sur le téléphone.
-          </p>
-        ) : (
-          <p>
-            Appuie, puis ouvre le fichier dans{" "}
-            <strong>Téléchargements</strong>. Il ne s&apos;installe pas tout
-            seul.
-          </p>
-        )}
-        <DownloadButtons
-          assetIds={["apk"]}
-          hasAccess={hasAccess}
-          preview={preview}
-          onDownload={() => setDownloaded(true)}
-        />
-        <AndroidOpenHelp downloaded={downloaded} />
-      </StepCard>
-
-      <StepCard number={2} title="Ouvre Anyloc (le gros écran rose te guide)">
-        <AndroidLinkStep preview={preview} />
-        <p className="rounded-xl bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
-          L&apos;app te demande d&apos;autoriser la fausse position. Appuie sur
-          ses boutons — tu n&apos;as pas à chercher dans les réglages tout
-          seul.
+  return (
+    <div className="space-y-4">
+      <div className="text-center">
+        <h2 className="text-xl font-bold text-zinc-900 sm:text-2xl">
+          Télécharge l&apos;app
+        </h2>
+        <p className="mt-2 text-sm text-zinc-500">
+          Un fichier APK à installer directement.
         </p>
-      </StepCard>
+      </div>
 
-      <StepCard number={3} title="Choisis une ville, vérifie dans Snap">
-        <ol className="list-decimal space-y-2 pl-5">
-          <li>Cherche une ville dans l&apos;app (Marbella, Paris…)</li>
-          <li>Ouvre Snap ou Maps — la loc a changé</li>
-        </ol>
-        <HelpDetails title="La loc ne change pas ?">
-          <ol className="list-decimal space-y-1.5 pl-5">
-            <li>Dans l&apos;app, suis l&apos;écran « Encore 1 étape »</li>
-            <li>Anyloc doit être l&apos;app de localisation fictive</li>
-            <li>Active le GPS, puis ferme et rouvre Snap</li>
-          </ol>
-        </HelpDetails>
-      </StepCard>
+      <Card className="p-5">
+        <p className="text-sm text-zinc-600">
+          Appuie, puis ouvre le fichier dans{" "}
+          <strong>Téléchargements</strong>. Il ne s&apos;installe pas tout seul.
+        </p>
+        <div className="mt-4">
+          <DownloadButtons
+            assetIds={["apk"]}
+            hasAccess={hasAccess}
+            preview={preview}
+            onDownload={() => setDownloaded(true)}
+          />
+        </div>
+      </Card>
+
+      <AndroidOpenHelp downloaded={downloaded} />
     </div>
   );
 }
+
+function AndroidSetupStep({ preview }: { preview: boolean }) {
+  return (
+    <div className="space-y-4">
+      <div className="text-center">
+        <h2 className="text-xl font-bold text-zinc-900 sm:text-2xl">
+          Ouvre l&apos;app et connecte-toi
+        </h2>
+        <p className="mt-2 text-sm text-zinc-500">
+          L&apos;écran rose te guide pour tout configurer.
+        </p>
+      </div>
+
+      <Card className="p-5">
+        <AndroidLinkStep preview={preview} />
+        <p className="mt-4 rounded-xl bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
+          L&apos;app te demande d&apos;autoriser la fausse position. Appuie sur
+          ses boutons — tu n&apos;as pas à chercher dans les réglages tout seul.
+        </p>
+      </Card>
+    </div>
+  );
+}
+
+function AndroidVerifyStep() {
+  return (
+    <div className="space-y-4">
+      <div className="text-center">
+        <h2 className="text-xl font-bold text-zinc-900 sm:text-2xl">
+          Choisis une ville, vérifie dans Snap
+        </h2>
+        <p className="mt-2 text-sm text-zinc-500">
+          C&apos;est le moment de tester.
+        </p>
+      </div>
+
+      <Card className="p-5">
+        <ol className="list-decimal space-y-4 pl-5 text-sm text-zinc-700">
+          <li>
+            Cherche une ville dans l&apos;app (<strong>Marbella</strong>,{" "}
+            <strong>Paris</strong>…)
+          </li>
+          <li>
+            Ouvre <strong>Snap</strong> ou <strong>Maps</strong> — la loc a changé
+          </li>
+        </ol>
+      </Card>
+
+      <HelpDetails title="La loc ne change pas ?">
+        <ol className="list-decimal space-y-1.5 pl-5">
+          <li>Dans l&apos;app, suis l&apos;écran « Encore 1 étape »</li>
+          <li>Anyloc doit être l&apos;app de localisation fictive</li>
+          <li>Active le GPS, puis ferme et rouvre Snap</li>
+        </ol>
+      </HelpDetails>
+    </div>
+  );
+}
+
+function ConfirmStep({
+  onConfirm,
+}: {
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="space-y-6">
+      <div className="text-center">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
+          <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+        </div>
+        <h2 className="mt-4 text-xl font-bold text-zinc-900 sm:text-2xl">
+          Ta loc a changé ?
+        </h2>
+        <p className="mt-2 text-sm text-zinc-500">
+          Confirme seulement si tu as vu la nouvelle position dans Maps ou Snap.
+        </p>
+      </div>
+
+      <div className="flex justify-center">
+        <Button size="lg" onClick={onConfirm} className="px-8">
+          <CheckCircle2 className="h-5 w-5" />
+          Oui, ça marche
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ── Main wizard ──
+
+const TOTAL_STEPS = 5; // platform pick + 3 content steps + confirm
 
 export function InstallationGuideView({
   embedded = false,
@@ -758,8 +976,10 @@ export function InstallationGuideView({
     detectDefaultPlatform,
     () => "ios" as Platform
   );
-  const [manualPlatform, setManualPlatform] = useState<Platform | null>(null);
-  const platform = manualPlatform ?? platformFromUrl ?? detectedPlatform;
+  const [platform, setPlatform] = useState<Platform>(
+    platformFromUrl ?? detectedPlatform
+  );
+  const [step, setStep] = useState(platformFromUrl ? 1 : 0);
   const [paymentSuccess, setPaymentSuccess] = useState(() => {
     if (typeof window === "undefined") {
       return false;
@@ -767,6 +987,13 @@ export function InstallationGuideView({
 
     return window.sessionStorage.getItem(PAYMENT_SUCCESS_SESSION_KEY) === "true";
   });
+
+  const device = useSyncExternalStore(
+    () => () => {},
+    getClientDeviceSnapshot,
+    () => SERVER_CLIENT_DEVICE
+  );
+  const isPhone = device.isPhone || (preview && searchParams.get("device") === "phone");
 
   useEffect(() => {
     const sessionId = searchParams.get("session_id");
@@ -799,127 +1026,134 @@ export function InstallationGuideView({
             markPaymentSuccess();
           }
         })
-        .catch(() => {
-          // Keep the dashboard usable if verification fails.
-        });
+        .catch(() => {});
     }
   }, [searchParams]);
 
   const hasAccess = preview || (data?.hasAccess ?? false);
+
+  const next = () => setStep((s) => Math.min(s + 1, TOTAL_STEPS - 1));
+  const back = () => setStep((s) => Math.max(s - 1, 0));
+
+  const handlePlatformPick = (p: Platform) => {
+    setPlatform(p);
+  };
+
+  const renderStep = () => {
+    if (loading && !preview && step > 0) {
+      return (
+        <div className="flex items-center justify-center gap-2 py-16 text-zinc-500">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          Chargement...
+        </div>
+      );
+    }
+
+    switch (step) {
+      case 0:
+        return (
+          <PlatformPickStep platform={platform} onPick={handlePlatformPick} />
+        );
+
+      case 1:
+        return platform === "ios" ? (
+          <IosDownloadStep
+            hasAccess={hasAccess}
+            preview={preview}
+            isPhone={isPhone}
+            needsSetupPassword={preview || Boolean(data?.needsSetupPassword)}
+            zipDownloadPath={
+              data?.assets.find(
+                (asset) => asset.id === "setup-win-zip" && asset.available
+              )?.downloadPath
+            }
+          />
+        ) : (
+          <AndroidDownloadStep
+            hasAccess={hasAccess}
+            preview={preview}
+            isPhone={isPhone}
+          />
+        );
+
+      case 2:
+        return platform === "ios" ? (
+          <IosInstallStep isPhone={isPhone} />
+        ) : (
+          <AndroidSetupStep preview={preview} />
+        );
+
+      case 3:
+        return platform === "ios" ? (
+          <IosVerifyStep />
+        ) : (
+          <AndroidVerifyStep />
+        );
+
+      case 4:
+        return (
+          <ConfirmStep onConfirm={() => completeStep("install")} />
+        );
+
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className={embedded ? "" : "min-h-screen bg-background"}>
       {!embedded && <DashboardPageHeader title="Installation" />}
 
       <main className={embedded ? "" : "p-4 pb-8 sm:p-6 lg:p-8"}>
-        {paymentSuccess && (
+        {paymentSuccess && step === 0 && (
           <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4 sm:px-5">
             <div className="flex items-start gap-3">
               <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
               <div>
-                <p className="font-semibold text-emerald-900">C&apos;est payé — 3 étapes.</p>
+                <p className="font-semibold text-emerald-900">
+                  C&apos;est payé — 3 étapes et c&apos;est bon.
+                </p>
                 <p className="mt-1 text-sm text-emerald-800">
-                  Choisis iPhone ou Android, puis suis uniquement les 3 cases
-                  ci-dessous.
+                  Choisis ton téléphone, puis suis les étapes une par une.
                 </p>
               </div>
             </div>
           </div>
         )}
 
-        <div className="mx-auto max-w-3xl">
-          <p className="text-sm font-medium text-pink-600">Installation</p>
-          <h1 className="mt-1 text-2xl font-bold text-zinc-900 sm:text-3xl">
-            3 étapes, et ta loc change
-          </h1>
-          <p className="mt-3 text-zinc-600">
-            Un seul chemin. Choisis ton téléphone, puis fais les 3 étapes dans
-            l&apos;ordre.
-          </p>
+        <div className="mx-auto max-w-lg">
+          {step > 0 && (
+            <div className="mb-6">
+              <WizardProgress current={step - 1} total={TOTAL_STEPS - 2} />
+            </div>
+          )}
 
-          <div className="mt-8 flex gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 p-1.5">
-            <button
-              type="button"
-              onClick={() => setManualPlatform("ios")}
-              className={cn(
-                "flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition-colors",
-                platform === "ios"
-                  ? "bg-white text-pink-600 shadow-sm"
-                  : "text-zinc-600 hover:text-zinc-900"
-              )}
-            >
-              <Smartphone className="h-4 w-4" />
-              iPhone
-            </button>
-            <button
-              type="button"
-              onClick={() => setManualPlatform("android")}
-              className={cn(
-                "flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition-colors",
-                platform === "android"
-                  ? "bg-white text-pink-600 shadow-sm"
-                  : "text-zinc-600 hover:text-zinc-900"
-              )}
-            >
-              <Smartphone className="h-4 w-4" />
-              Android
-            </button>
-          </div>
+          {renderStep()}
 
-          {loading && !preview ? (
-            <div className="mt-8 flex items-center justify-center gap-2 py-12 text-zinc-500">
-              <Loader2 className="h-5 w-5 animate-spin" />
-              Chargement du guide...
-            </div>
-          ) : platform === "ios" ? (
-            <div className="mt-8">
-              <IosGuide
-                hasAccess={hasAccess}
-                preview={preview}
-                forcePhone={preview && searchParams.get("device") === "phone"}
-                needsSetupPassword={
-                  preview || Boolean(data?.needsSetupPassword)
-                }
-                zipDownloadPath={
-                  data?.assets.find(
-                    (asset) => asset.id === "setup-win-zip" && asset.available
-                  )?.downloadPath
-                }
-              />
-            </div>
-          ) : (
-            <div className="mt-8">
-              <AndroidGuide
-                hasAccess={hasAccess}
-                preview={preview}
-                forceComputer={preview && searchParams.get("device") === "computer"}
-                forcePhone={preview && searchParams.get("device") === "phone"}
-              />
-            </div>
+          {step < TOTAL_STEPS - 1 && (
+            <WizardNav
+              step={step}
+              total={TOTAL_STEPS}
+              onNext={next}
+              onBack={back}
+              nextLabel={step === 0 ? "C'est parti" : step === 3 ? "Terminé" : undefined}
+            />
+          )}
+
+          {step === 4 && (
+            <WizardNav
+              step={step}
+              total={TOTAL_STEPS}
+              onNext={() => {}}
+              onBack={back}
+              hideNext
+            />
           )}
 
           {data?.isAdmin && (
             <p className="mt-6 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-800">
               Mode admin actif — accès dev sans abonnement.
             </p>
-          )}
-
-          {!state.steps.install && (
-            <Card className="mt-8 border-emerald-200 bg-emerald-50/50 p-5 sm:p-6">
-              <h3 className="font-semibold text-zinc-900">
-                Ta loc a changé ?
-              </h3>
-              <p className="mt-2 text-sm text-zinc-600">
-                Confirme seulement si tu as vu la nouvelle position dans Maps ou
-                Snap.
-              </p>
-              <div className="mt-4">
-                <Button onClick={() => completeStep("install")}>
-                  <CheckCircle2 className="h-4 w-4" />
-                  Oui, ça marche
-                </Button>
-              </div>
-            </Card>
           )}
         </div>
       </main>
