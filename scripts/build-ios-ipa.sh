@@ -77,7 +77,7 @@ xcodebuild \
   -destination "generic/platform=iOS" \
   -archivePath "$ARCHIVE_PATH" \
   archive \
-  "${ARCHIVE_EXTRA[@]}" \
+  ${ARCHIVE_EXTRA[@]+"${ARCHIVE_EXTRA[@]}"} \
   "${ARCHIVE_SIGN_ARGS[@]}"
 
 rm -rf "$EXPORT_DIR"
