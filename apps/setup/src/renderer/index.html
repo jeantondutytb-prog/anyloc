@@ -42,11 +42,93 @@
       </div>
     </div>
 
-    <!-- ── Main App (3 tabs like iOS) ── -->
+    <!-- ── Main App ── -->
     <div id="main-screen" class="screen main-screen">
+      <aside class="app-sidebar">
+        <div class="sidebar-brand">Any<span>loc</span></div>
+        <p class="sidebar-tagline">Pont Mac ↔ iPhone</p>
+
+        <nav class="sidebar-nav">
+          <button type="button" class="sidebar-btn tab-btn active" data-tab="statut">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+            <span>Statut</span>
+          </button>
+          <button type="button" class="sidebar-btn tab-btn" data-tab="carte">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>
+            <span>Carte</span>
+          </button>
+          <button type="button" class="sidebar-btn tab-btn" data-tab="spots">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+            <span>Découvrir</span>
+          </button>
+          <button type="button" class="sidebar-btn tab-btn" data-tab="profil">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+            <span>Compte</span>
+          </button>
+        </nav>
+      </aside>
+
+      <div class="main-content">
+
+      <!-- Tab: Statut (home) -->
+      <div id="tab-statut" class="tab-content active">
+        <div class="status-page">
+          <header class="status-header">
+            <h1 class="page-title">Tableau de bord</h1>
+            <p class="page-subtitle">État de la connexion iPhone et de ta fausse position GPS.</p>
+          </header>
+
+          <div class="status-grid">
+            <div class="status-card" id="status-iphone-card">
+              <div class="status-card-icon" id="status-iphone-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="1" width="14" height="22" rx="3"/><path d="M12 18h.01"/></svg>
+              </div>
+              <div class="status-card-body">
+                <div class="status-card-label">iPhone</div>
+                <div class="status-card-value" id="status-iphone-text">Vérification…</div>
+              </div>
+              <span class="status-dot" id="status-iphone-dot" aria-hidden="true"></span>
+            </div>
+
+            <div class="status-card" id="status-gps-card">
+              <div class="status-card-icon" id="status-gps-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06z"/></svg>
+              </div>
+              <div class="status-card-body">
+                <div class="status-card-label">GPS simulé</div>
+                <div class="status-card-value" id="status-gps-text">Inactif</div>
+              </div>
+              <span class="status-dot" id="status-gps-dot" aria-hidden="true"></span>
+            </div>
+          </div>
+
+          <div class="status-location-panel" id="status-location-panel">
+            <div class="status-location-label">Position actuelle</div>
+            <div class="status-location-name" id="status-location-name">Aucune destination active</div>
+            <div class="status-location-meta" id="status-location-meta">Choisis un lieu sur ton iPhone ou via la carte.</div>
+            <div class="status-sync-line" id="status-sync-text">Sync automatique en attente</div>
+          </div>
+
+          <div class="status-actions">
+            <button type="button" class="status-btn status-btn-primary" id="status-change-btn">
+              Changer de destination
+            </button>
+            <button type="button" class="status-btn status-btn-danger" id="status-stop-btn" hidden>
+              Arrêter la fausse position
+            </button>
+            <button type="button" class="status-btn status-btn-secondary" id="status-reconfig-btn">
+              Reconfigurer l'iPhone
+            </button>
+          </div>
+
+          <p class="status-footnote">
+            Choisis une destination dans <strong>Découvrir</strong>, sur la <strong>Carte</strong>, ou sur l'app <strong>Anyloc iPhone</strong> — cette app Mac l'applique sur ton téléphone via USB.
+          </p>
+        </div>
+      </div>
 
       <!-- Tab: Carte -->
-      <div id="tab-carte" class="tab-content active">
+      <div id="tab-carte" class="tab-content">
         <div class="map-container">
           <div class="map-search">
             <div class="search-icon">
@@ -61,7 +143,7 @@
           <!-- Bottom sheet -->
           <div id="bottom-sheet" class="bottom-sheet">
             <div id="sheet-content">
-              <p class="sheet-placeholder">Clique sur la carte ou cherche un lieu</p>
+              <p class="sheet-placeholder">Choisis où tu veux apparaître sur Snap, Insta, Tinder…</p>
             </div>
           </div>
 
@@ -74,6 +156,7 @@
         <div class="spots-page">
           <div class="spots-header">
             <h2>Découvrir</h2>
+            <p>Choisis une destination populaire — elle s'applique sur ton iPhone.</p>
           </div>
 
           <div class="category-pills" id="category-pills"></div>
@@ -84,115 +167,45 @@
         </div>
       </div>
 
-      <!-- Tab: Profil -->
+      <!-- Tab: Compte -->
       <div id="tab-profil" class="tab-content">
         <div class="profil-page">
           <div class="profil-header">
-            <h2>Mon Profil</h2>
-            <p>Gérez vos informations et préférences.</p>
+            <h2>Compte</h2>
+            <p>Connecté à Anyloc. L'abonnement se gère sur le site.</p>
           </div>
 
           <div class="profil-sections">
-            <!-- Infos personnelles -->
             <div class="settings-section">
-              <div class="section-label">INFORMATIONS PERSONNELLES</div>
+              <div class="section-label">COMPTE</div>
               <div class="settings-card">
-                <div class="info-row">
+                <div class="info-row no-border">
                   <span class="info-label">Email</span>
                   <span class="info-value" id="profil-email">—</span>
                 </div>
-                <div class="info-row">
-                  <span class="info-label">Rôle</span>
-                  <span class="info-value">Utilisateur</span>
-                </div>
-                <div class="info-row no-border">
-                  <span class="info-label">Mode</span>
-                  <span class="info-value">Télécommande iOS</span>
-                </div>
               </div>
             </div>
 
-            <!-- Abonnement -->
             <div class="settings-section">
               <div class="section-label">ABONNEMENT</div>
               <div class="settings-card">
-                <div class="plan-current">
-                  <span class="plan-icon">👑</span>
-                  <div>
-                    <div class="plan-sublabel">Plan actuel</div>
-                    <div class="plan-name">Gratuit</div>
-                  </div>
+                <div class="account-note">
+                  <p>Ton abonnement et ta facturation sont gérés sur <strong>anyloc.io</strong>, pas dans cette app Mac.</p>
                 </div>
-                <div class="plan-divider"></div>
-                <div class="plans-list">
-                  <div class="plan-card">
-                    <div class="plan-card-header">
-                      <div>
-                        <div class="plan-card-name">Mensuel</div>
-                        <div class="plan-card-price"><strong>0,33€</strong><span>/jour</span></div>
-                        <div class="plan-card-billed">9,90€/mois</div>
-                      </div>
-                      <button class="plan-btn">Commencer maintenant</button>
-                    </div>
-                    <div class="plan-features">
-                      <span>✓ Changements illimités</span>
-                      <span>✓ iOS + Android</span>
-                      <span>✓ Support mail</span>
-                    </div>
-                  </div>
-                  <div class="plan-card">
-                    <div class="plan-card-header">
-                      <div>
-                        <div class="plan-card-name">6 mois</div>
-                        <div class="plan-card-price"><strong>≈ 0,19€</strong><span>/jour</span></div>
-                        <div class="plan-card-billed">34,90€/6 mois</div>
-                      </div>
-                      <button class="plan-btn accent">Économiser 40%</button>
-                    </div>
-                    <div class="plan-features">
-                      <span>✓ Tout le Mensuel</span>
-                      <span>✓ Trajets simulés</span>
-                      <span>✓ Support mail</span>
-                    </div>
-                  </div>
-                  <div class="plan-card popular">
-                    <div class="plan-card-header">
-                      <div>
-                        <div class="plan-card-name">Annuel <span class="badge-popular">POPULAIRE</span></div>
-                        <div class="plan-card-price"><strong>≈ 0,14€</strong><span>/jour</span></div>
-                        <div class="plan-card-billed">49,90€/an</div>
-                      </div>
-                      <button class="plan-btn">Débloquer le meilleur prix</button>
-                    </div>
-                    <div class="plan-features">
-                      <span>✓ App iPhone sans ordi</span>
-                      <span>✓ Support prioritaire</span>
-                      <span>✓ 3 profils web</span>
-                    </div>
-                  </div>
-                </div>
+                <button type="button" class="action-row" id="manage-subscription-btn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                  <span>Gérer mon abonnement</span>
+                  <span class="chevron">›</span>
+                </button>
               </div>
             </div>
 
-            <!-- Sécurité -->
-            <div class="settings-section">
-              <div class="section-label">GESTION SÉCURISÉE</div>
-              <div class="settings-card">
-                <div class="security-info">
-                  <span class="security-icon">🔒</span>
-                  <strong>Paiements sécurisés par Stripe</strong>
-                  <p>Vous pouvez annuler votre abonnement ou modifier vos informations de paiement à tout moment via le portail client.</p>
-                </div>
-              </div>
-            </div>
-
-            <!-- App -->
             <div class="settings-section">
               <div class="section-label">APPLICATION</div>
               <div class="settings-card">
                 <div class="info-row">
                   <span class="info-label">Version</span>
-                  <span class="info-value">0.3.0</span>
+                  <span class="info-value" id="profil-version">—</span>
                 </div>
                 <div class="info-row no-border">
                   <span class="info-label">Appareil</span>
@@ -201,16 +214,15 @@
               </div>
             </div>
 
-            <!-- Actions -->
             <div class="settings-section">
               <div class="section-label">ACTIONS</div>
               <div class="settings-card">
-                <button class="action-row" id="reopen-guide-btn">
+                <button type="button" class="action-row" id="reopen-guide-btn">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="1" width="14" height="22" rx="3"/><path d="M12 18h.01"/></svg>
                   <span>Reconfigurer l'iPhone</span>
                   <span class="chevron">›</span>
                 </button>
-                <button class="logout-row" id="logout-btn">
+                <button type="button" class="logout-row" id="logout-btn">
                   <span class="logout-icon">↗</span>
                   <span>Déconnexion</span>
                   <span class="chevron">›</span>
@@ -221,21 +233,7 @@
         </div>
       </div>
 
-      <!-- Tab Bar (bottom) -->
-      <div class="tab-bar">
-        <button class="tab-btn active" data-tab="carte">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>
-          <span>Carte</span>
-        </button>
-        <button class="tab-btn" data-tab="spots">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
-          <span>Découvrir</span>
-        </button>
-        <button class="tab-btn" data-tab="profil">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-          <span>Profil</span>
-        </button>
-      </div>
+      </div><!-- /.main-content -->
     </div>
 
     <!-- ── Onboarding Guide (full-screen wizard) ── -->
@@ -245,47 +243,15 @@
         <div class="guide-progress">
           <div class="guide-progress-bar" id="guide-progress-bar"></div>
         </div>
-        <div class="guide-step-label" id="guide-step-label">Étape 1 / 5</div>
+        <div class="guide-step-label" id="guide-step-label">Étape 1 / 3</div>
 
-        <!-- Step 1: Welcome -->
+        <!-- Step 1: Prépare ton Mac -->
         <div class="guide-step-content" id="guide-step-1">
-          <div class="guide-icon-wrap">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
-          </div>
-          <h2 class="guide-title">Bienvenue sur Anyloc</h2>
-          <p class="guide-subtitle">Configure ton iPhone en quelques minutes. On te guide étape par étape.</p>
-
-          <div class="guide-checklist">
-            <div class="guide-checklist-title">Ce dont tu as besoin</div>
-            <div class="guide-check-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--accent)"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-              <span>Un iPhone (iOS 17, 18 ou 26)</span>
-            </div>
-            <div class="guide-check-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--accent)"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-              <span>Un câble USB</span>
-            </div>
-            <div class="guide-check-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--accent)"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-              <span id="guide-platform-req">Cet ordinateur</span>
-            </div>
-            <div class="guide-check-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--accent)"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-              <span>5 minutes</span>
-            </div>
-          </div>
-
-          <button class="guide-btn-primary" id="guide-start-btn">C'est parti</button>
-          <button class="guide-btn-skip" id="guide-skip-btn">J'ai déjà configuré mon iPhone</button>
-        </div>
-
-        <!-- Step 2: Install tools (automatic) -->
-        <div class="guide-step-content" id="guide-step-2" hidden>
           <div class="guide-icon-wrap">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
           </div>
-          <h2 class="guide-title">Préparation des outils</h2>
-          <p class="guide-subtitle">Anyloc installe automatiquement ce qu'il faut pour communiquer avec ton iPhone.</p>
+          <h2 class="guide-title">Prépare ton Mac</h2>
+          <p class="guide-subtitle">Anyloc installe automatiquement les outils USB. Il te faut un iPhone, un câble et <span id="guide-platform-req">ce Mac</span>.</p>
 
           <div class="guide-status-box" id="guide-tools-status">
             <div class="guide-status-icon searching" id="guide-tools-icon">
@@ -307,23 +273,29 @@
 
           <button class="guide-btn-primary" id="guide-tools-next" disabled>Continuer</button>
           <button class="guide-btn-secondary" id="guide-tools-retry" hidden>Réessayer</button>
+          <button type="button" class="guide-btn-skip" id="guide-skip-btn">J'ai déjà configuré mon iPhone</button>
         </div>
 
-        <!-- Step 3: Connect iPhone -->
-        <div class="guide-step-content" id="guide-step-3" hidden>
+        <!-- Step 2: Branche ton iPhone -->
+        <div class="guide-step-content" id="guide-step-2" hidden>
           <div class="guide-icon-wrap pulse">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><rect x="5" y="1" width="14" height="22" rx="3"/><path d="M12 18h.01"/></svg>
           </div>
           <h2 class="guide-title">Branche ton iPhone</h2>
-          <p class="guide-subtitle">Connecte ton iPhone avec le câble USB, puis appuie sur <strong>Faire confiance</strong> sur l'iPhone.</p>
+          <p class="guide-subtitle">USB, confiance, puis mode développeur — tout se fait sur ton iPhone.</p>
 
           <div class="guide-instruction-card">
             <div class="guide-instruction-num">1</div>
-            <div><h3>Branche le câble USB</h3><p>Utilise le câble fourni avec ton iPhone (Lightning ou USB-C).</p></div>
+            <div><h3>Branche le câble USB</h3><p>Lightning ou USB-C, puis appuie sur <strong>Faire confiance</strong> sur l'iPhone.</p></div>
           </div>
           <div class="guide-instruction-card">
             <div class="guide-instruction-num">2</div>
-            <div><h3>Appuie sur « Faire confiance »</h3><p>Un popup apparaît sur l'iPhone. Appuie sur <strong>Faire confiance</strong> et entre ton code.</p></div>
+            <div><h3>Active le mode développeur</h3><p><strong>Réglages → Confidentialité et sécurité → Mode développeur</strong>. L'iPhone redémarre — c'est normal.</p></div>
+          </div>
+
+          <div class="guide-tip-box">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--accent)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+            <span>Le mode développeur n'apparaît qu'après avoir branché l'iPhone au Mac au moins une fois.</span>
           </div>
 
           <div class="guide-status-box" id="guide-usb-status">
@@ -336,40 +308,15 @@
             </div>
           </div>
 
-          <button class="guide-btn-primary" id="guide-usb-next" disabled>Continuer</button>
+          <button class="guide-btn-primary" id="guide-usb-next" disabled>J'ai branché et activé le mode dev</button>
         </div>
 
-        <!-- Step 4: Developer mode -->
-        <div class="guide-step-content" id="guide-step-4" hidden>
-          <div class="guide-icon-wrap">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-          </div>
-          <h2 class="guide-title">Active le mode développeur</h2>
-          <p class="guide-subtitle">C'est nécessaire pour qu'Anyloc puisse modifier la position GPS.</p>
-
-          <div class="guide-instruction-card">
-            <div class="guide-instruction-num">1</div>
-            <div><h3>Sur ton iPhone, va dans :</h3><p><strong>Réglages → Confidentialité et sécurité → Mode développeur</strong></p></div>
-          </div>
-          <div class="guide-instruction-card">
-            <div class="guide-instruction-num">2</div>
-            <div><h3>Active le mode développeur</h3><p>L'iPhone va redémarrer. C'est normal.</p></div>
-          </div>
-
-          <div class="guide-tip-box">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--accent)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-            <span>Le « Mode développeur » n'apparaît qu'après avoir branché l'iPhone à un ordinateur au moins une fois.</span>
-          </div>
-
-          <button class="guide-btn-primary" id="guide-devmode-next">J'ai activé le mode développeur</button>
-        </div>
-
-        <!-- Step 5: Install app + Done -->
-        <div class="guide-step-content" id="guide-step-5" hidden>
+        <!-- Step 3: Installe l'app iPhone -->
+        <div class="guide-step-content" id="guide-step-3" hidden>
           <div class="guide-icon-wrap" id="guide-final-icon">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           </div>
-          <h2 class="guide-title" id="guide-final-title">Installe l'app sur ton iPhone</h2>
+          <h2 class="guide-title" id="guide-final-title">Installe l'app iPhone</h2>
           <p class="guide-subtitle" id="guide-final-subtitle">Un clic et Anyloc s'installe directement sur ton iPhone.</p>
 
           <div id="guide-install-area">
@@ -385,19 +332,52 @@
 
             <button class="guide-btn-primary" id="guide-install-btn">Installer l'app iPhone</button>
           </div>
+        </div>
+      </div>
+    </div>
 
-          <div id="guide-done-area" hidden>
-            <div class="guide-success-card">
-              <div class="guide-success-icon">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
-              </div>
-              <h3>C'est prêt !</h3>
-              <p>Ouvre <strong>Anyloc</strong> sur ton iPhone et connecte-toi avec le <strong>même compte</strong>. Ta position se synchronise automatiquement.</p>
+    <!-- ── Post-install: C'est prêt ── -->
+    <div id="ready-screen" class="screen ready-screen">
+      <div class="ready-container">
+        <div class="ready-hero">
+          <div class="ready-icon-wrap">
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+          </div>
+          <h2 class="ready-title">C'est prêt !</h2>
+          <p class="ready-subtitle">Ton iPhone est configuré. Voici comment utiliser Anyloc au quotidien.</p>
+        </div>
+
+        <div class="ready-steps">
+          <div class="ready-step">
+            <div class="ready-step-num">1</div>
+            <div>
+              <h3>Ouvre Anyloc sur ton iPhone</h3>
+              <p>Connecte-toi avec le <strong>même compte</strong> que sur ce Mac.</p>
             </div>
-
-            <button class="guide-btn-primary" id="guide-finish-btn">Commencer à utiliser Anyloc</button>
+          </div>
+          <div class="ready-step">
+            <div class="ready-step-num">2</div>
+            <div>
+              <h3>Choisis ta destination</h3>
+              <p>Sur l'iPhone, dans <strong>Découvrir</strong>, ou ici sur le Mac.</p>
+            </div>
+          </div>
+          <div class="ready-step">
+            <div class="ready-step-num">3</div>
+            <div>
+              <h3>Le Mac applique le GPS</h3>
+              <p>Garde cette app ouverte (barre de menus) — ta fausse position se met à jour toute seule sur Snap, Insta, Tinder…</p>
+            </div>
           </div>
         </div>
+
+        <div class="ready-note">
+          <span class="ready-note-icon">💡</span>
+          <span>Laisse Anyloc Setup tourner en arrière-plan tant que tu utilises la fausse position.</span>
+        </div>
+
+        <button type="button" class="guide-btn-primary" id="ready-dashboard-btn">Voir mon tableau de bord</button>
+        <button type="button" class="guide-btn-secondary" id="ready-try-btn">Choisir une destination maintenant</button>
       </div>
     </div>
 

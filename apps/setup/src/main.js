@@ -319,7 +319,7 @@ function createWindow() {
     ...(isMac
       ? { titleBarStyle: "hiddenInset", trafficLightPosition: { x: 16, y: 16 } }
       : { autoHideMenuBar: true }),
-    backgroundColor: "#0a0a0f",
+    backgroundColor: "#fafafa",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,

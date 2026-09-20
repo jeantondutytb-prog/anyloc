@@ -71,6 +71,10 @@ let favorites = [];
 let toastTimer = null;
 let selectedCategory = "all";
 let desktopPlatform = "mac";
+let usbConnected = false;
+let usbDeviceName = null;
+let lastSyncAt = null;
+let statusUsbInterval = null;
 
 // ── Helpers ──
 
@@ -124,8 +128,105 @@ function switchTab(tabName) {
   $("tab-" + tabName)?.classList.add("active");
   document.querySelector(`.tab-btn[data-tab="${tabName}"]`)?.classList.add("active");
 
+  if (tabName === "statut") {
+    void refreshUsbStatus();
+  }
+
   if (tabName === "carte" && !map) initMap();
   if (tabName === "carte" && map) setTimeout(() => map.invalidateSize(), 50);
+}
+
+function formatRelativeSync(date) {
+  if (!date) return "Sync automatique en attente";
+  const seconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
+  if (seconds < 5) return "Dernière sync : à l'instant";
+  if (seconds < 60) return `Dernière sync : il y a ${seconds} sec`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `Dernière sync : il y a ${minutes} min`;
+  return `Dernière sync : il y a ${Math.floor(minutes / 60)} h`;
+}
+
+function setStatusCardState(cardId, dotId, state, valueText) {
+  const card = $(cardId);
+  const dot = $(dotId);
+  const value = $(valueText);
+  if (!card || !dot || !value) return;
+
+  card.classList.remove("ok", "warn", "error");
+  dot.classList.remove("ok", "warn", "error");
+  if (state) {
+    card.classList.add(state);
+    dot.classList.add(state);
+  }
+}
+
+function updateStatusDashboard() {
+  const iphoneText = $("status-iphone-text");
+  const gpsText = $("status-gps-text");
+  const locationName = $("status-location-name");
+  const locationMeta = $("status-location-meta");
+  const syncText = $("status-sync-text");
+  const locationPanel = $("status-location-panel");
+  const stopBtn = $("status-stop-btn");
+
+  if (!iphoneText) return;
+
+  if (usbConnected) {
+    setStatusCardState("status-iphone-card", "status-iphone-dot", "ok", "status-iphone-text");
+    iphoneText.textContent = usbDeviceName ? `${usbDeviceName} — connecté` : "iPhone connecté";
+  } else {
+    setStatusCardState("status-iphone-card", "status-iphone-dot", "warn", "status-iphone-text");
+    iphoneText.textContent = "Non connecté — branche ton iPhone en USB";
+  }
+
+  if (activeSpoof) {
+    setStatusCardState("status-gps-card", "status-gps-dot", "ok", "status-gps-text");
+    gpsText.textContent = "Actif sur ton iPhone";
+    locationPanel?.classList.add("active");
+    locationName.textContent = activeSpoof.name || "Destination active";
+    locationMeta.textContent = `${activeSpoof.lat.toFixed(4)}, ${activeSpoof.lng.toFixed(4)}`;
+    if (stopBtn) stopBtn.hidden = false;
+  } else {
+    setStatusCardState("status-gps-card", "status-gps-dot", "warn", "status-gps-text");
+    gpsText.textContent = usbConnected ? "En attente d'une destination" : "Inactif";
+    locationPanel?.classList.remove("active");
+    locationName.textContent = "Aucune destination active";
+    locationMeta.textContent = usbConnected
+      ? "Choisis un lieu sur ton iPhone ou via la carte."
+      : "Branche ton iPhone pour appliquer une fausse position.";
+    if (stopBtn) stopBtn.hidden = true;
+  }
+
+  if (syncText) {
+    syncText.textContent = formatRelativeSync(lastSyncAt);
+  }
+}
+
+async function refreshUsbStatus() {
+  try {
+    const result = await window.anylocSetup.checkUsb();
+    usbConnected = Boolean(result?.connected);
+    usbDeviceName = result?.deviceName || null;
+  } catch {
+    usbConnected = false;
+    usbDeviceName = null;
+  }
+  updateStatusDashboard();
+}
+
+function startStatusUsbPolling() {
+  stopStatusUsbPolling();
+  void refreshUsbStatus();
+  statusUsbInterval = setInterval(() => {
+    void refreshUsbStatus();
+  }, 3000);
+}
+
+function stopStatusUsbPolling() {
+  if (statusUsbInterval) {
+    clearInterval(statusUsbInterval);
+    statusUsbInterval = null;
+  }
 }
 
 // ── Auth ──
@@ -187,6 +288,16 @@ async function applyPlatformHints() {
   if (deviceLabel) {
     deviceLabel.textContent = desktopPlatform === "win" ? "Windows" : "Mac";
   }
+
+  const versionLabel = $("profil-version");
+  if (versionLabel) {
+    try {
+      const version = await window.anylocSetup.getVersion();
+      versionLabel.textContent = version ? `Anyloc ${version}` : "—";
+    } catch {
+      versionLabel.textContent = "—";
+    }
+  }
 }
 
 async function fillGuideVersion() {
@@ -211,14 +322,15 @@ function enterMain() {
   }
 
   showScreen("main");
-  switchTab("carte");
+  switchTab("statut");
+  startStatusUsbPolling();
 
   window.anylocSetup.startAutoSync({ session });
   window.anylocSetup.onAutoSyncStatus((status) => {
     if (status.error) {
       showToast(status.message, "error");
     } else if (status.message) {
-      showToast(status.message, "ok");
+      lastSyncAt = new Date();
       if (status.location?.is_active) {
         const loc = status.location;
         const name = loc.name || `${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`;
@@ -226,20 +338,31 @@ function enterMain() {
         if (map) map.setView([loc.lat, loc.lng], 14);
         activeSpoof = { lat: loc.lat, lng: loc.lng, name };
         updateBottomSheet();
+        showToast(`GPS appliqué : ${name}`, "ok");
       } else if (status.location && !status.location.is_active) {
         activeSpoof = null;
         updateBottomSheet();
+        showToast("GPS réinitialisé", "ok");
+      } else {
+        showToast(status.message, "ok");
       }
+      updateStatusDashboard();
     }
   });
+
+  updateStatusDashboard();
 }
 
 function logout() {
   window.anylocSetup.stopAutoSync();
   stopGuideUsbPolling();
+  stopStatusUsbPolling();
   clearSession();
   activeSpoof = null;
   selectedPosition = null;
+  lastSyncAt = null;
+  usbConnected = false;
+  usbDeviceName = null;
   showScreen("login");
   $("login-email").value = "";
   $("login-password").value = "";
@@ -295,7 +418,7 @@ function setSelectedPosition(lat, lng, name) {
 function updateBottomSheet() {
   const container = $("sheet-content");
   if (!selectedPosition) {
-    container.innerHTML = '<p class="sheet-placeholder">Clique sur la carte ou cherche un lieu</p>';
+    container.innerHTML = '<p class="sheet-placeholder">Choisis où tu veux apparaître sur Snap, Insta, Tinder…</p>';
     return;
   }
 
@@ -424,8 +547,10 @@ async function teleportViaSupabase() {
 
     if (res.ok) {
       activeSpoof = { ...selectedPosition };
+      lastSyncAt = new Date();
       showToast(`Téléporté à ${selectedPosition.name}`, "ok");
       updateBottomSheet();
+      updateStatusDashboard();
     } else {
       showToast("Erreur de téléportation", "error");
     }
@@ -464,8 +589,10 @@ async function stopSpoofViaSupabase() {
 
     if (res.ok) {
       activeSpoof = null;
+      lastSyncAt = new Date();
       showToast("GPS réinitialisé", "ok");
       updateBottomSheet();
+      updateStatusDashboard();
     }
   } catch {}
 }
@@ -474,12 +601,16 @@ async function stopSpoofViaSupabase() {
 
 function renderSpots() {
   const pills = $("category-pills");
+  if (!pills) return;
+
   pills.innerHTML = spotCategories.map((c) =>
     `<button class="pill-btn ${c.id === selectedCategory ? "active" : ""}" data-cat="${c.id}">${c.label}</button>`
   ).join("");
 
   const filtered = selectedCategory === "all" ? allSpots : allSpots.filter((s) => s.category === selectedCategory);
   const grid = $("spots-grid");
+  if (!grid) return;
+
   grid.innerHTML = filtered.map((s, i) =>
     `<div class="spot-card" data-spot="${i}">
       <div class="spot-emoji">${s.emoji}</div>
@@ -516,10 +647,17 @@ async function teleportSpot(spot) {
     });
 
     if (res.ok) {
-      status.textContent = `Téléporté à ${spot.name}`;
+      activeSpoof = { lat: spot.lat, lng: spot.lng, name: spot.name };
+      lastSyncAt = new Date();
+      setSelectedPosition(spot.lat, spot.lng, spot.name);
+      if (map) map.setView([spot.lat, spot.lng], 12);
+      updateStatusDashboard();
+      status.textContent = `Destination activée : ${spot.name}`;
       status.className = "spots-status ok";
+      showToast(`GPS appliqué : ${spot.name}`, "ok");
+      setTimeout(() => switchTab("statut"), 600);
     } else {
-      status.textContent = "Erreur";
+      status.textContent = "Erreur lors de l'activation";
       status.className = "spots-status error";
     }
   } catch (err) {
@@ -527,8 +665,10 @@ async function teleportSpot(spot) {
     status.className = "spots-status error";
   }
 
-  status.hidden = false;
-  setTimeout(() => { status.hidden = true; }, 3000);
+  if (status) {
+    status.hidden = false;
+    setTimeout(() => { status.hidden = true; }, 3000);
+  }
 }
 
 // ── Favorites ──
@@ -551,6 +691,7 @@ let guidePlatform = "mac";
 let guideDetectedUdid = null;
 
 const GUIDE_DONE_KEY = "anyloc.guideComplete";
+const GUIDE_TOTAL_STEPS = 3;
 
 function isGuideComplete() {
   try { return localStorage.getItem(GUIDE_DONE_KEY) === "true"; } catch { return false; }
@@ -565,6 +706,7 @@ function clearGuideComplete() {
 }
 
 function showGuide() {
+  stopStatusUsbPolling();
   guideStep = 1;
   guideDetectedUdid = null;
   showScreen("guide");
@@ -572,22 +714,22 @@ function showGuide() {
 }
 
 function updateGuideStep() {
-  for (let i = 1; i <= 5; i++) {
+  for (let i = 1; i <= GUIDE_TOTAL_STEPS; i++) {
     const el = $(`guide-step-${i}`);
     if (el) el.hidden = i !== guideStep;
   }
 
-  const pct = (guideStep / 5) * 100;
+  const pct = (guideStep / GUIDE_TOTAL_STEPS) * 100;
   $("guide-progress-bar").style.width = pct + "%";
-  $("guide-step-label").textContent = `Étape ${guideStep} / 5`;
+  $("guide-step-label").textContent = `Étape ${guideStep} / ${GUIDE_TOTAL_STEPS}`;
 
-  if (guideStep === 2) initGuideToolsStep();
-  if (guideStep === 3) startGuideUsbPolling();
+  if (guideStep === 1) initGuideToolsStep();
+  if (guideStep === 2) startGuideUsbPolling();
   else stopGuideUsbPolling();
 }
 
 function guideNext() {
-  if (guideStep < 5) {
+  if (guideStep < GUIDE_TOTAL_STEPS) {
     guideStep++;
     updateGuideStep();
   }
@@ -724,11 +866,8 @@ async function guideInstallApp() {
   const result = await window.anylocSetup.installIos({ udid: guideDetectedUdid });
 
   if (result.ok) {
-    $("guide-install-area").hidden = true;
-    $("guide-done-area").hidden = false;
-    $("guide-final-title").textContent = "C'est prêt !";
-    $("guide-final-subtitle").textContent = "";
-    $("guide-final-icon").innerHTML = '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>';
+    markIphoneInstalled();
+    showReadyScreen();
   } else {
     text.textContent = "Échec de l'installation";
     hint.textContent = result.message;
@@ -740,11 +879,19 @@ async function guideInstallApp() {
   }
 }
 
-function guideFinish() {
-  markGuideComplete();
+function showReadyScreen() {
   stopGuideUsbPolling();
-  // Re-enter main which will now pass the isGuideComplete check
+  stopStatusUsbPolling();
+  showScreen("ready");
+}
+
+function finishReadyScreen(defaultTab = "statut") {
+  markGuideComplete();
+  markIphoneInstalled();
   enterMain();
+  if (defaultTab !== "statut") {
+    switchTab(defaultTab);
+  }
 }
 
 // ── Init ──
@@ -754,7 +901,7 @@ async function init() {
   try {
     renderSpots();
   } catch {
-    // Spots live on the main screen; a missing node must not skip the guide.
+    // Spots tab may be unavailable during early init.
   }
   void applyPlatformHints();
   void fillGuideVersion();
@@ -807,8 +954,18 @@ async function init() {
     btn.addEventListener("click", () => switchTab(btn.dataset.tab));
   });
 
+  // Status dashboard actions
+  $("status-change-btn")?.addEventListener("click", () => switchTab("carte"));
+  $("status-stop-btn")?.addEventListener("click", () => {
+    void stopSpoofViaSupabase();
+  });
+  $("status-reconfig-btn")?.addEventListener("click", () => showGuide());
+
   // Logout
   $("logout-btn").addEventListener("click", logout);
+  $("manage-subscription-btn")?.addEventListener("click", () => {
+    void window.anylocSetup.openExternal("https://anyloc.io/dashboard?tab=account");
+  });
 
   // Search
   $("search-input").addEventListener("input", (e) => handleSearch(e.target.value));
@@ -839,39 +996,40 @@ async function init() {
     }
   });
 
-  // Spots
-  $("category-pills").addEventListener("click", (e) => {
+  $("category-pills")?.addEventListener("click", (e) => {
     const btn = e.target.closest(".pill-btn");
     if (!btn) return;
     selectedCategory = btn.dataset.cat;
     renderSpots();
   });
 
-  $("spots-grid").addEventListener("click", (e) => {
+  $("spots-grid")?.addEventListener("click", (e) => {
     const card = e.target.closest(".spot-card");
     if (!card) return;
     const filtered = selectedCategory === "all" ? allSpots : allSpots.filter((s) => s.category === selectedCategory);
     const spot = filtered[parseInt(card.dataset.spot, 10)];
-    if (spot) teleportSpot(spot);
+    if (spot) void teleportSpot(spot);
   });
 
   // Guide
   window.anylocSetup.getPlatform().then((p) => {
     guidePlatform = p;
-    $("guide-platform-req").textContent = p === "win" ? "Ce PC Windows" : "Ce Mac";
+    const platformReq = $("guide-platform-req");
+    if (platformReq) {
+      platformReq.textContent = p === "win" ? "ce PC Windows" : "ce Mac";
+    }
   });
 
-  $("guide-start-btn").addEventListener("click", guideNext);
-  $("guide-skip-btn").addEventListener("click", () => {
+  $("guide-skip-btn")?.addEventListener("click", () => {
     markGuideComplete();
     enterMain();
   });
-  $("guide-tools-next").addEventListener("click", guideNext);
-  $("guide-tools-retry").addEventListener("click", initGuideToolsStep);
-  $("guide-usb-next").addEventListener("click", guideNext);
-  $("guide-devmode-next").addEventListener("click", guideNext);
-  $("guide-install-btn").addEventListener("click", guideInstallApp);
-  $("guide-finish-btn").addEventListener("click", guideFinish);
+  $("guide-tools-next")?.addEventListener("click", guideNext);
+  $("guide-tools-retry")?.addEventListener("click", initGuideToolsStep);
+  $("guide-usb-next")?.addEventListener("click", guideNext);
+  $("guide-install-btn")?.addEventListener("click", guideInstallApp);
+  $("ready-dashboard-btn")?.addEventListener("click", () => finishReadyScreen("statut"));
+  $("ready-try-btn")?.addEventListener("click", () => finishReadyScreen("spots"));
 
   // Profile: reopen guide
   $("reopen-guide-btn").addEventListener("click", () => {
