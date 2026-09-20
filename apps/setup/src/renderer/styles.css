@@ -604,6 +604,19 @@ html {
 .info-label { font-size: 14px; color: var(--text-muted); }
 .info-value { font-size: 14px; color: var(--text); }
 
+.account-note {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.account-note p {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.account-note strong { color: var(--text); }
+
 .plan-current {
   display: flex; align-items: center; gap: 12px;
   padding: 12px;

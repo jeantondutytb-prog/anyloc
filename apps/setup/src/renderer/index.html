@@ -126,130 +126,45 @@
         </div>
       </div>
 
-      <!-- Tab: Découvrir -->
-      <div id="tab-spots" class="tab-content">
-        <div class="spots-page">
-          <div class="spots-header">
-            <h2>Découvrir</h2>
-          </div>
-
-          <div class="category-pills" id="category-pills"></div>
-
-          <div class="spots-grid" id="spots-grid"></div>
-
-          <div id="spots-status" class="spots-status" hidden></div>
-        </div>
-      </div>
-
-      <!-- Tab: Profil -->
+      <!-- Tab: Compte -->
       <div id="tab-profil" class="tab-content">
         <div class="profil-page">
           <div class="profil-header">
-            <h2>Mon Profil</h2>
-            <p>Gérez vos informations et préférences.</p>
+            <h2>Compte</h2>
+            <p>Connecté à Anyloc. L'abonnement se gère sur le site.</p>
           </div>
 
           <div class="profil-sections">
-            <!-- Infos personnelles -->
             <div class="settings-section">
-              <div class="section-label">INFORMATIONS PERSONNELLES</div>
+              <div class="section-label">COMPTE</div>
               <div class="settings-card">
-                <div class="info-row">
+                <div class="info-row no-border">
                   <span class="info-label">Email</span>
                   <span class="info-value" id="profil-email">—</span>
                 </div>
-                <div class="info-row">
-                  <span class="info-label">Rôle</span>
-                  <span class="info-value">Utilisateur</span>
-                </div>
-                <div class="info-row no-border">
-                  <span class="info-label">Mode</span>
-                  <span class="info-value">Télécommande iOS</span>
-                </div>
               </div>
             </div>
 
-            <!-- Abonnement -->
             <div class="settings-section">
               <div class="section-label">ABONNEMENT</div>
               <div class="settings-card">
-                <div class="plan-current">
-                  <span class="plan-icon">👑</span>
-                  <div>
-                    <div class="plan-sublabel">Plan actuel</div>
-                    <div class="plan-name">Gratuit</div>
-                  </div>
+                <div class="account-note">
+                  <p>Ton abonnement et ta facturation sont gérés sur <strong>anyloc.io</strong>, pas dans cette app Mac.</p>
                 </div>
-                <div class="plan-divider"></div>
-                <div class="plans-list">
-                  <div class="plan-card">
-                    <div class="plan-card-header">
-                      <div>
-                        <div class="plan-card-name">Mensuel</div>
-                        <div class="plan-card-price"><strong>0,33€</strong><span>/jour</span></div>
-                        <div class="plan-card-billed">9,90€/mois</div>
-                      </div>
-                      <button class="plan-btn">Commencer maintenant</button>
-                    </div>
-                    <div class="plan-features">
-                      <span>✓ Changements illimités</span>
-                      <span>✓ iOS + Android</span>
-                      <span>✓ Support mail</span>
-                    </div>
-                  </div>
-                  <div class="plan-card">
-                    <div class="plan-card-header">
-                      <div>
-                        <div class="plan-card-name">6 mois</div>
-                        <div class="plan-card-price"><strong>≈ 0,19€</strong><span>/jour</span></div>
-                        <div class="plan-card-billed">34,90€/6 mois</div>
-                      </div>
-                      <button class="plan-btn accent">Économiser 40%</button>
-                    </div>
-                    <div class="plan-features">
-                      <span>✓ Tout le Mensuel</span>
-                      <span>✓ Trajets simulés</span>
-                      <span>✓ Support mail</span>
-                    </div>
-                  </div>
-                  <div class="plan-card popular">
-                    <div class="plan-card-header">
-                      <div>
-                        <div class="plan-card-name">Annuel <span class="badge-popular">POPULAIRE</span></div>
-                        <div class="plan-card-price"><strong>≈ 0,14€</strong><span>/jour</span></div>
-                        <div class="plan-card-billed">49,90€/an</div>
-                      </div>
-                      <button class="plan-btn">Débloquer le meilleur prix</button>
-                    </div>
-                    <div class="plan-features">
-                      <span>✓ App iPhone sans ordi</span>
-                      <span>✓ Support prioritaire</span>
-                      <span>✓ 3 profils web</span>
-                    </div>
-                  </div>
-                </div>
+                <button type="button" class="action-row" id="manage-subscription-btn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                  <span>Gérer mon abonnement</span>
+                  <span class="chevron">›</span>
+                </button>
               </div>
             </div>
 
-            <!-- Sécurité -->
-            <div class="settings-section">
-              <div class="section-label">GESTION SÉCURISÉE</div>
-              <div class="settings-card">
-                <div class="security-info">
-                  <span class="security-icon">🔒</span>
-                  <strong>Paiements sécurisés par Stripe</strong>
-                  <p>Vous pouvez annuler votre abonnement ou modifier vos informations de paiement à tout moment via le portail client.</p>
-                </div>
-              </div>
-            </div>
-
-            <!-- App -->
             <div class="settings-section">
               <div class="section-label">APPLICATION</div>
               <div class="settings-card">
                 <div class="info-row">
                   <span class="info-label">Version</span>
-                  <span class="info-value">0.3.0</span>
+                  <span class="info-value" id="profil-version">—</span>
                 </div>
                 <div class="info-row no-border">
                   <span class="info-label">Appareil</span>
@@ -258,16 +173,15 @@
               </div>
             </div>
 
-            <!-- Actions -->
             <div class="settings-section">
               <div class="section-label">ACTIONS</div>
               <div class="settings-card">
-                <button class="action-row" id="reopen-guide-btn">
+                <button type="button" class="action-row" id="reopen-guide-btn">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="1" width="14" height="22" rx="3"/><path d="M12 18h.01"/></svg>
                   <span>Reconfigurer l'iPhone</span>
                   <span class="chevron">›</span>
                 </button>
-                <button class="logout-row" id="logout-btn">
+                <button type="button" class="logout-row" id="logout-btn">
                   <span class="logout-icon">↗</span>
                   <span>Déconnexion</span>
                   <span class="chevron">›</span>
@@ -288,13 +202,9 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>
           <span>Carte</span>
         </button>
-        <button class="tab-btn" data-tab="spots">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
-          <span>Découvrir</span>
-        </button>
         <button class="tab-btn" data-tab="profil">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-          <span>Profil</span>
+          <span>Compte</span>
         </button>
       </div>
     </div>
