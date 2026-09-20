@@ -10,7 +10,7 @@ struct AnylocApp: App {
             Group {
                 if !auth.isLoggedIn {
                     LoginView()
-                } else if subscription.isLoading && subscription.inactiveDetails == nil {
+                } else if !subscription.hasCheckedOnce && subscription.isLoading {
                     ProgressView("Chargement...")
                         .tint(Theme.accent)
                         .foregroundColor(Theme.text)
@@ -20,8 +20,6 @@ struct AnylocApp: App {
                     MainTabView()
                 }
             }
-            .animation(.easeInOut, value: auth.isLoggedIn)
-            .animation(.easeInOut, value: subscription.hasAccess)
             .task {
                 await auth.verifySession()
                 if auth.isLoggedIn {

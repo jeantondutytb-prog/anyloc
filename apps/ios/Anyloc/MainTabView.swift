@@ -40,7 +40,6 @@ struct MainTabView: View {
             RenewalView()
         }
         .task {
-            await SubscriptionService.shared.refresh()
             await SignatureRenewalService.shared.refreshPairingStatus()
         }
         .refreshable {

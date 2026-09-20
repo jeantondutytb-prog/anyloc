@@ -7,6 +7,7 @@ final class SubscriptionService: ObservableObject {
     @Published private(set) var hasAccess = true
     @Published private(set) var inactiveDetails: SubscriptionInactiveDetails?
     @Published private(set) var isLoading = false
+    @Published private(set) var hasCheckedOnce = false
 
     private let apiBaseURL = URL(string: "https://www.anyloc.io")!
 
@@ -16,6 +17,7 @@ final class SubscriptionService: ObservableObject {
         hasAccess = true
         inactiveDetails = nil
         isLoading = false
+        hasCheckedOnce = false
     }
 
     func refresh() async {
@@ -41,7 +43,9 @@ final class SubscriptionService: ObservableObject {
             let decoded = try JSONDecoder().decode(SubscriptionAccessResponse.self, from: data)
             hasAccess = decoded.hasAccess
             inactiveDetails = decoded.hasAccess ? nil : (decoded.inactive ?? .fallback)
+            hasCheckedOnce = true
         } catch {
+            hasCheckedOnce = true
             print("[Anyloc] Subscription refresh failed:", error.localizedDescription)
         }
     }
