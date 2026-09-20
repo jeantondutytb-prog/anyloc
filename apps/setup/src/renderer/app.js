@@ -281,12 +281,63 @@ async function applyPlatformHints() {
   try {
     desktopPlatform = (await window.anylocSetup.getPlatform()) || desktopPlatform;
   } catch {}
+  guidePlatform = desktopPlatform;
   document.body.dataset.platform = desktopPlatform;
+
+  const isWin = desktopPlatform === "win";
+  const computerLabel = isWin ? "PC Windows" : "Mac";
+  const computerShort = isWin ? "PC" : "Mac";
+
+  const sidebarTagline = $("sidebar-tagline");
+  if (sidebarTagline) {
+    sidebarTagline.textContent = isWin ? "Pont PC ↔ iPhone" : "Pont Mac ↔ iPhone";
+  }
+
+  const guideStep1Title = $("guide-step1-title");
+  if (guideStep1Title) {
+    guideStep1Title.textContent = isWin ? "Prépare ton PC" : "Prépare ton Mac";
+  }
+
+  const platformReq = $("guide-platform-req");
+  if (platformReq) {
+    platformReq.textContent = isWin ? "ce PC Windows" : "ce Mac";
+  }
+
   const guideHint = $("guide-win-hint");
-  if (guideHint) guideHint.hidden = desktopPlatform !== "win";
+  if (guideHint) guideHint.hidden = !isWin;
+
+  const devModeTip = $("guide-devmode-tip");
+  if (devModeTip) {
+    devModeTip.textContent = isWin
+      ? "Le mode développeur n'apparaît qu'après avoir branché l'iPhone au PC au moins une fois."
+      : "Le mode développeur n'apparaît qu'après avoir branché l'iPhone au Mac au moins une fois.";
+  }
+
+  const readyStep1 = $("ready-step1-text");
+  if (readyStep1) {
+    readyStep1.innerHTML = `Connecte-toi avec le <strong>même compte</strong> que sur ce ${computerShort}.`;
+  }
+
+  const readyStep2 = $("ready-step2-text");
+  if (readyStep2) {
+    readyStep2.innerHTML = `Sur l'iPhone, dans <strong>Découvrir</strong>, ou ici sur le ${computerShort}.`;
+  }
+
+  const readyStep3Title = $("ready-step3-title");
+  if (readyStep3Title) {
+    readyStep3Title.textContent = isWin ? "Le PC applique le GPS" : "Le Mac applique le GPS";
+  }
+
+  const readyStep3Text = $("ready-step3-text");
+  if (readyStep3Text) {
+    readyStep3Text.textContent = isWin
+      ? "Garde cette app ouverte (icône près de l'horloge) — ta fausse position se met à jour toute seule sur Snap, Insta, Tinder…"
+      : "Garde cette app ouverte (barre de menus) — ta fausse position se met à jour toute seule sur Snap, Insta, Tinder…";
+  }
+
   const deviceLabel = $("profil-device");
   if (deviceLabel) {
-    deviceLabel.textContent = desktopPlatform === "win" ? "Windows" : "Mac";
+    deviceLabel.textContent = computerLabel;
   }
 
   const versionLabel = $("profil-version");
@@ -1012,12 +1063,10 @@ async function init() {
   });
 
   // Guide
-  window.anylocSetup.getPlatform().then((p) => {
-    guidePlatform = p;
-    const platformReq = $("guide-platform-req");
-    if (platformReq) {
-      platformReq.textContent = p === "win" ? "ce PC Windows" : "ce Mac";
-    }
+  void applyPlatformHints();
+
+  $("guide-win-itunes-btn")?.addEventListener("click", () => {
+    void window.anylocSetup.openExternal("https://apps.microsoft.com/detail/9np83lwlpz9k");
   });
 
   $("guide-skip-btn")?.addEventListener("click", () => {

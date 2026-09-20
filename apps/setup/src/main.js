@@ -549,16 +549,35 @@ ipcMain.handle("setup:check-usb", async (_event, payload) => {
 });
 
 ipcMain.handle("setup:open-external", async (_event, url) => {
-  const allowed = new Set([
+  const raw = String(url || "");
+  if (!raw) return { ok: false };
+
+  const allowedExact = new Set([
     "https://www.python.org/downloads/windows/",
     "https://apps.microsoft.com/detail/9np83lwlpz9k",
     "ms-windows-store://pdp/?ProductId=9NP83LWLPZ9K",
   ]);
-  if (!allowed.has(String(url || ""))) {
-    return { ok: false };
+  if (allowedExact.has(raw)) {
+    await shell.openExternal(raw);
+    return { ok: true };
   }
-  await shell.openExternal(url);
-  return { ok: true };
+
+  try {
+    const parsed = new URL(raw);
+    if (
+      parsed.protocol === "https:" &&
+      (parsed.hostname === "anyloc.io" ||
+        parsed.hostname === "www.anyloc.io" ||
+        parsed.hostname.endsWith(".anyloc.io"))
+    ) {
+      await shell.openExternal(raw);
+      return { ok: true };
+    }
+  } catch {
+    // Invalid URL — fall through.
+  }
+
+  return { ok: false };
 });
 
 ipcMain.handle("setup:ensure-ipa", async () => {

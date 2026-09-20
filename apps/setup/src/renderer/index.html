@@ -46,7 +46,7 @@
     <div id="main-screen" class="screen main-screen">
       <aside class="app-sidebar">
         <div class="sidebar-brand">Any<span>loc</span></div>
-        <p class="sidebar-tagline">Pont Mac ↔ iPhone</p>
+        <p class="sidebar-tagline" id="sidebar-tagline">Pont ordinateur ↔ iPhone</p>
 
         <nav class="sidebar-nav">
           <button type="button" class="sidebar-btn tab-btn active" data-tab="statut">
@@ -250,8 +250,13 @@
           <div class="guide-icon-wrap">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
           </div>
-          <h2 class="guide-title">Prépare ton Mac</h2>
-          <p class="guide-subtitle">Anyloc installe automatiquement les outils USB. Il te faut un iPhone, un câble et <span id="guide-platform-req">ce Mac</span>.</p>
+          <h2 class="guide-title" id="guide-step1-title">Prépare ton ordinateur</h2>
+          <p class="guide-subtitle">Anyloc installe automatiquement les outils USB. Il te faut un iPhone, un câble et <span id="guide-platform-req">ton ordinateur</span>.</p>
+
+          <div class="guide-tip-box" id="guide-win-hint" hidden>
+            <p>Sur Windows, installe d'abord <strong>iTunes</strong> (pilotes Apple USB) — sans ça l'iPhone n'est souvent pas détecté.</p>
+            <button type="button" class="guide-btn-secondary" id="guide-win-itunes-btn">Ouvrir iTunes dans le Microsoft Store</button>
+          </div>
 
           <div class="guide-status-box" id="guide-tools-status">
             <div class="guide-status-icon searching" id="guide-tools-icon">
@@ -295,7 +300,7 @@
 
           <div class="guide-tip-box">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--accent)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-            <span>Le mode développeur n'apparaît qu'après avoir branché l'iPhone au Mac au moins une fois.</span>
+            <span id="guide-devmode-tip">Le mode développeur n'apparaît qu'après avoir branché l'iPhone à l'ordinateur au moins une fois.</span>
           </div>
 
           <div class="guide-status-box" id="guide-usb-status">
@@ -352,21 +357,21 @@
             <div class="ready-step-num">1</div>
             <div>
               <h3>Ouvre Anyloc sur ton iPhone</h3>
-              <p>Connecte-toi avec le <strong>même compte</strong> que sur ce Mac.</p>
+              <p id="ready-step1-text">Connecte-toi avec le <strong>même compte</strong> que sur cet ordinateur.</p>
             </div>
           </div>
           <div class="ready-step">
             <div class="ready-step-num">2</div>
             <div>
               <h3>Choisis ta destination</h3>
-              <p>Sur l'iPhone, dans <strong>Découvrir</strong>, ou ici sur le Mac.</p>
+              <p id="ready-step2-text">Sur l'iPhone, dans <strong>Découvrir</strong>, ou ici sur l'ordinateur.</p>
             </div>
           </div>
           <div class="ready-step">
             <div class="ready-step-num">3</div>
             <div>
-              <h3>Le Mac applique le GPS</h3>
-              <p>Garde cette app ouverte (barre de menus) — ta fausse position se met à jour toute seule sur Snap, Insta, Tinder…</p>
+              <h3 id="ready-step3-title">L'ordinateur applique le GPS</h3>
+              <p id="ready-step3-text">Garde cette app ouverte en arrière-plan — ta fausse position se met à jour toute seule sur Snap, Insta, Tinder…</p>
             </div>
           </div>
         </div>
