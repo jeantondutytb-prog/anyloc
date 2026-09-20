@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   HelpCircle,
+  MapPin,
   Menu,
   Smartphone,
   User,
@@ -22,7 +23,8 @@ type MenuItem = {
 const MENU_SECTIONS: { items: MenuItem[] }[] = [
   {
     items: [
-      { icon: Smartphone, label: "Installation", href: "/dashboard" },
+      { icon: MapPin, label: "Téléportation", href: "/dashboard" },
+      { icon: Smartphone, label: "Installation", href: "/dashboard/installation" },
       { icon: User, label: "Mon compte", href: "/dashboard?tab=account" },
     ],
   },
@@ -69,7 +71,7 @@ function isActive(pathname: string, currentTab: string | null, href: string) {
 
   if (hrefPath === "/dashboard" && pathname === "/dashboard") {
     const hrefTab = new URLSearchParams(query ?? "").get("tab");
-    if (!hrefTab) return !currentTab || currentTab === "installation";
+    if (!hrefTab) return !currentTab;
     return currentTab === hrefTab;
   }
 
