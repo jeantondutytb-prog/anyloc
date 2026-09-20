@@ -418,7 +418,7 @@ function setSelectedPosition(lat, lng, name) {
 function updateBottomSheet() {
   const container = $("sheet-content");
   if (!selectedPosition) {
-    container.innerHTML = '<p class="sheet-placeholder">Clique sur la carte ou cherche un lieu</p>';
+    container.innerHTML = '<p class="sheet-placeholder">Choisis où tu veux apparaître sur Snap, Insta, Tinder…</p>';
     return;
   }
 
