@@ -46,13 +46,6 @@ module.exports = {
     contents: [
       { x: 130, y: 220, type: "file" },
       { x: 410, y: 220, type: "link", path: "/Applications" },
-      {
-        x: 270,
-        y: 380,
-        type: "file",
-        path: path.join(__dirname, "build", "install-mac.command"),
-        name: "Installer Anyloc (double-clic).command",
-      },
     ],
   },
   afterPack(context) {

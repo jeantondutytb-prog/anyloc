@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Check, ChevronDown, Copy, Mail, Monitor, Terminal } from "lucide-react";
+import { Check, ChevronDown, Copy, Mail, Monitor } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SetupQrCode } from "@/components/dashboard/setup-qr-code";
 import { WindowsOpenHelp } from "@/components/dashboard/windows-open-help";
@@ -62,59 +62,41 @@ export function WrongDeviceNotice({
   );
 }
 
-const XATTR_COMMAND =
-  "xattr -cr /Applications/Anyloc.app && open /Applications/Anyloc.app";
-
 function MacGatekeeperFix() {
-  const [copied, setCopied] = useState(false);
-
-  const copy = async () => {
-    await navigator.clipboard.writeText(XATTR_COMMAND);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 2000);
-  };
-
   return (
     <details className="group mt-3 rounded-xl border border-amber-200 bg-amber-50">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-semibold text-amber-900 [&::-webkit-details-marker]:hidden">
-        <span>
-          Ça dit « endommagé » ou rien ne se passe ?
-        </span>
+        <span>macOS bloque l&apos;app ?</span>
         <ChevronDown className="h-4 w-4 shrink-0 text-amber-500 transition-transform group-open:rotate-180" />
       </summary>
       <div className="border-t border-amber-200 px-4 py-3 text-sm text-amber-900/90">
         <p>
-          macOS bloque les apps hors App Store. Dans le DMG, double-clique
-          sur{" "}
-          <strong>
-            Installer Anyloc (double-clic).command
-          </strong>{" "}
-          — ça copie l&apos;app dans Applications et l&apos;ouvre
-          automatiquement.
+          C&apos;est normal — macOS bloque les apps hors App Store. Voilà
+          comment débloquer :
         </p>
-        <p className="mt-2 text-xs text-amber-800/80">
-          Si ça ne marche toujours pas, ouvre <strong>Terminal</strong> et
-          colle cette commande :
+        <ol className="mt-2 list-decimal space-y-2 pl-5">
+          <li>
+            Clique <strong>Terminé</strong> sur le message d&apos;erreur
+          </li>
+          <li>
+            Ouvre{" "}
+            <strong>
+              Réglages Système → Confidentialité et sécurité
+            </strong>
+          </li>
+          <li>
+            Scrolle en bas — tu verras « Anyloc a été bloqué ».
+            Clique{" "}
+            <strong>Ouvrir quand même</strong>
+          </li>
+          <li>
+            Confirme avec ton mot de passe Mac → <strong>Ouvrir</strong>
+          </li>
+        </ol>
+        <p className="mt-3 text-xs text-amber-800/70">
+          Tu ne fais ça qu&apos;une seule fois. Après, Anyloc s&apos;ouvre
+          normalement.
         </p>
-        <div className="mt-2 flex items-center gap-2 rounded-lg bg-zinc-900 px-3 py-2">
-          <Terminal className="h-4 w-4 shrink-0 text-zinc-400" />
-          <code className="flex-1 break-all text-xs text-emerald-400">
-            {XATTR_COMMAND}
-          </code>
-        </div>
-        <Button
-          type="button"
-          size="sm"
-          className="mt-2"
-          onClick={() => void copy()}
-        >
-          {copied ? (
-            <Check className="h-4 w-4" />
-          ) : (
-            <Copy className="h-4 w-4" />
-          )}
-          {copied ? "Copié !" : "Copier la commande"}
-        </Button>
       </div>
     </details>
   );
@@ -182,8 +164,8 @@ export function SetupOpenHelp({
               Ouvre <strong>Téléchargements</strong> (icône en bas, ou Finder)
             </li>
             <li>
-              Double-clique <strong>Anyloc</strong> — une fenêtre s&apos;ouvre
-              (on dirait un dossier)
+              Double-clique <strong>Anyloc.dmg</strong> — une fenêtre
+              s&apos;ouvre avec l&apos;icône Anyloc
             </li>
             <li>
               Glisse <strong>Anyloc</strong> sur le dossier{" "}
@@ -191,7 +173,7 @@ export function SetupOpenHelp({
             </li>
             <li>
               Va dans Applications → <strong>clic droit</strong> sur Anyloc →{" "}
-              <strong>Ouvrir</strong> → <strong>Ouvrir</strong>
+              <strong>Ouvrir</strong> → confirme <strong>Ouvrir</strong>
             </li>
           </ol>
           <MacGatekeeperFix />
