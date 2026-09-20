@@ -5,7 +5,6 @@ import {
   ONBOARDING_USE_CASES,
   type OnboardingUseCase,
 } from "@/lib/onboarding-use-cases";
-import { cn } from "@/lib/utils";
 
 function UseCaseCard({
   useCase,

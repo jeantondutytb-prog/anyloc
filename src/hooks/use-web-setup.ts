@@ -104,12 +104,13 @@ export function useWebSetup({ preview = false }: { preview?: boolean } = {}) {
   }, [raw]);
 
   const [previewState, setPreviewState] = useState(DEFAULT_WEB_SETUP_STATE);
-  const [hydrated, setHydrated] = useState(preview);
+  const isClient = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
+  const hydrated = preview || isClient;
   const state = preview ? previewState : stored;
-
-  useEffect(() => {
-    setHydrated(true);
-  }, []);
 
   useEffect(() => {
     if (preview || stored.completed) {
