@@ -22,7 +22,7 @@ struct LoginView: View {
                             .foregroundColor(Theme.text)
                         Text("loc")
                             .font(.system(size: 42, weight: .bold))
-                            .foregroundColor(Theme.accent)
+                            .foregroundColor(Theme.accentSolid)
                     }
 
                     Text("Change ta position. Partout dans le monde.")
@@ -45,12 +45,7 @@ struct LoginView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
-                        .background(Theme.bgSurface)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Theme.border, lineWidth: 1)
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .cardBackground(cornerRadius: 12)
                     }
 
                     // Divider
@@ -69,24 +64,14 @@ struct LoginView: View {
                         .autocorrectionDisabled()
                         .padding(14)
                         .foregroundColor(Theme.text)
-                        .background(Theme.bgSurface)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Theme.border, lineWidth: 1)
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .cardBackground(cornerRadius: 12)
 
                     // Password
                     SecureField("Mot de passe", text: $password)
                         .textContentType(isSignup ? .newPassword : .password)
                         .padding(14)
                         .foregroundColor(Theme.text)
-                        .background(Theme.bgSurface)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Theme.border, lineWidth: 1)
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .cardBackground(cornerRadius: 12)
 
                     if !errorMessage.isEmpty {
                         Text(errorMessage)
@@ -101,14 +86,9 @@ struct LoginView: View {
                     } label: {
                         Text(isSignup ? "Créer mon compte" : "Se connecter")
                             .fontWeight(.semibold)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(Theme.accent)
-                            .foregroundColor(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
+                    .buttonStyle(PrimaryGradientButtonStyle(isDisabled: isSubmitting || email.isEmpty || password.isEmpty))
                     .disabled(isSubmitting || email.isEmpty || password.isEmpty)
-                    .opacity(isSubmitting ? 0.5 : 1)
 
                     // Toggle signup
                     Button {
@@ -118,7 +98,7 @@ struct LoginView: View {
                         Text(isSignup ? "Déjà un compte ? " : "Pas encore de compte ? ")
                             .foregroundColor(Theme.textMuted) +
                         Text(isSignup ? "Se connecter" : "Créer un compte")
-                            .foregroundColor(Theme.accent)
+                            .foregroundColor(Theme.accentSolid)
                     }
                     .font(.caption)
                 }
@@ -128,7 +108,7 @@ struct LoginView: View {
             }
             .padding()
         }
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(.light)
     }
 
     private func emailLogin() async {
