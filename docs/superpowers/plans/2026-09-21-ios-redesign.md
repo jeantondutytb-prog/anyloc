@@ -18,7 +18,7 @@
 - Android (`apps/android`) is out of scope.
 - `FavoritesView.swift` exists but is not wired into any navigation today (confirmed via `grep -rn "FavoritesView(" apps/ios/Anyloc/` — no results). It still gets themed for consistency, since the spec lists it in scope, but this plan does not add it to `MainTabView` — that would be a navigation/IA change beyond the approved spec.
 - `MainTabView`'s 3 tabs (Carte / Découvrir / Profil) already have explicit labels + SF Symbols; this plan does not rename them or add a 4th tab — it only re-themes and tightens the active/inactive visual state, since renaming would be a scope change beyond what was approved.
-- Build check command used throughout: `xcodebuild -project apps/ios/Anyloc.xcodeproj -scheme Anyloc -destination 'generic/platform=iOS Simulator' -configuration Debug CODE_SIGNING_ALLOWED=NO build` (run from `/Users/jean/anyloc`). This compiles without needing a provisioning profile.
+- Build check command used throughout: `xcodebuild -project apps/ios/Anyloc.xcodeproj -scheme Anyloc -destination 'generic/platform=iOS Simulator' -configuration Debug CODE_SIGNING_ALLOWED=NO build` (run from the repo root of whichever checkout/worktree you're in). This compiles without needing a provisioning profile.
 
 ---
 
