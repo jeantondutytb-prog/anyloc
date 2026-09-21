@@ -23,7 +23,7 @@ struct RenewalView: View {
                 .padding(.bottom, 40)
             }
         }
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(.light)
         .task {
             await renewal.refreshPairingStatus()
         }
@@ -81,12 +81,7 @@ struct RenewalView: View {
             }
         }
         .padding(16)
-        .background(Theme.bgSurface)
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(Theme.border, lineWidth: 1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .cardBackground()
     }
 
     private var stepsCard: some View {
@@ -101,12 +96,7 @@ struct RenewalView: View {
             renewalStep(number: 3, title: "Renouveler", detail: "Reviens ici et appuie sur Renouveler, puis relance Anyloc.")
         }
         .padding(16)
-        .background(Theme.bgSurface)
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(Theme.border, lineWidth: 1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .cardBackground()
     }
 
     private var actions: some View {
@@ -118,20 +108,16 @@ struct RenewalView: View {
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
-                    .background(Theme.bgSurface)
                     .foregroundColor(Theme.text)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14)
-                            .stroke(Theme.border, lineWidth: 1)
-                    )
             }
+            .cardBackground()
 
             Toggle(isOn: $localDevConnected) {
                 Text("LocalDevVPN est connecté (bouton vert)")
                     .font(.subheadline)
                     .foregroundColor(Theme.text)
             }
-            .tint(Theme.accent)
+            .tint(Theme.accentSolid)
             .padding(.horizontal, 4)
 
             Button {
@@ -143,14 +129,9 @@ struct RenewalView: View {
                             .tint(.white)
                     }
                     Text(isWorking ? "Vérification…" : "Renouveler")
-                        .font(.headline)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(localDevConnected && !isWorking ? Theme.accent : Theme.accent.opacity(0.45))
-                .foregroundColor(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
             }
+            .buttonStyle(PrimaryGradientButtonStyle(isDisabled: !localDevConnected || isWorking))
             .disabled(!localDevConnected || isWorking)
 
             if let message = renewal.statusMessage {
@@ -159,8 +140,7 @@ struct RenewalView: View {
                     .foregroundColor(Theme.textMuted)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(12)
-                    .background(Theme.bgSurface)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .cardBackground(cornerRadius: 12)
             }
         }
     }
@@ -177,13 +157,13 @@ struct RenewalView: View {
                 renewal.openRenewalHelp()
             }
             .font(.footnote.weight(.semibold))
-            .foregroundColor(Theme.accent)
+            .foregroundColor(Theme.accentSolid)
         }
         .padding(16)
-        .background(Theme.accent.opacity(0.08))
+        .background(Theme.accentSolid.opacity(0.08))
         .overlay(
             RoundedRectangle(cornerRadius: 14)
-                .stroke(Theme.accent.opacity(0.25), lineWidth: 1)
+                .stroke(Theme.accentSolid.opacity(0.25), lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: 14))
     }
@@ -194,7 +174,7 @@ struct RenewalView: View {
                 .font(.caption.bold())
                 .foregroundColor(.white)
                 .frame(width: 24, height: 24)
-                .background(Theme.accent)
+                .background(Theme.accentSolid)
                 .clipShape(Circle())
 
             VStack(alignment: .leading, spacing: 4) {
@@ -299,10 +279,10 @@ struct RenewalBanner: View {
                         .foregroundColor(Theme.textDim)
                 }
                 .padding(12)
-                .background(Color.orange.opacity(0.12))
+                .background(Color.orange.opacity(0.10))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.orange.opacity(0.35), lineWidth: 1)
+                        .stroke(Color.orange.opacity(0.30), lineWidth: 1)
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }

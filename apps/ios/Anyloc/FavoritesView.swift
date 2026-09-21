@@ -40,7 +40,7 @@ struct FavoritesView: View {
                                 HStack(spacing: 12) {
                                     Image(systemName: "mappin.circle.fill")
                                         .font(.title3)
-                                        .foregroundColor(Theme.accent)
+                                        .foregroundColor(Theme.accentSolid)
 
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(fav.name)
@@ -61,7 +61,7 @@ struct FavoritesView: View {
                                             .font(.caption.bold())
                                             .padding(.horizontal, 14)
                                             .padding(.vertical, 6)
-                                            .background(Theme.accent)
+                                            .background(Theme.accentGradient)
                                             .foregroundColor(.white)
                                             .clipShape(Capsule())
                                     }
@@ -75,12 +75,7 @@ struct FavoritesView: View {
                                     }
                                 }
                                 .padding(12)
-                                .background(Theme.bgSurface)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Theme.border, lineWidth: 1)
-                                )
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .cardBackground(cornerRadius: 12)
                             }
                         }
                         .padding(.horizontal)

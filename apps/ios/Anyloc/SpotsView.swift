@@ -100,7 +100,7 @@ struct SpotsView: View {
                                     .font(.caption.bold())
                                     .padding(.horizontal, 14)
                                     .padding(.vertical, 7)
-                                    .background(vm.selectedCategory == cat.id ? Theme.accent : Theme.bgSurfaceHover)
+                                    .background(vm.selectedCategory == cat.id ? Theme.accentSolid : Theme.bgSurfaceHover)
                                     .foregroundColor(vm.selectedCategory == cat.id ? .white : Theme.textMuted)
                                     .clipShape(Capsule())
                                     .overlay(
@@ -140,12 +140,7 @@ struct SpotsView: View {
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 16)
                                 .padding(.horizontal, 8)
-                                .background(Theme.bgSurface)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 14)
-                                        .stroke(Theme.border, lineWidth: 1)
-                                )
-                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                                .cardBackground(cornerRadius: 14)
                             }
                             .disabled(vm.isTeleporting)
                         }
