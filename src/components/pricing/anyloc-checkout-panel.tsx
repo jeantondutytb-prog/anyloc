@@ -74,6 +74,7 @@ export function AnyLocCheckoutPanel({
   const requestRef = useRef<AbortController | null>(null);
   const paymentSectionRef = useRef<HTMLDivElement>(null);
   const [skipTrial, setSkipTrial] = useState<boolean | null>(null);
+  const [paymentVisible, setPaymentVisible] = useState(false);
 
   function scrollToPayment() {
     requestAnimationFrame(() => {
@@ -151,11 +152,22 @@ export function AnyLocCheckoutPanel({
     return () => requestRef.current?.abort();
   }, [selectedPlanId, skipTrial]);
 
+  useEffect(() => {
+    const el = paymentSectionRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setPaymentVisible(entry.isIntersecting),
+      { threshold: 0.1 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   const consentParts = copy.consent.split("{cgv}");
   const headline = getCheckoutHeadline(destination?.city);
 
   return (
-    <div className="anyloc-checkout mx-auto max-w-6xl px-4 sm:px-6">
+    <div className={cn("anyloc-checkout mx-auto max-w-6xl px-4 sm:px-6", !paymentVisible && "pb-20")}>
       {canceled && (
         <p className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           {copy.canceled}
@@ -419,6 +431,30 @@ export function AnyLocCheckoutPanel({
           {copy.backCta}
         </button>
       ) : null}
+
+      {!paymentVisible && (
+        <div className="fixed inset-x-0 bottom-0 z-50 border-t border-zinc-200 bg-white/95 px-4 py-3 backdrop-blur-sm">
+          <div className="mx-auto flex max-w-2xl items-center justify-between gap-4">
+            <div className="hidden sm:block">
+              <p className="text-sm font-semibold text-zinc-900">
+                {skipTrial ? "Accès complet" : "0 € maintenant"}
+              </p>
+              <p className="text-xs text-zinc-500">
+                {skipTrial
+                  ? "Paiement sécurisé · Garantie 48 h"
+                  : "Essai gratuit 24 h · Annulation en 1 clic"}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={scrollToPayment}
+              className="btn-gradient w-full rounded-full px-8 py-3 text-sm font-bold text-white transition hover:opacity-90 sm:w-auto"
+            >
+              {skipTrial ? "Payer maintenant ↓" : "Essayer gratuitement ↓"}
+            </button>
+          </div>
+        </div>
+      )}
 
       <style jsx global>{`
         @keyframes fadeIn {
