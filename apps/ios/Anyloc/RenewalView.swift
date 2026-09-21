@@ -279,10 +279,10 @@ struct RenewalBanner: View {
                         .foregroundColor(Theme.textDim)
                 }
                 .padding(12)
-                .background(Color.orange.opacity(0.12))
+                .background(Color.orange.opacity(0.10))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.orange.opacity(0.35), lineWidth: 1)
+                        .stroke(Color.orange.opacity(0.30), lineWidth: 1)
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }

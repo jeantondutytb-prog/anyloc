@@ -14,7 +14,7 @@ struct SubscriptionExpiredView: View {
                     HStack {
                         HStack(spacing: 8) {
                             Image(systemName: "mappin.circle.fill")
-                                .foregroundColor(Theme.accent)
+                                .foregroundColor(Theme.accentSolid)
                             Text("Anyloc")
                                 .font(.headline.bold())
                                 .foregroundColor(Theme.text)
@@ -34,12 +34,7 @@ struct SubscriptionExpiredView: View {
                     VStack(alignment: .leading, spacing: 16) {
                         iconView
                             .frame(width: 48, height: 48)
-                            .background(Theme.bgSurface)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 14)
-                                    .stroke(Theme.border, lineWidth: 1)
-                            )
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                            .cardBackground(cornerRadius: 14)
 
                         Text(details.title)
                             .font(.title.bold())
@@ -56,25 +51,15 @@ struct SubscriptionExpiredView: View {
                                 .foregroundColor(Theme.textMuted)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(14)
-                                .background(Theme.bgSurface)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 14)
-                                        .stroke(Theme.border, lineWidth: 1)
-                                )
-                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                                .cardBackground(cornerRadius: 14)
                         }
 
                         Button {
                             openURL(details.checkoutUrl)
                         } label: {
                             Text(details.ctaLabel)
-                                .font(.headline)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 14)
-                                .background(Theme.accent)
-                                .foregroundColor(.white)
-                                .clipShape(RoundedRectangle(cornerRadius: 14))
                         }
+                        .buttonStyle(PrimaryGradientButtonStyle())
 
                         Button {
                             openURL(details.pricingUrl)
@@ -83,13 +68,9 @@ struct SubscriptionExpiredView: View {
                                 .font(.headline)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 14)
-                                .background(Theme.bgSurface)
                                 .foregroundColor(Theme.text)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 14)
-                                        .stroke(Theme.border, lineWidth: 1)
-                                )
                         }
+                        .cardBackground(cornerRadius: 14)
 
                         if details.reason == "payment_failed" {
                             Text("Tu peux aussi mettre à jour ta carte depuis le checkout Stripe, ou nous écrire sur \(details.supportEmail).")
@@ -100,10 +81,10 @@ struct SubscriptionExpiredView: View {
                     .padding(24)
                     .background(
                         RoundedRectangle(cornerRadius: 20)
-                            .fill(Theme.bgSurface.opacity(0.95))
+                            .fill(Theme.bgSurface)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 20)
-                                    .stroke(Theme.accent.opacity(0.25), lineWidth: 1)
+                                    .stroke(Theme.accentSolid.opacity(0.25), lineWidth: 1)
                             )
                     )
 
@@ -116,7 +97,7 @@ struct SubscriptionExpiredView: View {
                 .padding(20)
             }
         }
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(.light)
     }
 
     @ViewBuilder
@@ -127,7 +108,7 @@ struct SubscriptionExpiredView: View {
                 .foregroundColor(.orange)
         case "trial_cancelled", "trial_ended":
             Image(systemName: "sparkles")
-                .foregroundColor(Theme.accent)
+                .foregroundColor(Theme.accentSolid)
         default:
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundColor(Theme.text)
