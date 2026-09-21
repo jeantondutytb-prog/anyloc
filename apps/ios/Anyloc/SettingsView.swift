@@ -47,7 +47,7 @@ struct SettingsView: View {
                                 HStack(spacing: 12) {
                                     Image(systemName: "crown.fill")
                                         .font(.title2)
-                                        .foregroundColor(Theme.accentSolid)
+                                        .foregroundColor(Theme.accent)
 
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text("Plan actuel")
@@ -118,7 +118,7 @@ struct SettingsView: View {
                                 HStack(spacing: 10) {
                                     Image(systemName: "arrow.clockwise.circle.fill")
                                         .font(.title2)
-                                        .foregroundColor(Theme.accentSolid)
+                                        .foregroundColor(Theme.accent)
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(renewalStatusLabel)
                                             .font(.subheadline.bold())
@@ -135,8 +135,13 @@ struct SettingsView: View {
                                     showRenewal = true
                                 } label: {
                                     Text("Renouveler maintenant")
+                                        .font(.subheadline.bold())
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 10)
+                                        .background(Theme.accent)
+                                        .foregroundColor(.white)
+                                        .clipShape(RoundedRectangle(cornerRadius: 10))
                                 }
-                                .buttonStyle(PrimaryGradientButtonStyle())
                                 .padding(.horizontal, 12)
                                 .padding(.bottom, 12)
                             }
@@ -247,14 +252,14 @@ struct SettingsView: View {
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
-                                .background(Theme.accentSolid)
+                                .background(Theme.accent)
                                 .clipShape(Capsule())
                         }
                     }
                     HStack(alignment: .firstTextBaseline, spacing: 2) {
                         Text(perDay)
                             .font(.title2.bold())
-                            .foregroundColor(Theme.accentSolid)
+                            .foregroundColor(Theme.accent)
                         Text("/jour")
                             .font(.caption)
                             .foregroundColor(Theme.textDim)
@@ -272,7 +277,7 @@ struct SettingsView: View {
                         .frame(maxWidth: 110)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 7)
-                        .background(popular ? Theme.accentSolid : Theme.bgSurfaceHover)
+                        .background(popular ? Theme.accent : Theme.bgSurfaceHover)
                         .foregroundColor(popular ? .white : Theme.text)
                         .clipShape(Capsule())
                         .overlay(
@@ -297,10 +302,10 @@ struct SettingsView: View {
             }
         }
         .padding(12)
-        .background(popular ? Theme.accentSolid.opacity(0.06) : Theme.bg)
+        .background(popular ? Theme.accent.opacity(0.06) : Theme.bg)
         .overlay(
             RoundedRectangle(cornerRadius: 10)
-                .stroke(popular ? Theme.accentSolid.opacity(0.3) : Theme.border, lineWidth: 1)
+                .stroke(popular ? Theme.accent.opacity(0.3) : Theme.border, lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
