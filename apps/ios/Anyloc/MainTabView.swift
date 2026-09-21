@@ -28,14 +28,14 @@ struct MainTabView: View {
             .padding(.horizontal, 8)
             .padding(.top, 8)
             .padding(.bottom, 4)
-            .background(Theme.bgSurface.opacity(0.95))
+            .background(Theme.bgSurface.opacity(0.98))
             .overlay(
                 Rectangle().fill(Theme.border).frame(height: 1),
                 alignment: .top
             )
         }
         .ignoresSafeArea(.keyboard)
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(.light)
         .sheet(isPresented: $showRenewal) {
             RenewalView()
         }
@@ -58,7 +58,7 @@ struct MainTabView: View {
                 Text(label)
                     .font(.system(size: 10, weight: .medium))
             }
-            .foregroundColor(selectedTab == tag ? Theme.accent : Theme.textDim)
+            .foregroundColor(selectedTab == tag ? Theme.accentSolid : Theme.textDim)
             .frame(maxWidth: .infinity)
         }
     }
