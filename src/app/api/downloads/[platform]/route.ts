@@ -3,6 +3,7 @@ import {
   isValidDownloadPlatform,
   resolveDownloadUrl,
 } from "@/lib/downloads";
+import { capturePostHogEvent } from "@/lib/posthog/server";
 import { requireActiveSubscription } from "@/lib/subscription";
 
 type RouteContext = {
@@ -10,8 +11,8 @@ type RouteContext = {
 };
 
 async function hasDownloadAccess() {
-  const { error, access } = await requireActiveSubscription();
-  return { allowed: Boolean(access?.hasAccess), error };
+  const { user, error, access } = await requireActiveSubscription();
+  return { userId: user?.id ?? null, allowed: Boolean(access?.hasAccess), error };
 }
 
 export async function GET(_request: Request, context: RouteContext) {
@@ -21,7 +22,7 @@ export async function GET(_request: Request, context: RouteContext) {
     return Response.json({ error: "Plateforme inconnue." }, { status: 404 });
   }
 
-  const { allowed, error } = await hasDownloadAccess();
+  const { userId, allowed, error } = await hasDownloadAccess();
 
   if (!allowed) {
     return Response.json(
@@ -41,6 +42,14 @@ export async function GET(_request: Request, context: RouteContext) {
       },
       { status: 503 }
     );
+  }
+
+  if (userId) {
+    await capturePostHogEvent({
+      distinctId: userId,
+      event: "app_downloaded",
+      properties: { platform },
+    });
   }
 
   return new Response(null, {

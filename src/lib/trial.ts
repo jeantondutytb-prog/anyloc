@@ -1,12 +1,12 @@
-export const TRIAL_DURATION_MS = 10 * 60 * 1000;
+export const TRIAL_DURATION_MS = 24 * 60 * 60 * 1000;
 
 export const TRIAL_DURATION_SECONDS = TRIAL_DURATION_MS / 1000;
 
-export const TRIAL_DURATION_MINUTES = 10;
+export const TRIAL_DURATION_HOURS = 24;
 
-export const TRIAL_DURATION_LABEL = `${TRIAL_DURATION_MINUTES} min`;
+export const TRIAL_DURATION_LABEL = `${TRIAL_DURATION_HOURS} h`;
 
-export const TRIAL_DURATION_TOLERANCE_SECONDS = 60;
+export const TRIAL_DURATION_TOLERANCE_SECONDS = 300;
 
 export const TRIAL_HEADLINE =
   `Essai gratuit ${TRIAL_DURATION_LABEL} — ta carte est enregistrée, aucun prélèvement avant la fin de l'essai.`;

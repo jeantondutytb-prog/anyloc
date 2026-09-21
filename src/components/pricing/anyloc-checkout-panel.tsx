@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { CreditCard, ShieldCheck, XCircle } from "lucide-react";
 import { AuthDivider } from "@/components/auth/auth-divider";
 import { GoogleAuthLink } from "@/components/auth/google-auth-link";
 import { StripeEmbeddedCheckout } from "@/components/checkout/stripe-embedded-checkout";
@@ -281,9 +282,24 @@ export function AnyLocCheckoutPanel({
         className="mx-auto mt-12 max-w-2xl scroll-mt-28"
       >
         <h3 className="text-center text-lg font-semibold text-zinc-900">
-          Active ton essai
+          Teste gratuitement pendant 24 h — 0 € maintenant
         </h3>
         <p className="mt-2 text-center text-sm text-zinc-500">{TRIAL_HEADLINE}</p>
+
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-4 text-sm text-zinc-600">
+          <span className="flex items-center gap-1.5">
+            <CreditCard className="h-4 w-4 text-green-600" />
+            0 € prélevé aujourd'hui
+          </span>
+          <span className="flex items-center gap-1.5">
+            <XCircle className="h-4 w-4 text-pink-500" />
+            Annulation en 1 clic
+          </span>
+          <span className="flex items-center gap-1.5">
+            <ShieldCheck className="h-4 w-4 text-blue-500" />
+            Garantie 48 h
+          </span>
+        </div>
 
         {googleAuthRedirectTo ? (
           <div className="mt-6">

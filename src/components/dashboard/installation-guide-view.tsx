@@ -28,6 +28,7 @@ import {
 import { useDownloads } from "@/hooks/use-downloads";
 import { useDashboardOnboarding } from "@/hooks/use-dashboard-onboarding";
 import { SetupPasswordForm } from "@/components/dashboard/setup-password-form";
+import { capturePostHogClientEvent } from "@/lib/posthog/browser";
 import { getCheckoutUrl } from "@/lib/constants";
 import {
   PAYMENT_SUCCESS_SESSION_KEY,
@@ -185,11 +186,16 @@ function DownloadButtons({
 }) {
   const { data, loading, error } = useDownloads();
 
+  function handleDownload(assetId: string) {
+    capturePostHogClientEvent("app_downloaded", { platform: assetId });
+    onDownload?.();
+  }
+
   if (preview) {
     return (
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
         {assetIds.map((id) => (
-          <Button key={id} className="w-full sm:w-auto" onClick={onDownload}>
+          <Button key={id} className="w-full sm:w-auto" onClick={() => handleDownload(id)}>
             <Download className="h-4 w-4" />
             {getDownloadButtonLabel(id)}
           </Button>
@@ -243,7 +249,7 @@ function DownloadButtons({
           <a
             key={asset.id}
             href={asset.downloadPath}
-            onClick={onDownload}
+            onClick={() => handleDownload(asset.id)}
           >
             <Button className="w-full sm:w-auto">
               <Download className="h-4 w-4" />

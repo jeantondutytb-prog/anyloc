@@ -46,7 +46,8 @@ export const CHECKOUT_COPY = {
   trust: [
     "🔒 Paiement sécurisé",
     "· 0 € maintenant",
-    "· Accès dès la validation",
+    "· Annulation en 1 clic",
+    "· Garantie remboursement 48 h",
   ],
   reassure: [
     "Paiement 100% sécurisé",
@@ -60,6 +61,11 @@ export const CHECKOUT_COPY = {
   consentCgv: "conditions générales",
   faqTitle: "T'as des questions ? Normal.",
   faq: [
+    {
+      q: "Ma carte sera débitée tout de suite ?",
+      a:
+        "Non, 0 € maintenant. Tu as 24 h pour tester gratuitement. Si tu annules avant la fin de l'essai, aucun prélèvement. L'annulation se fait en 1 clic depuis ton espace.",
+    },
     {
       q: "Ça marche sur quelles apps ?",
       a:
