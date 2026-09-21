@@ -155,7 +155,7 @@ struct DashboardView: View {
                         } label: {
                             Text("Stop")
                                 .font(.subheadline.bold())
-                                .padding(.vertical, 10)
+                                .padding(.vertical, 14)
                                 .padding(.horizontal, 16)
                                 .background(Theme.error.opacity(0.12))
                                 .foregroundColor(Theme.error)

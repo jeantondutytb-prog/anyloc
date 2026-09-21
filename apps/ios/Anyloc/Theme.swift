@@ -11,7 +11,7 @@ enum Theme {
     static let accentBg = Color(hex: 0xEC4899, alpha: 0.12)
     static let text = Color(hex: 0x18181B)
     static let textMuted = Color(hex: 0x71717A)
-    static let textDim = Color(hex: 0xA1A1AA)
+    static let textDim = Color(hex: 0x76767E)
     static let success = Color(hex: 0x34D399)
     static let error = Color(hex: 0xF87171)
 
