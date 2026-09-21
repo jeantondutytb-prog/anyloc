@@ -15,7 +15,7 @@ struct DashboardView: View {
 
             bottomSheet
         }
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(.light)
         .task { await vm.loadCurrentLocation() }
     }
 
@@ -28,7 +28,7 @@ struct DashboardView: View {
                     Annotation("", coordinate: CLLocationCoordinate2D(latitude: pos.lat, longitude: pos.lng)) {
                         Image(systemName: "mappin.circle.fill")
                             .font(.title)
-                            .foregroundStyle(Theme.accent)
+                            .foregroundStyle(Theme.accentSolid)
                     }
                 }
             }
@@ -67,12 +67,7 @@ struct DashboardView: View {
                 }
             }
             .padding(12)
-            .background(Theme.bgSurface.opacity(0.92))
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(Theme.border, lineWidth: 1)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .cardBackground(cornerRadius: 14)
 
             if !vm.searchResults.isEmpty {
                 VStack(spacing: 0) {
@@ -98,12 +93,7 @@ struct DashboardView: View {
                         }
                     }
                 }
-                .background(Theme.bgSurface.opacity(0.95))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Theme.border, lineWidth: 1)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .cardBackground(cornerRadius: 12)
                 .padding(.top, 4)
             }
         }
@@ -114,12 +104,20 @@ struct DashboardView: View {
     // MARK: - Bottom Sheet
 
     private var bottomSheet: some View {
-        VStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
             if let pos = vm.selectedPosition {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 6) {
+                            Circle()
+                                .fill(vm.isActive ? Theme.success : Theme.textDim)
+                                .frame(width: 8, height: 8)
+                            Text(vm.isActive ? "Actif" : "Inactif")
+                                .font(.caption.bold())
+                                .foregroundColor(vm.isActive ? Theme.success : Theme.textDim)
+                        }
                         Text(pos.name)
-                            .font(.subheadline.bold())
+                            .font(.title3.bold())
                             .foregroundColor(Theme.text)
                             .lineLimit(1)
                         Text("\(pos.lat, specifier: "%.5f"), \(pos.lng, specifier: "%.5f")")
@@ -147,15 +145,9 @@ struct DashboardView: View {
                             Image(systemName: "location.fill")
                             Text(vm.isActive ? "Mettre à jour" : "Téléporter")
                         }
-                        .font(.subheadline.bold())
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(Theme.accent)
-                        .foregroundColor(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
                     }
+                    .buttonStyle(PrimaryGradientButtonStyle(isDisabled: vm.isSaving))
                     .disabled(vm.isSaving)
-                    .opacity(vm.isSaving ? 0.5 : 1)
 
                     if vm.isActive {
                         Button {
@@ -165,7 +157,7 @@ struct DashboardView: View {
                                 .font(.subheadline.bold())
                                 .padding(.vertical, 10)
                                 .padding(.horizontal, 16)
-                                .background(Theme.error.opacity(0.15))
+                                .background(Theme.error.opacity(0.12))
                                 .foregroundColor(Theme.error)
                                 .clipShape(RoundedRectangle(cornerRadius: 10))
                         }
@@ -216,12 +208,7 @@ struct DashboardView: View {
 
         }
         .padding(12)
-        .background(Theme.bgSurface.opacity(0.95))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Theme.border, lineWidth: 1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .cardBackground(cornerRadius: 16)
         .padding(.horizontal, 8)
         .padding(.bottom, 64)
     }
