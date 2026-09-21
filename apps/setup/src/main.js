@@ -156,7 +156,7 @@ function startAutoSync(session) {
   if (!session?.access_token || !session?.user?.id) return;
   autoSyncSession = session;
   saveSessionFile(session);
-  console.log("[AutoSync] Started — polling every 3s, re-apply every 5s");
+  console.log("[AutoSync] Started — polling every 1s, re-apply every 5s");
 
   autoSyncInterval = setInterval(async () => {
     try {
@@ -201,7 +201,7 @@ function startAutoSync(session) {
     } catch (err) {
       console.error("[AutoSync] Error:", err.message);
     }
-  }, 3000);
+  }, 1000);
 }
 
 function stopAutoSync() {
