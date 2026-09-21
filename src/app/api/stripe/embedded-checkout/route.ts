@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { PLANS } from "@/lib/constants";
 import { capturePostHogEvent } from "@/lib/posthog/server";
 import {
+  createSubscriptionCheckoutSession,
   createTrialSetupCheckoutSession,
   getAuthenticatedCheckoutUser,
 } from "@/lib/stripe-checkout";
@@ -22,17 +23,16 @@ export async function POST(request: Request) {
     }
 
     const user = await getAuthenticatedCheckoutUser();
+    const skipTrial = body?.skipTrial === true;
 
-    const session = await createTrialSetupCheckoutSession({
-      plan,
-      user,
-      uiMode: "embedded_page",
-    });
+    const session = skipTrial
+      ? await createSubscriptionCheckoutSession({ plan, user, uiMode: "embedded_page" })
+      : await createTrialSetupCheckoutSession({ plan, user, uiMode: "embedded_page" });
 
     await capturePostHogEvent({
       distinctId: user?.id ?? session.id,
       event: "checkout_started",
-      properties: { plan: plan.id, guest_checkout: !user, ui_mode: "embedded" },
+      properties: { plan: plan.id, guest_checkout: !user, ui_mode: "embedded", checkout_variant: skipTrial ? "direct" : "trial" },
     });
 
     if (!session.client_secret) {

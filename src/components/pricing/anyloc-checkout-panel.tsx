@@ -2,7 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { CreditCard, ShieldCheck, XCircle } from "lucide-react";
+import { CreditCard, ShieldCheck, XCircle, Zap } from "lucide-react";
+import posthog from "posthog-js";
+import {
+  initPostHogBrowser,
+  isPostHogBrowserReady,
+} from "@/lib/posthog/browser";
 import { AuthDivider } from "@/components/auth/auth-divider";
 import { GoogleAuthLink } from "@/components/auth/google-auth-link";
 import { StripeEmbeddedCheckout } from "@/components/checkout/stripe-embedded-checkout";
@@ -68,6 +73,7 @@ export function AnyLocCheckoutPanel({
   const [error, setError] = useState<string | null>(null);
   const requestRef = useRef<AbortController | null>(null);
   const paymentSectionRef = useRef<HTMLDivElement>(null);
+  const [skipTrial, setSkipTrial] = useState<boolean | null>(null);
 
   function scrollToPayment() {
     requestAnimationFrame(() => {
@@ -94,7 +100,7 @@ export function AnyLocCheckoutPanel({
       const res = await fetch("/api/stripe/embedded-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planId }),
+        body: JSON.stringify({ planId, skipTrial: skipTrial ?? false }),
         signal: controller.signal,
       });
       const data = await parseJsonResponse(res);
@@ -125,11 +131,25 @@ export function AnyLocCheckoutPanel({
   }
 
   useEffect(() => {
+    initPostHogBrowser();
+    if (!isPostHogBrowserReady()) {
+      setSkipTrial(false);
+      return;
+    }
+    posthog.onFeatureFlags(() => {
+      setSkipTrial(posthog.isFeatureEnabled("checkout-no-trial") ?? false);
+    });
+    const timer = setTimeout(() => setSkipTrial((v) => v ?? false), 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (skipTrial === null) return;
     setClientSecret(null);
     setError(null);
     void startCheckout(selectedPlanId, true);
     return () => requestRef.current?.abort();
-  }, [selectedPlanId]);
+  }, [selectedPlanId, skipTrial]);
 
   const consentParts = copy.consent.split("{cgv}");
   const headline = getCheckoutHeadline(destination?.city);
@@ -282,14 +302,23 @@ export function AnyLocCheckoutPanel({
         className="mx-auto mt-12 max-w-2xl scroll-mt-28"
       >
         <h3 className="text-center text-lg font-semibold text-zinc-900">
-          Teste gratuitement pendant 24 h — 0 € maintenant
+          {skipTrial
+            ? "Active ton accès complet"
+            : "Teste gratuitement pendant 24 h — 0 € maintenant"}
         </h3>
-        <p className="mt-2 text-center text-sm text-zinc-500">{TRIAL_HEADLINE}</p>
+        <p className="mt-2 text-center text-sm text-zinc-500">
+          {skipTrial
+            ? "Paiement sécurisé — accès immédiat à toutes les fonctionnalités."
+            : TRIAL_HEADLINE}
+        </p>
 
         <div className="mt-4 flex flex-wrap items-center justify-center gap-4 text-sm text-zinc-600">
           <span className="flex items-center gap-1.5">
-            <CreditCard className="h-4 w-4 text-green-600" />
-            0 € prélevé aujourd'hui
+            {skipTrial ? (
+              <><Zap className="h-4 w-4 text-green-600" />Accès immédiat</>
+            ) : (
+              <><CreditCard className="h-4 w-4 text-green-600" />0 € prélevé aujourd'hui</>
+            )}
           </span>
           <span className="flex items-center gap-1.5">
             <XCircle className="h-4 w-4 text-pink-500" />
@@ -337,13 +366,13 @@ export function AnyLocCheckoutPanel({
         ) : (
           <div className="flex flex-col items-center justify-center gap-3 py-10 text-sm font-semibold text-muted-foreground">
             <span className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-pink-500" />
-            {copy.payOpening}
+            {skipTrial ? "Préparation du paiement…" : copy.payOpening}
           </div>
         )}
         </div>
 
         <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-center text-sm text-zinc-500">
-          {copy.trust.map((item) => (
+          {(skipTrial ? copy.trust.filter((t) => !t.includes("0 €")) : copy.trust).map((item) => (
             <span key={item}>{item}</span>
           ))}
         </div>
@@ -367,7 +396,7 @@ export function AnyLocCheckoutPanel({
           {copy.faqTitle}
         </h3>
         <dl className="mt-8 space-y-3">
-          {copy.faq.map((item) => (
+          {(skipTrial ? copy.faq.slice(1) : copy.faq).map((item) => (
             <div
               key={item.q}
               className="rounded-xl border border-zinc-200 bg-zinc-50 px-5 py-4"

@@ -100,7 +100,6 @@ function buildGuestTrialSetupParams(
   };
 }
 
-/** @deprecated Trial flow uses createTrialSetupCheckoutSession. Kept for legacy direct subscriptions. */
 export async function createSubscriptionCheckoutSession({
   plan,
   user,
@@ -151,12 +150,14 @@ async function buildAuthenticatedCheckoutParams(
 
   return {
     mode: "subscription",
+    payment_method_types: ["card"],
     line_items: [{ price: plan.stripePriceId!, quantity: 1 }],
     client_reference_id: user.id,
     metadata: {
       supabase_user_id: user.id,
       plan_id: plan.id,
       guest_checkout: "false",
+      checkout_type: "direct_subscription",
     },
     subscription_data: {
       metadata: {
@@ -176,10 +177,12 @@ function buildGuestCheckoutParams(
 ): Stripe.Checkout.SessionCreateParams {
   return {
     mode: "subscription",
+    payment_method_types: ["card"],
     line_items: [{ price: plan.stripePriceId!, quantity: 1 }],
     metadata: {
       plan_id: plan.id,
       guest_checkout: "true",
+      checkout_type: "direct_subscription",
     },
     subscription_data: {
       metadata: {
