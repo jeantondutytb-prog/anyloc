@@ -12,7 +12,7 @@ struct AnylocApp: App {
                     LoginView()
                 } else if !subscription.hasCheckedOnce && subscription.isLoading {
                     ProgressView("Chargement...")
-                        .tint(Theme.accent)
+                        .tint(Theme.accentSolid)
                         .foregroundColor(Theme.text)
                 } else if !subscription.hasAccess, let details = subscription.inactiveDetails {
                     SubscriptionExpiredView(details: details)
