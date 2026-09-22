@@ -3,7 +3,7 @@
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
+import { DashboardAppHeader } from "@/components/dashboard/dashboard-app-header";
 import { InstallationGuideView } from "@/components/dashboard/installation-guide-view";
 import { PaidDashboardView } from "@/components/dashboard/paid-dashboard-view";
 import { SettingsView } from "@/components/dashboard/settings-view";
@@ -32,7 +32,11 @@ function UnifiedDashboardContent({ preview = false }: { preview?: boolean }) {
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardPageHeader />
+      <DashboardAppHeader
+        activeTab={activeTab}
+        statusLabel={preview ? "Abonnement actif" : undefined}
+        planLabel={preview ? "Plan annuel" : undefined}
+      />
       <main className="p-4 pb-8 sm:p-6 lg:p-8">
         <div className="mx-auto max-w-3xl">
           {activeTab === "install" ? (
