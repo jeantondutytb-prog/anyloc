@@ -27,7 +27,7 @@ export type AccountBillingDetails = {
 
 const STATUS_LABELS: Record<string, string> = {
   active: "Actif",
-  trialing: "Essai",
+  trialing: "Actif",
   canceled: "Annulé",
   past_due: "Paiement en retard",
   incomplete: "Incomplet",

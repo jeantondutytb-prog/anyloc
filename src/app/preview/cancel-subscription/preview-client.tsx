@@ -29,7 +29,7 @@ function PreviewPanel({
           </div>
           <div className="min-w-0 flex-1">
             <p className="font-medium text-zinc-900">
-              {context === "trial" ? "Essai gratuit" : "Abonnement actif"}
+              {context === "trial" ? "Accès différé (legacy)" : "Abonnement actif"}
             </p>
             <p className="mt-1 text-sm text-zinc-500">
               Clique sur le bouton pour voir le popup de confirmation.
@@ -70,7 +70,7 @@ export function CancelSubscriptionPreview() {
             Popup avant désabonnement
           </h1>
           <p className="mt-2 text-sm text-zinc-500">
-            Simule le clic sur « Se désabonner » ou « Annuler avant le débit ».
+            Simule le clic sur « Se désabonner » ou « Résilier avant le débit ».
           </p>
         </div>
 
@@ -79,7 +79,7 @@ export function CancelSubscriptionPreview() {
         <PreviewPanel
           context="trial"
           trialRemainingMs={42 * 60 * 1000}
-          buttonLabel="Annuler avant le débit"
+          buttonLabel="Résilier avant le débit"
         />
       </div>
     </div>

@@ -16,7 +16,7 @@ export async function POST() {
     const message =
       cancelError instanceof Error
         ? cancelError.message
-        : "Impossible d'annuler l'essai.";
+        : "Impossible de résilier l'abonnement.";
 
     return NextResponse.json({ error: message }, { status: 400 });
   }

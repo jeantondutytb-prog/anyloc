@@ -1,5 +1,11 @@
-import { PAYWALL_TESTIMONIALS, PLAN_IDS, PLAN_VALUE_STACK, SITE } from "@/lib/constants";
-import { TRIAL_CTA_SUBLINE, TRIAL_SELECT_SUBLINE } from "@/lib/trial";
+import {
+  CHECKOUT_CTA_SUBLINE,
+  CHECKOUT_SELECT_SUBLINE,
+  PAYWALL_TESTIMONIALS,
+  PLAN_IDS,
+  PLAN_VALUE_STACK,
+  SITE,
+} from "@/lib/constants";
 
 export const CHECKOUT_REVIEWS = PAYWALL_TESTIMONIALS.map((testimonial) => ({
   name: testimonial.author,
@@ -9,7 +15,7 @@ export const CHECKOUT_REVIEWS = PAYWALL_TESTIMONIALS.map((testimonial) => ({
 }));
 
 export const CHECKOUT_COPY = {
-  scarcity: TRIAL_CTA_SUBLINE,
+  scarcity: CHECKOUT_CTA_SUBLINE,
   h1a: "Fake ta loc",
   h1b: "alors que t'es chez toi.",
   subA: `${SITE.name} hack ton GPS — Snap, Insta, Tinder, jeux : un réglage et `,
@@ -38,14 +44,18 @@ export const CHECKOUT_COPY = {
     },
   ],
   selectTitle: "Choisis ta durée",
-  selectSub: TRIAL_SELECT_SUBLINE,
+  selectSub: CHECKOUT_SELECT_SUBLINE,
   guaranteeBadge: "Garantie 48 h",
   perksTitle: "Inclus dans ton accès",
-  payOpening: "On prépare ton essai gratuit…",
+  payTitle: "Active ton accès complet",
+  paySub: "Paiement sécurisé — accès immédiat à toutes les fonctionnalités.",
+  payOpening: "On prépare ton paiement…",
   updating: "Mise à jour du plan…",
+  stickyTitle: "Accès complet",
+  stickySub: "Paiement sécurisé · Garantie 48 h",
+  stickyCta: "Payer maintenant ↓",
   trust: [
     "🔒 Paiement sécurisé",
-    "· 0 € maintenant",
     "· Annulation en 1 clic",
     "· Garantie remboursement 48 h",
   ],
@@ -64,7 +74,7 @@ export const CHECKOUT_COPY = {
     {
       q: "Ma carte sera débitée tout de suite ?",
       a:
-        "Non, 0 € maintenant. Tu as 24 h pour tester gratuitement. Si tu annules avant la fin de l'essai, aucun prélèvement. L'annulation se fait en 1 clic depuis ton espace.",
+        "Oui. Tu paies à la validation et tu as accès tout de suite. Tu peux annuler en 1 clic depuis ton espace — la résiliation coupe l'accès immédiatement. Garantie 48 h si le GPS ne fonctionne pas.",
     },
     {
       q: "Ça marche sur quelles apps ?",
@@ -90,10 +100,10 @@ export const CHECKOUT_COPY = {
   destinationLabel: "Ta prochaine loc",
   canceled:
     "Paiement annulé. Reprends quand tu veux — ton plan reste sélectionné.",
-  retryCta: "Essayer gratuitement",
+  retryCta: "Réessayer le paiement",
   backCta: "Changer de destination",
   errGeneric: "Une erreur est survenue. Réessaie dans quelques instants.",
-  errStart: "Impossible de démarrer l'essai.",
+  errStart: "Impossible de démarrer le paiement.",
 } as const;
 
 export function getCheckoutHeadline(city?: string) {

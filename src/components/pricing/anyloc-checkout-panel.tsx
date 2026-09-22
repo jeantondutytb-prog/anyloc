@@ -2,12 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { CreditCard, ShieldCheck, XCircle, Zap } from "lucide-react";
-import posthog from "posthog-js";
-import {
-  initPostHogBrowser,
-  isPostHogBrowserReady,
-} from "@/lib/posthog/browser";
+import { ShieldCheck, XCircle, Zap } from "lucide-react";
 import { AuthDivider } from "@/components/auth/auth-divider";
 import { GoogleAuthLink } from "@/components/auth/google-auth-link";
 import { StripeEmbeddedCheckout } from "@/components/checkout/stripe-embedded-checkout";
@@ -25,7 +20,6 @@ import {
 } from "@/lib/checkout-copy";
 import { PLANS } from "@/lib/constants";
 import type { OnboardingDestination } from "@/lib/onboarding-destinations";
-import { TRIAL_HEADLINE } from "@/lib/trial";
 import { cn } from "@/lib/utils";
 
 function getCheckoutPlans() {
@@ -73,7 +67,6 @@ export function AnyLocCheckoutPanel({
   const [error, setError] = useState<string | null>(null);
   const requestRef = useRef<AbortController | null>(null);
   const paymentSectionRef = useRef<HTMLDivElement>(null);
-  const [skipTrial, setSkipTrial] = useState<boolean | null>(null);
   const [paymentVisible, setPaymentVisible] = useState(false);
 
   function scrollToPayment() {
@@ -101,7 +94,7 @@ export function AnyLocCheckoutPanel({
       const res = await fetch("/api/stripe/embedded-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planId, skipTrial: skipTrial ?? false }),
+        body: JSON.stringify({ planId }),
         signal: controller.signal,
       });
       const data = await parseJsonResponse(res);
@@ -132,25 +125,11 @@ export function AnyLocCheckoutPanel({
   }
 
   useEffect(() => {
-    initPostHogBrowser();
-    if (!isPostHogBrowserReady()) {
-      setSkipTrial(false);
-      return;
-    }
-    posthog.onFeatureFlags(() => {
-      setSkipTrial(posthog.isFeatureEnabled("checkout-no-trial") ?? false);
-    });
-    const timer = setTimeout(() => setSkipTrial((v) => v ?? false), 1500);
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    if (skipTrial === null) return;
     setClientSecret(null);
     setError(null);
     void startCheckout(selectedPlanId, true);
     return () => requestRef.current?.abort();
-  }, [selectedPlanId, skipTrial]);
+  }, [selectedPlanId]);
 
   useEffect(() => {
     const el = paymentSectionRef.current;
@@ -314,23 +293,16 @@ export function AnyLocCheckoutPanel({
         className="mx-auto mt-12 max-w-2xl scroll-mt-28"
       >
         <h3 className="text-center text-lg font-semibold text-zinc-900">
-          {skipTrial
-            ? "Active ton accès complet"
-            : "Teste gratuitement pendant 24 h — 0 € maintenant"}
+          {copy.payTitle}
         </h3>
         <p className="mt-2 text-center text-sm text-zinc-500">
-          {skipTrial
-            ? "Paiement sécurisé — accès immédiat à toutes les fonctionnalités."
-            : TRIAL_HEADLINE}
+          {copy.paySub}
         </p>
 
         <div className="mt-4 flex flex-wrap items-center justify-center gap-4 text-sm text-zinc-600">
           <span className="flex items-center gap-1.5">
-            {skipTrial ? (
-              <><Zap className="h-4 w-4 text-green-600" />Accès immédiat</>
-            ) : (
-              <><CreditCard className="h-4 w-4 text-green-600" />0 € prélevé aujourd'hui</>
-            )}
+            <Zap className="h-4 w-4 text-green-600" />
+            Accès immédiat
           </span>
           <span className="flex items-center gap-1.5">
             <XCircle className="h-4 w-4 text-pink-500" />
@@ -378,13 +350,13 @@ export function AnyLocCheckoutPanel({
         ) : (
           <div className="flex flex-col items-center justify-center gap-3 py-10 text-sm font-semibold text-muted-foreground">
             <span className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-pink-500" />
-            {skipTrial ? "Préparation du paiement…" : copy.payOpening}
+            {copy.payOpening}
           </div>
         )}
         </div>
 
         <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-center text-sm text-zinc-500">
-          {(skipTrial ? copy.trust.filter((t) => !t.includes("0 €")) : copy.trust).map((item) => (
+          {copy.trust.map((item) => (
             <span key={item}>{item}</span>
           ))}
         </div>
@@ -408,7 +380,7 @@ export function AnyLocCheckoutPanel({
           {copy.faqTitle}
         </h3>
         <dl className="mt-8 space-y-3">
-          {(skipTrial ? copy.faq.slice(1) : copy.faq).map((item) => (
+          {copy.faq.map((item) => (
             <div
               key={item.q}
               className="rounded-xl border border-zinc-200 bg-zinc-50 px-5 py-4"
@@ -437,12 +409,10 @@ export function AnyLocCheckoutPanel({
           <div className="mx-auto flex max-w-2xl items-center justify-between gap-4">
             <div className="hidden sm:block">
               <p className="text-sm font-semibold text-zinc-900">
-                {skipTrial ? "Accès complet" : "0 € maintenant"}
+                {copy.stickyTitle}
               </p>
               <p className="text-xs text-zinc-500">
-                {skipTrial
-                  ? "Paiement sécurisé · Garantie 48 h"
-                  : "Essai gratuit 24 h · Annulation en 1 clic"}
+                {copy.stickySub}
               </p>
             </div>
             <button
@@ -450,7 +420,7 @@ export function AnyLocCheckoutPanel({
               onClick={scrollToPayment}
               className="btn-gradient w-full rounded-full px-8 py-3 text-sm font-bold text-white transition hover:opacity-90 sm:w-auto"
             >
-              {skipTrial ? "Payer maintenant ↓" : "Essayer gratuitement ↓"}
+              {copy.stickyCta}
             </button>
           </div>
         </div>

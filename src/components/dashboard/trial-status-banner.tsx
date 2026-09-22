@@ -39,7 +39,7 @@ export function TrialStatusBanner({ trialEndsAt }: { trialEndsAt: string }) {
       const data = (await response.json()) as { error?: string };
 
       if (!response.ok) {
-        throw new Error(data.error ?? "Impossible d'annuler l'essai.");
+        throw new Error(data.error ?? "Impossible de résilier l'abonnement.");
       }
 
       setShowCancelDialog(false);
@@ -50,7 +50,7 @@ export function TrialStatusBanner({ trialEndsAt }: { trialEndsAt: string }) {
       setError(
         cancelError instanceof Error
           ? cancelError.message
-          : "Impossible d'annuler l'essai."
+          : "Impossible de résilier l'abonnement."
       );
     } finally {
       setCancelling(false);
@@ -67,10 +67,10 @@ export function TrialStatusBanner({ trialEndsAt }: { trialEndsAt: string }) {
         <div className="flex items-start gap-3 text-sm text-pink-950">
           <Clock3 className="mt-0.5 h-4 w-4 shrink-0" />
           <div>
-            <p className="font-semibold">Essai gratuit en cours</p>
+            <p className="font-semibold">Accès en cours</p>
             <p className="mt-0.5 text-pink-900/80">
               Temps restant : {formatTrialRemaining(remainingMs)}. Ta carte sera
-              débitée automatiquement à la fin de l&apos;essai sauf si tu annules.
+              débitée automatiquement à l&apos;échéance sauf si tu résilies.
             </p>
             {error ? <p className="mt-2 text-red-600">{error}</p> : null}
           </div>
@@ -84,7 +84,7 @@ export function TrialStatusBanner({ trialEndsAt }: { trialEndsAt: string }) {
           disabled={cancelling}
           onClick={() => setShowCancelDialog(true)}
         >
-          Annuler avant le débit
+          Résilier avant le débit
         </Button>
       </div>
 

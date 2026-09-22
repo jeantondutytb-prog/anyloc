@@ -2,11 +2,15 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { getOnboardingUrl, PLANS } from "@/lib/constants";
+import {
+  CHECKOUT_CTA_SUBLINE,
+  CHECKOUT_SELECT_SUBLINE,
+  getOnboardingUrl,
+  PLANS,
+} from "@/lib/constants";
 import { PaywallValueStack } from "@/components/pricing/paywall-value-stack";
 import { PlanPrice } from "@/components/pricing/plan-price";
 import { RefundGuaranteeNotice } from "@/components/pricing/refund-guarantee-notice";
-import { TRIAL_CTA_SUBLINE, TRIAL_SELECT_SUBLINE } from "@/lib/trial";
 
 export function Pricing() {
   return (
@@ -16,9 +20,9 @@ export function Pricing() {
           <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
             Choisis ta durée
           </h2>
-          <p className="mt-4 text-zinc-600">{TRIAL_SELECT_SUBLINE}</p>
+          <p className="mt-4 text-zinc-600">{CHECKOUT_SELECT_SUBLINE}</p>
           <p className="mt-2 text-sm font-medium text-pink-600">
-            {TRIAL_CTA_SUBLINE}
+            {CHECKOUT_CTA_SUBLINE}
           </p>
         </div>
 
