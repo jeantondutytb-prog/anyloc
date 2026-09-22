@@ -27,11 +27,11 @@ import {
 } from "@/components/dashboard/setup-open-help";
 import { useDownloads } from "@/hooks/use-downloads";
 import { useDashboardOnboarding } from "@/hooks/use-dashboard-onboarding";
+import { usePaymentSuccess } from "@/hooks/use-payment-success";
 import { SetupPasswordForm } from "@/components/dashboard/setup-password-form";
 import { capturePostHogClientEvent } from "@/lib/posthog/browser";
 import { getCheckoutUrl } from "@/lib/constants";
 import {
-  PAYMENT_SUCCESS_SESSION_KEY,
   writeOnboardingState,
   readOnboardingState,
 } from "@/lib/dashboard-onboarding";
@@ -986,13 +986,7 @@ export function InstallationGuideView({
     platformFromUrl ?? detectedPlatform
   );
   const [step, setStep] = useState(platformFromUrl ? 1 : 0);
-  const [paymentSuccess, setPaymentSuccess] = useState(() => {
-    if (typeof window === "undefined") {
-      return false;
-    }
-
-    return window.sessionStorage.getItem(PAYMENT_SUCCESS_SESSION_KEY) === "true";
-  });
+  const paymentSuccess = usePaymentSuccess();
 
   const device = useSyncExternalStore(
     () => () => {},
@@ -1002,39 +996,15 @@ export function InstallationGuideView({
   const isPhone = device.isPhone || (preview && searchParams.get("device") === "phone");
 
   useEffect(() => {
-    const sessionId = searchParams.get("session_id");
-    const urlSuccess = searchParams.get("success") === "true";
-
-    const clearPaymentParams = () => {
-      const url = new URL(window.location.href);
-      url.searchParams.delete("success");
-      url.searchParams.delete("session_id");
-      window.history.replaceState({}, "", url.pathname + url.search);
-    };
-
-    const markPaymentSuccess = () => {
-      window.sessionStorage.setItem(PAYMENT_SUCCESS_SESSION_KEY, "true");
-      setPaymentSuccess(true);
-      const stored = readOnboardingState();
-      writeOnboardingState({ ...stored, welcomeDismissed: true });
-      clearPaymentParams();
-    };
-
-    if (urlSuccess && sessionId) {
-      void fetch(`/api/stripe/verify-session?session_id=${encodeURIComponent(sessionId)}`)
-        .then(async (response) => {
-          if (!response.ok) {
-            return;
-          }
-
-          const payload = await response.json();
-          if (payload.verified) {
-            markPaymentSuccess();
-          }
-        })
-        .catch(() => {});
+    if (!paymentSuccess) {
+      return;
     }
-  }, [searchParams]);
+
+    const stored = readOnboardingState();
+    if (!stored.welcomeDismissed) {
+      writeOnboardingState({ ...stored, welcomeDismissed: true });
+    }
+  }, [paymentSuccess]);
 
   const hasAccess = preview || (data?.hasAccess ?? false);
 

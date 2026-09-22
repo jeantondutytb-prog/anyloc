@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   HelpCircle,
+  LayoutDashboard,
   Menu,
   Smartphone,
   User,
@@ -22,7 +23,8 @@ type MenuItem = {
 const MENU_SECTIONS: { items: MenuItem[] }[] = [
   {
     items: [
-      { icon: Smartphone, label: "Installation", href: "/dashboard" },
+      { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
+      { icon: Smartphone, label: "Installation", href: "/dashboard?tab=install" },
       { icon: User, label: "Mon compte", href: "/dashboard?tab=account" },
     ],
   },
@@ -69,8 +71,15 @@ function isActive(pathname: string, currentTab: string | null, href: string) {
 
   if (hrefPath === "/dashboard" && pathname === "/dashboard") {
     const hrefTab = new URLSearchParams(query ?? "").get("tab");
-    if (!hrefTab) return !currentTab || currentTab === "installation";
-    return currentTab === hrefTab;
+    const normalizedCurrent =
+      currentTab === "installation" ? "install" : currentTab;
+    const normalizedHref = hrefTab === "installation" ? "install" : hrefTab;
+
+    if (!normalizedHref) {
+      return !normalizedCurrent || normalizedCurrent === "home";
+    }
+
+    return normalizedCurrent === normalizedHref;
   }
 
   if (!hrefPath.startsWith("/dashboard")) {

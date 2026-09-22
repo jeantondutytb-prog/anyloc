@@ -1,70 +1,19 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 import { DashboardView } from "@/components/dashboard/dashboard-view";
 import { SettingsView } from "@/components/dashboard/settings-view";
-import { PAYMENT_SUCCESS_SESSION_KEY } from "@/lib/dashboard-onboarding";
+import { usePaymentSuccess } from "@/hooks/use-payment-success";
 
 function DashboardHomeContent({ preview = false }: { preview?: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const accountTab = searchParams.get("tab") === "account";
   const forceSetup = searchParams.get("setup") === "1";
-  const [paymentSuccess, setPaymentSuccess] = useState(() => {
-    if (typeof window === "undefined") {
-      return false;
-    }
-
-    return window.sessionStorage.getItem(PAYMENT_SUCCESS_SESSION_KEY) === "true";
-  });
-
-  useEffect(() => {
-    const sessionId = searchParams.get("session_id");
-    const urlSuccess = searchParams.get("success") === "true";
-
-    const clearPaymentParams = () => {
-      const url = new URL(window.location.href);
-      url.searchParams.delete("success");
-      url.searchParams.delete("session_id");
-      window.history.replaceState({}, "", url.pathname + url.search);
-    };
-
-    const markPaymentSuccess = () => {
-      window.sessionStorage.setItem(PAYMENT_SUCCESS_SESSION_KEY, "true");
-      setPaymentSuccess(true);
-      clearPaymentParams();
-    };
-
-    if (urlSuccess && sessionId) {
-      void fetch(`/api/stripe/verify-session?session_id=${encodeURIComponent(sessionId)}`)
-        .then(async (response) => {
-          if (!response.ok) {
-            if (urlSuccess) {
-              markPaymentSuccess();
-            }
-            return;
-          }
-
-          const payload = await response.json();
-          if (payload.verified || urlSuccess) {
-            markPaymentSuccess();
-          }
-        })
-        .catch(() => {
-          if (urlSuccess) {
-            markPaymentSuccess();
-          }
-        });
-      return;
-    }
-
-    if (urlSuccess) {
-      markPaymentSuccess();
-    }
-  }, [searchParams]);
+  const paymentSuccess = usePaymentSuccess();
 
   if (accountTab && !forceSetup) {
     return (
