@@ -310,7 +310,7 @@ export function AnyLocCheckoutPanel({
           </span>
           <span className="flex items-center gap-1.5">
             <ShieldCheck className="h-4 w-4 text-blue-500" />
-            Garantie 48 h
+            Frais non remboursables
           </span>
         </div>
 

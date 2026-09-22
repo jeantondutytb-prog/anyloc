@@ -5,7 +5,7 @@ export const CHECKOUT_CTA_LABEL = "Débloque ton accès";
 export const CHECKOUT_CTA_LABEL_SHORT = "Accès immédiat";
 
 export const CHECKOUT_CTA_SUBLINE =
-  "Accès immédiat · Annulation en 1 clic · Garantie 48 h";
+  "Accès immédiat · Annulation en 1 clic · Paiement sécurisé";
 
 export const CHECKOUT_MARKETING_LINE =
   "Active Anyloc sur le plan de ton choix — Snap, Insta, Tinder et toutes tes apps.";
@@ -50,7 +50,7 @@ export const CHECKOUT_PERKS = [
   "Signal GPS réel — pas un screenshot ni un montage",
   "Snap, Insta, Tinder, jeux : une loc pour tout le tel",
   "Installation guidée pas à pas pour ton modèle",
-  "Garantie 48 h si le GPS ne fonctionne pas",
+  "Support par email",
 ];
 
 /** Bénéfices identiques sur tous les plans — seule la durée change. */
@@ -60,7 +60,7 @@ export const PLAN_VALUE_STACK = [
   "iOS + Android + version web",
   "Trajets simulés crédibles sur la map",
   "Installation guidée pas à pas",
-  "Garantie 48 h si le GPS ne fonctionne pas",
+  "Support par email",
 ];
 
 export const PAYWALL_TESTIMONIALS = [
@@ -111,8 +111,8 @@ export const PAYWALL_TESTIMONIALS = [
   },
 ] as const;
 
-export const REFUND_GUARANTEE_SUMMARY =
-  "Garantie 48 h : remboursement intégral si le GPS ne fonctionne pas malgré une installation complète. Demande sous 48 h après le paiement, abonnement actif.";
+export const REFUND_POLICY_SUMMARY =
+  "Sauf obligation légale, les frais d'abonnement payés ne sont pas remboursables.";
 
 export const CANCELLATION_WARNING =
   "La résiliation prend effet immédiatement. Tu perds l'accès au service, au dashboard et aux téléchargements dès confirmation. Aucun remboursement au prorata.";
