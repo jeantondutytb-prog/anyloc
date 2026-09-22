@@ -2,6 +2,7 @@
 
 import { useMemo, useSyncExternalStore } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Check,
   Download,
@@ -25,6 +26,10 @@ import {
   formatSubscriptionStatusLabel,
 } from "@/lib/account-billing-types";
 import { getPlanDisplayName } from "@/lib/constants";
+import {
+  dashboardHref,
+  getDashboardBasePath,
+} from "@/lib/dashboard-paths";
 import {
   getClientDeviceSnapshot,
   SERVER_CLIENT_DEVICE,
@@ -184,9 +189,11 @@ function DownloadCard({
 function DashboardHeader({
   planLabel,
   statusLabel,
+  basePath,
 }: {
   planLabel: string;
   statusLabel: string;
+  basePath: string;
 }) {
   return (
     <header className="sticky top-0 z-20 border-b border-zinc-200/80 bg-white/90 backdrop-blur-md">
@@ -200,19 +207,19 @@ function DashboardHeader({
 
         <nav className="hidden items-center gap-1 lg:flex">
           <Link
-            href="/dashboard"
+            href={dashboardHref(basePath)}
             className="rounded-xl px-3 py-2 text-sm font-medium text-pink-600"
           >
             Dashboard
           </Link>
           <Link
-            href="/dashboard?tab=install"
+            href={dashboardHref(basePath, "install")}
             className="rounded-xl px-3 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
           >
             Installation
           </Link>
           <Link
-            href="/dashboard?tab=account"
+            href={dashboardHref(basePath, "account")}
             className="rounded-xl px-3 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
           >
             Mon compte
@@ -237,6 +244,8 @@ export function PaidDashboardView({
 }: {
   preview?: boolean;
 } = {}) {
+  const pathname = usePathname();
+  const basePath = getDashboardBasePath(pathname);
   const paymentSuccess = usePaymentSuccess();
   const { data, loading, error } = useDownloads();
   const { data: account } = useAccount();
@@ -248,7 +257,7 @@ export function PaidDashboardView({
 
   const assets = preview ? PREVIEW_ASSETS : data?.assets ?? [];
   const hasAccess = preview || (data?.hasAccess ?? false);
-  const needsSetupPassword = preview || Boolean(data?.needsSetupPassword);
+  const needsSetupPassword = !preview && Boolean(data?.needsSetupPassword);
   const mac = assets.find((asset) => asset.id === "setup-mac");
   const windows = assets.find((asset) => asset.id === "setup-win");
   const android = assets.find((asset) => asset.id === "apk" && !asset.hidden);
@@ -285,7 +294,11 @@ export function PaidDashboardView({
         <div className="absolute top-40 right-0 h-[280px] w-[360px] rounded-full bg-violet-500/10 blur-[100px]" />
       </div>
 
-      <DashboardHeader planLabel={planLabel} statusLabel={statusLabel} />
+      <DashboardHeader
+        planLabel={planLabel}
+        statusLabel={statusLabel}
+        basePath={basePath}
+      />
 
       <main className="relative mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12 lg:py-16">
         {paymentSuccess ? (
@@ -468,13 +481,13 @@ export function PaidDashboardView({
               </div>
             </div>
             <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-              <Link href="/dashboard?tab=install">
+              <Link href={dashboardHref(basePath, "install")}>
                 <Button variant="secondary" className="w-full sm:w-auto">
                   <Laptop className="h-4 w-4" />
                   Guide d’installation
                 </Button>
               </Link>
-              <Link href="/dashboard?tab=account">
+              <Link href={dashboardHref(basePath, "account")}>
                 <Button variant="ghost" className="w-full sm:w-auto">
                   <Monitor className="h-4 w-4" />
                   Mon compte

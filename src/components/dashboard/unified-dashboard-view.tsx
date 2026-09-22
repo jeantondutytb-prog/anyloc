@@ -37,6 +37,11 @@ function UnifiedDashboardContent({ preview = false }: { preview?: boolean }) {
         <div className="mx-auto max-w-3xl">
           {activeTab === "install" ? (
             <InstallationGuideView embedded preview={preview} />
+          ) : preview ? (
+            <p className="rounded-2xl border border-zinc-200 bg-white px-4 py-6 text-sm text-zinc-500">
+              Aperçu du compte — connecte-toi pour voir tes factures et ton
+              abonnement.
+            </p>
           ) : (
             <SettingsView embedded />
           )}

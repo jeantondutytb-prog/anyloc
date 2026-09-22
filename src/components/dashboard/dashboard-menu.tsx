@@ -12,6 +12,11 @@ import {
   User,
   X,
 } from "lucide-react";
+import {
+  dashboardHref,
+  getDashboardBasePath,
+  isDashboardHomePath,
+} from "@/lib/dashboard-paths";
 import { cn } from "@/lib/utils";
 
 type MenuItem = {
@@ -20,20 +25,24 @@ type MenuItem = {
   href: string;
 };
 
-const MENU_SECTIONS: { items: MenuItem[] }[] = [
-  {
-    items: [
-      { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-      { icon: Smartphone, label: "Installation", href: "/dashboard?tab=install" },
-      { icon: User, label: "Mon compte", href: "/dashboard?tab=account" },
-    ],
-  },
-  {
-    items: [
-      { icon: HelpCircle, label: "Aide", href: "/#faq" },
-    ],
-  },
-];
+function getMenuSections(basePath: string): { items: MenuItem[] }[] {
+  return [
+    {
+      items: [
+        { icon: LayoutDashboard, label: "Dashboard", href: dashboardHref(basePath) },
+        {
+          icon: Smartphone,
+          label: "Installation",
+          href: dashboardHref(basePath, "install"),
+        },
+        { icon: User, label: "Mon compte", href: dashboardHref(basePath, "account") },
+      ],
+    },
+    {
+      items: [{ icon: HelpCircle, label: "Aide", href: "/#faq" }],
+    },
+  ];
+}
 
 const menuPanel = {
   hidden: { opacity: 0, y: -10, scale: 0.96 },
@@ -69,7 +78,7 @@ function isActive(pathname: string, currentTab: string | null, href: string) {
   const [path, query] = href.split("?");
   const hrefPath = path.split("#")[0];
 
-  if (hrefPath === "/dashboard" && pathname === "/dashboard") {
+  if (isDashboardHomePath(hrefPath) && isDashboardHomePath(pathname)) {
     const hrefTab = new URLSearchParams(query ?? "").get("tab");
     const normalizedCurrent =
       currentTab === "installation" ? "install" : currentTab;
@@ -82,7 +91,7 @@ function isActive(pathname: string, currentTab: string | null, href: string) {
     return normalizedCurrent === normalizedHref;
   }
 
-  if (!hrefPath.startsWith("/dashboard")) {
+  if (!isDashboardHomePath(hrefPath) && !hrefPath.startsWith("/dashboard")) {
     return false;
   }
 
@@ -93,6 +102,7 @@ export function DashboardMenu() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const currentTab = searchParams.get("tab");
+  const menuSections = getMenuSections(getDashboardBasePath(pathname));
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -156,7 +166,7 @@ export function DashboardMenu() {
             variants={menuPanel}
             className="absolute left-0 top-12 z-50 w-56 origin-top-left overflow-hidden rounded-2xl border border-zinc-200 bg-white/95 shadow-xl backdrop-blur-md"
           >
-            {MENU_SECTIONS.map((section, sectionIndex) => (
+            {menuSections.map((section, sectionIndex) => (
               <motion.ul
                 key={sectionIndex}
                 className={cn("p-1.5", sectionIndex > 0 && "border-t border-zinc-100")}
