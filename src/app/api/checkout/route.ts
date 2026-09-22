@@ -30,10 +30,20 @@ export async function POST(request: Request) {
       uiMode: "hosted_page",
     });
 
+    const referer = request.headers.get("referer");
+    const userAgent = request.headers.get("user-agent");
+    console.warn("[checkout] legacy hosted-page endpoint hit", { referer, userAgent });
+
     await capturePostHogEvent({
       distinctId: user?.id ?? session.id,
       event: "checkout_started",
-      properties: { plan: plan.id, guest_checkout: !user },
+      properties: {
+        plan: plan.id,
+        guest_checkout: !user,
+        checkout_variant: "legacy_hosted",
+        referer,
+        user_agent: userAgent,
+      },
     });
 
     if (!session.url) {
