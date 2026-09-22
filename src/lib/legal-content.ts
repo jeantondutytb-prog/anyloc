@@ -256,67 +256,89 @@ export const LEGAL_PAGES: Record<string, LegalPageContent> = {
   "politique-de-remboursement": {
     title: "Politique de remboursement",
     description:
-      "Conditions de remboursement et garantie commerciale Anyloc.",
+      "Comment fonctionnent les remboursements Anyloc : garantie 48 h, droit de rétractation et cas exclus.",
     path: "/politique-de-remboursement",
-    lastUpdated: LAST_UPDATED,
+    lastUpdated: "22 septembre 2026",
     sections: [
       {
-        title: "1. La garantie « pas de résultat en 48 h »",
+        title: "1. Objet",
         paragraphs: [
-          "Anyloc s'engage à te rembourser l'intégralité de la somme payée si, après avoir suivi la méthode d'installation et testé le service pendant 48 heures, tu n'as pas réussi à modifier ta localisation GPS sur au moins une application compatible (Snapchat, Instagram, Tinder, jeu mobile, etc.).",
-          "Cette garantie est un engagement commercial volontaire. Elle s'ajoute à tes droits légaux, elle ne les remplace pas — voir le point 5.",
+          "Anyloc est un service numérique par abonnement. Le paiement est débité immédiatement à la validation du checkout Stripe et l'accès au service est activé sans délai.",
+          "La présente politique précise dans quels cas un remboursement peut être accordé, comment le demander, et ce qui reste exclu — notamment après une résiliation volontaire.",
         ],
       },
       {
-        title: "2. Conditions à remplir",
+        title: "2. Garantie commerciale « Satisfait ou remboursé 48 h »",
         paragraphs: [
-          "Les trois conditions suivantes sont cumulatives. Elles sont affichées sur la page de tarifs, avant l'achat.",
+          "Si le GPS ne fonctionne pas chez toi malgré une installation complète, Anyloc te rembourse l'intégralité du premier paiement effectué pour l'abonnement concerné.",
+          "Cette garantie s'applique lorsque, dans les 48 heures suivant ton achat, tu n'as pas réussi à modifier ta localisation GPS sur au moins une application compatible (Snapchat, Instagram, Tinder, jeu mobile, etc.), après avoir suivi le guide d'installation de ton espace client.",
+          "Il s'agit d'un engagement commercial volontaire. Il complète tes droits légaux sans les remplacer — voir les sections 6 et 7.",
+        ],
+      },
+      {
+        title: "3. Conditions cumulatives de la garantie 48 h",
+        paragraphs: [
+          "Les conditions suivantes doivent être réunies. Elles sont rappelées sur la page Tarification et au checkout, avant paiement.",
         ],
         list: [
-          "Installation complète : tu dois avoir suivi l'intégralité du guide d'installation correspondant à ton appareil (iOS ou Android), disponible dans ton espace client, et appliqué chaque étape requise.",
-          "Délai : la demande doit être faite dans les 48 heures suivant ton achat. Passé ce délai, la garantie ne s'applique plus.",
-          "Abonnement actif : tu ne dois pas avoir résilié ton abonnement avant d'avoir fait la demande. Une résiliation vaut renoncement à cette garantie.",
+          "Installation complète : guide iOS ou Android suivi intégralement, avec chaque étape requise appliquée (VPN sur iPhone, configuration GPS, etc.).",
+          "Délai : demande envoyée dans les 48 heures suivant le premier paiement. Passé ce délai, la garantie commerciale ne s'applique plus.",
+          "Abonnement actif : tu ne dois pas avoir résilié avant d'envoyer la demande. Une résiliation vaut renoncement à cette garantie.",
+          "Blocage avéré : le service ne modifie pas la localisation malgré une installation conforme. Un simple changement d'avis après un fonctionnement correct n'entre pas dans le cadre de la garantie.",
         ],
       },
       {
-        title: "3. Comment faire la demande",
+        title: "4. Comment demander un remboursement",
         paragraphs: [
-          "Envoie un message à support@anyloc.io depuis l'adresse email de ton compte, en précisant ton appareil (iOS / Android, modèle si possible), les applications testées et l'étape à laquelle tu es bloqué.",
-          "Notre équipe peut te demander des captures d'écran pour vérifier que l'installation a bien été suivie. Nous répondons sous 72 heures.",
+          "Écris à support@anyloc.io depuis l'adresse email de ton compte Anyloc. Indique : ton appareil (iOS / Android, modèle si possible), les applications testées, les étapes déjà réalisées et le blocage rencontré.",
+          "Nous pouvons te demander des captures d'écran ou des précisions pour vérifier que l'installation a bien été suivie. Réponse sous 72 heures ouvrées.",
+          "Si ta demande est acceptée, le remboursement porte sur le montant du premier paiement de l'abonnement concerné. Les renouvellements ultérieurs ne sont pas couverts par la garantie 48 h, sauf erreur de notre part ou droit légal applicable.",
         ],
       },
       {
-        title: "4. Ce qui n'ouvre pas droit au remboursement",
+        title: "5. Cas exclus",
         paragraphs: [
-          "Les cas suivants n'ouvrent pas droit au remboursement au titre de la garantie commerciale :",
+          "Les situations suivantes n'ouvrent pas droit au remboursement au titre de la garantie commerciale 48 h :",
         ],
         list: [
-          "Une demande faite après le délai de 48 heures (hors droit de rétractation légal, voir point 5).",
-          "Un abonnement résilié avant la demande.",
-          "Une installation incomplète ou non conforme au guide (mode développeur non activé, VPN non configuré sur iOS, etc.).",
-          "Un blocage lié à une restriction de l'appareil ou de l'application tierce indépendant d'Anyloc.",
-          "Une simple insatisfaction après utilisation réussie du service (localisation modifiée et fonctionnelle).",
+          "Demande envoyée après 48 heures (hors droit de rétractation légal — section 6).",
+          "Abonnement résilié avant l'envoi de la demande.",
+          "Installation incomplète, non conforme au guide ou non testée (VPN iOS absent, app non installée, etc.).",
+          "Blocage imputable à ton appareil, à ton opérateur ou à une application tierce indépendante d'Anyloc.",
+          "Localisation modifiée et fonctionnelle sur au moins une app compatible.",
+          "Renouvellement d'abonnement ou changement de formule après une première période utilisée avec succès.",
+          "Demande motivée uniquement par un changement d'avis, sans problème technique avéré.",
         ],
       },
       {
-        title: "5. Ton droit de rétractation légal",
+        title: "6. Droit de rétractation légal (14 jours)",
         paragraphs: [
-          "Indépendamment de la garantie ci-dessus, le droit français t'accorde un délai de rétractation de 14 jours pour les achats à distance (art. L221-18 du code de la consommation).",
-          "Pour un contenu numérique fourni immédiatement, ce droit s'éteint uniquement si tu as expressément consenti à l'exécution immédiate et renoncé à ta rétractation. En l'absence d'un tel consentement, tu conserves ces 14 jours sans condition — les conditions du point 2 ne s'y appliquent pas.",
-          "Autrement dit : la garantie « 48 h » est un bonus commercial plus rapide mais conditionné ; le droit de rétractation reste ton filet de sécurité inconditionnel.",
+          "Indépendamment de la garantie commerciale, la loi française prévoit un délai de rétractation de 14 jours pour les contrats conclus à distance (art. L221-18 du code de la consommation).",
+          "Pour un contenu numérique livré immédiatement, ce droit peut être éteint si tu as expressément accepté la fourniture immédiate et renoncé à ta rétractation avant le paiement. Cette information t'est présentée au checkout.",
+          "Si tu exerces ton droit de rétractation dans les 14 jours et que les conditions légales sont remplies, le remboursement est effectué sans application des conditions de la garantie 48 h (section 3). Contacte support@anyloc.io en précisant que tu souhaites te rétracter.",
         ],
       },
       {
-        title: "6. Modalités de remboursement",
+        title: "7. Autres remboursements",
         paragraphs: [
-          "Les paiements sont encaissés par Stripe. Le remboursement est effectué sur le moyen de paiement d'origine, sous 14 jours à compter de l'acceptation de la demande.",
+          "Un remboursement peut également être étudié en cas de double prélèvement, de facturation erronée ou de dysfonctionnement avéré imputable à Anyloc, indépendamment de la garantie 48 h.",
+          "Aucun remboursement au prorata n'est effectué lors d'une résiliation volontaire en cours de période : tu perds l'accès immédiatement et la période déjà payée n'est pas remboursée.",
         ],
       },
       {
-        title: "7. Résiliation de l'abonnement",
+        title: "8. Modalités pratiques",
         paragraphs: [
-          "Ton abonnement se renouvelle automatiquement au prix indiqué avant l'achat. Tu peux le résilier à tout moment depuis ton espace client (Paramètres → Résilier mon abonnement), sans frais.",
-          "Attention : la résiliation prend effet immédiatement. Tu perds l'accès au service, au dashboard et aux téléchargements dès confirmation. Aucun remboursement au prorata n'est effectué pour la période en cours.",
+          "Les paiements sont traités par Stripe. Le remboursement accepté est crédité sur le moyen de paiement d'origine, dans un délai maximal de 14 jours à compter de notre confirmation.",
+          "Le délai d'apparition sur ton relevé bancaire dépend ensuite de ta banque ou de l'émetteur de ta carte.",
+        ],
+      },
+      {
+        title: "9. Résiliation et remboursement",
+        paragraphs: [
+          "Tu peux résilier ton abonnement à tout moment depuis ton espace client (Paramètres → Résilier mon abonnement), sans frais de résiliation.",
+          "La résiliation prend effet immédiatement : tu perds l'accès au service, au dashboard et aux téléchargements dès confirmation. Aucun remboursement au prorata n'est dû pour la période en cours.",
+          "Si tu envisages une demande au titre de la garantie 48 h, envoie-la avant de résilier. Une résiliation confirmée vaut renoncement à cette garantie.",
+          "Pour le détail du processus de résiliation, consulte la politique d'annulation.",
         ],
       },
     ],

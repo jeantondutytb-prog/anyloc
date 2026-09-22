@@ -112,7 +112,7 @@ export const PAYWALL_TESTIMONIALS = [
 ] as const;
 
 export const REFUND_GUARANTEE_SUMMARY =
-  "Garantie 48 h : installation complète + test du service. Demande sous 48 h après l'achat, abonnement actif. Voir la politique de remboursement.";
+  "Garantie 48 h : remboursement intégral si le GPS ne fonctionne pas malgré une installation complète. Demande sous 48 h après le paiement, abonnement actif.";
 
 export const CANCELLATION_WARNING =
   "La résiliation prend effet immédiatement. Tu perds l'accès au service, au dashboard et aux téléchargements dès confirmation. Aucun remboursement au prorata.";

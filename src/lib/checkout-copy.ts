@@ -74,7 +74,7 @@ export const CHECKOUT_COPY = {
     {
       q: "Ma carte sera débitée tout de suite ?",
       a:
-        "Oui. Tu paies à la validation et tu as accès tout de suite. Tu peux annuler en 1 clic depuis ton espace — la résiliation coupe l'accès immédiatement. Garantie 48 h si le GPS ne fonctionne pas.",
+        "Oui. Tu paies à la validation et tu as accès tout de suite. Tu peux annuler en 1 clic depuis ton espace — la résiliation coupe l'accès immédiatement. Garantie 48 h : remboursement intégral si le GPS ne fonctionne pas malgré une installation complète.",
     },
     {
       q: "Ça marche sur quelles apps ?",
