@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CreditCard, Loader2, Lock } from "lucide-react";
 import { StripeEmbeddedCheckout } from "@/components/checkout/stripe-embedded-checkout";
-import { TRIAL_HEADLINE } from "@/lib/trial";
+import { CHECKOUT_HEADLINE } from "@/lib/constants";
 
 async function parseJsonResponse(res: Response) {
   const text = await res.text();
@@ -91,8 +91,7 @@ export function OnboardingPaywallStripe({
         Paiement par carte
       </div>
       <p className="mb-4 text-xs text-zinc-500">
-        {TRIAL_HEADLINE} Valide ta carte ci-dessous pour démarrer — ton accès
-        est activé immédiatement.
+        {CHECKOUT_HEADLINE} Valide ta carte ci-dessous pour démarrer.
       </p>
 
       {error && (

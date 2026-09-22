@@ -284,7 +284,7 @@ export async function cancelActiveTrialForUser(userId: string) {
     data.trial_status === "active" || data.subscription_status === "trialing";
 
   if (!hasActiveTrial) {
-    throw new Error("Aucun essai actif à annuler.");
+    throw new Error("Aucun abonnement actif à annuler.");
   }
 
   if (data.stripe_subscription_id) {

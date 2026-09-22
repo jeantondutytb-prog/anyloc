@@ -47,7 +47,7 @@ export function getClientDeviceSnapshot(): ClientDevice {
 }
 
 export const IOS_INSTALL_CONSTRAINT =
-  "Sur iPhone : Safari suffit. Après l’essai, un guide dans le site t’accompagne — pas d’ordinateur, pas d’App Store.";
+  "Sur iPhone : Safari suffit. Après le paiement, un guide dans le site t’accompagne — pas d’ordinateur, pas d’App Store.";
 
 export const ANDROID_INSTALL_NOTE =
   "Sur Android : Chrome suffit. Même guide que sur iPhone, sans APK ni mode développeur.";

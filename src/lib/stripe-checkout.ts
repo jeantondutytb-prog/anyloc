@@ -3,21 +3,12 @@ import type Stripe from "stripe";
 import type { Plan } from "@/lib/constants";
 import { ensureStripeCustomerForUser } from "@/lib/billing";
 import { getAppUrl, stripe } from "@/lib/stripe";
-import { TRIAL_CHECKOUT_SUBTITLE } from "@/lib/trial";
 
 type CheckoutMode = "embedded_page" | "hosted_page";
 
 function getCheckoutReturnUrl() {
   const appUrl = getAppUrl();
   return `${appUrl}/auth/checkout-complete?session_id={CHECKOUT_SESSION_ID}`;
-}
-
-function getTrialCheckoutCustomText() {
-  return {
-    submit: {
-      message: TRIAL_CHECKOUT_SUBTITLE,
-    },
-  } satisfies Stripe.Checkout.SessionCreateParams.CustomText;
 }
 
 export async function createTrialSetupCheckoutSession({
@@ -44,7 +35,6 @@ export async function createTrialSetupCheckoutSession({
       ...sharedParams,
       ui_mode: "embedded_page",
       return_url: returnUrl,
-      custom_text: getTrialCheckoutCustomText(),
     });
   }
 
@@ -53,7 +43,6 @@ export async function createTrialSetupCheckoutSession({
     ui_mode: "hosted_page",
     success_url: returnUrl,
     cancel_url: `${getAppUrl()}/checkout?plan=${plan.id}&canceled=true`,
-    custom_text: getTrialCheckoutCustomText(),
   });
 }
 

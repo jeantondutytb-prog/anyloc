@@ -1,5 +1,5 @@
 import { getCheckoutUrl, getPlanDisplayName, isValidPlanId } from "@/lib/constants";
-import { TRIAL_DURATION_LABEL, type TrialStatus } from "@/lib/trial";
+import type { TrialStatus } from "@/lib/trial";
 import { isActiveSubscriptionStatus } from "@/lib/subscription";
 
 export type SubscriptionInactiveReason =
@@ -61,9 +61,9 @@ const REASON_COPY: Record<
     ctaLabel: "Reprendre mon abonnement",
   },
   trial_cancelled: {
-    title: "Essai annulé",
+    title: "Abonnement annulé",
     description:
-      "Tu as annulé ton essai gratuit avant le débit. Tu peux reprendre quand tu veux.",
+      "Tu as résilié ton abonnement. Tu peux reprendre quand tu veux.",
     ctaLabel: "Voir les offres",
   },
   ended: {
@@ -73,9 +73,9 @@ const REASON_COPY: Record<
     ctaLabel: "Reprendre mon abonnement",
   },
   trial_ended: {
-    title: "Essai terminé",
+    title: "Accès expiré",
     description:
-      `Ton essai gratuit de ${TRIAL_DURATION_LABEL} est fini et tu n'as plus d'accès actif. Choisis une formule pour continuer.`,
+      "Ton accès n'est plus actif. Choisis une formule pour continuer.",
     ctaLabel: "Choisir une formule",
   },
   no_subscription: {

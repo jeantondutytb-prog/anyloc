@@ -1,5 +1,20 @@
 import { DESTINATION_SPOTS } from "@/lib/destination-spots";
-import { TRIAL_CTA_LABEL } from "@/lib/trial";
+
+export const CHECKOUT_CTA_LABEL = "Débloque ton accès";
+
+export const CHECKOUT_CTA_LABEL_SHORT = "Accès immédiat";
+
+export const CHECKOUT_CTA_SUBLINE =
+  "Accès immédiat · Annulation en 1 clic · Garantie 48 h";
+
+export const CHECKOUT_MARKETING_LINE =
+  "Active Anyloc sur le plan de ton choix — Snap, Insta, Tinder et toutes tes apps.";
+
+export const CHECKOUT_SELECT_SUBLINE =
+  "Même accès complet sur tous les plans — Snap, Insta, Tinder et toutes tes apps. Seule la durée facturée change.";
+
+export const CHECKOUT_HEADLINE =
+  "Paiement sécurisé — ta carte est débitée tout de suite, accès immédiat.";
 
 export const SITE = {
   name: "Anyloc",
@@ -90,7 +105,7 @@ export const PAYWALL_TESTIMONIALS = [
     city: "Lille",
   },
   {
-    quote: "Essai gratuit nickel, j'ai gardé l'abo mensuel.",
+    quote: "Install nickel, j'ai gardé l'abo mensuel.",
     author: "Julie",
     city: "Strasbourg",
   },
@@ -127,7 +142,7 @@ export const PLANS = [
     savings: undefined,
     features: PLAN_VALUE_STACK,
     popular: false,
-    ctaLabel: TRIAL_CTA_LABEL,
+    ctaLabel: CHECKOUT_CTA_LABEL,
     stripePriceId: process.env.STRIPE_PRICE_MONTHLY,
   },
   {
@@ -144,7 +159,7 @@ export const PLANS = [
     savings: "Économise 42 % vs mensuel",
     features: PLAN_VALUE_STACK,
     popular: false,
-    ctaLabel: TRIAL_CTA_LABEL,
+    ctaLabel: CHECKOUT_CTA_LABEL,
     stripePriceId: process.env.STRIPE_PRICE_6MONTHS,
   },
   {
@@ -161,7 +176,7 @@ export const PLANS = [
     savings: "Tu gardes 69 € sur l'année · -58 % vs mensuel",
     features: PLAN_VALUE_STACK,
     popular: true,
-    ctaLabel: TRIAL_CTA_LABEL,
+    ctaLabel: CHECKOUT_CTA_LABEL,
     stripePriceId: process.env.STRIPE_PRICE_ANNUAL,
   },
 ];

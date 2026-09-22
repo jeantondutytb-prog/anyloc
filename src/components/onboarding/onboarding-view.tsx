@@ -16,6 +16,7 @@ import { OnboardingPreviewMap } from "@/components/onboarding/onboarding-preview
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import {
+  CHECKOUT_CTA_LABEL,
   getPostOnboardingSignupUrl,
   isValidPlanId,
   ONBOARDING_TOTAL_STEPS,
@@ -27,7 +28,6 @@ import {
   TRENDING_DESTINATIONS,
   type OnboardingDestination,
 } from "@/lib/onboarding-destinations";
-import { TRIAL_CTA_LABEL } from "@/lib/trial";
 import { cn } from "@/lib/utils";
 
 function ProgressBar({ step }: { step: number }) {
@@ -277,7 +277,7 @@ function StepPreview({
       </p>
 
       <Button className="mt-6 h-14 w-full text-base" onClick={onContinue}>
-        {TRIAL_CTA_LABEL}
+        {CHECKOUT_CTA_LABEL}
         <ArrowRight className="h-5 w-5" />
       </Button>
 

@@ -8,27 +8,6 @@ export const TRIAL_DURATION_LABEL = `${TRIAL_DURATION_HOURS} h`;
 
 export const TRIAL_DURATION_TOLERANCE_SECONDS = 300;
 
-export const TRIAL_HEADLINE =
-  `Essai gratuit ${TRIAL_DURATION_LABEL} — ta carte est enregistrée, aucun prélèvement avant la fin de l'essai.`;
-
-export const TRIAL_CHECKOUT_SUBTITLE =
-  `0 € maintenant · débit automatique après ${TRIAL_DURATION_LABEL} sauf si tu annules avant.`;
-
-/** CTA principal : verbe d'action, meilleure conversion que le nominal. */
-export const TRIAL_CTA_LABEL = `Débloquer ton essai gratuit de ${TRIAL_DURATION_LABEL}`;
-
-/** Header et espaces restreints. */
-export const TRIAL_CTA_LABEL_SHORT = `Essai gratuit · ${TRIAL_DURATION_LABEL}`;
-
-export const TRIAL_CTA_SUBLINE =
-  `0 € maintenant · ${TRIAL_DURATION_LABEL} pour tester · annule quand tu veux`;
-
-export const TRIAL_MARKETING_LINE =
-  `Teste Anyloc gratuitement pendant ${TRIAL_DURATION_LABEL} sur le plan de ton choix — Snap, Insta, Tinder et toutes tes apps.`;
-
-export const TRIAL_SELECT_SUBLINE =
-  `Essaie gratuitement pendant ${TRIAL_DURATION_LABEL} sur tous les plans — même accès complet sur Snap, Insta, Tinder et toutes tes apps. Seule la durée facturée change après l'essai.`;
-
 export type TrialStatus = "active" | "converted" | "cancelled" | "charge_failed";
 
 export type TrialProfileFields = {

@@ -541,7 +541,7 @@ export function WebSetupWizard({
           <div className="flex items-center gap-2 text-pink-600">
             <Sparkles className="h-4 w-4" />
             <span className="text-sm font-medium">
-              {paymentSuccess ? "Essai activé" : "Mise en route"}
+              {paymentSuccess ? "Accès activé" : "Mise en route"}
             </span>
           </div>
           <p className="mt-2 text-xs font-medium uppercase tracking-wide text-zinc-400">

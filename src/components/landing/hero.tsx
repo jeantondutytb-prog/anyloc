@@ -5,12 +5,13 @@ import { motion } from "framer-motion";
 import { ArrowRight, Check, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { getOnboardingUrl, SITE } from "@/lib/constants";
 import {
-  TRIAL_CTA_LABEL,
-  TRIAL_CTA_LABEL_SHORT,
-  TRIAL_CTA_SUBLINE,
-} from "@/lib/trial";
+  CHECKOUT_CTA_LABEL,
+  CHECKOUT_CTA_LABEL_SHORT,
+  CHECKOUT_CTA_SUBLINE,
+  getOnboardingUrl,
+  SITE,
+} from "@/lib/constants";
 
 export function Hero() {
   return (
@@ -48,12 +49,12 @@ export function Hero() {
             <div className="flex w-full flex-col items-center gap-2 sm:w-auto">
               <Link href={getOnboardingUrl("annual")}>
                 <Button size="lg" className="w-full sm:w-auto">
-                  {TRIAL_CTA_LABEL}
+                  {CHECKOUT_CTA_LABEL}
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
               <p className="text-center text-xs text-zinc-500 sm:text-sm">
-                {TRIAL_CTA_SUBLINE}
+                {CHECKOUT_CTA_SUBLINE}
               </p>
             </div>
             <Link href="/#how-it-works">
@@ -77,7 +78,7 @@ export function Hero() {
           <div className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-zinc-500">
             <span className="flex items-center gap-1.5">
               <Check className="h-4 w-4 text-pink-600" />
-              {TRIAL_CTA_LABEL_SHORT}
+              {CHECKOUT_CTA_LABEL_SHORT}
             </span>
             <span className="flex items-center gap-1.5">
               <Check className="h-4 w-4 text-pink-600" />

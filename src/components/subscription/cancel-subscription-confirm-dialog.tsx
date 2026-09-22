@@ -39,20 +39,20 @@ export function CancelSubscriptionConfirmDialog({
 
   const isTrial = context === "trial";
   const title = isTrial
-    ? "Annuler ton essai gratuit ?"
+    ? "Résilier avant le débit ?"
     : "Résilier ton abonnement ?";
 
   const description = isTrial
     ? trialRemainingMs && trialRemainingMs > 0
-      ? `Si tu annules maintenant, ton accès est coupé tout de suite — même s'il te reste ${formatTrialRemaining(trialRemainingMs)} sur l'essai. Tu ne pourras plus tester Anyloc sur Snap, Insta et toutes tes apps.`
-      : "Si tu annules maintenant, ton accès est coupé immédiatement. Tu ne pourras plus tester Anyloc sur Snap, Insta et toutes tes apps."
+      ? `Si tu résilies maintenant, ton accès est coupé tout de suite — même s'il te reste ${formatTrialRemaining(trialRemainingMs)}. Tu ne pourras plus utiliser Anyloc sur Snap, Insta et toutes tes apps.`
+      : "Si tu résilies maintenant, ton accès est coupé immédiatement. Tu ne pourras plus utiliser Anyloc sur Snap, Insta et toutes tes apps."
     : "La résiliation prend effet immédiatement. Tu ne pourras plus changer ta position GPS, ni accéder au dashboard, aux guides et aux téléchargements.";
 
   const confirmLabel = isTrial
-    ? "Oui, annuler l'essai"
+    ? "Oui, résilier"
     : "Oui, résilier mon abonnement";
 
-  const dismissLabel = isTrial ? "Continuer mon essai" : "Garder mon abonnement";
+  const dismissLabel = isTrial ? "Garder mon accès" : "Garder mon abonnement";
 
   return (
     <div
@@ -96,7 +96,7 @@ export function CancelSubscriptionConfirmDialog({
           <div className="mt-4 flex items-start gap-2 rounded-xl border border-pink-200 bg-white/80 px-4 py-3 text-sm text-pink-950">
             <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-pink-600" />
             <p>
-              Temps restant sur l&apos;essai :{" "}
+              Temps restant :{" "}
               <span className="font-semibold">
                 {formatTrialRemaining(trialRemainingMs)}
               </span>

@@ -1,7 +1,6 @@
 import { formatPlanBillingTotal, PlanPrice } from "@/components/pricing/plan-price";
 import { Card } from "@/components/ui/card";
-import { PLANS, type Plan } from "@/lib/constants";
-import { TRIAL_HEADLINE } from "@/lib/trial";
+import { CHECKOUT_HEADLINE, PLANS, type Plan } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 export function getPlanById(planId: string) {
@@ -12,12 +11,12 @@ export function PlanSummaryCard({
   plan,
   className,
   sticky = false,
-  showTrialNote = false,
+  showPaymentNote = false,
 }: {
   plan: Plan;
   className?: string;
   sticky?: boolean;
-  showTrialNote?: boolean;
+  showPaymentNote?: boolean;
 }) {
   return (
     <Card
@@ -38,9 +37,9 @@ export function PlanSummaryCard({
         </div>
         <PlanPrice plan={plan} size="summary" align="right" className="shrink-0" />
       </div>
-      {showTrialNote ? (
+      {showPaymentNote ? (
         <p className="mt-4 rounded-xl border border-pink-100 bg-white/80 px-3 py-2 text-xs leading-relaxed text-zinc-600">
-          {TRIAL_HEADLINE}
+          {CHECKOUT_HEADLINE}
         </p>
       ) : null}
     </Card>
