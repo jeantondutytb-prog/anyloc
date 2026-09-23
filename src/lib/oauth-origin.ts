@@ -45,71 +45,19 @@ export function getConfiguredAppOrigin(
   return normalizeOrigin(appUrl ?? "") || normalizeOrigin(siteUrl ?? "");
 }
 
-function hostnameOf(origin: string) {
-  try {
-    return new URL(origin).hostname.toLowerCase();
-  } catch {
-    return "";
-  }
-}
-
 function isLocalHost(host: string) {
   const hostname = host.split(":")[0]?.toLowerCase() ?? "";
   return hostname === "localhost" || hostname === "127.0.0.1";
 }
 
-function isPreviewHost(host: string) {
-  const hostname = host.split(":")[0]?.toLowerCase() ?? "";
-  return hostname.endsWith(".vercel.app");
-}
-
-function registrableDomain(host: string) {
-  const hostname = host.split(":")[0]?.toLowerCase() ?? "";
-  const parts = hostname.split(".").filter(Boolean);
-
-  if (parts.length < 2) {
-    return hostname;
-  }
-
-  return parts.slice(-2).join(".");
-}
-
-export function getOAuthCallbackOrigin(
-  request: Request,
-  configuredOrigin = getConfiguredAppOrigin()
-) {
-  const requestOrigin = getRequestOrigin(request);
-  const requestHost = hostnameOf(requestOrigin);
-
-  if (isLocalHost(requestHost) || isPreviewHost(requestHost) || !configuredOrigin) {
-    return requestOrigin;
-  }
-
-  const configuredHost = hostnameOf(configuredOrigin);
-
-  if (!configuredHost) {
-    return requestOrigin;
-  }
-
-  if (registrableDomain(requestHost) !== registrableDomain(configuredHost)) {
-    return requestOrigin;
-  }
-
-  return configuredOrigin;
+export function getOAuthCallbackOrigin(request: Request) {
+  // Always use the host the user is actually on. Vercel may redirect apex ↔ www,
+  // and bouncing to NEXT_PUBLIC_APP_URL causes ERR_TOO_MANY_REDIRECTS.
+  return getRequestOrigin(request);
 }
 
 export function getOAuthCallbackUrl(request: Request) {
   return `${getOAuthCallbackOrigin(request)}/auth/callback`;
-}
-
-export function shouldBounceToOAuthOrigin(request: Request) {
-  return getRequestOrigin(request) !== getOAuthCallbackOrigin(request);
-}
-
-export function buildOAuthStartUrl(request: Request, next: string) {
-  const url = new URL("/auth/google", getOAuthCallbackOrigin(request));
-  url.searchParams.set("next", next);
-  return url;
 }
 
 export function isSiteUrlOAuthFallback(

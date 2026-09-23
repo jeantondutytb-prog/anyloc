@@ -5,14 +5,12 @@ import { getRequestOrigin } from "@/lib/oauth-origin";
 import { sanitizeRedirectPath } from "@/lib/safe-redirect";
 
 export {
-  buildOAuthStartUrl,
   getConfiguredAppOrigin,
   getOAuthCallbackOrigin,
   getOAuthCallbackUrl,
   getRequestOrigin,
   isSiteUrlOAuthFallback,
   normalizeOrigin,
-  shouldBounceToOAuthOrigin,
 } from "@/lib/oauth-origin";
 
 export const OAUTH_NEXT_COOKIE = "anyloc_oauth_next";

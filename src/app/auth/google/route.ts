@@ -1,12 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { ONBOARDING_ENTRY_URL } from "@/lib/constants";
 import {
-  buildOAuthStartUrl,
   getOAuthCallbackUrl,
   getRequestOrigin,
   readOAuthNext,
   setOAuthNextCookie,
-  shouldBounceToOAuthOrigin,
 } from "@/lib/oauth";
 import {
   createCookieCollector,
@@ -20,12 +18,6 @@ export async function GET(request: NextRequest) {
 
   if (!isSupabaseConfigured()) {
     return NextResponse.redirect(new URL("/login?error=oauth", origin));
-  }
-
-  // Stay on the allowlisted Site URL (www vs apex). PKCE cookies must be
-  // written on the same host as the callback, otherwise Google returns to `/`.
-  if (shouldBounceToOAuthOrigin(request)) {
-    return NextResponse.redirect(buildOAuthStartUrl(request, next));
   }
 
   const collector = createCookieCollector();
