@@ -5,10 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Check,
-  ChevronDown,
   Download,
   Loader2,
-  MapPin,
+  Monitor,
   Smartphone,
 } from "lucide-react";
 import { DashboardAppHeader } from "@/components/dashboard/dashboard-app-header";
@@ -64,21 +63,6 @@ const PREVIEW_ASSETS: DownloadAssetInfo[] = [
   },
 ];
 
-const HELP_ITEMS = [
-  {
-    q: "Pourquoi un ordi pour iPhone ?",
-    a: "Apple verrouille le GPS. Un Mac ou PC une seule fois installe l'app sur ton iPhone. Ensuite, tout se pilote depuis l'app — plus besoin du site.",
-  },
-  {
-    q: "Windows bloque le fichier ?",
-    a: "Clique Conserver dans Chrome, puis Plus d'infos → Exécuter quand même si l'écran bleu apparaît.",
-  },
-  {
-    q: "Où je change ma position au quotidien ?",
-    a: "Dans l'app Anyloc sur ton téléphone. Le site sert à t'installer et gérer ton abonnement.",
-  },
-] as const;
-
 function getDashboardUrl() {
   if (typeof window === "undefined") {
     return "https://anyloc.io/dashboard";
@@ -128,37 +112,6 @@ function JourneyStepper({ currentStep }: { currentStep: 1 | 2 | 3 }) {
   );
 }
 
-function HelpAccordion() {
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
-
-  return (
-    <div className="space-y-2">
-      {HELP_ITEMS.map((item, index) => (
-        <details
-          key={item.q}
-          open={openIndex === index}
-          className="group rounded-2xl border border-zinc-200 bg-white"
-          onToggle={(event) => {
-            if ((event.target as HTMLDetailsElement).open) {
-              setOpenIndex(index);
-            } else if (openIndex === index) {
-              setOpenIndex(null);
-            }
-          }}
-        >
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-medium text-zinc-800 [&::-webkit-details-marker]:hidden">
-            {item.q}
-            <ChevronDown className="h-4 w-4 shrink-0 text-zinc-400 transition-transform group-open:rotate-180" />
-          </summary>
-          <p className="border-t border-zinc-100 px-4 py-3 text-sm leading-relaxed text-zinc-600">
-            {item.a}
-          </p>
-        </details>
-      ))}
-    </div>
-  );
-}
-
 function PrimaryInstallCard({
   preview,
   hasAccess,
@@ -197,8 +150,7 @@ function PrimaryInstallCard({
             Installe l&apos;app sur ton Android
           </h2>
           <p className="mt-2 text-sm text-zinc-600">
-            Tout se passe sur ton téléphone. Pas d&apos;ordinateur, pas de compte
-            à reconfigurer.
+            Tout se passe sur ton téléphone. L&apos;app te guide écran par écran.
           </p>
           <div className="mt-6">
             {preview || (hasAccess && android?.available && href) ? (
@@ -214,10 +166,6 @@ function PrimaryInstallCard({
               </Button>
             )}
           </div>
-          <p className="mt-4 text-xs text-zinc-500">
-            Ouvre le fichier dans Téléchargements, puis l&apos;app te guide écran
-            par écran.
-          </p>
         </div>
       </Card>
     );
@@ -234,8 +182,8 @@ function PrimaryInstallCard({
             Installe l&apos;app sur ton iPhone
           </h2>
           <p className="mt-2 text-sm text-zinc-600">
-            Comme Locaflex : un bouton envoie l&apos;app sur ton tel. Setup guidé
-            une fois, ensuite tu changes de ville depuis ton lit.
+            Un bouton envoie l&apos;app sur ton tel. Le setup complet se fait
+            ensuite dans Anyloc Setup sur un ordi.
           </p>
           <div className="mt-6 flex justify-center">
             <IosOtaInstallButton
@@ -245,8 +193,7 @@ function PrimaryInstallCard({
             />
           </div>
           <p className="mt-4 text-xs text-zinc-500">
-            Si l&apos;install ne part pas, ouvre cette page sur un Mac ou PC pour
-            l&apos;installer via USB.
+            Si l&apos;install ne part pas, ouvre cette page sur un Mac ou PC.
           </p>
         </div>
       </Card>
@@ -263,11 +210,11 @@ function PrimaryInstallCard({
           <Download className="h-7 w-7" />
         </div>
         <h2 className="mt-4 text-2xl font-bold text-zinc-900">
-          Étape 2 — Télécharge Anyloc
+          Télécharge Anyloc Setup
         </h2>
         <p className="mt-2 text-sm text-zinc-600">
-          Branche ton iPhone, installe l&apos;app, choisis ta ville — tout se
-          passe dans Anyloc Setup, pas sur ce site.
+          Ouvre l&apos;app sur ton ordi — le tutoriel complet (USB, install,
+          première ville) est dedans, pas sur ce site.
         </p>
         <div className="mt-6">
           {preview || (asset?.available && href) ? (
@@ -312,7 +259,7 @@ export function PaidDashboardView({
   const { data: account } = useAccount();
   const device = useSyncExternalStore(
     () => () => {},
-    getClientDeviceSnapshot,
+    detectClientDevice,
     () => SERVER_CLIENT_DEVICE
   );
   const [desktopOs, setDesktopOs] = useState<DesktopOs>(device.desktopOs);
@@ -372,8 +319,7 @@ export function PaidDashboardView({
             <div>
               <p className="font-semibold text-emerald-950">Paiement confirmé</p>
               <p className="mt-1 text-sm text-emerald-900/90">
-                Étape 1 terminée. Installe l&apos;app, pose ta pin — c&apos;est
-                bon.
+                Étape 1 terminée. Télécharge l&apos;app — le reste se fait dedans.
               </p>
             </div>
           </div>
@@ -386,11 +332,12 @@ export function PaidDashboardView({
               ? "Tout se passe sur ton Android"
               : mode === "ios-phone"
                 ? "Installe l'app sur ton iPhone"
-                : "Télécharge Anyloc sur ton ordi"}
+                : "Télécharge Anyloc Setup"}
           </h1>
           <p className="mt-3 text-sm text-zinc-600 sm:text-base">
-            Ensuite, tu changes de ville depuis l&apos;app — Snap, Insta, Maps :
-            tout le tel suit.
+            {mode === "desktop"
+              ? "Ce site sert à payer et télécharger. Le tutoriel complet vit dans Anyloc Setup."
+              : "Ensuite, tu changes de ville depuis l'app — plus besoin de revenir ici."}
           </p>
         </div>
 
@@ -413,8 +360,8 @@ export function PaidDashboardView({
               qrLabel="Scanne depuis l'ordi"
             >
               <p>
-                Si le bouton d&apos;install ne suffit pas, l&apos;ordi installe
-                l&apos;app via USB — une seule fois.
+                L&apos;installation complète (USB + tutoriel) se fait dans Anyloc
+                Setup sur ordinateur.
               </p>
             </WrongDeviceNotice>
           </div>
@@ -452,31 +399,25 @@ export function PaidDashboardView({
           )}
         </div>
 
-        <section className="mt-10 rounded-3xl border border-zinc-200 bg-white p-6">
-          <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-violet-50 text-violet-600">
-              <MapPin className="h-5 w-5" />
+        {mode === "desktop" ? (
+          <section className="mt-8 rounded-3xl border border-zinc-200 bg-white p-6">
+            <div className="flex items-start gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-violet-50 text-violet-600">
+                <Monitor className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-zinc-900">
+                  Ensuite, ouvre Anyloc Setup
+                </h2>
+                <p className="mt-1 text-sm text-zinc-600">
+                  L&apos;app te guide pas à pas : branche l&apos;iPhone, installe
+                  l&apos;app, choisis ta première ville, vérifie dans Snap. Tout
+                  est dans le tutoriel intégré — rien à refaire sur ce site.
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-lg font-semibold text-zinc-900">
-                Étape 3 — Pose ta pin dans l&apos;app
-              </h2>
-              <p className="mt-1 text-sm text-zinc-600">
-                Ouvre Anyloc sur ton téléphone, choisis Marbella, Paris ou Miami,
-                appuie sur Démarrer. Plus besoin de revenir sur ce site.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <section className="mt-8">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
-            Questions fréquentes
-          </h2>
-          <div className="mt-3">
-            <HelpAccordion />
-          </div>
-        </section>
+          </section>
+        ) : null}
 
         <p className="mt-8 text-center text-sm text-zinc-500">
           Factures et abonnement dans{" "}

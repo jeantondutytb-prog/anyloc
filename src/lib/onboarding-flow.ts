@@ -18,7 +18,7 @@ export const COMPETITOR_ONBOARDING_STEPS = [
     id: "pin",
     title: "Tu poses ta pin",
     description:
-      "Ouvre l'app, choisis une ville sur la carte, appuie sur Démarrer. C'est tout.",
+      "Anyloc Setup te guide dans l'app : choisis une ville, vérifie dans Snap. C'est tout.",
   },
 ] as const;
 

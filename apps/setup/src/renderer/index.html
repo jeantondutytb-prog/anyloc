@@ -215,6 +215,28 @@
             </div>
 
             <div class="settings-section">
+              <div class="section-label">AIDE</div>
+              <div class="settings-card profil-faq">
+                <details class="profil-faq-item">
+                  <summary>Pourquoi un ordi pour iPhone ?</summary>
+                  <p>Apple verrouille le GPS. Un Mac ou PC installe l'app une seule fois. Ensuite, tu changes de ville depuis l'app iPhone ou cet ordinateur.</p>
+                </details>
+                <details class="profil-faq-item">
+                  <summary>L'iPhone n'est pas détecté en USB</summary>
+                  <p>Essaie un autre câble, déverrouille l'iPhone et appuie Faire confiance. Sur Windows, installe iTunes pour les pilotes Apple.</p>
+                </details>
+                <details class="profil-faq-item">
+                  <summary>La loc ne change pas dans Snap</summary>
+                  <p>Ferme Snap complètement et rouvre-le. Vérifie que l'iPhone est branché et qu'Anyloc Setup tourne en arrière-plan.</p>
+                </details>
+                <details class="profil-faq-item no-border">
+                  <summary>L'app iPhone s'arrête après ~7 jours</summary>
+                  <p>Installe LocalDevVPN (App Store), connecte le Wi-Fi, puis Anyloc iPhone → Profil → Renouveler.</p>
+                </details>
+              </div>
+            </div>
+
+            <div class="settings-section">
               <div class="section-label">ACTIONS</div>
               <div class="settings-card">
                 <button type="button" class="action-row" id="reopen-guide-btn">
@@ -243,7 +265,7 @@
         <div class="guide-progress">
           <div class="guide-progress-bar" id="guide-progress-bar"></div>
         </div>
-        <div class="guide-step-label" id="guide-step-label">Étape 1 / 3</div>
+        <div class="guide-step-label" id="guide-step-label">Étape 1 / 6</div>
 
         <!-- Step 1: Prépare ton Mac -->
         <div class="guide-step-content" id="guide-step-1">
@@ -303,6 +325,16 @@
             <span id="guide-devmode-tip">Le mode développeur n'apparaît qu'après avoir branché l'iPhone à l'ordinateur au moins une fois.</span>
           </div>
 
+          <details class="guide-details" id="guide-usb-help">
+            <summary>L'iPhone n'est pas détecté ?</summary>
+            <ol>
+              <li>Essaie un autre câble USB (certains ne font que charger)</li>
+              <li>Déverrouille l'iPhone et appuie <strong>Faire confiance</strong> quand ça apparaît</li>
+              <li>Débranche et rebranche le câble</li>
+              <li id="guide-usb-help-win" hidden>Sur Windows, vérifie qu'iTunes est installé (pilotes Apple USB)</li>
+            </ol>
+          </details>
+
           <div class="guide-status-box" id="guide-usb-status">
             <div class="guide-status-icon searching" id="guide-usb-icon">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
@@ -337,6 +369,96 @@
 
             <button class="guide-btn-primary" id="guide-install-btn">Installer l'app iPhone</button>
           </div>
+        </div>
+
+        <!-- Step 4: Faire confiance et ouvrir l'app -->
+        <div class="guide-step-content" id="guide-step-4" hidden>
+          <div class="guide-icon-wrap">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <h2 class="guide-title">Fais confiance et ouvre Anyloc</h2>
+          <p class="guide-subtitle">Sur ton iPhone, deux petites étapes avant de tester ta première ville.</p>
+
+          <div class="guide-instruction-card">
+            <div class="guide-instruction-num">1</div>
+            <div>
+              <h3>Autorise l'app développeur</h3>
+              <p><strong>Réglages → Général → Gestion des appareils</strong> (ou VPN et gestion des appareils). Appuie sur le profil Anyloc, puis <strong>Faire confiance</strong>.</p>
+            </div>
+          </div>
+          <div class="guide-instruction-card">
+            <div class="guide-instruction-num">2</div>
+            <div>
+              <h3>Ouvre Anyloc sur l'iPhone</h3>
+              <p>Connecte-toi avec le <strong>même email</strong> que sur cet ordinateur.</p>
+            </div>
+          </div>
+
+          <button class="guide-btn-primary" id="guide-trust-next">C'est fait, continuer</button>
+        </div>
+
+        <!-- Step 5: Choisis ta première ville -->
+        <div class="guide-step-content" id="guide-step-5" hidden>
+          <div class="guide-icon-wrap">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+          <h2 class="guide-title">Choisis ta première ville</h2>
+          <p class="guide-subtitle">Garde l'iPhone branché en USB — l'ordinateur applique le GPS sur ton tel.</p>
+
+          <div class="guide-city-grid" id="guide-city-grid"></div>
+
+          <div class="guide-status-box" id="guide-city-status" hidden>
+            <div class="guide-status-icon ok" id="guide-city-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+            </div>
+            <div>
+              <div class="guide-status-text" id="guide-city-text">Destination activée</div>
+              <div class="guide-status-hint" id="guide-city-hint">Le GPS se met à jour sur ton iPhone…</div>
+            </div>
+          </div>
+
+          <button class="guide-btn-primary" id="guide-city-next" disabled>Continuer</button>
+        </div>
+
+        <!-- Step 6: Vérifie dans Snap ou Maps -->
+        <div class="guide-step-content" id="guide-step-6" hidden>
+          <div class="guide-icon-wrap">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+          </div>
+          <h2 class="guide-title">Vérifie dans Snap ou Maps</h2>
+          <p class="guide-subtitle">Ouvre Snap, Insta ou Plans sur ton iPhone — ta position doit avoir changé.</p>
+
+          <div class="guide-instruction-card">
+            <div class="guide-instruction-num">1</div>
+            <div>
+              <h3>Ouvre Snap ou Maps</h3>
+              <p>Tu dois voir la ville que tu viens de choisir (<strong id="guide-verify-city">—</strong>).</p>
+            </div>
+          </div>
+          <div class="guide-instruction-card">
+            <div class="guide-instruction-num">2</div>
+            <div>
+              <h3>Garde Anyloc Setup ouvert</h3>
+              <p id="guide-verify-bg-text">L'app reste en arrière-plan tant que l'iPhone est branché — le GPS reste actif.</p>
+            </div>
+          </div>
+
+          <details class="guide-details">
+            <summary>La loc ne change pas ?</summary>
+            <ol>
+              <li>Ferme Snap complètement, puis rouvre-le</li>
+              <li>Vérifie que l'iPhone est toujours branché en USB</li>
+              <li>Active le GPS sur l'iPhone (Réglages → Confidentialité → Service de localisation)</li>
+            </ol>
+          </details>
+
+          <details class="guide-details">
+            <summary>Dans ~7 jours, l'app iPhone s'arrête ?</summary>
+            <p>Normal (limite Apple). Installe <strong>LocalDevVPN</strong> (App Store, gratuit), connecte le Wi-Fi, puis dans Anyloc iPhone : <strong>Profil → Renouveler</strong>.</p>
+          </details>
+
+          <button class="guide-btn-primary" id="guide-verify-done">Oui, ça marche</button>
+          <button type="button" class="guide-btn-secondary" id="guide-verify-skip">Je testerai plus tard</button>
         </div>
       </div>
     </div>
