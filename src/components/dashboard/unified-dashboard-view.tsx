@@ -1,81 +1,72 @@
 "use client";
 
-import { Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, Smartphone, User } from "lucide-react";
-import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
-import { InstallationGuideView } from "@/components/dashboard/installation-guide-view";
+import { Suspense, useEffect } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import { DashboardAppHeader } from "@/components/dashboard/dashboard-app-header";
+import { PaidDashboardView } from "@/components/dashboard/paid-dashboard-view";
 import { SettingsView } from "@/components/dashboard/settings-view";
-import { cn } from "@/lib/utils";
+import { dashboardHref, getDashboardBasePath } from "@/lib/dashboard-paths";
 
-type Tab = "installation" | "account";
+type Tab = "home" | "install" | "account";
 
-const TABS: { id: Tab; label: string; icon: typeof Smartphone }[] = [
-  { id: "installation", label: "Installation", icon: Smartphone },
-  { id: "account", label: "Mon compte", icon: User },
-];
+function readTab(value: string | null): Tab {
+  if (value === "account") {
+    return "account";
+  }
 
-function DashboardTabs({
-  active,
-  onChange,
-}: {
-  active: Tab;
-  onChange: (tab: Tab) => void;
-}) {
-  return (
-    <div className="flex gap-1 rounded-2xl border border-zinc-200 bg-zinc-50 p-1.5">
-      {TABS.map((tab) => (
-        <button
-          key={tab.id}
-          type="button"
-          onClick={() => onChange(tab.id)}
-          className={cn(
-            "flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors",
-            active === tab.id
-              ? "bg-white text-pink-600 shadow-sm"
-              : "text-zinc-600 hover:text-zinc-900"
-          )}
-        >
-          <tab.icon className="h-4 w-4" />
-          {tab.label}
-        </button>
-      ))}
-    </div>
-  );
+  if (value === "install" || value === "installation") {
+    return "install";
+  }
+
+  return "home";
 }
 
-function UnifiedDashboardContent() {
+function UnifiedDashboardContent({ preview = false }: { preview?: boolean }) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
-  const activeTab: Tab = searchParams.get("tab") === "account" ? "account" : "installation";
+  const activeTab = readTab(searchParams.get("tab"));
+  const basePath = getDashboardBasePath(pathname);
 
-  function setActiveTab(tab: Tab) {
-    const url = tab === "account" ? "/dashboard?tab=account" : "/dashboard";
-    router.replace(url, { scroll: false });
+  useEffect(() => {
+    if (activeTab === "install") {
+      router.replace(dashboardHref(basePath));
+    }
+  }, [activeTab, basePath, router]);
+
+  if (activeTab === "home" || activeTab === "install") {
+    return <PaidDashboardView preview={preview} />;
   }
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardPageHeader />
-
+      <DashboardAppHeader
+        activeTab="account"
+        statusLabel={preview ? "Abonnement actif" : undefined}
+        planLabel={preview ? "Plan annuel" : undefined}
+      />
       <main className="p-4 pb-8 sm:p-6 lg:p-8">
         <div className="mx-auto max-w-3xl">
-          <DashboardTabs active={activeTab} onChange={setActiveTab} />
-
-          <div className="mt-6">
-            {activeTab === "installation" ? (
-              <InstallationGuideView embedded />
-            ) : (
-              <SettingsView embedded />
-            )}
-          </div>
+          {preview ? (
+            <p className="rounded-2xl border border-zinc-200 bg-white px-4 py-6 text-sm text-zinc-500">
+              Aperçu du compte — connecte-toi pour voir tes factures et ton
+              abonnement.
+            </p>
+          ) : (
+            <SettingsView embedded />
+          )}
         </div>
       </main>
     </div>
   );
 }
 
-export function UnifiedDashboardView() {
+export function UnifiedDashboardView({
+  preview = false,
+}: {
+  preview?: boolean;
+} = {}) {
   return (
     <Suspense
       fallback={
@@ -85,7 +76,7 @@ export function UnifiedDashboardView() {
         </div>
       }
     >
-      <UnifiedDashboardContent />
+      <UnifiedDashboardContent preview={preview} />
     </Suspense>
   );
 }

@@ -1,23 +1,23 @@
-import { Download, MapPin, CreditCard } from "lucide-react";
+import { CreditCard, Download, MapPin } from "lucide-react";
 
 const steps = [
   {
     icon: CreditCard,
-    title: "Crée ton compte",
+    title: "Tu t'abonnes",
     description:
-      "Choisis ta formule, valide en ligne — ton accès Anyloc est prêt en quelques secondes.",
+      "Paiement sécurisé. Ton accès est actif dès que c'est validé.",
   },
   {
     icon: Download,
-    title: "3 étapes sur ton tel",
+    title: "Tu installes l'app",
     description:
-      "Android : installe l'app, autorise la fausse loc, ouvre Anyloc. iPhone : un ordi une fois, puis c'est bon.",
+      "Android : APK sur le tel. iPhone : ordi une fois, puis l'app reste sur ton iPhone.",
   },
   {
     icon: MapPin,
-    title: "Choisis sur la carte",
+    title: "Tu poses ta pin",
     description:
-      "Depuis ton dashboard, cherche une ville ou clique sur la carte — ton téléphone suit en direct.",
+      "Ouvre l'app, choisis une ville sur la carte, appuie sur Démarrer. C'est tout.",
   },
 ];
 
@@ -27,18 +27,18 @@ export function HowItWorks() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
-            Opérationnel en quelques minutes
+            Opérationnel en 3 étapes
           </h2>
           <p className="mt-4 text-zinc-600">
-            Pas besoin d&apos;être un crack en tech. On te guide de
-            l&apos;inscription à ta première loc.
+            Comme Locaflex ou Wiped : paie, installe, change de ville — depuis
+            ton téléphone.
           </p>
         </div>
 
         <div className="mt-16 grid gap-8 md:grid-cols-3">
           {steps.map((step, i) => (
             <div key={step.title} className="relative text-center">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-pink-500/10 border border-pink-500/20">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-pink-500/20 bg-pink-500/10">
                 <step.icon className="h-6 w-6 text-pink-600" />
               </div>
               <span className="mt-4 inline-block text-xs font-medium text-pink-600">

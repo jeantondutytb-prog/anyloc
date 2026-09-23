@@ -1099,6 +1099,106 @@ html {
 }
 .guide-btn-skip:hover { color: var(--text-muted); text-decoration: underline; }
 
+.guide-details {
+  margin: 16px 0 24px;
+  padding: 14px 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.guide-details summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text);
+  list-style: none;
+}
+
+.guide-details summary::-webkit-details-marker { display: none; }
+
+.guide-details ol,
+.guide-details p {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  line-height: 1.55;
+}
+
+.guide-details p { padding-left: 0; }
+
+.guide-city-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.guide-city-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 8px;
+  background: var(--bg-surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  font: inherit;
+  text-align: center;
+}
+
+.guide-city-btn:hover {
+  border-color: rgba(236, 72, 153, 0.4);
+  background: var(--bg-surface-hover);
+}
+
+.guide-city-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.guide-city-emoji { font-size: 24px; line-height: 1; }
+
+.guide-city-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.guide-city-country {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.profil-faq .profil-faq-item {
+  border-bottom: 1px solid var(--border);
+}
+
+.profil-faq .profil-faq-item.no-border { border-bottom: none; }
+
+.profil-faq summary {
+  padding: 12px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  list-style: none;
+}
+
+.profil-faq summary::-webkit-details-marker { display: none; }
+
+.profil-faq summary:hover { background: var(--bg-surface-hover); }
+
+.profil-faq p {
+  margin: 0;
+  padding: 0 12px 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
 .action-row {
   display: flex;
   align-items: center;
