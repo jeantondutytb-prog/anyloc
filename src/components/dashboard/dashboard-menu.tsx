@@ -8,7 +8,6 @@ import {
   HelpCircle,
   LayoutDashboard,
   Menu,
-  Smartphone,
   User,
   X,
 } from "lucide-react";
@@ -20,7 +19,7 @@ import {
 import { cn } from "@/lib/utils";
 
 type MenuItem = {
-  icon: typeof Smartphone;
+  icon: typeof LayoutDashboard;
   label: string;
   href: string;
 };
@@ -30,11 +29,6 @@ function getMenuSections(basePath: string): { items: MenuItem[] }[] {
     {
       items: [
         { icon: LayoutDashboard, label: "Dashboard", href: dashboardHref(basePath) },
-        {
-          icon: Smartphone,
-          label: "Installation",
-          href: dashboardHref(basePath, "install"),
-        },
         { icon: User, label: "Mon compte", href: dashboardHref(basePath, "account") },
       ],
     },

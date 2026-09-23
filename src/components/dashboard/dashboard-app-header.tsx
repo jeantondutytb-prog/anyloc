@@ -13,7 +13,6 @@ import { cn } from "@/lib/utils";
 
 const NAV_ITEMS: { label: string; tab?: DashboardTab }[] = [
   { label: "Dashboard" },
-  { label: "Installation", tab: "install" },
   { label: "Mon compte", tab: "account" },
 ];
 
