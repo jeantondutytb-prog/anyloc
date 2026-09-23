@@ -7,6 +7,7 @@
   "main": "src/main.js",
   "scripts": {
     "dev": "electron .",
+    "preview": "electron . -- --preview-guide",
     "start": "electron .",
     "prepare-bundle": "node scripts/prepare-bundle.js",
     "build:mac": "npm run prepare-bundle && electron-builder --config electron-builder.config.js --mac dmg",
