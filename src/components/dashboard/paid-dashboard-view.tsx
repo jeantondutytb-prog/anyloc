@@ -31,7 +31,7 @@ import {
   getPrimaryActionLabel,
 } from "@/lib/onboarding-flow";
 import {
-  getClientDeviceSnapshot,
+  detectClientDevice,
   SERVER_CLIENT_DEVICE,
   type DesktopOs,
 } from "@/lib/platform";
