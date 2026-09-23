@@ -30,7 +30,7 @@ import {
   getPrimaryActionLabel,
 } from "@/lib/onboarding-flow";
 import {
-  detectClientDevice,
+  getClientDeviceSnapshot,
   SERVER_CLIENT_DEVICE,
   type DesktopOs,
 } from "@/lib/platform";
@@ -259,7 +259,7 @@ export function PaidDashboardView({
   const { data: account } = useAccount();
   const device = useSyncExternalStore(
     () => () => {},
-    detectClientDevice,
+    getClientDeviceSnapshot,
     () => SERVER_CLIENT_DEVICE
   );
   const [desktopOs, setDesktopOs] = useState<DesktopOs>(device.desktopOs);

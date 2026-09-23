@@ -37,6 +37,7 @@ export function detectClientDevice(): ClientDevice {
   return { isPhone, desktopOs };
 }
 
+/** Stable snapshot for useSyncExternalStore — must return the same object reference. */
 export function getClientDeviceSnapshot(): ClientDevice {
   if (typeof navigator === "undefined") {
     return SERVER_CLIENT_DEVICE;
