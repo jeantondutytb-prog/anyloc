@@ -18,7 +18,8 @@ export async function GET(request: Request) {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? origin}/auth/callback?next=${encodeURIComponent(next)}`,
+      // Same host as the current request — PKCE cookies must match the callback URL.
+      redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
     },
   });
 
