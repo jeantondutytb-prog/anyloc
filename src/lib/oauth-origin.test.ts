@@ -6,7 +6,6 @@ import {
   getRequestOrigin,
   isSiteUrlOAuthFallback,
   normalizeOrigin,
-  shouldBounceToOAuthOrigin,
 } from "./oauth-origin";
 
 function requestAt(url: string, headers?: Record<string, string>) {
@@ -39,59 +38,28 @@ describe("getOAuthCallbackOrigin", () => {
   it("stays on the request host for localhost", () => {
     const request = requestAt("http://localhost:3000/auth/google");
 
-    assert.equal(
-      getOAuthCallbackOrigin(request, "https://anyloc.io"),
-      "http://localhost:3000"
-    );
+    assert.equal(getOAuthCallbackOrigin(request), "http://localhost:3000");
   });
 
   it("stays on Vercel preview hosts", () => {
     const request = requestAt("https://anyloc-git-fix.vercel.app/auth/google");
 
     assert.equal(
-      getOAuthCallbackOrigin(request, "https://anyloc.io"),
+      getOAuthCallbackOrigin(request),
       "https://anyloc-git-fix.vercel.app"
     );
   });
 
-  it("uses the configured Site URL on www vs apex", () => {
+  it("stays on www when the user is on www", () => {
     const request = requestAt("https://www.anyloc.io/auth/google");
 
-    assert.equal(
-      getOAuthCallbackOrigin(request, "https://anyloc.io"),
-      "https://anyloc.io"
-    );
+    assert.equal(getOAuthCallbackOrigin(request), "https://www.anyloc.io");
   });
 
-  it("keeps the current host when no Site URL is configured", () => {
-    const request = requestAt("https://www.anyloc.io/auth/google");
+  it("stays on apex when the user is on apex", () => {
+    const request = requestAt("https://anyloc.io/auth/google");
 
-    assert.equal(getOAuthCallbackOrigin(request, ""), "https://www.anyloc.io");
-  });
-});
-
-describe("shouldBounceToOAuthOrigin", () => {
-  it("bounces www to the configured apex Site URL", () => {
-    const previousApp = process.env.NEXT_PUBLIC_APP_URL;
-    const previousSite = process.env.NEXT_PUBLIC_SITE_URL;
-    process.env.NEXT_PUBLIC_APP_URL = "https://anyloc.io";
-    process.env.NEXT_PUBLIC_SITE_URL = "https://anyloc.io";
-
-    try {
-      const request = requestAt("https://www.anyloc.io/auth/google");
-      assert.equal(shouldBounceToOAuthOrigin(request), true);
-    } finally {
-      if (previousApp === undefined) {
-        delete process.env.NEXT_PUBLIC_APP_URL;
-      } else {
-        process.env.NEXT_PUBLIC_APP_URL = previousApp;
-      }
-      if (previousSite === undefined) {
-        delete process.env.NEXT_PUBLIC_SITE_URL;
-      } else {
-        process.env.NEXT_PUBLIC_SITE_URL = previousSite;
-      }
-    }
+    assert.equal(getOAuthCallbackOrigin(request), "https://anyloc.io");
   });
 });
 
