@@ -17,6 +17,10 @@ export function usePaymentSuccess() {
   const [paymentSuccess, setPaymentSuccess] = useState(readStoredPaymentSuccess);
 
   useEffect(() => {
+    if (!searchParams) {
+      return;
+    }
+
     const sessionId = searchParams.get("session_id");
     const urlSuccess = searchParams.get("success") === "true";
 

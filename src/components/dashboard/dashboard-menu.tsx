@@ -95,7 +95,7 @@ function isActive(pathname: string, currentTab: string | null, href: string) {
 export function DashboardMenu() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const currentTab = searchParams.get("tab");
+  const currentTab = searchParams?.get("tab") ?? null;
   const menuSections = getMenuSections(getDashboardBasePath(pathname));
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);

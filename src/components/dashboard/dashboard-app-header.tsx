@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { DashboardMenu } from "@/components/dashboard/dashboard-menu";
@@ -33,7 +34,9 @@ export function DashboardAppHeader({
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-3">
           <div className="lg:hidden">
-            <DashboardMenu />
+            <Suspense fallback={null}>
+              <DashboardMenu />
+            </Suspense>
           </div>
           <Logo nameClassName="text-base font-bold" />
         </div>

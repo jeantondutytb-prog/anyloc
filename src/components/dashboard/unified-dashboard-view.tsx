@@ -26,7 +26,7 @@ function UnifiedDashboardContent({ preview = false }: { preview?: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const activeTab = readTab(searchParams.get("tab"));
+  const activeTab = readTab(searchParams?.get("tab") ?? null);
   const basePath = getDashboardBasePath(pathname);
 
   useEffect(() => {
