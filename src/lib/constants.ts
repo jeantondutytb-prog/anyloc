@@ -125,6 +125,8 @@ export const LEGACY_STRIPE_PRICE_IDS = [
 /** Plans retirés du checkout — libellés pour les abonnés existants. */
 export const LEGACY_PLAN_LABELS: Record<string, string> = {
   weekly: "Hebdomadaire",
+  admin: "Admin",
+  clipper: "Clipper",
 };
 
 export const PLANS = [

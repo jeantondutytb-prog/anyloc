@@ -399,11 +399,19 @@ export function SettingsView({ embedded = false }: { embedded?: boolean } = {}) 
                 <p className="mt-2 text-lg font-semibold text-zinc-900">
                   {data?.isAdmin
                     ? "Accès admin"
-                    : getPlanDisplayName(data?.planId ?? null) ??
-                      "Aucune formule active"}
+                    : data?.isClipper
+                      ? "Accès clipper"
+                      : getPlanDisplayName(data?.planId ?? null) ??
+                        "Aucune formule active"}
                 </p>
 
-                {currentPlan ? (
+                {data?.isAdmin || data?.isClipper ? (
+                  <p className="mt-1 text-sm text-zinc-500">
+                    {data.isAdmin
+                      ? "Compte interne avec accès complet sans abonnement."
+                      : "Compte créateur avec accès complet sans abonnement."}
+                  </p>
+                ) : currentPlan ? (
                   <p className="mt-1 text-sm text-zinc-500">
                     {currentPlan.billedNote}
                   </p>
@@ -414,7 +422,7 @@ export function SettingsView({ embedded = false }: { embedded?: boolean } = {}) 
                 )}
 
                 <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                  {!data?.hasActiveSubscription ? (
+                  {data?.isAdmin || data?.isClipper ? null : !data?.hasActiveSubscription ? (
                     <Link href={getCheckoutUrl("annual")}>
                       <Button size="sm">Souscrire à une offre</Button>
                     </Link>
@@ -424,7 +432,10 @@ export function SettingsView({ embedded = false }: { embedded?: boolean } = {}) 
                     </BillingPortalButton>
                   ) : null}
 
-                  {data?.hasActiveSubscription && alternativePlans.length > 0 ? (
+                  {!data?.isAdmin &&
+                  !data?.isClipper &&
+                  data?.hasActiveSubscription &&
+                  alternativePlans.length > 0 ? (
                     alternativePlans.map((plan, index) => (
                       <Link key={plan.id} href={getCheckoutUrl(plan.id)}>
                         <Button variant="secondary" size="sm">
@@ -443,7 +454,10 @@ export function SettingsView({ embedded = false }: { embedded?: boolean } = {}) 
             </div>
           </Card>
 
-          {data?.hasActiveSubscription && data?.canManageBilling ? (
+          {data?.hasActiveSubscription &&
+          data?.canManageBilling &&
+          !data?.isAdmin &&
+          !data?.isClipper ? (
             <Card className="border-amber-200 p-5">
               <div className="flex items-start gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/10">

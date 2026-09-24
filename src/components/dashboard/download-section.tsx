@@ -80,6 +80,12 @@ export function DownloadSection() {
         </p>
       )}
 
+      {!data.isAdmin && data.isClipper && (
+        <p className="mt-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
+          Accès clipper actif — compte créateur sans abonnement.
+        </p>
+      )}
+
       <ul className="mt-4 space-y-3">
         {data.assets
           .filter((asset) => !asset.hidden)

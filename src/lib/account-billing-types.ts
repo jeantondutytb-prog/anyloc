@@ -20,6 +20,7 @@ export type AccountBillingDetails = {
   subscriptionStatus: string | null;
   hasActiveSubscription: boolean;
   isAdmin: boolean;
+  isClipper: boolean;
   paymentMethod: AccountPaymentMethod | null;
   invoices: AccountInvoice[];
   canManageBilling: boolean;
@@ -33,6 +34,7 @@ const STATUS_LABELS: Record<string, string> = {
   incomplete: "Incomplet",
   unpaid: "Impayé",
   admin: "Admin",
+  clipper: "Clipper",
 };
 
 export function formatSubscriptionStatusLabel(status: string | null) {

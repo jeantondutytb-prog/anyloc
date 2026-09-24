@@ -15,6 +15,7 @@ export type DownloadAssetInfo = {
 export type DownloadsResponse = {
   hasAccess: boolean;
   isAdmin?: boolean;
+  isClipper?: boolean;
   needsSetupPassword?: boolean;
   subscriptionStatus: string | null;
   assets: DownloadAssetInfo[];

@@ -31,6 +31,7 @@ export async function GET() {
     subscriptionStatus: access.status,
     planId: access.planId,
     isAdmin: access.isAdmin,
+    isClipper: access.isClipper,
     needsSetupPassword: userNeedsSetupPassword(user),
     assets,
   });
