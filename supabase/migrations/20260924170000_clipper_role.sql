@@ -3,9 +3,3 @@
 
 alter table public.profiles
   add column if not exists is_clipper boolean not null default false;
-
-update public.profiles
-set
-  is_clipper = true,
-  updated_at = now()
-where lower(email) = lower('brun.jeremy@icloud.com');
