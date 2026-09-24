@@ -290,7 +290,11 @@ export function PaidDashboardView({
   const statusLabel = preview
     ? "Abonnement actif"
     : formatSubscriptionStatusLabel(
-        account?.isAdmin ? "admin" : (account?.subscriptionStatus ?? null)
+        account?.isAdmin
+          ? "admin"
+          : account?.isClipper
+            ? "clipper"
+            : (account?.subscriptionStatus ?? null)
       );
 
   function handleDownload(platform: string) {

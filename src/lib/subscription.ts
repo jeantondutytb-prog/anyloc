@@ -11,15 +11,24 @@ export type SubscriptionAccess = {
   status: string | null;
   planId: string | null;
   isAdmin: boolean;
+  isClipper: boolean;
   isTrial: boolean;
   trialEndsAt: string | null;
 };
 
-function getAdminEmails() {
-  return (process.env.ANYLOC_ADMIN_EMAILS ?? "")
+function getEmailAllowlist(envValue: string | undefined) {
+  return (envValue ?? "")
     .split(",")
     .map((email) => email.trim().toLowerCase())
     .filter(Boolean);
+}
+
+function getAdminEmails() {
+  return getEmailAllowlist(process.env.ANYLOC_ADMIN_EMAILS);
+}
+
+function getClipperEmails() {
+  return getEmailAllowlist(process.env.ANYLOC_CLIPPER_EMAILS);
 }
 
 export function isAdminEmail(email: string | null | undefined) {
@@ -28,6 +37,14 @@ export function isAdminEmail(email: string | null | undefined) {
   }
 
   return getAdminEmails().includes(email.trim().toLowerCase());
+}
+
+export function isClipperEmail(email: string | null | undefined) {
+  if (!email) {
+    return false;
+  }
+
+  return getClipperEmails().includes(email.trim().toLowerCase());
 }
 
 export function isActiveSubscriptionStatus(status: string | null | undefined) {
@@ -44,6 +61,19 @@ export async function getSubscriptionAccessForUser(
       status: "admin",
       planId: "admin",
       isAdmin: true,
+      isClipper: false,
+      isTrial: false,
+      trialEndsAt: null,
+    };
+  }
+
+  if (isClipperEmail(email)) {
+    return {
+      hasAccess: true,
+      status: "clipper",
+      planId: "clipper",
+      isAdmin: false,
+      isClipper: true,
       isTrial: false,
       trialEndsAt: null,
     };
@@ -55,6 +85,7 @@ export async function getSubscriptionAccessForUser(
       status: null,
       planId: null,
       isAdmin: false,
+      isClipper: false,
       isTrial: false,
       trialEndsAt: null,
     };
@@ -64,7 +95,7 @@ export async function getSubscriptionAccessForUser(
   const { data, error } = await admin
     .from("profiles")
     .select(
-      "subscription_status, plan_id, email, is_admin, trial_status, trial_ends_at, trial_started_at, trial_payment_method_id"
+      "subscription_status, plan_id, email, is_admin, is_clipper, trial_status, trial_ends_at, trial_started_at, trial_payment_method_id"
     )
     .eq("id", userId)
     .maybeSingle();
@@ -75,6 +106,7 @@ export async function getSubscriptionAccessForUser(
       status: null,
       planId: null,
       isAdmin: false,
+      isClipper: false,
       isTrial: false,
       trialEndsAt: null,
     };
@@ -86,6 +118,19 @@ export async function getSubscriptionAccessForUser(
       status: "admin",
       planId: "admin",
       isAdmin: true,
+      isClipper: false,
+      isTrial: false,
+      trialEndsAt: null,
+    };
+  }
+
+  if (data.is_clipper || isClipperEmail(data.email)) {
+    return {
+      hasAccess: true,
+      status: "clipper",
+      planId: "clipper",
+      isAdmin: false,
+      isClipper: true,
       isTrial: false,
       trialEndsAt: null,
     };
@@ -100,6 +145,7 @@ export async function getSubscriptionAccessForUser(
     status: trialActive ? "trialing" : data.subscription_status,
     planId: data.plan_id,
     isAdmin: false,
+    isClipper: false,
     isTrial: trialActive,
     trialEndsAt: trialActive ? data.trial_ends_at : null,
   };

@@ -14,6 +14,7 @@ export async function GET() {
     userId: user.id,
     email: user.email ?? "",
     isAdmin: access.isAdmin,
+    isClipper: access.isClipper,
   });
 
   return NextResponse.json(details);

@@ -89,14 +89,20 @@ export async function getAccountBillingDetails({
   userId,
   email,
   isAdmin,
+  isClipper = false,
 }: {
   userId: string;
   email: string;
   isAdmin: boolean;
+  isClipper?: boolean;
 }): Promise<AccountBillingDetails> {
   const profile = await getProfileForUser(userId);
-  const planId = isAdmin ? "admin" : profile?.plan_id ?? null;
-  const subscriptionStatus = isAdmin ? "admin" : profile?.subscription_status ?? null;
+  const planId = isAdmin ? "admin" : isClipper ? "clipper" : profile?.plan_id ?? null;
+  const subscriptionStatus = isAdmin
+    ? "admin"
+    : isClipper
+      ? "clipper"
+      : profile?.subscription_status ?? null;
   const customerId = profile?.stripe_customer_id ?? (await getProfileStripeCustomerId(userId));
 
   let paymentMethod: AccountPaymentMethod | null = null;
@@ -120,8 +126,10 @@ export async function getAccountBillingDetails({
     planId,
     planName: getPlanLabel(planId),
     subscriptionStatus,
-    hasActiveSubscription: isAdmin || isActiveSubscriptionStatus(subscriptionStatus),
+    hasActiveSubscription:
+      isAdmin || isClipper || isActiveSubscriptionStatus(subscriptionStatus),
     isAdmin,
+    isClipper,
     paymentMethod,
     invoices,
     canManageBilling: Boolean(stripe && customerId),
