@@ -256,67 +256,32 @@ export const LEGAL_PAGES: Record<string, LegalPageContent> = {
   "politique-de-remboursement": {
     title: "Politique de remboursement",
     description:
-      "Conditions de remboursement et garantie commerciale Anyloc.",
+      "Conditions de remboursement des abonnements Anyloc.",
     path: "/politique-de-remboursement",
-    lastUpdated: LAST_UPDATED,
+    lastUpdated: "22 septembre 2026",
     sections: [
       {
-        title: "1. La garantie « pas de résultat en 48 h »",
+        title: "Politique de remboursement",
         paragraphs: [
-          "Anyloc s'engage à te rembourser l'intégralité de la somme payée si, après avoir suivi la méthode d'installation et testé le service pendant 48 heures, tu n'as pas réussi à modifier ta localisation GPS sur au moins une application compatible (Snapchat, Instagram, Tinder, jeu mobile, etc.).",
-          "Cette garantie est un engagement commercial volontaire. Elle s'ajoute à tes droits légaux, elle ne les remplace pas — voir le point 5.",
+          "Sauf lorsque la loi applicable l'exige, notamment la législation de protection des consommateurs en vigueur dans ton pays, tous les frais d'abonnement payés sont non remboursables.",
+          "Rien dans la présente section ne limite les droits de remboursement, d'annulation, de contestation de prélèvement ou de consommation qui ne peuvent pas être exclus en vertu de la loi applicable.",
+          "Pour le détail des conditions d'abonnement et de facturation, consulte nos conditions générales.",
         ],
       },
       {
-        title: "2. Conditions à remplir",
-        paragraphs: [
-          "Les trois conditions suivantes sont cumulatives. Elles sont affichées sur la page de tarifs, avant l'achat.",
-        ],
+        title: "Avertissements",
         list: [
-          "Installation complète : tu dois avoir suivi l'intégralité du guide d'installation correspondant à ton appareil (iOS ou Android), disponible dans ton espace client, et appliqué chaque étape requise.",
-          "Délai : la demande doit être faite dans les 48 heures suivant ton achat. Passé ce délai, la garantie ne s'applique plus.",
-          "Abonnement actif : tu ne dois pas avoir résilié ton abonnement avant d'avoir fait la demande. Une résiliation vaut renoncement à cette garantie.",
+          "Tu ne peux utiliser Anyloc qu'à des fins licites. Toute responsabilité liée à une utilisation contraire à la loi t'incombe.",
+          "Anyloc ne prétend pas être exempt d'erreurs. Nous visons un service de qualité, mais des bugs peuvent survenir dans le logiciel ou sur le site.",
+          "Anyloc est réservé à un usage personnel.",
+          "Anyloc peut masquer ta localisation auprès de tes proches. Toute responsabilité liée à ce masquage t'incombe.",
+          "Anyloc n'est pas responsable des pertes de données pouvant résulter de l'utilisation du service.",
         ],
       },
       {
-        title: "3. Comment faire la demande",
+        title: "Contact",
         paragraphs: [
-          "Envoie un message à support@anyloc.io depuis l'adresse email de ton compte, en précisant ton appareil (iOS / Android, modèle si possible), les applications testées et l'étape à laquelle tu es bloqué.",
-          "Notre équipe peut te demander des captures d'écran pour vérifier que l'installation a bien été suivie. Nous répondons sous 72 heures.",
-        ],
-      },
-      {
-        title: "4. Ce qui n'ouvre pas droit au remboursement",
-        paragraphs: [
-          "Les cas suivants n'ouvrent pas droit au remboursement au titre de la garantie commerciale :",
-        ],
-        list: [
-          "Une demande faite après le délai de 48 heures (hors droit de rétractation légal, voir point 5).",
-          "Un abonnement résilié avant la demande.",
-          "Une installation incomplète ou non conforme au guide (mode développeur non activé, VPN non configuré sur iOS, etc.).",
-          "Un blocage lié à une restriction de l'appareil ou de l'application tierce indépendant d'Anyloc.",
-          "Une simple insatisfaction après utilisation réussie du service (localisation modifiée et fonctionnelle).",
-        ],
-      },
-      {
-        title: "5. Ton droit de rétractation légal",
-        paragraphs: [
-          "Indépendamment de la garantie ci-dessus, le droit français t'accorde un délai de rétractation de 14 jours pour les achats à distance (art. L221-18 du code de la consommation).",
-          "Pour un contenu numérique fourni immédiatement, ce droit s'éteint uniquement si tu as expressément consenti à l'exécution immédiate et renoncé à ta rétractation. En l'absence d'un tel consentement, tu conserves ces 14 jours sans condition — les conditions du point 2 ne s'y appliquent pas.",
-          "Autrement dit : la garantie « 48 h » est un bonus commercial plus rapide mais conditionné ; le droit de rétractation reste ton filet de sécurité inconditionnel.",
-        ],
-      },
-      {
-        title: "6. Modalités de remboursement",
-        paragraphs: [
-          "Les paiements sont encaissés par Stripe. Le remboursement est effectué sur le moyen de paiement d'origine, sous 14 jours à compter de l'acceptation de la demande.",
-        ],
-      },
-      {
-        title: "7. Résiliation de l'abonnement",
-        paragraphs: [
-          "Ton abonnement se renouvelle automatiquement au prix indiqué avant l'achat. Tu peux le résilier à tout moment depuis ton espace client (Paramètres → Résilier mon abonnement), sans frais.",
-          "Attention : la résiliation prend effet immédiatement. Tu perds l'accès au service, au dashboard et aux téléchargements dès confirmation. Aucun remboursement au prorata n'est effectué pour la période en cours.",
+          "Pour toute question, commentaire ou réclamation, écris-nous à support@anyloc.io.",
         ],
       },
     ],
@@ -343,7 +308,7 @@ export const LEGAL_PAGES: Record<string, LegalPageContent> = {
         list: [
           "Ton accès est coupé sur-le-champ, pas à la fin de la période payée.",
           "Tu perds l'accès aux fonctionnalités GPS, au dashboard et aux téléchargements.",
-          "Si tu envisages une demande de remboursement au titre de la garantie « 48 h », fais-la avant de résilier — une résiliation vaut renoncement à cette garantie.",
+          "Les frais d'abonnement déjà payés ne sont pas remboursables (sauf droits légaux impératifs — voir la politique de remboursement).",
         ],
       },
       {

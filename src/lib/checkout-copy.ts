@@ -45,19 +45,19 @@ export const CHECKOUT_COPY = {
   ],
   selectTitle: "Choisis ta durée",
   selectSub: CHECKOUT_SELECT_SUBLINE,
-  guaranteeBadge: "Garantie 48 h",
+  guaranteeBadge: "Frais non remboursables",
   perksTitle: "Inclus dans ton accès",
   payTitle: "Active ton accès complet",
   paySub: "Paiement sécurisé — accès immédiat à toutes les fonctionnalités.",
   payOpening: "On prépare ton paiement…",
   updating: "Mise à jour du plan…",
   stickyTitle: "Accès complet",
-  stickySub: "Paiement sécurisé · Garantie 48 h",
+  stickySub: "Paiement sécurisé · Frais non remboursables",
   stickyCta: "Payer maintenant ↓",
   trust: [
     "🔒 Paiement sécurisé",
     "· Annulation en 1 clic",
-    "· Garantie remboursement 48 h",
+    "· Frais non remboursables",
   ],
   reassure: [
     "Paiement 100% sécurisé",
@@ -74,7 +74,7 @@ export const CHECKOUT_COPY = {
     {
       q: "Ma carte sera débitée tout de suite ?",
       a:
-        "Oui. Tu paies à la validation et tu as accès tout de suite. Tu peux annuler en 1 clic depuis ton espace — la résiliation coupe l'accès immédiatement. Garantie 48 h si le GPS ne fonctionne pas.",
+        "Oui. Tu paies à la validation et tu as accès tout de suite. Tu peux annuler en 1 clic depuis ton espace — la résiliation coupe l'accès immédiatement. Sauf obligation légale, les frais payés ne sont pas remboursables.",
     },
     {
       q: "Ça marche sur quelles apps ?",
