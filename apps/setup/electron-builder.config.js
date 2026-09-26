@@ -1,5 +1,4 @@
 const { execFileSync } = require("node:child_process");
-const fs = require("node:fs");
 const path = require("node:path");
 
 /** @type {import('electron-builder').Configuration} */
@@ -14,7 +13,7 @@ module.exports = {
   },
   extraMetadata: {
     name: "Anyloc",
-    description: "Anyloc — installation iPhone via USB",
+    description: "Anyloc — GPS iPhone via USB",
     author: "Anyloc",
   },
   files: ["src/**/*", "package.json"],
@@ -24,23 +23,20 @@ module.exports = {
       to: "scripts",
       filter: ["**/*"],
     },
-    ...(fs.existsSync(path.join(__dirname, "build-resources", "Anyloc.ipa"))
-      ? [
-          {
-            from: "build-resources/Anyloc.ipa",
-            to: "Anyloc.ipa",
-          },
-        ]
-      : []),
   ],
   mac: {
     category: "public.app-category.utilities",
     target: ["dmg"],
     identity: process.env.APPLE_IDENTITY || null,
     gatekeeperAssess: false,
-    notarize: process.env.APPLE_ID
-      ? { teamId: process.env.APPLE_TEAM_ID }
-      : false,
+    // Notarization only works on a Developer ID-signed build and needs all
+    // three credentials; otherwise electron-builder fails or silently skips.
+    notarize: Boolean(
+      process.env.APPLE_IDENTITY &&
+        process.env.APPLE_ID &&
+        process.env.APPLE_APP_SPECIFIC_PASSWORD &&
+        process.env.APPLE_TEAM_ID
+    ),
   },
   dmg: {
     contents: [

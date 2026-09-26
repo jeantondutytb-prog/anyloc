@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   HelpCircle,
+  MapPin,
   Menu,
   Smartphone,
   User,
@@ -22,6 +23,7 @@ type MenuItem = {
 const MENU_SECTIONS: { items: MenuItem[] }[] = [
   {
     items: [
+      { icon: MapPin, label: "Choisir ma position", href: "/app" },
       { icon: Smartphone, label: "Installation", href: "/dashboard" },
       { icon: User, label: "Mon compte", href: "/dashboard?tab=account" },
     ],

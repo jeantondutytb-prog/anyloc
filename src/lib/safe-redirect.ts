@@ -9,6 +9,7 @@ const ALLOWED_REDIRECT_PREFIXES = [
   "/communaute",
   "/affiliation",
   "/setup",
+  "/app",
 ];
 
 function isAllowedRedirectPath(pathname: string) {

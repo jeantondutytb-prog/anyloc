@@ -16,12 +16,6 @@ const ALLOWED_API_HOSTS = new Set([
   "localhost",
   "127.0.0.1",
 ]);
-const GITHUB_REPO = "jeantondutytb-prog/anyloc";
-const IPA_FILENAME = "Anyloc.ipa";
-const MIN_IPA_BYTES = 100_000;
-
-let ipaDownloadPromise = null;
-
 function normalizeHost(hostname) {
   return String(hostname || "").trim().toLowerCase().replace(/\.$/, "");
 }
@@ -106,161 +100,6 @@ function getScriptsDir() {
   return path.join(__dirname, "..", "scripts");
 }
 
-function getBundledIpaPath() {
-  try {
-    const { app } = require("electron");
-
-    if (app.isPackaged) {
-      return path.join(process.resourcesPath, IPA_FILENAME);
-    }
-  } catch {
-    // fall through to dev path
-  }
-
-  return path.join(__dirname, "..", "build-resources", IPA_FILENAME);
-}
-
-function getCachedIpaPath() {
-  try {
-    const { app } = require("electron");
-    return path.join(app.getPath("userData"), IPA_FILENAME);
-  } catch {
-    return path.join(__dirname, "..", "..", "ios", "dist", IPA_FILENAME);
-  }
-}
-
-function getIpaPath() {
-  const bundled = getBundledIpaPath();
-  if (fs.existsSync(bundled) && fs.statSync(bundled).size >= MIN_IPA_BYTES) {
-    return bundled;
-  }
-
-  const cached = getCachedIpaPath();
-  if (fs.existsSync(cached) && fs.statSync(cached).size >= MIN_IPA_BYTES) {
-    return cached;
-  }
-
-  const devPath = path.join(__dirname, "..", "..", "ios", "dist", IPA_FILENAME);
-  if (fs.existsSync(devPath) && fs.statSync(devPath).size >= MIN_IPA_BYTES) {
-    return devPath;
-  }
-
-  return cached;
-}
-
-function isValidIpaFile(filePath) {
-  return fs.existsSync(filePath) && fs.statSync(filePath).size >= MIN_IPA_BYTES;
-}
-
-async function resolveIpaDownloadUrl() {
-  if (process.env.ANYLOC_IPA_URL?.trim()) {
-    return process.env.ANYLOC_IPA_URL.trim();
-  }
-
-  try {
-    const response = await fetch(
-      `https://api.github.com/repos/${GITHUB_REPO}/releases?per_page=20`,
-      {
-        headers: {
-          Accept: "application/vnd.github+json",
-          "User-Agent": "anyloc-setup",
-        },
-      }
-    );
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const releases = await response.json();
-
-    for (const release of releases) {
-      const asset = release.assets?.find((item) => item.name === IPA_FILENAME);
-
-      if (asset?.browser_download_url) {
-        return asset.browser_download_url;
-      }
-    }
-  } catch {
-    return null;
-  }
-
-  return null;
-}
-
-async function ensureIpaAvailable() {
-  const existingPath = getIpaPath();
-
-  if (isValidIpaFile(existingPath)) {
-    return {
-      ok: true,
-      path: existingPath,
-      source: "local",
-    };
-  }
-
-  if (ipaDownloadPromise) {
-    return ipaDownloadPromise;
-  }
-
-  ipaDownloadPromise = (async () => {
-    const downloadUrl = await resolveIpaDownloadUrl();
-
-    if (!downloadUrl) {
-      return {
-        ok: false,
-        message:
-          "L'app iPhone est en cours de publication. Réessaie dans quelques minutes.",
-      };
-    }
-
-    const targetPath = getCachedIpaPath();
-
-    try {
-      fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-
-      const response = await fetch(downloadUrl, {
-        headers: {
-          Accept: "application/octet-stream",
-          "User-Agent": "anyloc-setup",
-        },
-      });
-
-      if (!response.ok) {
-        return {
-          ok: false,
-          message: "Impossible de télécharger l'app iPhone. Réessaie dans un instant.",
-        };
-      }
-
-      const buffer = Buffer.from(await response.arrayBuffer());
-
-      if (buffer.length < MIN_IPA_BYTES) {
-        return {
-          ok: false,
-          message: "Le fichier iPhone téléchargé est invalide. Réessaie plus tard.",
-        };
-      }
-
-      fs.writeFileSync(targetPath, buffer);
-
-      return {
-        ok: true,
-        path: targetPath,
-        source: "download",
-      };
-    } catch (error) {
-      return {
-        ok: false,
-        message: `Téléchargement interrompu : ${error.message}`,
-      };
-    } finally {
-      ipaDownloadPromise = null;
-    }
-  })();
-
-  return ipaDownloadPromise;
-}
 function getSpawnEnv() {
   const isWin = process.platform === "win32";
   const sep = isWin ? ";" : ":";
@@ -551,47 +390,94 @@ function runPython(scriptName, args = []) {
   });
 }
 
-function getInstallAvailability() {
-  const ipaPath = getIpaPath();
+// pymobiledevice3 errors are Python exception names / tracebacks. Map the
+// ones customers actually hit to an instruction they can follow.
+const PMD3_ERROR_HINTS = [
+  [
+    /DeveloperModeIsNotEnabled|developer mode is not enabled|DeveloperModeError/i,
+    "Le mode développeur n'est pas activé. Sur l'iPhone : Réglages → Confidentialité et sécurité → Mode développeur, puis redémarre.",
+  ],
+  [
+    /PasswordRequiredError|device is locked|DeviceLocked/i,
+    "L'iPhone est verrouillé. Déverrouille-le et réessaie.",
+  ],
+  [
+    /PairingDialogResponsePending|NotPairedError|UserDeniedPairing|InvalidHostID|PairingError/i,
+    "L'iPhone ne fait pas encore confiance à cet ordinateur. Déverrouille-le et appuie sur « Faire confiance », puis réessaie.",
+  ],
+  [
+    /NoDeviceConnected|DeviceNotFound|ConnectionFailedToUsbmuxd|No device/i,
+    "Aucun iPhone détecté. Rebranche le câble USB et déverrouille l'iPhone.",
+  ],
+  [
+    /DeveloperDiskImage|MounterError|AlreadyMounted|InvalidServiceError|personalized image/i,
+    "L'iPhone n'a pas pu préparer les outils développeur. Débranche, redémarre l'iPhone, rebranche et réessaie (connexion internet requise).",
+  ],
+  [
+    /tunnel|RemoteXPC|StartServiceError/i,
+    "Connexion développeur impossible (iOS 17+). Garde Anyloc ouvert, déverrouille l'iPhone et réessaie dans quelques secondes.",
+  ],
+  [
+    /Timeout/i,
+    "L'iPhone ne répond pas. Déverrouille-le, vérifie le câble et réessaie.",
+  ],
+];
 
-  if (isValidIpaFile(ipaPath)) {
-    return {
-      installReady: true,
-      installHint: "App iPhone prête — clique sur Installer l'app iPhone.",
-    };
+function humanizePmd3Error(raw) {
+  const text = String(raw || "").trim();
+
+  for (const [pattern, hint] of PMD3_ERROR_HINTS) {
+    if (pattern.test(text)) {
+      return hint;
+    }
   }
 
-  return {
-    installReady: false,
-    installHint:
-      "Téléchargement de l'app iPhone au premier lancement… Clique sur Installer une fois prêt.",
-  };
+  const lastLine = text.split("\n").map((line) => line.trim()).filter(Boolean).pop();
+  return lastLine || "Erreur inconnue avec l'iPhone. Rebranche-le et réessaie.";
 }
 
-async function getInstallAvailabilityAsync() {
-  const local = getInstallAvailability();
+function udidArgs(udid) {
+  return udid ? ["--udid", udid] : [];
+}
 
-  if (local.installReady) {
-    return local;
-  }
+async function getDeveloperModeStatus({ udid } = {}) {
+  const result = await runCli(["amfi", "developer-mode-status", ...udidArgs(udid)], 15000);
 
-  const ensured = await ensureIpaAvailable();
-
-  if (ensured.ok) {
+  if (!result.ok) {
     return {
-      installReady: true,
-      installHint: "App iPhone prête — clique sur Installer l'app iPhone.",
+      ok: false,
+      enabled: false,
+      message: humanizePmd3Error(result.stderr || result.stdout),
     };
   }
 
-  return {
-    installReady: false,
-    installHint: ensured.message,
-  };
+  const enabled = /\btrue\b/i.test(result.stdout);
+  return { ok: true, enabled };
+}
+
+// On iOS 16+ the "Mode développeur" switch stays hidden in Settings until a
+// developer tool asks for it. This makes it appear without installing an app.
+async function revealDeveloperMode({ udid } = {}) {
+  const status = await getDeveloperModeStatus({ udid });
+
+  if (status.ok && status.enabled) {
+    return { ok: true, enabled: true };
+  }
+
+  const result = await runCli(["amfi", "reveal-developer-mode", ...udidArgs(udid)], 20000);
+
+  if (!result.ok) {
+    return {
+      ok: false,
+      enabled: false,
+      message: humanizePmd3Error(result.stderr || result.stdout),
+    };
+  }
+
+  return { ok: true, enabled: false };
 }
 
 async function detectUsbDevice() {
-  const installAvailability = await getInstallAvailabilityAsync();
   const result = await runCli(["usbmux", "list"]);
 
   if (!result.ok) {
@@ -626,9 +512,7 @@ async function detectUsbDevice() {
       connected: true,
       udid,
       deviceName,
-      message: `${deviceName} — iPhone détecté, prêt pour l'installation.`,
-      installReady: installAvailability.installReady,
-      installHint: installAvailability.installHint,
+      message: `${deviceName} — iPhone détecté.`,
     };
   } catch {
     return {
@@ -739,7 +623,7 @@ async function runSimulateLocation(action, udid) {
 
   return {
     ok: false,
-    message: lastError,
+    message: humanizePmd3Error(lastError),
   };
 }
 
@@ -979,44 +863,6 @@ async function savePairingLocalCopy({ sourcePath, udid }) {
   }
 }
 
-async function installIosApp({ udid }) {
-  const ensured = await ensureIpaAvailable();
-
-  if (!ensured.ok) {
-    return {
-      ok: false,
-      message: ensured.message,
-    };
-  }
-
-  const ipaPath = ensured.path;
-
-  const args = ["apps", "install", ipaPath];
-
-  if (udid) {
-    args.push("--udid", udid);
-  }
-
-  const result = await runCli(args);
-
-  if (result.ok) {
-    return {
-      ok: true,
-      message: "Anyloc installé sur ton iPhone. Ouvre l'app et colle ton token.",
-      udid,
-      output: result.stdout.trim(),
-    };
-  }
-
-  return {
-    ok: false,
-    message:
-      (result.stderr || result.stdout || "").trim() ||
-      "Échec de l'installation. Vérifie le mode développeur et la confiance USB.",
-    udid,
-  };
-}
-
 async function applyGpsDirect({ udid, lat, lng }) {
   if (lat == null || lng == null) {
     return { ok: false, message: "Coordonnées manquantes." };
@@ -1077,31 +923,20 @@ function missingToolsMessage() {
   return "pymobiledevice3 introuvable. Relance Anyloc — il s'installe automatiquement au premier lancement.";
 }
 
-let ipaDownloadAuth = null;
-
-function setIpaDownloadAuth(auth) {
-  ipaDownloadAuth = auth || null;
-}
-
-function getIpaDownloadAuth() {
-  return ipaDownloadAuth;
-}
-
 module.exports = {
   detectUsbDevice,
-  installIosApp,
+  getDeveloperModeStatus,
+  revealDeveloperMode,
+  humanizePmd3Error,
   applyGpsLocation,
   applyGpsDirect,
   clearGpsLocation,
-  ensureIpaAvailable,
   exportPairingFile,
   savePairingLocalCopy,
   resolvePythonExecutable,
   resolvePymobiledevice3Cli,
   getPmd3Invocation,
   missingToolsMessage,
-  setIpaDownloadAuth,
-  getIpaDownloadAuth,
   clearCachedPaths,
   getSpawnEnv,
   getScriptsDir,

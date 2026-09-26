@@ -166,7 +166,7 @@ function HelpDetails({
 }
 
 function getDownloadButtonLabel(assetId: string) {
-  if (assetId === "apk" || assetId === "ipa") {
+  if (assetId === "apk") {
     return "Télécharger l'app";
   }
 
@@ -484,79 +484,6 @@ function AndroidLinkStep({ preview = false }: { preview?: boolean }) {
   );
 }
 
-function IosOtaInstallButton({
-  hasAccess,
-  preview = false,
-}: {
-  hasAccess: boolean;
-  preview?: boolean;
-}) {
-  const [installing, setInstalling] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const startInstall = async () => {
-    if (preview) {
-      return;
-    }
-
-    setInstalling(true);
-    setError(null);
-
-    try {
-      const response = await fetch("/api/ios/install-link", { method: "POST" });
-      const data = (await response.json()) as {
-        installUrl?: string;
-        error?: string;
-      };
-
-      if (!response.ok || !data.installUrl) {
-        throw new Error(data.error ?? "Impossible de lancer l'installation.");
-      }
-
-      window.location.href = data.installUrl;
-    } catch (installError) {
-      setError(
-        installError instanceof Error
-          ? installError.message
-          : "Impossible de lancer l'installation."
-      );
-    } finally {
-      setInstalling(false);
-    }
-  };
-
-  if (preview) {
-    return (
-      <Button className="w-full sm:w-auto">
-        <Smartphone className="h-4 w-4" />
-        Installer Anyloc
-      </Button>
-    );
-  }
-
-  if (!hasAccess) {
-    return null;
-  }
-
-  return (
-    <div className="space-y-2">
-      <Button
-        className="w-full sm:w-auto"
-        disabled={installing}
-        onClick={() => void startInstall()}
-      >
-        {installing ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Smartphone className="h-4 w-4" />
-        )}
-        {installing ? "Préparation…" : "Installer Anyloc"}
-      </Button>
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
-    </div>
-  );
-}
-
 // ── Wizard step pages ──
 
 function PlatformPickStep({
@@ -726,10 +653,10 @@ function IosInstallStep({ isPhone }: { isPhone: boolean }) {
     <div className="space-y-4">
       <div className="text-center">
         <h2 className="text-xl font-bold text-zinc-900 sm:text-2xl">
-          Branche ton iPhone et installe
+          Branche ton iPhone
         </h2>
         <p className="mt-2 text-sm text-zinc-500">
-          Un câble USB, 30 secondes.
+          Un câble USB, 2 minutes. Anyloc te guide à l&apos;écran.
         </p>
       </div>
 
@@ -745,8 +672,9 @@ function IosInstallStep({ isPhone }: { isPhone: boolean }) {
             l&apos;iPhone
           </li>
           <li>
-            Clique <strong>Installer</strong> dans Anyloc — l&apos;app se met
-            sur ton téléphone
+            Anyloc fait apparaître le <strong>Mode développeur</strong> : active-le
+            sur l&apos;iPhone dans <strong>Réglages → Confidentialité et sécurité →
+            Mode développeur</strong>. L&apos;iPhone redémarre, c&apos;est normal.
           </li>
         </ol>
       </Card>
@@ -767,41 +695,66 @@ function IosInstallStep({ isPhone }: { isPhone: boolean }) {
   );
 }
 
-function IosVerifyStep() {
+function IosVerifyStep({ isPhone }: { isPhone: boolean }) {
+  const remoteUrl =
+    typeof window === "undefined"
+      ? "https://www.anyloc.io/app"
+      : `${window.location.origin}/app`;
+
   return (
     <div className="space-y-4">
       <div className="text-center">
         <h2 className="text-xl font-bold text-zinc-900 sm:text-2xl">
-          Choisis une ville, vérifie dans Snap
+          Ajoute Anyloc sur ton iPhone
         </h2>
         <p className="mt-2 text-sm text-zinc-500">
-          C&apos;est le moment de tester.
+          Rien à télécharger : c&apos;est une web app, elle n&apos;expire jamais.
         </p>
       </div>
 
       <Card className="p-5">
-        <ol className="list-decimal space-y-4 pl-5 text-sm text-zinc-700">
-          <li>
-            Dans Anyloc (ordi ou app iPhone), choisis{" "}
-            <strong>Marbella</strong>, <strong>Paris</strong>…
-          </li>
-          <li>
-            Ouvre <strong>Snap</strong> ou <strong>Maps</strong> sur
-            l&apos;iPhone — ta position a changé
-          </li>
-          <li className="text-zinc-500">
-            L&apos;ordi garde le GPS actif tant que l&apos;iPhone est branché
-          </li>
-        </ol>
+        <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start">
+          {isPhone ? null : (
+            <SetupQrCode value={remoteUrl} label="Scanne avec l'appareil photo de l'iPhone" />
+          )}
+          <ol className="list-decimal space-y-3 pl-5 text-sm text-zinc-700">
+            <li>
+              {isPhone ? (
+                <>
+                  Ouvre{" "}
+                  <Link href="/app" className="font-semibold text-pink-600 underline">
+                    anyloc.io/app
+                  </Link>{" "}
+                  dans <strong>Safari</strong>
+                </>
+              ) : (
+                <>
+                  Scanne le QR code ou ouvre <strong>anyloc.io/app</strong> dans{" "}
+                  <strong>Safari</strong> sur l&apos;iPhone
+                </>
+              )}
+            </li>
+            <li>
+              Touche <strong>Partager</strong> puis{" "}
+              <strong>Sur l&apos;écran d&apos;accueil</strong>
+            </li>
+            <li>
+              Ouvre Anyloc depuis l&apos;écran d&apos;accueil, choisis{" "}
+              <strong>Marbella</strong>, <strong>Paris</strong>… et touche{" "}
+              <strong>Téléporter</strong>
+            </li>
+            <li>
+              Ouvre <strong>Snap</strong> ou <strong>Maps</strong> : ta position a
+              changé
+            </li>
+          </ol>
+        </div>
       </Card>
 
-      <HelpDetails title="Dans ~7 jours, l'app iPhone s'arrête ?">
-        <p className="mb-2">
-          Normal (limite Apple sans compte Developer payant). Installe{" "}
-          <strong>LocalDevVPN</strong> (App Store, gratuit), connecte le Wi-Fi,
-          puis dans Anyloc iPhone : <strong>Profil → Renouveler</strong>.
-        </p>
-      </HelpDetails>
+      <p className="text-center text-xs text-zinc-500">
+        L&apos;ordi applique le GPS tant que l&apos;iPhone est branché et
+        qu&apos;Anyloc tourne en arrière-plan.
+      </p>
     </div>
   );
 }
@@ -1091,7 +1044,7 @@ export function InstallationGuideView({
 
       case 3:
         return platform === "ios" ? (
-          <IosVerifyStep />
+          <IosVerifyStep isPhone={isPhone} />
         ) : (
           <AndroidVerifyStep />
         );

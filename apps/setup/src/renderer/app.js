@@ -306,21 +306,9 @@ async function applyPlatformHints() {
   const guideHint = $("guide-win-hint");
   if (guideHint) guideHint.hidden = !isWin;
 
-  const devModeTip = $("guide-devmode-tip");
-  if (devModeTip) {
-    devModeTip.textContent = isWin
-      ? "Le mode développeur n'apparaît qu'après avoir branché l'iPhone au PC au moins une fois."
-      : "Le mode développeur n'apparaît qu'après avoir branché l'iPhone au Mac au moins une fois.";
-  }
-
-  const readyStep1 = $("ready-step1-text");
-  if (readyStep1) {
-    readyStep1.innerHTML = `Connecte-toi avec le <strong>même compte</strong> que sur ce ${computerShort}.`;
-  }
-
   const readyStep2 = $("ready-step2-text");
   if (readyStep2) {
-    readyStep2.innerHTML = `Sur l'iPhone, dans <strong>Découvrir</strong>, ou ici sur le ${computerShort}.`;
+    readyStep2.innerHTML = `Depuis l'icône Anyloc sur l'iPhone, ou ici sur le ${computerShort}.`;
   }
 
   const readyStep3Title = $("ready-step3-title");
@@ -777,6 +765,8 @@ function updateGuideStep() {
   if (guideStep === 1) initGuideToolsStep();
   if (guideStep === 2) startGuideUsbPolling();
   else stopGuideUsbPolling();
+  if (guideStep === 3) void startGuideDevModeStep();
+  else stopGuideDevModePolling();
 }
 
 function guideNext() {
@@ -889,49 +879,86 @@ async function checkGuideUsb() {
   }
 }
 
-async function guideInstallApp() {
-  const btn = $("guide-install-btn");
-  const text = $("guide-install-text");
-  const hint = $("guide-install-hint");
-  const icon = $("guide-install-icon");
-  const statusBox = $("guide-install-status-box");
+// ── Step 3: developer mode ──
+// The iPhone "app" is the web remote at anyloc.io/app, so nothing is
+// installed on the phone. Location simulation only needs Developer Mode.
 
-  btn.disabled = true;
-  btn.textContent = "Installation en cours...";
-  text.textContent = "Téléchargement et installation...";
-  hint.textContent = "Ça peut prendre quelques secondes.";
-  icon.className = "guide-status-icon searching";
+let guideDevModeInterval = null;
 
-  const ensured = await window.anylocSetup.ensureIpa();
-  if (!ensured.ok) {
-    text.textContent = "Erreur";
-    hint.textContent = ensured.message;
-    icon.className = "guide-status-icon error";
-    icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>';
-    statusBox.className = "guide-status-box error";
-    btn.disabled = false;
-    btn.textContent = "Réessayer";
+const ICON_OK = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>';
+const ICON_WAIT = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>';
+const ICON_ERROR = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>';
+
+function setDevModeStatus(state, text, hint) {
+  const icon = $("guide-devmode-icon");
+  icon.className = `guide-status-icon ${state === "ok" ? "ok" : state === "error" ? "error" : "searching"}`;
+  icon.innerHTML = state === "ok" ? ICON_OK : state === "error" ? ICON_ERROR : ICON_WAIT;
+  $("guide-devmode-status").className = `guide-status-box${state === "ok" ? " ok" : state === "error" ? " error" : ""}`;
+  $("guide-devmode-text").textContent = text;
+  $("guide-devmode-hint").textContent = hint;
+}
+
+function stopGuideDevModePolling() {
+  if (guideDevModeInterval) {
+    clearInterval(guideDevModeInterval);
+    guideDevModeInterval = null;
+  }
+}
+
+async function startGuideDevModeStep() {
+  stopGuideDevModePolling();
+  $("guide-devmode-retry").hidden = true;
+  setDevModeStatus("wait", "Préparation de l'iPhone...", "On fait apparaître l'option dans les Réglages.");
+
+  const revealed = await window.anylocSetup.revealDevMode({ udid: guideDetectedUdid });
+
+  if (revealed.ok && revealed.enabled) {
+    onDevModeEnabled();
     return;
   }
 
-  const result = await window.anylocSetup.installIos({ udid: guideDetectedUdid });
-
-  if (result.ok) {
-    markIphoneInstalled();
-    showReadyScreen();
-  } else {
-    text.textContent = "Échec de l'installation";
-    hint.textContent = result.message;
-    icon.className = "guide-status-icon error";
-    icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>';
-    statusBox.className = "guide-status-box error";
-    btn.disabled = false;
-    btn.textContent = "Réessayer";
+  if (!revealed.ok) {
+    setDevModeStatus("error", "L'iPhone ne répond pas", revealed.message || "Rebranche l'iPhone et réessaie.");
+    $("guide-devmode-retry").hidden = false;
+    return;
   }
+
+  setDevModeStatus(
+    "wait",
+    "En attente du mode développeur...",
+    "Active-le dans les Réglages de l'iPhone. On détecte tout seul quand c'est fait."
+  );
+  guideDevModeInterval = setInterval(pollDevMode, 3000);
+}
+
+async function pollDevMode() {
+  const status = await window.anylocSetup.devModeStatus({ udid: guideDetectedUdid });
+
+  if (status.ok && status.enabled) {
+    onDevModeEnabled();
+    return;
+  }
+
+  // While the iPhone reboots it disappears from USB: keep waiting quietly.
+  if (!status.ok) {
+    setDevModeStatus(
+      "wait",
+      "L'iPhone redémarre ?",
+      "Déverrouille-le après le redémarrage et appuie sur « Activer »."
+    );
+  }
+}
+
+function onDevModeEnabled() {
+  stopGuideDevModePolling();
+  setDevModeStatus("ok", "Mode développeur activé", "Tout est prêt.");
+  markIphoneInstalled();
+  setTimeout(showReadyScreen, 800);
 }
 
 function showReadyScreen() {
   stopGuideUsbPolling();
+  stopGuideDevModePolling();
   stopStatusUsbPolling();
   showScreen("ready");
 }
@@ -1076,7 +1103,8 @@ async function init() {
   $("guide-tools-next")?.addEventListener("click", guideNext);
   $("guide-tools-retry")?.addEventListener("click", initGuideToolsStep);
   $("guide-usb-next")?.addEventListener("click", guideNext);
-  $("guide-install-btn")?.addEventListener("click", guideInstallApp);
+  $("guide-devmode-retry")?.addEventListener("click", () => void startGuideDevModeStep());
+  $("ready-qr")?.addEventListener("error", (e) => { e.target.hidden = true; });
   $("ready-dashboard-btn")?.addEventListener("click", () => finishReadyScreen("statut"));
   $("ready-try-btn")?.addEventListener("click", () => finishReadyScreen("spots"));
 
