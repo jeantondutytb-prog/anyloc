@@ -11,7 +11,6 @@ import {
   Smartphone,
 } from "lucide-react";
 import { DashboardAppHeader } from "@/components/dashboard/dashboard-app-header";
-import { IosOtaInstallButton } from "@/components/dashboard/ios-ota-install-button";
 import { SetupPasswordForm } from "@/components/dashboard/setup-password-form";
 import { WrongDeviceNotice } from "@/components/dashboard/setup-open-help";
 import { WindowsOpenHelp } from "@/components/dashboard/windows-open-help";
@@ -179,21 +178,24 @@ function PrimaryInstallCard({
             <Smartphone className="h-7 w-7" />
           </div>
           <h2 className="mt-4 text-2xl font-bold text-zinc-900">
-            Installe l&apos;app sur ton iPhone
+            Ta télécommande iPhone
           </h2>
           <p className="mt-2 text-sm text-zinc-600">
-            Un bouton envoie l&apos;app sur ton tel. Le setup complet se fait
-            ensuite dans Anyloc Setup sur un ordi.
+            Rien à installer : ouvre-la dans Safari puis{" "}
+            <strong>Partager → Sur l&apos;écran d&apos;accueil</strong>. Le GPS
+            se change ensuite via Anyloc Setup sur un ordi (USB).
           </p>
           <div className="mt-6 flex justify-center">
-            <IosOtaInstallButton
-              hasAccess={hasAccess}
-              preview={preview}
-              className="h-12 w-full px-8 text-base sm:w-auto"
-            />
+            <Link href="/app" className="w-full sm:w-auto">
+              <Button size="lg" className="h-12 w-full px-8 text-base sm:w-auto">
+                <Smartphone className="h-4 w-4" />
+                Ouvrir la télécommande
+              </Button>
+            </Link>
           </div>
           <p className="mt-4 text-xs text-zinc-500">
-            Si l&apos;install ne part pas, ouvre cette page sur un Mac ou PC.
+            Pas encore configuré ? Ouvre cette page sur un Mac ou PC pour
+            télécharger Anyloc Setup.
           </p>
         </div>
       </Card>

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src https://*.supabase.co https://nominatim.openstreetmap.org https://www.anyloc.io https://anyloc.io https://api.github.com" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src https://*.supabase.co https://nominatim.openstreetmap.org https://www.anyloc.io https://anyloc.io" />
     <title>Anyloc</title>
     <link rel="stylesheet" href="./styles.css" />
     <link rel="stylesheet" href="./leaflet.css" />
@@ -122,7 +122,7 @@
           </div>
 
           <p class="status-footnote">
-            Choisis une destination dans <strong>Découvrir</strong>, sur la <strong>Carte</strong>, ou sur l'app <strong>Anyloc iPhone</strong> — cette app Mac l'applique sur ton téléphone via USB.
+            Choisis une destination dans <strong>Découvrir</strong>, sur la <strong>Carte</strong>, ou depuis <strong>anyloc.io/app</strong> sur ton iPhone — cette app l'applique sur ton téléphone via USB.
           </p>
         </div>
       </div>
@@ -219,19 +219,15 @@
               <div class="settings-card profil-faq">
                 <details class="profil-faq-item">
                   <summary>Pourquoi un ordi pour iPhone ?</summary>
-                  <p>Apple verrouille le GPS. Un Mac ou PC installe l'app une seule fois. Ensuite, tu changes de ville depuis l'app iPhone ou cet ordinateur.</p>
+                  <p>Apple verrouille le GPS : seul un ordinateur branché en USB peut le changer. Tu choisis ta ville depuis anyloc.io/app sur l'iPhone ou depuis cet ordinateur.</p>
                 </details>
                 <details class="profil-faq-item">
                   <summary>L'iPhone n'est pas détecté en USB</summary>
                   <p>Essaie un autre câble, déverrouille l'iPhone et appuie Faire confiance. Sur Windows, installe iTunes pour les pilotes Apple.</p>
                 </details>
-                <details class="profil-faq-item">
+                <details class="profil-faq-item no-border">
                   <summary>La loc ne change pas dans Snap</summary>
                   <p>Ferme Snap complètement et rouvre-le. Vérifie que l'iPhone est branché et qu'Anyloc Setup tourne en arrière-plan.</p>
-                </details>
-                <details class="profil-faq-item no-border">
-                  <summary>L'app iPhone s'arrête après ~7 jours</summary>
-                  <p>Installe LocalDevVPN (App Store), connecte le Wi-Fi, puis Anyloc iPhone → Profil → Renouveler.</p>
                 </details>
               </div>
             </div>
@@ -309,20 +305,15 @@
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><rect x="5" y="1" width="14" height="22" rx="3"/><path d="M12 18h.01"/></svg>
           </div>
           <h2 class="guide-title">Branche ton iPhone</h2>
-          <p class="guide-subtitle">USB, confiance, puis mode développeur — tout se fait sur ton iPhone.</p>
+          <p class="guide-subtitle">Un câble USB et un « Faire confiance » sur l'iPhone.</p>
 
           <div class="guide-instruction-card">
             <div class="guide-instruction-num">1</div>
-            <div><h3>Branche le câble USB</h3><p>Lightning ou USB-C, puis appuie sur <strong>Faire confiance</strong> sur l'iPhone.</p></div>
+            <div><h3>Branche le câble USB</h3><p>Lightning ou USB-C, puis déverrouille l'iPhone.</p></div>
           </div>
           <div class="guide-instruction-card">
             <div class="guide-instruction-num">2</div>
-            <div><h3>Active le mode développeur</h3><p><strong>Réglages → Confidentialité et sécurité → Mode développeur</strong>. L'iPhone redémarre — c'est normal.</p></div>
-          </div>
-
-          <div class="guide-tip-box">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--accent)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-            <span id="guide-devmode-tip">Le mode développeur n'apparaît qu'après avoir branché l'iPhone à l'ordinateur au moins une fois.</span>
+            <div><h3>Fais confiance</h3><p>Appuie sur <strong>Faire confiance</strong> sur l'écran de l'iPhone, puis tape ton code.</p></div>
           </div>
 
           <details class="guide-details" id="guide-usb-help">
@@ -345,52 +336,61 @@
             </div>
           </div>
 
-          <button class="guide-btn-primary" id="guide-usb-next" disabled>J'ai branché et activé le mode dev</button>
+          <button class="guide-btn-primary" id="guide-usb-next" disabled>Continuer</button>
         </div>
 
-        <!-- Step 3: Installe l'app iPhone -->
+        <!-- Step 3: Mode développeur -->
         <div class="guide-step-content" id="guide-step-3" hidden>
-          <div class="guide-icon-wrap" id="guide-final-icon">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <div class="guide-icon-wrap">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
           </div>
-          <h2 class="guide-title" id="guide-final-title">Installe l'app iPhone</h2>
-          <p class="guide-subtitle" id="guide-final-subtitle">Un clic et Anyloc s'installe directement sur ton iPhone.</p>
+          <h2 class="guide-title">Active le mode développeur</h2>
+          <p class="guide-subtitle">C'est ce qui permet à ton ordinateur de changer le GPS de l'iPhone. Une seule fois.</p>
 
-          <div id="guide-install-area">
-            <div class="guide-status-box" id="guide-install-status-box">
-              <div class="guide-status-icon" id="guide-install-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              </div>
-              <div>
-                <div class="guide-status-text" id="guide-install-text">Prêt à installer</div>
-                <div class="guide-status-hint" id="guide-install-hint">Clique sur le bouton ci-dessous.</div>
-              </div>
+          <div class="guide-instruction-card">
+            <div class="guide-instruction-num">1</div>
+            <div><h3>Ouvre les Réglages de l'iPhone</h3><p><strong>Confidentialité et sécurité → Mode développeur</strong> (tout en bas), puis active-le.</p></div>
+          </div>
+          <div class="guide-instruction-card">
+            <div class="guide-instruction-num">2</div>
+            <div><h3>Redémarre et confirme</h3><p>L'iPhone redémarre. Déverrouille-le et appuie sur <strong>Activer</strong>, puis tape ton code. Laisse-le branché.</p></div>
+          </div>
+
+          <div class="guide-status-box" id="guide-devmode-status">
+            <div class="guide-status-icon searching" id="guide-devmode-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
             </div>
-
-            <button class="guide-btn-primary" id="guide-install-btn">Installer l'app iPhone</button>
+            <div>
+              <div class="guide-status-text" id="guide-devmode-text">Préparation de l'iPhone...</div>
+              <div class="guide-status-hint" id="guide-devmode-hint">On fait apparaître l'option dans les Réglages.</div>
+            </div>
           </div>
+
+          <button class="guide-btn-secondary" id="guide-devmode-retry" hidden>Réessayer</button>
         </div>
 
-        <!-- Step 4: Faire confiance et ouvrir l'app -->
+        <!-- Step 4: Télécommande iPhone (web app) -->
         <div class="guide-step-content" id="guide-step-4" hidden>
           <div class="guide-icon-wrap">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><rect x="5" y="1" width="14" height="22" rx="3"/><path d="M12 18h.01"/></svg>
           </div>
-          <h2 class="guide-title">Fais confiance et ouvre Anyloc</h2>
-          <p class="guide-subtitle">Sur ton iPhone, deux petites étapes avant de tester ta première ville.</p>
+          <h2 class="guide-title">Ajoute Anyloc sur ton iPhone</h2>
+          <p class="guide-subtitle">Rien à télécharger : c'est une web app, elle n'expire jamais.</p>
+
+          <img class="ready-qr guide-qr" id="guide-qr" alt="QR code anyloc.io/app" width="148" height="148" hidden />
 
           <div class="guide-instruction-card">
             <div class="guide-instruction-num">1</div>
             <div>
-              <h3>Autorise l'app développeur</h3>
-              <p><strong>Réglages → Général → Gestion des appareils</strong> (ou VPN et gestion des appareils). Appuie sur le profil Anyloc, puis <strong>Faire confiance</strong>.</p>
+              <h3>Scanne avec l'appareil photo</h3>
+              <p>Ouvre le lien dans <strong>Safari</strong> (ou tape <strong>anyloc.io/app</strong>) et connecte-toi avec le <strong>même email</strong> que sur cet ordinateur.</p>
             </div>
           </div>
           <div class="guide-instruction-card">
             <div class="guide-instruction-num">2</div>
             <div>
-              <h3>Ouvre Anyloc sur l'iPhone</h3>
-              <p>Connecte-toi avec le <strong>même email</strong> que sur cet ordinateur.</p>
+              <h3>Ajoute-la à l'écran d'accueil</h3>
+              <p>Touche <strong>Partager</strong> puis <strong>Sur l'écran d'accueil</strong>. Tu l'ouvriras comme une app.</p>
             </div>
           </div>
 
@@ -452,11 +452,6 @@
             </ol>
           </details>
 
-          <details class="guide-details">
-            <summary>Dans ~7 jours, l'app iPhone s'arrête ?</summary>
-            <p>Normal (limite Apple). Installe <strong>LocalDevVPN</strong> (App Store, gratuit), connecte le Wi-Fi, puis dans Anyloc iPhone : <strong>Profil → Renouveler</strong>.</p>
-          </details>
-
           <button class="guide-btn-primary" id="guide-verify-done">Oui, ça marche</button>
           <button type="button" class="guide-btn-secondary" id="guide-verify-skip">Je testerai plus tard</button>
         </div>
@@ -479,14 +474,14 @@
             <div class="ready-step-num">1</div>
             <div>
               <h3>Ouvre Anyloc sur ton iPhone</h3>
-              <p id="ready-step1-text">Connecte-toi avec le <strong>même compte</strong> que sur cet ordinateur.</p>
+              <p id="ready-step1-text">Depuis l'icône sur ton écran d'accueil (ou <strong>anyloc.io/app</strong>).</p>
             </div>
           </div>
           <div class="ready-step">
             <div class="ready-step-num">2</div>
             <div>
               <h3>Choisis ta destination</h3>
-              <p id="ready-step2-text">Sur l'iPhone, dans <strong>Découvrir</strong>, ou ici sur l'ordinateur.</p>
+              <p id="ready-step2-text">Sur l'iPhone, ou ici sur l'ordinateur.</p>
             </div>
           </div>
           <div class="ready-step">

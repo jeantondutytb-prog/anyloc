@@ -12,7 +12,7 @@ export const COMPETITOR_ONBOARDING_STEPS = [
     id: "install",
     title: "Tu installes l'app",
     description:
-      "Android : APK sur le tel. iPhone : ordi une fois, puis l'app reste sur ton iPhone.",
+      "Android : APK sur le tel. iPhone : Anyloc Setup sur un ordi, puis la télécommande anyloc.io/app sur ton écran d'accueil.",
   },
   {
     id: "pin",
@@ -39,7 +39,7 @@ export function getPrimaryActionLabel(mode: OnboardingMode, desktopOs: "mac" | "
     case "android-phone":
       return "Télécharger l'app Android";
     case "ios-phone":
-      return "Installer Anyloc sur mon iPhone";
+      return "Ouvrir la télécommande iPhone";
     case "desktop":
       return desktopOs === "win"
         ? "Télécharger Anyloc pour Windows"

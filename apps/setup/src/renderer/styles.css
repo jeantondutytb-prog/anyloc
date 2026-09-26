@@ -1,3 +1,8 @@
+/* Component rules set display:flex/grid, which beats the UA [hidden] style:
+   without this, hidden hints (Windows iTunes tip, empty error box, retry
+   button) show up on every platform. */
+[hidden] { display: none !important; }
+
 :root {
   color-scheme: light;
   --bg: #fafafa;
@@ -1303,6 +1308,19 @@ html {
 }
 
 .ready-step p strong { color: var(--text); }
+
+.guide-qr {
+  margin: 0 auto 16px;
+}
+
+.ready-qr {
+  display: block;
+  margin-top: 10px;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
 
 .ready-note {
   display: flex;

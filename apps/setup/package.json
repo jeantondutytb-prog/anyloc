@@ -2,20 +2,22 @@
   "name": "anyloc-setup",
   "version": "0.3.2",
   "private": true,
-  "description": "Anyloc Setup — installation iPhone via USB",
+  "description": "Anyloc Setup — GPS iPhone via USB",
   "author": "Anyloc <contact@anyloc.io>",
   "main": "src/main.js",
   "scripts": {
     "dev": "electron .",
     "preview": "electron . -- --preview-guide",
     "start": "electron .",
-    "prepare-bundle": "node scripts/prepare-bundle.js",
-    "build:mac": "npm run prepare-bundle && electron-builder --config electron-builder.config.js --mac dmg",
-    "build:win": "npm run prepare-bundle && electron-builder --config electron-builder.config.js --win nsis",
-    "build": "npm run prepare-bundle && electron-builder --config electron-builder.config.js"
+    "build:mac": "electron-builder --config electron-builder.config.js --mac dmg",
+    "build:win": "electron-builder --config electron-builder.config.js --win nsis",
+    "build": "electron-builder --config electron-builder.config.js"
   },
   "devDependencies": {
     "electron": "^35.0.0",
     "electron-builder": "^25.1.8"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.4"
   }
 }
