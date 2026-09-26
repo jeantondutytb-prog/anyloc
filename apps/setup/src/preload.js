@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld("anylocSetup", {
   openExternal: (url) => ipcRenderer.invoke("setup:open-external", url),
   devModeStatus: (payload) => ipcRenderer.invoke("setup:devmode-status", payload),
   revealDevMode: (payload) => ipcRenderer.invoke("setup:reveal-devmode", payload),
+  getRemoteQr: () => ipcRenderer.invoke("setup:remote-qr"),
   applyGps: (payload) => ipcRenderer.invoke("setup:apply-gps", payload),
   applyGpsDirect: (payload) => ipcRenderer.invoke("setup:apply-gps-direct", payload),
   clearGps: (payload) => ipcRenderer.invoke("setup:clear-gps", payload),

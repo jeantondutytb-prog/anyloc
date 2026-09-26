@@ -37,6 +37,7 @@ export function detectClientDevice(): ClientDevice {
   return { isPhone, desktopOs };
 }
 
+/** Stable snapshot for useSyncExternalStore — must return the same object reference. */
 export function getClientDeviceSnapshot(): ClientDevice {
   if (typeof navigator === "undefined") {
     return SERVER_CLIENT_DEVICE;
@@ -47,7 +48,7 @@ export function getClientDeviceSnapshot(): ClientDevice {
 }
 
 export const IOS_INSTALL_CONSTRAINT =
-  "Sur iPhone : Safari suffit. Après le paiement, un guide dans le site t’accompagne — pas d’ordinateur, pas d’App Store.";
+  "Sur iPhone : un Mac ou PC une seule fois pour installer l'app, puis tout se pilote depuis ton téléphone — comme Locaflex.";
 
 export const ANDROID_INSTALL_NOTE =
-  "Sur Android : Chrome suffit. Même guide que sur iPhone, sans APK ni mode développeur.";
+  "Sur Android : télécharge l'APK sur ton tel, l'app te guide — pas d'ordinateur.";

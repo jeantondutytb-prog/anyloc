@@ -306,9 +306,12 @@ async function applyPlatformHints() {
   const guideHint = $("guide-win-hint");
   if (guideHint) guideHint.hidden = !isWin;
 
+  const usbHelpWin = $("guide-usb-help-win");
+  if (usbHelpWin) usbHelpWin.hidden = !isWin;
+
   const readyStep2 = $("ready-step2-text");
   if (readyStep2) {
-    readyStep2.innerHTML = `Depuis l'icône Anyloc sur l'iPhone, ou ici sur le ${computerShort}.`;
+    readyStep2.innerHTML = `Sur l'iPhone, ou ici sur le ${computerShort}.`;
   }
 
   const readyStep3Title = $("ready-step3-title");
@@ -364,30 +367,11 @@ function enterMain() {
   switchTab("statut");
   startStatusUsbPolling();
 
-  window.anylocSetup.startAutoSync({ session });
-  window.anylocSetup.onAutoSyncStatus((status) => {
-    if (status.error) {
-      showToast(status.message, "error");
-    } else if (status.message) {
-      lastSyncAt = new Date();
-      if (status.location?.is_active) {
-        const loc = status.location;
-        const name = loc.name || `${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`;
-        setSelectedPosition(loc.lat, loc.lng, name);
-        if (map) map.setView([loc.lat, loc.lng], 14);
-        activeSpoof = { lat: loc.lat, lng: loc.lng, name };
-        updateBottomSheet();
-        showToast(`GPS appliqué : ${name}`, "ok");
-      } else if (status.location && !status.location.is_active) {
-        activeSpoof = null;
-        updateBottomSheet();
-        showToast("GPS réinitialisé", "ok");
-      } else {
-        showToast(status.message, "ok");
-      }
-      updateStatusDashboard();
-    }
-  });
+  if (!guideAutoSyncStarted) {
+    window.anylocSetup.startAutoSync({ session });
+    guideAutoSyncStarted = true;
+  }
+  bindAutoSyncHandlers();
 
   updateStatusDashboard();
 }
@@ -730,7 +714,17 @@ let guidePlatform = "mac";
 let guideDetectedUdid = null;
 
 const GUIDE_DONE_KEY = "anyloc.guideComplete";
-const GUIDE_TOTAL_STEPS = 3;
+const GUIDE_TOTAL_STEPS = 6;
+
+const GUIDE_STARTER_SPOTS = [
+  { name: "Marbella", country: "Espagne", lat: 36.5099, lng: -4.8862, emoji: "🇪🇸" },
+  { name: "Paris", country: "France", lat: 48.8584, lng: 2.2945, emoji: "🇫🇷" },
+  { name: "Miami Beach", country: "États-Unis", lat: 25.7907, lng: -80.13, emoji: "🇺🇸" },
+];
+
+let guideAutoSyncStarted = false;
+let autoSyncHandlersBound = false;
+let guideSelectedSpot = null;
 
 function isGuideComplete() {
   try { return localStorage.getItem(GUIDE_DONE_KEY) === "true"; } catch { return false; }
@@ -767,6 +761,158 @@ function updateGuideStep() {
   else stopGuideUsbPolling();
   if (guideStep === 3) void startGuideDevModeStep();
   else stopGuideDevModePolling();
+  if (guideStep === 4) void showRemoteQr();
+  if (guideStep === 5) initGuideCityStep();
+  if (guideStep === 6) initGuideVerifyStep();
+}
+
+function bindAutoSyncHandlers() {
+  if (autoSyncHandlersBound) return;
+  autoSyncHandlersBound = true;
+
+  window.anylocSetup.onAutoSyncStatus((status) => {
+    if (status.error) {
+      showToast(status.message, "error");
+    } else if (status.message) {
+      lastSyncAt = new Date();
+      if (status.location?.is_active) {
+        const loc = status.location;
+        const name = loc.name || `${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`;
+        setSelectedPosition(loc.lat, loc.lng, name);
+        if (map) map.setView([loc.lat, loc.lng], 14);
+        activeSpoof = { lat: loc.lat, lng: loc.lng, name };
+        updateBottomSheet();
+        if (guideStep === 5 && guideSelectedSpot) {
+          updateGuideCityStatus(true, guideSelectedSpot.name);
+        }
+      } else if (status.location && !status.location.is_active) {
+        activeSpoof = null;
+        updateBottomSheet();
+      }
+      updateStatusDashboard();
+    }
+  });
+}
+
+function ensureGuideAutoSync() {
+  if (!session || guideAutoSyncStarted) return;
+  guideAutoSyncStarted = true;
+  window.anylocSetup.startAutoSync({ session });
+  bindAutoSyncHandlers();
+}
+
+function initGuideCityStep() {
+  ensureGuideAutoSync();
+  guideSelectedSpot = null;
+
+  const grid = $("guide-city-grid");
+  const nextBtn = $("guide-city-next");
+  const statusBox = $("guide-city-status");
+
+  if (!grid || !nextBtn) return;
+
+  statusBox.hidden = true;
+  nextBtn.disabled = true;
+
+  grid.innerHTML = GUIDE_STARTER_SPOTS.map((spot, index) =>
+    `<button type="button" class="guide-city-btn" data-city="${index}">
+      <span class="guide-city-emoji">${spot.emoji}</span>
+      <span class="guide-city-name">${escapeHtml(spot.name)}</span>
+      <span class="guide-city-country">${escapeHtml(spot.country)}</span>
+    </button>`
+  ).join("");
+
+  grid.querySelectorAll(".guide-city-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const spot = GUIDE_STARTER_SPOTS[parseInt(btn.dataset.city, 10)];
+      if (spot) void selectGuideCity(spot, btn);
+    });
+  });
+}
+
+async function selectGuideCity(spot, btn) {
+  const grid = $("guide-city-grid");
+  grid?.querySelectorAll(".guide-city-btn").forEach((el) => el.classList.remove("active"));
+  btn?.classList.add("active");
+
+  guideSelectedSpot = spot;
+  updateGuideCityStatus(false, spot.name);
+
+  const ok = await applyGuideSpot(spot);
+  if (ok) {
+    updateGuideCityStatus(true, spot.name);
+    $("guide-city-next").disabled = false;
+  }
+}
+
+function updateGuideCityStatus(applied, cityName) {
+  const statusBox = $("guide-city-status");
+  const text = $("guide-city-text");
+  const hint = $("guide-city-hint");
+  if (!statusBox || !text || !hint) return;
+
+  statusBox.hidden = false;
+  statusBox.className = applied ? "guide-status-box ok" : "guide-status-box";
+
+  if (applied) {
+    text.textContent = `${cityName} — GPS activé`;
+    hint.textContent = "Ouvre Snap ou Maps sur ton iPhone pour vérifier.";
+  } else {
+    text.textContent = `Activation de ${cityName}…`;
+    hint.textContent = "Garde l'iPhone branché en USB.";
+  }
+}
+
+async function applyGuideSpot(spot) {
+  if (!session) return false;
+
+  try {
+    const url = `https://gqkxnktprctdvpwvnqli.supabase.co/rest/v1/location_settings?on_conflict=user_id`;
+    const body = {
+      user_id: session.user.id,
+      name: spot.name,
+      lat: spot.lat,
+      lng: spot.lng,
+      is_active: true,
+      accuracy: 10,
+    };
+
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        apikey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdxa3hua3RwcmN0ZHZwd3ZucWxpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3ODUxMTgsImV4cCI6MjEwNDM2MTExOH0.7kOHGgU1s1EDr0luSvDxvcGj3pyOt-8_79dX4sg8kXA",
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+        Prefer: "resolution=merge-duplicates,return=representation",
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (res.ok) {
+      activeSpoof = { lat: spot.lat, lng: spot.lng, name: spot.name };
+      lastSyncAt = new Date();
+      setSelectedPosition(spot.lat, spot.lng, spot.name);
+      updateStatusDashboard();
+      return true;
+    }
+  } catch {}
+
+  return false;
+}
+
+function initGuideVerifyStep() {
+  const cityLabel = $("guide-verify-city");
+  if (cityLabel) {
+    cityLabel.textContent = guideSelectedSpot?.name || activeSpoof?.name || "ta ville";
+  }
+
+  const bgText = $("guide-verify-bg-text");
+  if (bgText) {
+    const isWin = guidePlatform === "win";
+    bgText.textContent = isWin
+      ? "Garde Anyloc Setup ouvert (icône près de l'horloge) tant que l'iPhone est branché."
+      : "Garde Anyloc Setup ouvert (barre de menus) tant que l'iPhone est branché.";
+  }
 }
 
 function guideNext() {
@@ -949,11 +1095,23 @@ async function pollDevMode() {
   }
 }
 
+async function showRemoteQr() {
+  const img = $("guide-qr");
+  if (!img || img.src) return;
+  try {
+    img.src = await window.anylocSetup.getRemoteQr();
+    img.hidden = false;
+  } catch {
+    // The anyloc.io/app link is still written out below the QR code.
+  }
+}
+
 function onDevModeEnabled() {
   stopGuideDevModePolling();
   setDevModeStatus("ok", "Mode développeur activé", "Tout est prêt.");
   markIphoneInstalled();
-  setTimeout(showReadyScreen, 800);
+  ensureGuideAutoSync();
+  if (guideStep === 3) setTimeout(guideNext, 800);
 }
 
 function showReadyScreen() {
@@ -1104,7 +1262,10 @@ async function init() {
   $("guide-tools-retry")?.addEventListener("click", initGuideToolsStep);
   $("guide-usb-next")?.addEventListener("click", guideNext);
   $("guide-devmode-retry")?.addEventListener("click", () => void startGuideDevModeStep());
-  $("ready-qr")?.addEventListener("error", (e) => { e.target.hidden = true; });
+  $("guide-trust-next")?.addEventListener("click", guideNext);
+  $("guide-city-next")?.addEventListener("click", guideNext);
+  $("guide-verify-done")?.addEventListener("click", () => finishReadyScreen("statut"));
+  $("guide-verify-skip")?.addEventListener("click", () => finishReadyScreen("statut"));
   $("ready-dashboard-btn")?.addEventListener("click", () => finishReadyScreen("statut"));
   $("ready-try-btn")?.addEventListener("click", () => finishReadyScreen("spots"));
 

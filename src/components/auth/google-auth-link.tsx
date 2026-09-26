@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { ONBOARDING_ENTRY_URL } from "@/lib/constants";
 
 function GoogleIcon() {
   return (
@@ -23,20 +23,22 @@ function GoogleIcon() {
   );
 }
 
-import { ONBOARDING_ENTRY_URL } from "@/lib/constants";
-
 export function GoogleAuthLink({
   redirectTo = ONBOARDING_ENTRY_URL,
 }: {
   redirectTo?: string;
 }) {
+  const href = `/auth/google?next=${encodeURIComponent(redirectTo)}`;
+
+  // OAuth must use a full navigation — Next.js <Link> prefetches via RSC fetch
+  // and breaks on the cross-origin redirect to accounts.google.com.
   return (
-    <Link
-      href={`/auth/google?next=${encodeURIComponent(redirectTo)}`}
+    <a
+      href={href}
       className="flex w-full items-center justify-center gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-medium text-zinc-900 shadow-sm transition hover:border-pink-300 hover:bg-pink-50/40"
     >
       <GoogleIcon />
       Continuer avec Google
-    </Link>
+    </a>
   );
 }

@@ -7,6 +7,7 @@
   "main": "src/main.js",
   "scripts": {
     "dev": "electron .",
+    "preview": "electron . -- --preview-guide",
     "start": "electron .",
     "build:mac": "electron-builder --config electron-builder.config.js --mac dmg",
     "build:win": "electron-builder --config electron-builder.config.js --win nsis",
@@ -15,5 +16,8 @@
   "devDependencies": {
     "electron": "^35.0.0",
     "electron-builder": "^25.1.8"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.4"
   }
 }

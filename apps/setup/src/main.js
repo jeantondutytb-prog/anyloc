@@ -300,6 +300,7 @@ function revealMainWindow() {
 
 function createWindow() {
   const isMac = process.platform === "darwin";
+  const previewGuide = process.argv.includes("--preview-guide");
   const window = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -312,14 +313,19 @@ function createWindow() {
       : { autoHideMenuBar: true }),
     backgroundColor: "#fafafa",
     webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
+      preload: path.join(
+        __dirname,
+        previewGuide ? "preview-preload.js" : "preload.js"
+      ),
       contextIsolation: true,
       nodeIntegration: false,
     },
   });
 
   mainWindowRef = window;
-  window.loadFile(path.join(__dirname, "renderer", "index.html"));
+  window.loadFile(
+    path.join(__dirname, "renderer", previewGuide ? "preview.html" : "index.html")
+  );
 
   window.webContents.on("did-finish-load", () => {
     deliverLaunchConfig(window);
@@ -568,6 +574,17 @@ ipcMain.handle("setup:open-external", async (_event, url) => {
   }
 
   return { ok: false };
+});
+
+// QR code for the iPhone remote, generated locally so it works offline and
+// does not depend on the website being deployed.
+ipcMain.handle("setup:remote-qr", async () => {
+  const QRCode = require("qrcode");
+  return QRCode.toDataURL("https://www.anyloc.io/app", {
+    width: 296,
+    margin: 1,
+    color: { dark: "#18181b", light: "#ffffff" },
+  });
 });
 
 ipcMain.handle("setup:devmode-status", async (_event, payload) => {

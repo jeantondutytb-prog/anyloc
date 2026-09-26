@@ -11,9 +11,10 @@ export default async function LoginPage({
     next?: string;
     redirectTo?: string;
     checkout?: string;
+    error?: string;
   }>;
 }) {
-  const { plan, next, redirectTo: redirectToParam, checkout } =
+  const { plan, next, redirectTo: redirectToParam, checkout, error } =
     await searchParams;
   const planId = isValidPlanId(plan) ? plan! : "annual";
   const redirectTo = sanitizeRedirectPath(
@@ -26,6 +27,15 @@ export default async function LoginPage({
       title="Connexion"
       description="Connecte-toi pour accéder à ton dashboard et gérer ta position GPS."
     >
+      {error === "oauth" ? (
+        <div
+          role="alert"
+          className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+        >
+          La connexion Google a échoué. Réessaie, ou utilise email et mot de
+          passe.
+        </div>
+      ) : null}
       {checkout === "email-sent" ? (
         <div
           role="status"
