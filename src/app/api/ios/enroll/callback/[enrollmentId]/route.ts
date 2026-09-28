@@ -3,6 +3,7 @@ import { completeIosEnrollment } from "@/lib/ios-adhoc/service";
 import { getConfiguredAppOrigin } from "@/lib/oauth-origin";
 
 const MAX_BODY_BYTES = 64 * 1024;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type RouteContext = { params: Promise<{ enrollmentId: string }> };
 
@@ -12,7 +13,7 @@ export async function POST(request: Request, context: RouteContext) {
   const body = Buffer.from(await request.arrayBuffer());
 
   let ok = false;
-  if (body.length > 0 && body.length <= MAX_BODY_BYTES) {
+  if (UUID_RE.test(enrollmentId) && body.length > 0 && body.length <= MAX_BODY_BYTES) {
     const attrs = parseDeviceAttributes(body);
     if (attrs) {
       ok = (await completeIosEnrollment(enrollmentId, attrs, new Date())).ok;
