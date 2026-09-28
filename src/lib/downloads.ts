@@ -85,7 +85,7 @@ export function getDownloadUrl(platform: DownloadPlatform) {
   return url || null;
 }
 
-async function presignPrivateBlobUrl(pathname: string, token: string) {
+export async function presignPrivateBlobUrl(pathname: string, token: string) {
   const { issueSignedToken, presignUrl } = await import("@vercel/blob");
   const signed = await issueSignedToken({
     token,
