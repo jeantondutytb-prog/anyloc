@@ -3,10 +3,9 @@ const { spawn: spawnChild } = require("node:child_process");
 const path = require("path");
 const {
   detectUsbDevice,
-  installIosApp,
+  getDeveloperModeStatus,
+  revealDeveloperMode,
   applyGpsLocation,
-  ensureIpaAvailable,
-  setIpaDownloadAuth,
   exportPairingFile,
   savePairingLocalCopy,
   applyGpsDirect,
@@ -53,21 +52,12 @@ function saveSessionFile(session) {
     const fd = fs.openSync(p, "w", 0o600);
     try { fs.writeFileSync(fd, JSON.stringify(session)); } finally { fs.closeSync(fd); }
   } catch {}
-  setIpaDownloadAuth({
-    accessToken: session?.access_token,
-    apiBaseUrl: "https://www.anyloc.io",
-  });
 }
 
 function loadSessionFile() {
   try {
     const data = fs.readFileSync(getSessionFilePath(), "utf-8");
-    const session = JSON.parse(data);
-    setIpaDownloadAuth({
-      accessToken: session?.access_token,
-      apiBaseUrl: "https://www.anyloc.io",
-    });
-    return session;
+    return JSON.parse(data);
   } catch {
     return null;
   }
@@ -586,12 +576,23 @@ ipcMain.handle("setup:open-external", async (_event, url) => {
   return { ok: false };
 });
 
-ipcMain.handle("setup:ensure-ipa", async () => {
-  return ensureIpaAvailable();
+// QR code for the iPhone remote, generated locally so it works offline and
+// does not depend on the website being deployed.
+ipcMain.handle("setup:remote-qr", async () => {
+  const QRCode = require("qrcode");
+  return QRCode.toDataURL("https://www.anyloc.io/app", {
+    width: 296,
+    margin: 1,
+    color: { dark: "#18181b", light: "#ffffff" },
+  });
 });
 
-ipcMain.handle("setup:install-ios", async (_event, payload) => {
-  return installIosApp({ udid: payload?.udid ?? null });
+ipcMain.handle("setup:devmode-status", async (_event, payload) => {
+  return getDeveloperModeStatus({ udid: payload?.udid ?? null });
+});
+
+ipcMain.handle("setup:reveal-devmode", async (_event, payload) => {
+  return revealDeveloperMode({ udid: payload?.udid ?? null });
 });
 
 ipcMain.handle("setup:apply-gps", async (_event, payload) => {

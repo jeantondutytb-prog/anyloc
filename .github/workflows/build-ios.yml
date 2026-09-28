@@ -1,17 +1,11 @@
 name: Build iOS IPA
 
+# The native iOS app is no longer distributed: a development-signed IPA only
+# installs on the devices listed in its provisioning profile, so customers
+# could never install it. iPhone users now use the web remote at /app.
+# Kept as a manual workflow for internal builds.
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-      - "cursor/**"
-    paths:
-      - "apps/ios/**"
-      - "scripts/build-ios-ipa.sh"
-      - "scripts/prepare-ios-ci-secrets.sh"
-      - "scripts/upload-release.mjs"
-      - ".github/workflows/build-ios.yml"
 
 permissions:
   contents: write

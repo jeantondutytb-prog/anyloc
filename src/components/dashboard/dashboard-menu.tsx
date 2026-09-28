@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   HelpCircle,
   LayoutDashboard,
+  MapPin,
   Menu,
   User,
   X,
@@ -29,6 +30,7 @@ function getMenuSections(basePath: string): { items: MenuItem[] }[] {
     {
       items: [
         { icon: LayoutDashboard, label: "Dashboard", href: dashboardHref(basePath) },
+        { icon: MapPin, label: "Choisir ma position", href: "/app" },
         { icon: User, label: "Mon compte", href: dashboardHref(basePath, "account") },
       ],
     },

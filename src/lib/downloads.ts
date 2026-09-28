@@ -2,8 +2,7 @@ export type DownloadPlatform =
   | "setup-mac"
   | "setup-win"
   | "setup-win-zip"
-  | "apk"
-  | "ipa";
+  | "apk";
 
 export type DownloadAsset = {
   id: DownloadPlatform;
@@ -55,14 +54,6 @@ export const DOWNLOAD_ASSETS: DownloadAsset[] = [
     filename: "Anyloc.apk",
     envKey: "ANYLOC_DOWNLOAD_APK",
     blobPath: "releases/Anyloc.apk",
-  },
-  {
-    id: "ipa",
-    label: "Anyloc (iPhone)",
-    description: "App iPhone — installation directe sur ton téléphone",
-    filename: "Anyloc.ipa",
-    envKey: "ANYLOC_DOWNLOAD_IPA",
-    blobPath: "releases/Anyloc.ipa",
   },
 ];
 

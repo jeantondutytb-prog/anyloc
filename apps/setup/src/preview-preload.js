@@ -1,9 +1,11 @@
-const { contextBridge } = require("electron");
+const { contextBridge, ipcRenderer } = require("electron");
 
 const demoSession = {
   access_token: "preview-token",
   user: { id: "preview-user", email: "demo@anyloc.io" },
 };
+
+let devModePolls = 0;
 
 contextBridge.exposeInMainWorld("anylocSetup", {
   getPlatform: () => Promise.resolve("mac"),
@@ -19,8 +21,13 @@ contextBridge.exposeInMainWorld("anylocSetup", {
       udid: "preview-udid",
     }),
   openExternal: () => Promise.resolve(),
-  ensureIpa: () => Promise.resolve({ ok: true }),
-  installIos: () => Promise.resolve({ ok: true }),
+  // Simulates the customer enabling Developer Mode a few seconds in.
+  revealDevMode: () => Promise.resolve({ ok: true, enabled: false }),
+  getRemoteQr: () => ipcRenderer.invoke("setup:remote-qr"),
+  devModeStatus: () => {
+    devModePolls += 1;
+    return Promise.resolve({ ok: true, enabled: devModePolls >= 3 });
+  },
   applyGps: () => Promise.resolve({ ok: true }),
   applyGpsDirect: () => Promise.resolve({ ok: true }),
   clearGps: () => Promise.resolve({ ok: true }),
