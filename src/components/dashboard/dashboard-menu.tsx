@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   MapPin,
   Menu,
+  Smartphone,
   User,
   X,
 } from "lucide-react";
@@ -31,6 +32,7 @@ function getMenuSections(basePath: string): { items: MenuItem[] }[] {
       items: [
         { icon: LayoutDashboard, label: "Dashboard", href: dashboardHref(basePath) },
         { icon: MapPin, label: "Choisir ma position", href: "/app" },
+        { icon: Smartphone, label: "App iPhone", href: "/dashboard/iphone" },
         { icon: User, label: "Mon compte", href: dashboardHref(basePath, "account") },
       ],
     },
