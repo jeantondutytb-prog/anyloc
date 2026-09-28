@@ -1,13 +1,13 @@
-import { Suspense } from "react";
-import { IphoneInstallView } from "@/components/dashboard/iphone-install-view";
-import { noIndexMetadata } from "@/lib/seo";
+import { redirect } from "next/navigation";
 
-export const metadata = noIndexMetadata;
+type DashboardIphonePageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
 
-export default function DashboardIphonePage() {
-  return (
-    <Suspense fallback={null}>
-      <IphoneInstallView />
-    </Suspense>
-  );
+/** L'install iPhone vit désormais sur /dashboard (tuto selon l'abonnement). */
+export default async function DashboardIphonePage({
+  searchParams,
+}: DashboardIphonePageProps) {
+  const etape = (await searchParams).etape;
+  redirect(typeof etape === "string" ? `/dashboard?etape=${encodeURIComponent(etape)}` : "/dashboard");
 }

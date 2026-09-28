@@ -4,7 +4,10 @@ import { Suspense, useEffect } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { DashboardAppHeader } from "@/components/dashboard/dashboard-app-header";
-import { PaidDashboardView } from "@/components/dashboard/paid-dashboard-view";
+import {
+  PaidDashboardView,
+  type InstallTrack,
+} from "@/components/dashboard/paid-dashboard-view";
 import { SettingsView } from "@/components/dashboard/settings-view";
 import { dashboardHref, getDashboardBasePath } from "@/lib/dashboard-paths";
 
@@ -22,7 +25,13 @@ function readTab(value: string | null): Tab {
   return "home";
 }
 
-function UnifiedDashboardContent({ preview = false }: { preview?: boolean }) {
+function UnifiedDashboardContent({
+  preview = false,
+  track,
+}: {
+  preview?: boolean;
+  track: InstallTrack;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -36,7 +45,7 @@ function UnifiedDashboardContent({ preview = false }: { preview?: boolean }) {
   }, [activeTab, basePath, router]);
 
   if (activeTab === "home" || activeTab === "install") {
-    return <PaidDashboardView preview={preview} />;
+    return <PaidDashboardView preview={preview} track={track} />;
   }
 
   return (
@@ -64,8 +73,10 @@ function UnifiedDashboardContent({ preview = false }: { preview?: boolean }) {
 
 export function UnifiedDashboardView({
   preview = false,
+  track = "desktop",
 }: {
   preview?: boolean;
+  track?: InstallTrack;
 } = {}) {
   return (
     <Suspense
@@ -76,7 +87,7 @@ export function UnifiedDashboardView({
         </div>
       }
     >
-      <UnifiedDashboardContent preview={preview} />
+      <UnifiedDashboardContent preview={preview} track={track} />
     </Suspense>
   );
 }

@@ -3,14 +3,9 @@
 import { useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Check,
-  Download,
-  Loader2,
-  Monitor,
-  Smartphone,
-} from "lucide-react";
+import { Check, Download, Loader2, Monitor } from "lucide-react";
 import { DashboardAppHeader } from "@/components/dashboard/dashboard-app-header";
+import { IphoneInstallView } from "@/components/dashboard/iphone-install-view";
 import { SetupPasswordForm } from "@/components/dashboard/setup-password-form";
 import { WrongDeviceNotice } from "@/components/dashboard/setup-open-help";
 import { WindowsOpenHelp } from "@/components/dashboard/windows-open-help";
@@ -24,16 +19,13 @@ import { formatSubscriptionStatusLabel } from "@/lib/account-billing-types";
 import { getPlanDisplayName } from "@/lib/constants";
 import { dashboardHref, getDashboardBasePath } from "@/lib/dashboard-paths";
 import {
-  COMPETITOR_ONBOARDING_STEPS,
-  getOnboardingMode,
-  getPrimaryActionLabel,
-} from "@/lib/onboarding-flow";
-import {
   getClientDeviceSnapshot,
   SERVER_CLIENT_DEVICE,
   type DesktopOs,
 } from "@/lib/platform";
-import { cn } from "@/lib/utils";
+
+/** Quelle app le client installe : décidé par son abonnement, pas par son appareil. */
+export type InstallTrack = "iphone" | "desktop";
 
 const PREVIEW_ASSETS: DownloadAssetInfo[] = [
   {
@@ -52,14 +44,12 @@ const PREVIEW_ASSETS: DownloadAssetInfo[] = [
     available: true,
     downloadPath: "#",
   },
-  {
-    id: "apk",
-    label: "Anyloc (Android)",
-    description: "APK Android",
-    filename: "Anyloc.apk",
-    available: true,
-    downloadPath: "#",
-  },
+];
+
+const DESKTOP_STEPS = [
+  "Télécharge Anyloc sur ton ordi",
+  "Ouvre l'app et branche ton iPhone en USB",
+  "Choisis ta ville — c'est tout, vérifie dans Snap",
 ];
 
 function getDashboardUrl() {
@@ -70,138 +60,25 @@ function getDashboardUrl() {
   return `${window.location.origin}/dashboard`;
 }
 
-function JourneyStepper({ currentStep }: { currentStep: 1 | 2 | 3 }) {
-  return (
-    <ol className="grid gap-3 sm:grid-cols-3">
-      {COMPETITOR_ONBOARDING_STEPS.map((step, index) => {
-        const stepNumber = (index + 1) as 1 | 2 | 3;
-        const done = stepNumber < currentStep;
-        const active = stepNumber === currentStep;
-
-        return (
-          <li
-            key={step.id}
-            className={cn(
-              "rounded-2xl border px-4 py-4",
-              done && "border-emerald-200 bg-emerald-50/80",
-              active && "border-pink-300 bg-white shadow-sm ring-2 ring-pink-100",
-              !done && !active && "border-zinc-200 bg-zinc-50/80"
-            )}
-          >
-            <div className="flex items-center gap-2">
-              <span
-                className={cn(
-                  "flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold",
-                  done && "bg-emerald-500 text-white",
-                  active && "bg-pink-500 text-white",
-                  !done && !active && "bg-zinc-200 text-zinc-600"
-                )}
-              >
-                {done ? <Check className="h-3.5 w-3.5" /> : stepNumber}
-              </span>
-              <p className="text-sm font-semibold text-zinc-900">{step.title}</p>
-            </div>
-            <p className="mt-2 text-xs leading-relaxed text-zinc-500">
-              {step.description}
-            </p>
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
-
-function PrimaryInstallCard({
+function DesktopDownloadCard({
   preview,
   hasAccess,
-  mode,
   desktopOs,
   onDesktopOsChange,
   mac,
   windows,
-  android,
   windowsZip,
   onDownload,
 }: {
   preview: boolean;
   hasAccess: boolean;
-  mode: ReturnType<typeof getOnboardingMode>;
   desktopOs: DesktopOs;
   onDesktopOsChange: (os: DesktopOs) => void;
   mac?: DownloadAssetInfo;
   windows?: DownloadAssetInfo;
-  android?: DownloadAssetInfo;
   windowsZip?: DownloadAssetInfo;
   onDownload: (platform: string) => void;
 }) {
-  const label = getPrimaryActionLabel(mode, desktopOs);
-
-  if (mode === "android-phone") {
-    const href = preview ? "#" : android?.downloadPath;
-
-    return (
-      <Card className="border-pink-200 bg-white p-6 sm:p-8">
-        <div className="mx-auto max-w-lg text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-pink-50 text-pink-600">
-            <Smartphone className="h-7 w-7" />
-          </div>
-          <h2 className="mt-4 text-2xl font-bold text-zinc-900">
-            Installe l&apos;app sur ton Android
-          </h2>
-          <p className="mt-2 text-sm text-zinc-600">
-            Tout se passe sur ton téléphone. L&apos;app te guide écran par écran.
-          </p>
-          <div className="mt-6">
-            {preview || (hasAccess && android?.available && href) ? (
-              <a href={href} onClick={() => onDownload("apk")} className="block">
-                <Button size="lg" className="w-full">
-                  <Download className="h-4 w-4" />
-                  {label}
-                </Button>
-              </a>
-            ) : (
-              <Button size="lg" className="w-full" disabled>
-                APK bientôt disponible
-              </Button>
-            )}
-          </div>
-        </div>
-      </Card>
-    );
-  }
-
-  if (mode === "ios-phone") {
-    return (
-      <Card className="border-pink-200 bg-white p-6 sm:p-8">
-        <div className="mx-auto max-w-lg text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-pink-50 text-pink-600">
-            <Smartphone className="h-7 w-7" />
-          </div>
-          <h2 className="mt-4 text-2xl font-bold text-zinc-900">
-            Ta télécommande iPhone
-          </h2>
-          <p className="mt-2 text-sm text-zinc-600">
-            Rien à installer : ouvre-la dans Safari puis{" "}
-            <strong>Partager → Sur l&apos;écran d&apos;accueil</strong>. Le GPS
-            se change ensuite via Anyloc Setup sur un ordi (USB).
-          </p>
-          <div className="mt-6 flex justify-center">
-            <Link href="/app" className="w-full sm:w-auto">
-              <Button size="lg" className="h-12 w-full px-8 text-base sm:w-auto">
-                <Smartphone className="h-4 w-4" />
-                Ouvrir la télécommande
-              </Button>
-            </Link>
-          </div>
-          <p className="mt-4 text-xs text-zinc-500">
-            Pas encore configuré ? Ouvre cette page sur un Mac ou PC pour
-            télécharger Anyloc Setup.
-          </p>
-        </div>
-      </Card>
-    );
-  }
-
   const asset = desktopOs === "win" ? windows : mac;
   const href = preview ? "#" : hasAccess ? asset?.downloadPath : undefined;
 
@@ -209,21 +86,16 @@ function PrimaryInstallCard({
     <Card className="border-pink-200 bg-white p-6 sm:p-8">
       <div className="mx-auto max-w-lg text-center">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-pink-50 text-pink-600">
-          <Download className="h-7 w-7" />
+          <Monitor className="h-7 w-7" />
         </div>
-        <h2 className="mt-4 text-2xl font-bold text-zinc-900">
-          Télécharge Anyloc Setup
-        </h2>
-        <p className="mt-2 text-sm text-zinc-600">
-          Ouvre l&apos;app sur ton ordi — le tutoriel complet (USB, install,
-          première ville) est dedans, pas sur ce site.
-        </p>
         <div className="mt-6">
           {preview || (asset?.available && href) ? (
             <a href={href} onClick={() => onDownload(asset?.id ?? "setup")} className="block">
               <Button size="lg" className="w-full">
                 <Download className="h-4 w-4" />
-                {label}
+                {desktopOs === "win"
+                  ? "Télécharger Anyloc pour Windows"
+                  : "Télécharger Anyloc pour Mac"}
               </Button>
             </a>
           ) : (
@@ -251,8 +123,10 @@ function PrimaryInstallCard({
 
 export function PaidDashboardView({
   preview = false,
+  track = "desktop",
 }: {
   preview?: boolean;
+  track?: InstallTrack;
 } = {}) {
   const pathname = usePathname();
   const basePath = getDashboardBasePath(pathname);
@@ -265,14 +139,13 @@ export function PaidDashboardView({
     () => SERVER_CLIENT_DEVICE
   );
   const [desktopOs, setDesktopOs] = useState<DesktopOs>(device.desktopOs);
+  const [showDesktopOption, setShowDesktopOption] = useState(false);
 
-  const mode = getOnboardingMode(device);
   const assets = preview ? PREVIEW_ASSETS : data?.assets ?? [];
   const hasAccess = preview || (data?.hasAccess ?? false);
   const needsSetupPassword = !preview && Boolean(data?.needsSetupPassword);
   const mac = assets.find((asset) => asset.id === "setup-mac");
   const windows = assets.find((asset) => asset.id === "setup-win");
-  const android = assets.find((asset) => asset.id === "apk" && !asset.hidden);
   const windowsZip = assets.find(
     (asset) => asset.id === "setup-win-zip" && asset.available
   );
@@ -303,6 +176,27 @@ export function PaidDashboardView({
     capturePostHogClientEvent("app_downloaded", { platform, source: "dashboard" });
   }
 
+  const desktopCard =
+    loading && !preview ? (
+      <div className="flex items-center justify-center gap-2 py-12 text-sm text-zinc-500">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Préparation…
+      </div>
+    ) : error && !preview ? (
+      <p className="text-center text-sm text-red-600">{error}</p>
+    ) : (
+      <DesktopDownloadCard
+        preview={preview}
+        hasAccess={hasAccess}
+        desktopOs={desktopOs}
+        onDesktopOsChange={setDesktopOs}
+        mac={mac}
+        windows={windows}
+        windowsZip={windowsZip}
+        onDownload={handleDownload}
+      />
+    );
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
       <div className="pointer-events-none absolute inset-0">
@@ -316,39 +210,29 @@ export function PaidDashboardView({
         activeTab="home"
       />
 
-      <main className="relative mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
+      <main className="relative mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-12">
         {paymentSuccess ? (
-          <div className="mb-6 flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4">
-            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
+          <div className="mb-6 flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
               <Check className="h-4 w-4" />
             </span>
-            <div>
-              <p className="font-semibold text-emerald-950">Paiement confirmé</p>
-              <p className="mt-1 text-sm text-emerald-900/90">
-                Étape 1 terminée. Télécharge l&apos;app — le reste se fait dedans.
-              </p>
-            </div>
+            <p className="font-semibold text-emerald-950">
+              Paiement confirmé — ton accès est actif.
+            </p>
           </div>
         ) : null}
 
         <div className="text-center">
-          <p className="text-sm font-medium text-pink-600">Opérationnel en 3 étapes</p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
-            {mode === "android-phone"
-              ? "Tout se passe sur ton Android"
-              : mode === "ios-phone"
-                ? "Installe l'app sur ton iPhone"
-                : "Télécharge Anyloc Setup"}
+          <h1 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+            {track === "iphone"
+              ? "Installe Anyloc sur ton iPhone"
+              : "Installe Anyloc sur ton ordi"}
           </h1>
           <p className="mt-3 text-sm text-zinc-600 sm:text-base">
-            {mode === "desktop"
-              ? "Ce site sert à payer et télécharger. Le tutoriel complet vit dans Anyloc Setup."
-              : "Ensuite, tu changes de ville depuis l'app — plus besoin de revenir ici."}
+            {track === "iphone"
+              ? "Directement sur le téléphone, sans ordi ni câble."
+              : "3 étapes, 10 minutes. Ensuite tout se passe dans l'app."}
           </p>
-        </div>
-
-        <div className="mt-8">
-          <JourneyStepper currentStep={2} />
         </div>
 
         {needsSetupPassword ? (
@@ -357,73 +241,55 @@ export function PaidDashboardView({
           </div>
         ) : null}
 
-        {mode === "ios-phone" ? (
-          <div className="mt-8">
-            <WrongDeviceNotice
-              title="Plan B : ouvre cette page sur un Mac ou PC"
-              href={getDashboardUrl()}
-              copyLabel="Copier le lien"
-              qrLabel="Scanne depuis l'ordi"
-            >
-              <p>
-                L&apos;installation complète (USB + tutoriel) se fait dans Anyloc
-                Setup sur ordinateur.
-              </p>
-            </WrongDeviceNotice>
-          </div>
-        ) : null}
-
-        {mode === "desktop" ? (
-          <p className="mt-6 text-center text-sm text-zinc-500">
-            Tu es sur Android ? Ouvre{" "}
-            <span className="font-medium text-zinc-700">anyloc.io/dashboard</span>{" "}
-            sur ton téléphone.
-          </p>
-        ) : null}
-
-        <div className="mt-8">
-          {loading && !preview ? (
-            <div className="flex items-center justify-center gap-2 py-12 text-sm text-zinc-500">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Préparation…
+        {track === "iphone" ? (
+          <>
+            <div className="mt-8">
+              <IphoneInstallView embedded />
             </div>
-          ) : error && !preview ? (
-            <p className="text-center text-sm text-red-600">{error}</p>
-          ) : (
-            <PrimaryInstallCard
-              preview={preview}
-              hasAccess={hasAccess}
-              mode={mode}
-              desktopOs={desktopOs}
-              onDesktopOsChange={setDesktopOs}
-              mac={mac}
-              windows={windows}
-              android={android}
-              windowsZip={windowsZip}
-              onDownload={handleDownload}
-            />
-          )}
-        </div>
 
-        {mode === "desktop" ? (
-          <section className="mt-8 rounded-3xl border border-zinc-200 bg-white p-6">
-            <div className="flex items-start gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-violet-50 text-violet-600">
-                <Monitor className="h-5 w-5" />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-zinc-900">
-                  Ensuite, ouvre Anyloc Setup
-                </h2>
-                <p className="mt-1 text-sm text-zinc-600">
-                  L&apos;app te guide pas à pas : branche l&apos;iPhone, installe
-                  l&apos;app, choisis ta première ville, vérifie dans Snap. Tout
-                  est dans le tutoriel intégré — rien à refaire sur ce site.
-                </p>
-              </div>
+            <div className="mt-8 text-center">
+              <button
+                type="button"
+                className="text-sm font-medium text-zinc-500 underline-offset-2 hover:text-zinc-700 hover:underline"
+                onClick={() => setShowDesktopOption((value) => !value)}
+              >
+                Tu préfères passer par un ordi (Mac ou PC) ?
+              </button>
             </div>
-          </section>
-        ) : null}
+            {showDesktopOption ? <div className="mt-4">{desktopCard}</div> : null}
+          </>
+        ) : (
+          <>
+            <ol className="mt-8 space-y-3">
+              {DESKTOP_STEPS.map((step, index) => (
+                <li
+                  key={step}
+                  className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3"
+                >
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-pink-500 text-xs font-bold text-white">
+                    {index + 1}
+                  </span>
+                  <p className="text-sm font-medium text-zinc-900">{step}</p>
+                </li>
+              ))}
+            </ol>
+
+            {device.isPhone ? (
+              <div className="mt-8">
+                <WrongDeviceNotice
+                  title="Ouvre cette page sur ton Mac ou PC"
+                  href={getDashboardUrl()}
+                  copyLabel="Copier le lien"
+                  qrLabel="Scanne depuis l'ordi"
+                >
+                  <p>L&apos;app Anyloc s&apos;installe sur un ordinateur.</p>
+                </WrongDeviceNotice>
+              </div>
+            ) : null}
+
+            <div className="mt-8">{desktopCard}</div>
+          </>
+        )}
 
         <p className="mt-8 text-center text-sm text-zinc-500">
           Factures et abonnement dans{" "}
