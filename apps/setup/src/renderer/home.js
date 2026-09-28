@@ -28,7 +28,7 @@
   const PAUSE_STEPS = [0, 1, 2, 5, 10];
   const EMOJIS = ["📍", "🏠", "💼", "🎮", "✈️", "☕", "🏖️", "🚗", "⭐", "❤️", "🏋️", "🎓", "🍔", "🌆", "🏔️", "🎉"];
   const WALK_TICK_MS = 200;
-  const WALK_PUSH_MS = 1000;
+  const WALK_PUSH_MS = 500;
 
   const SPOT_CATEGORIES = [
     { id: "all", label: "Tout" },
@@ -732,12 +732,12 @@
     return route.length ? route : read("wpt");
   }
 
-  /** Timed GPX for pymobiledevice3 `simulate-location play`: one point at least every ~2 s. */
+  /** Timed GPX for pymobiledevice3 `simulate-location play`: one point every ~0.5 s (iOS does not interpolate between points). */
   function buildGpx(legs, speed) {
     const pts = [];
     let t = Date.now();
     const push = (p) => pts.push(`<trkpt lat="${p.lat.toFixed(7)}" lon="${p.lng.toFixed(7)}"><time>${new Date(t).toISOString()}</time></trkpt>`);
-    const step = Math.max(speed * 2, 3);
+    const step = Math.max(speed * 0.5, 1);
     push(legs[0].coords[0]);
     for (const leg of legs) {
       for (let i = 1; i < leg.coords.length; i++) {

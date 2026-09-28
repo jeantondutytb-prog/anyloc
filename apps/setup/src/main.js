@@ -210,19 +210,46 @@ function stopAutoSync() {
 // ── Live control (walk / route playback) ──
 // While the user walks or plays a route from this computer, the location is
 // driven straight over USB and auto-sync stops applying Supabase updates.
-// Each `simulate-location set` holds its position only while its process
-// lives, so walking respawns it, at most every LIVE_MIN_INTERVAL_MS.
-const LIVE_MIN_INTERVAL_MS = 2000;
+// Walking keeps one live_location.py process open (a single DVT session) and
+// feeds it "lat lng" lines; respawning `simulate-location set` per step made
+// the position jump every ~2 s. Routes are replayed with `simulate-location play`.
 let liveActive = false;
 let liveChild = null;
-let liveTimer = null;
-let livePending = null;
+let liveStream = null;
 
 function killLiveChild() {
   if (liveChild) {
     try { liveChild.kill("SIGTERM"); } catch {}
     liveChild = null;
   }
+  liveStream = null;
+}
+
+function logLiveOutput(chunk) {
+  const msg = chunk.toString().trim();
+  if (msg && !msg.includes("WARNING")) console.log("[Live]", msg);
+}
+
+function ensureLiveStream() {
+  if (liveStream) return liveStream;
+  const python = resolvePythonExecutable();
+  if (!python) return null;
+  killLiveChild();
+
+  const child = spawnChild(
+    python,
+    [path.join(getScriptsDir(), "live_location.py"), "stream", "--userspace"],
+    { env: getSpawnEnv(), stdio: ["pipe", "pipe", "pipe"], windowsHide: true }
+  );
+  liveChild = child;
+  liveStream = child;
+  child.on("close", () => {
+    if (liveChild === child) liveChild = null;
+    if (liveStream === child) liveStream = null;
+  });
+  child.stdin.on("error", () => {});
+  child.stderr.on("data", logLiveOutput);
+  return child;
 }
 
 function spawnLive(simulateArgs) {
@@ -239,10 +266,7 @@ function spawnLive(simulateArgs) {
   child.on("close", () => {
     if (liveChild === child) liveChild = null;
   });
-  child.stderr.on("data", (chunk) => {
-    const msg = chunk.toString().trim();
-    if (msg && !msg.includes("WARNING")) console.log("[Live]", msg);
-  });
+  child.stderr.on("data", logLiveOutput);
   return true;
 }
 
@@ -251,29 +275,17 @@ function enterLive() {
   killSpoofProcess();
 }
 
-function flushLiveMove() {
-  liveTimer = null;
-  if (!livePending) return;
-  const { lat, lng } = livePending;
-  livePending = null;
-  spawnLive(["set", "--userspace", "--", String(lat), String(lng)]);
-  liveTimer = setTimeout(flushLiveMove, LIVE_MIN_INTERVAL_MS);
-}
-
 function liveMove(lat, lng) {
-  if (!getPmd3Invocation()) return { ok: false, message: missingToolsMessage() };
   enterLive();
-  livePending = { lat, lng };
-  if (!liveTimer) flushLiveMove();
+  const stream = ensureLiveStream();
+  if (!stream) return { ok: false, message: missingToolsMessage() };
+  stream.stdin.write(`${lat} ${lng}\n`);
   return { ok: true };
 }
 
 function playRoute(gpx) {
   if (!getPmd3Invocation()) return { ok: false, message: missingToolsMessage() };
   enterLive();
-  clearTimeout(liveTimer);
-  liveTimer = null;
-  livePending = null;
   const file = path.join(app.getPath("temp"), "anyloc-route.gpx");
   fs.writeFileSync(file, gpx, "utf8");
   spawnLive(["play", "--userspace", file]);
@@ -283,9 +295,6 @@ function playRoute(gpx) {
 function stopLive() {
   if (!liveActive) return;
   liveActive = false;
-  clearTimeout(liveTimer);
-  liveTimer = null;
-  livePending = null;
   killLiveChild();
   // Re-apply whatever Supabase holds on the next auto-sync poll.
   lastSyncedLoc = null;
