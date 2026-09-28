@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
-import { generateKeyPairSync, verify } from "node:crypto";
+import { createPrivateKey, generateKeyPairSync, verify } from "node:crypto";
 import { describe, it } from "node:test";
-import { createAscClient, createAscToken } from "./app-store-connect";
+import { createAscClient, createAscToken, normalizeAscPrivateKey } from "./app-store-connect";
 
 const { privateKey, publicKey } = generateKeyPairSync("ec", { namedCurve: "P-256" });
 const creds = {
@@ -116,4 +116,28 @@ describe("profiles", () => {
       },
     });
   });
+});
+
+describe("normalizeAscPrivateKey", () => {
+  const { privateKey } = generateKeyPairSync("ec", { namedCurve: "prime256v1" });
+  const pem = privateKey.export({ type: "pkcs8", format: "pem" }).toString();
+  const body = pem.replace(/-----[A-Z ]+-----/g, "").replace(/\s+/g, "");
+  const expected = privateKey.export({ type: "pkcs8", format: "der" });
+
+  const variants: Record<string, string> = {
+    "regular PEM": pem,
+    "literal \\n": pem.replace(/\n/g, "\\n"),
+    "newlines as spaces": pem.replace(/\n/g, " "),
+    "no newlines at all": pem.replace(/\n/g, ""),
+    "base64 body only": body,
+    "whole file base64-encoded": Buffer.from(pem).toString("base64"),
+    "wrapped in quotes": `"${pem}"`,
+  };
+
+  for (const [name, raw] of Object.entries(variants)) {
+    it(`loads a key pasted as ${name}`, () => {
+      const key = createPrivateKey(normalizeAscPrivateKey(raw));
+      assert.deepEqual(key.export({ type: "pkcs8", format: "der" }), expected);
+    });
+  }
 });

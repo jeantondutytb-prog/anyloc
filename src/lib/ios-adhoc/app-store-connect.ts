@@ -138,10 +138,34 @@ export function createAscClient(creds: AscCredentials, fetchImpl: typeof fetch =
   };
 }
 
+const PEM_RE = /-----BEGIN ([A-Z ]+)-----([\s\S]*?)-----END \1-----/;
+
+/**
+ * Accepte la clé .p8 telle qu'elle a pu être collée dans un gestionnaire de secrets :
+ * PEM normal, sauts de ligne en « \n » littéraux ou remplacés par des espaces,
+ * corps base64 seul, ou fichier .p8 entier encodé en base64. Renvoie un PEM PKCS#8 propre.
+ */
+export function normalizeAscPrivateKey(raw: string): string {
+  const value = raw.trim().replace(/^["']|["']$/g, "").replace(/\\n/g, "\n").trim();
+  if (!value) return "";
+
+  const pem = value.match(PEM_RE);
+  const label = pem ? pem[1] : "PRIVATE KEY";
+  const body = (pem ? pem[2] : value).replace(/\s+/g, "");
+
+  if (!pem) {
+    const decoded = Buffer.from(body, "base64").toString("utf8");
+    if (PEM_RE.test(decoded)) return normalizeAscPrivateKey(decoded);
+  }
+
+  const lines = body.match(/.{1,64}/g) ?? [];
+  return `-----BEGIN ${label}-----\n${lines.join("\n")}\n-----END ${label}-----\n`;
+}
+
 export function ascCredentialsFromEnv(env: NodeJS.ProcessEnv = process.env): AscCredentials {
   const keyId = env.ASC_KEY_ID?.trim();
   const issuerId = env.ASC_ISSUER_ID?.trim();
-  const privateKey = env.ASC_PRIVATE_KEY?.replace(/\\n/g, "\n").trim();
+  const privateKey = normalizeAscPrivateKey(env.ASC_PRIVATE_KEY ?? "");
   if (!keyId || !issuerId || !privateKey) {
     throw new Error("ASC_KEY_ID, ASC_ISSUER_ID et ASC_PRIVATE_KEY sont requis.");
   }
