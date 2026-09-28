@@ -1,6 +1,6 @@
 import { parseDeviceAttributes } from "@/lib/ios-adhoc/mobileconfig";
 import { completeIosEnrollment } from "@/lib/ios-adhoc/service";
-import { getConfiguredAppOrigin } from "@/lib/oauth-origin";
+import { getRequestOrigin } from "@/lib/oauth-origin";
 
 const MAX_BODY_BYTES = 64 * 1024;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -9,7 +9,7 @@ type RouteContext = { params: Promise<{ enrollmentId: string }> };
 
 export async function POST(request: Request, context: RouteContext) {
   const { enrollmentId } = await context.params;
-  const origin = getConfiguredAppOrigin() || new URL(request.url).origin;
+  const origin = getRequestOrigin(request);
   const body = Buffer.from(await request.arrayBuffer());
 
   let ok = false;
