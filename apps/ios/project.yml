@@ -7,7 +7,7 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.10"
-    DEVELOPMENT_TEAM: "U284BGAVKL"
+    DEVELOPMENT_TEAM: "L6WH68WM49"
 targets:
   Anyloc:
     type: application

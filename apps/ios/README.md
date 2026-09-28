@@ -41,7 +41,7 @@ Puis ajoute dans **GitHub → Settings → Secrets → Actions** :
 
 | Secret | Valeur |
 |---|---|
-| `APPLE_DEVELOPMENT_TEAM` | `9Y84R64D72` |
+| `APPLE_DEVELOPMENT_TEAM` | `L6WH68WM49` |
 | `BUILD_CERTIFICATE_BASE64` | contenu de `.ios-ci-secrets/BUILD_CERTIFICATE_BASE64.txt` |
 | `BUILD_CERTIFICATE_PASSWORD` | mot de passe choisi à l'export `.p12` |
 | `BUILD_PROVISION_PROFILE_BASE64` | contenu de `.ios-ci-secrets/BUILD_PROVISION_PROFILE_BASE64.txt` (**obligatoire**) |
@@ -51,7 +51,7 @@ Lance **Actions → Build iOS IPA**. L'IPA est publié sur GitHub Releases (`Any
 ### Build local + upload manuel (sans CI)
 
 ```bash
-export APPLE_DEVELOPMENT_TEAM=9Y84R64D72
+export APPLE_DEVELOPMENT_TEAM=L6WH68WM49
 ./scripts/build-ios-ipa.sh
 gh release create ios-manual --title "Anyloc iOS" apps/ios/dist/Anyloc.ipa
 ```

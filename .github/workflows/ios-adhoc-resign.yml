@@ -1,0 +1,101 @@
+name: iOS ad hoc re-sign
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_id:
+        description: "ID de la ligne ios_adhoc_builds"
+        required: true
+
+concurrency:
+  group: ios-adhoc-resign
+  cancel-in-progress: false
+
+jobs:
+  resign:
+    runs-on: macos-15
+    timeout-minutes: 30
+    env:
+      BUILD_ID: ${{ inputs.build_id }}
+      BLOB_PATH: releases/ios-adhoc/Anyloc-${{ inputs.build_id }}.ipa
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Import Apple Distribution certificate
+        env:
+          DIST_CERTIFICATE_P12_BASE64: ${{ secrets.DIST_CERTIFICATE_P12_BASE64 }}
+          DIST_CERTIFICATE_PASSWORD: ${{ secrets.DIST_CERTIFICATE_PASSWORD }}
+        run: |
+          KEYCHAIN="$RUNNER_TEMP/adhoc.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -hex 16)"
+          echo "$DIST_CERTIFICATE_P12_BASE64" | base64 --decode > "$RUNNER_TEMP/dist.p12"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/dist.p12" -P "$DIST_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          rm "$RUNNER_TEMP/dist.p12"
+
+      - name: Generate ad hoc profile
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+          ASC_DISTRIBUTION_CERT_ID: ${{ secrets.ASC_DISTRIBUTION_CERT_ID }}
+        run: npx tsx scripts/ios-adhoc-profile.ts "$RUNNER_TEMP/adhoc.mobileprovision" "$RUNNER_TEMP/udids.json"
+
+      - name: Download base IPA
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download ios-base --pattern Anyloc.ipa --dir "$RUNNER_TEMP" --clobber
+
+      - name: Re-sign
+        id: resign
+        run: |
+          chmod +x scripts/resign-ios-adhoc.sh
+          VERSION="$(scripts/resign-ios-adhoc.sh "$RUNNER_TEMP/Anyloc.ipa" "$RUNNER_TEMP/adhoc.mobileprovision" "$RUNNER_TEMP/Anyloc-adhoc.ipa" | tail -1)"
+          echo "bundle_version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Upload to Vercel Blob
+        env:
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+        run: node scripts/upload-ios-adhoc.mjs "$RUNNER_TEMP/Anyloc-adhoc.ipa" "$BLOB_PATH"
+
+      - name: Report success
+        env:
+          ANYLOC_API_URL: ${{ secrets.ANYLOC_API_URL }}
+          IOS_BUILD_CALLBACK_SECRET: ${{ secrets.IOS_BUILD_CALLBACK_SECRET }}
+          BUNDLE_VERSION: ${{ steps.resign.outputs.bundle_version }}
+        run: |
+          jq -n \
+            --arg id "$BUILD_ID" \
+            --arg path "$BLOB_PATH" \
+            --arg version "$BUNDLE_VERSION" \
+            --slurpfile udids "$RUNNER_TEMP/udids.json" \
+            '{buildId: $id, status: "succeeded", ipaBlobPath: $path, bundleVersion: $version, udids: $udids[0]}' |
+            curl -fsS -X POST "$ANYLOC_API_URL/api/ios/builds/complete" \
+              -H "Authorization: Bearer $IOS_BUILD_CALLBACK_SECRET" \
+              -H "Content-Type: application/json" \
+              --data @-
+
+      - name: Report failure
+        if: failure()
+        env:
+          ANYLOC_API_URL: ${{ secrets.ANYLOC_API_URL }}
+          IOS_BUILD_CALLBACK_SECRET: ${{ secrets.IOS_BUILD_CALLBACK_SECRET }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          jq -n --arg id "$BUILD_ID" --arg error "Workflow échoué : $RUN_URL" \
+            '{buildId: $id, status: "failed", error: $error}' |
+            curl -sS -X POST "$ANYLOC_API_URL/api/ios/builds/complete" \
+              -H "Authorization: Bearer $IOS_BUILD_CALLBACK_SECRET" \
+              -H "Content-Type: application/json" \
+              --data @-
