@@ -2,11 +2,11 @@ import { randomUUID } from "node:crypto";
 import { isEligibleForIosAdhoc } from "@/lib/ios-adhoc/config";
 import { buildEnrollmentProfile } from "@/lib/ios-adhoc/mobileconfig";
 import { startIosEnrollment } from "@/lib/ios-adhoc/service";
-import { getConfiguredAppOrigin } from "@/lib/oauth-origin";
+import { getRequestOrigin } from "@/lib/oauth-origin";
 import { requireActiveSubscription } from "@/lib/subscription";
 
 export async function GET(request: Request) {
-  const origin = getConfiguredAppOrigin() || new URL(request.url).origin;
+  const origin = getRequestOrigin(request);
   const { user, access } = await requireActiveSubscription();
 
   if (!user) {
