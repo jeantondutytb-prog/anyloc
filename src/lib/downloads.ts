@@ -14,6 +14,8 @@ export type DownloadAsset = {
   alternateFilenames?: string[];
   alternateBlobPaths?: string[];
   hidden?: boolean;
+  /** Published by the Setup workflow on every release marked "Latest". */
+  fromLatestRelease?: boolean;
 };
 
 export const DOWNLOAD_ASSETS: DownloadAsset[] = [
@@ -24,6 +26,7 @@ export const DOWNLOAD_ASSETS: DownloadAsset[] = [
     filename: "Anyloc.dmg",
     envKey: "ANYLOC_DOWNLOAD_SETUP_MAC",
     blobPath: "releases/Anyloc.dmg",
+    fromLatestRelease: true,
     alternateFilenames: ["Anyloc-Setup.dmg"],
     alternateBlobPaths: ["releases/Anyloc-Setup.dmg"],
   },
@@ -34,6 +37,7 @@ export const DOWNLOAD_ASSETS: DownloadAsset[] = [
     filename: "Anyloc-Setup.exe",
     envKey: "ANYLOC_DOWNLOAD_SETUP_WIN",
     blobPath: "releases/Anyloc-Setup.exe",
+    fromLatestRelease: true,
     alternateFilenames: ["Anyloc.exe", "anyloc-setup.exe"],
     alternateBlobPaths: ["releases/Anyloc.exe"],
   },
@@ -45,6 +49,7 @@ export const DOWNLOAD_ASSETS: DownloadAsset[] = [
     filename: "Anyloc-Setup.zip",
     envKey: "ANYLOC_DOWNLOAD_SETUP_WIN_ZIP",
     blobPath: "releases/Anyloc-Setup.zip",
+    fromLatestRelease: true,
     hidden: true,
   },
   {
@@ -246,6 +251,15 @@ export async function resolveDownloadUrl(platform: DownloadPlatform) {
   const asset = getDownloadAsset(platform);
   if (!asset) {
     return null;
+  }
+
+  // Desktop builds: GitHub's stable "latest" URL always redirects to the
+  // newest release, with no API call. The releases API is unauthenticated
+  // here and rate-limited per shared Vercel IP; when it failed we silently
+  // fell back to Vercel Blob and served an outdated installer (one that
+  // still tried to install the unusable iPhone IPA).
+  if (asset.fromLatestRelease) {
+    return `https://github.com/${GITHUB_RELEASES_REPO}/releases/latest/download/${asset.filename}`;
   }
 
   // GitHub first: each release has a unique URL. The Vercel Blob object
