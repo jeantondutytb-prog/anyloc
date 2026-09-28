@@ -155,7 +155,12 @@ export function IphoneInstallView() {
           )}
 
           {status.state.kind === "failed" && (
-            <p className="rounded-xl bg-red-50 p-3 text-red-700">{status.state.message}</p>
+            <>
+              <p className="rounded-xl bg-red-50 p-3 text-red-700">{status.state.message}</p>
+              <Button onClick={() => { window.location.href = "/api/ios/enroll"; }}>
+                Réessayer
+              </Button>
+            </>
           )}
         </Card>
       )}
