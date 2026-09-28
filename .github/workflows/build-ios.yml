@@ -113,6 +113,9 @@ jobs:
         run: npm ci
 
       - name: Upload to Vercel Blob
+        # Mirror only: downloads come from GitHub releases, so a Blob outage
+        # (e.g. suspended store) must not block publishing the release.
+        continue-on-error: true
         if: steps.team.outputs.has_team == 'true'
         env:
           BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
