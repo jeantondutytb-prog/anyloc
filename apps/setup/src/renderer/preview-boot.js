@@ -7,8 +7,14 @@
 
   try {
     localStorage.setItem("anyloc.session", JSON.stringify(demoSession));
-    localStorage.removeItem("anyloc.guideComplete");
-    localStorage.removeItem("anyloc.iphoneInstalled");
+    if (location.hash === "#app") {
+      // --preview-app: skip onboarding and land on the main screen.
+      localStorage.setItem("anyloc.guideComplete", "true");
+      localStorage.setItem("anyloc.iphoneInstalled", "1");
+    } else {
+      localStorage.removeItem("anyloc.guideComplete");
+      localStorage.removeItem("anyloc.iphoneInstalled");
+    }
   } catch {}
 
   const origFetch = window.fetch.bind(window);
