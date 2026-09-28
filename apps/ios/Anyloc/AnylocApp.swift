@@ -5,10 +5,21 @@ struct AnylocApp: App {
     @ObservedObject private var auth = AuthService.shared
     @ObservedObject private var subscription = SubscriptionService.shared
 
+    /// Debug-only: `-UIPreviewHome` opens the map without signing in, for simulator UI checks.
+    private static var isUIPreview: Bool {
+        #if DEBUG
+        ProcessInfo.processInfo.arguments.contains("-UIPreviewHome")
+        #else
+        false
+        #endif
+    }
+
     var body: some Scene {
         WindowGroup {
             Group {
-                if !auth.isLoggedIn {
+                if Self.isUIPreview {
+                    MainTabView()
+                } else if !auth.isLoggedIn {
                     LoginView()
                 } else if !subscription.hasCheckedOnce && subscription.isLoading {
                     ProgressView("Chargement...")

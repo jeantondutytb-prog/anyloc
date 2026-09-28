@@ -20,6 +20,27 @@ enum Theme {
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
+
+    /// Dark palette for the map experience (see marketing/design/app-mockups.html).
+    enum Dark {
+        static let bg = Color(hex: 0x0A0A0C)
+        static let sheet = Color(hex: 0x0C0C0E, alpha: 0.97)
+        static let float = Color(hex: 0x0A0A0C, alpha: 0.93)
+        static let well = Color(hex: 0x070708)
+        static let panel = Color(hex: 0x16161A)
+        static let panelHigh = Color(hex: 0x1C1C21)
+        static let line = Color(hex: 0x25252B)
+        static let lineStrong = Color(hex: 0x303038)
+        static let text = Color(hex: 0xF4F4F5)
+        static let textSoft = Color(hex: 0xC4C4CA)
+        static let muted = Color(hex: 0x8B8B94)
+        static let dim = Color(hex: 0x55555D)
+        static let accent = Color(hex: 0xF472B6)
+        static let accentBg = Color(hex: 0xEC4899, alpha: 0.13)
+        static let accentLine = Color(hex: 0xEC4899, alpha: 0.42)
+        static let violet = Color(hex: 0xC084FC)
+        static let violetBg = Color(hex: 0xA855F7, alpha: 0.14)
+    }
 }
 
 extension Color {

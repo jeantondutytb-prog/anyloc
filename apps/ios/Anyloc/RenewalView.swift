@@ -268,15 +268,15 @@ struct RenewalBanner: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(bannerTitle)
                             .font(.subheadline.bold())
-                            .foregroundColor(Theme.text)
+                            .foregroundColor(Theme.Dark.text)
                         Text("Renouveler avec LocalDevVPN (2 min, sans ordi)")
                             .font(.caption)
-                            .foregroundColor(Theme.textDim)
+                            .foregroundColor(Theme.Dark.muted)
                     }
                     Spacer()
                     Image(systemName: "chevron.right")
                         .font(.caption)
-                        .foregroundColor(Theme.textDim)
+                        .foregroundColor(Theme.Dark.muted)
                 }
                 .padding(12)
                 .background(Color.orange.opacity(0.10))
