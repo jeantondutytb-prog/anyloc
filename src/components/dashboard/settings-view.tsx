@@ -470,12 +470,6 @@ export function SettingsView({ embedded = false }: { embedded?: boolean } = {}) 
                   <p className="mt-1 text-sm text-zinc-500">
                     {CANCELLATION_WARNING}
                   </p>
-                  <p className="mt-2 text-sm text-zinc-500">
-                    Si tu envisages une demande de remboursement au titre de la
-                    garantie 48 h, fais-la{" "}
-                    <strong>avant</strong> de résilier.
-                  </p>
-
                   <Button
                     type="button"
                     variant="secondary"

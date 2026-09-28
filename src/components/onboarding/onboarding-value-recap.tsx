@@ -71,7 +71,7 @@ export function OnboardingValueRecap({
             </span>
             <span className="inline-flex items-center gap-1.5">
               <Star className="h-3.5 w-3.5 text-pink-500" />
-              Garantie 48 h
+              Paiement sécurisé
             </span>
           </div>
         </div>
