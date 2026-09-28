@@ -83,9 +83,9 @@ struct DarkSegmented<T: Hashable>: View {
                 Button {
                     withAnimation(.easeInOut(duration: 0.18)) { selection = item.value }
                 } label: {
-                    HStack(spacing: 8) {
+                    HStack(spacing: items.count > 2 ? 6 : 8) {
                         if let icon = item.icon { Image(systemName: icon) }
-                        Text(item.label)
+                        Text(item.label).lineLimit(1).minimumScaleFactor(0.8)
                     }
                     .font(.system(size: compact ? 13 : 16, weight: .medium))
                     .foregroundColor(on ? Theme.Dark.accent : Theme.Dark.textSoft)

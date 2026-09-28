@@ -2,9 +2,9 @@ import MapKit
 import SwiftUI
 
 /// Main screen: full-screen dark map with floating top bar, search and a bottom
-/// panel switching between "Téléporter" and "Trajet".
+/// panel switching between "Téléporter", "Trajet" and "Explorer".
 struct MapHomeView: View {
-    enum Mode: Hashable { case teleport, route }
+    enum Mode: Hashable { case teleport, route, explore }
 
     @StateObject private var vm = MapHomeViewModel()
     @StateObject private var builder = RouteBuilder()
@@ -13,6 +13,7 @@ struct MapHomeView: View {
     @ObservedObject private var store = FavoritesStore.shared
 
     @State private var mode: Mode = .teleport
+    @State private var spotCategory = "all"
     @State private var collapsed = false
     @State private var showSaved = false
     @State private var showSettings = false
@@ -158,7 +159,8 @@ struct MapHomeView: View {
 
     private func handleTap(_ c: Coord) {
         switch mode {
-        case .teleport:
+        case .teleport, .explore:
+            mode = .teleport
             vm.select(c)
         case .route:
             guard !runner.isRunning else { return }
@@ -275,7 +277,7 @@ struct MapHomeView: View {
         searchFocused = false
         vm.clearSearch()
         switch mode {
-        case .teleport:
+        case .teleport, .explore:
             vm.select(c, name: r.name)
         case .route:
             builder.method = .search
@@ -298,6 +300,7 @@ struct MapHomeView: View {
             DarkSegmented(items: [
                 .init(value: Mode.teleport, label: "Téléporter", icon: "location.fill"),
                 .init(value: Mode.route, label: "Trajet", icon: "point.topleft.down.to.point.bottomright.curvepath"),
+                .init(value: Mode.explore, label: "Explorer", icon: "globe.europe.africa.fill"),
             ], selection: $mode)
 
             if !collapsed {
@@ -308,6 +311,7 @@ struct MapHomeView: View {
                                onAddStop: { searchFocused = true },
                                onStart: startRoute,
                                onSave: saveRoute)
+                case .explore: explorePanel
                 }
             }
         }
@@ -382,6 +386,62 @@ struct MapHomeView: View {
         .padding(.top, 14)
     }
 
+    private var explorePanel: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(spotCategories) { cat in
+                        let on = spotCategory == cat.id
+                        Button { spotCategory = cat.id } label: {
+                            Text(cat.label)
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(on ? Theme.Dark.accent : Theme.Dark.textSoft)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 7)
+                                .background(Capsule().fill(on ? Theme.Dark.accentBg : Theme.Dark.panel))
+                                .overlay(Capsule().stroke(on ? Theme.Dark.accentLine : Theme.Dark.line, lineWidth: 1))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            .padding(.vertical, 12)
+
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(allSpots.filter { spotCategory == "all" || $0.category == spotCategory }) { spot in
+                        Button { pickSpot(spot) } label: {
+                            HStack(spacing: 12) {
+                                Text(spot.emoji)
+                                    .font(.system(size: 22))
+                                    .frame(width: 44, height: 44)
+                                    .background(RoundedRectangle(cornerRadius: 13).fill(Theme.Dark.panelHigh))
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(spot.name)
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(Theme.Dark.text)
+                                        .lineLimit(1)
+                                    Text(spot.country)
+                                        .font(.system(size: 12.5))
+                                        .foregroundColor(Theme.Dark.muted)
+                                        .lineLimit(1)
+                                }
+                                Spacer(minLength: 8)
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(Theme.Dark.dim)
+                            }
+                            .padding(.vertical, 6)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            .frame(height: 330)
+        }
+    }
+
     private var statusText: String {
         if network.isOffline { return network.label }
         if let active = vm.activeCoord, active == vm.selected?.coord { return "Position active" }
@@ -389,6 +449,11 @@ struct MapHomeView: View {
     }
 
     // MARK: - Actions
+
+    private func pickSpot(_ spot: Spot) {
+        mode = .teleport
+        vm.select(Coord(lat: spot.lat, lng: spot.lng), name: spot.name)
+    }
 
     private func addFavorite(_ p: SelectedPosition) {
         if let existing = store.places.first(where: { $0.lat == p.coord.lat && $0.lng == p.coord.lng }) {
