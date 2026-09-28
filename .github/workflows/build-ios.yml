@@ -129,7 +129,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="ios-v0.1.${{ github.run_number }}"
-          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "Anyloc iOS v0.1.${{ github.run_number }}" --generate-notes
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "Anyloc iOS v0.1.${{ github.run_number }}" --generate-notes --latest=false
           gh release upload "$TAG" apps/ios/dist/Anyloc.ipa --clobber
 
       - name: Upload IPA artifact
