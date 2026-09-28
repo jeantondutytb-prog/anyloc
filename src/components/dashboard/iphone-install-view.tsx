@@ -28,13 +28,13 @@ function isIphoneSafari() {
 
 const noSubscribe = () => () => {};
 
-export function IphoneInstallView() {
+export function IphoneInstallView({ embedded = false }: { embedded?: boolean } = {}) {
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<StatusResponse | null>(null);
   const onIphone = useSyncExternalStore(noSubscribe, isIphoneSafari, () => false);
   const pageUrl = useSyncExternalStore(
     noSubscribe,
-    () => `${window.location.origin}/dashboard/iphone`,
+    () => `${window.location.origin}/dashboard`,
     () => ""
   );
 
@@ -67,16 +67,24 @@ export function IphoneInstallView() {
   const callbackFailed = searchParams.get("etape") === "erreur";
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-lg flex-col gap-4 bg-background p-6">
-      <div className="flex items-center gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 text-violet-600">
-          <Smartphone className="h-6 w-6" />
+    <div
+      className={
+        embedded
+          ? "flex flex-col gap-4"
+          : "mx-auto flex min-h-screen max-w-lg flex-col gap-4 bg-background p-6"
+      }
+    >
+      {!embedded && (
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 text-violet-600">
+            <Smartphone className="h-6 w-6" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-zinc-900">L&apos;app Anyloc sur ton iPhone</h1>
+            <p className="text-sm text-zinc-600">Sans ordi, sans câble. Valable 1 an.</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-xl font-bold text-zinc-900">L&apos;app Anyloc sur ton iPhone</h1>
-          <p className="text-sm text-zinc-600">Sans ordi, sans câble. Valable 1 an.</p>
-        </div>
-      </div>
+      )}
 
       {!status && (
         <Card className="flex items-center gap-2 p-6 text-sm text-zinc-500">

@@ -20,7 +20,7 @@ export async function POST(request: Request, context: RouteContext) {
     }
   }
 
-  const target = new URL("/dashboard/iphone", origin);
+  const target = new URL("/dashboard", origin);
   target.searchParams.set("etape", ok ? "preparation" : "erreur");
 
   // iOS exige une redirection 301 en réponse au Profile Service.

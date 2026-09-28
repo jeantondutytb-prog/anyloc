@@ -10,7 +10,7 @@ export async function GET(request: Request) {
   const { user, access } = await requireActiveSubscription();
 
   if (!user) {
-    return Response.redirect(`${origin}/login?next=/dashboard/iphone`, 303);
+    return Response.redirect(`${origin}/login?next=/dashboard`, 303);
   }
 
   if (!isEligibleForIosAdhoc(access)) {
@@ -20,7 +20,7 @@ export async function GET(request: Request) {
   const result = await startIosEnrollment(user.id, new Date());
 
   if (result.kind === "already_registered") {
-    return Response.redirect(`${origin}/dashboard/iphone`, 303);
+    return Response.redirect(`${origin}/dashboard`, 303);
   }
 
   if (result.kind === "quota_full") {

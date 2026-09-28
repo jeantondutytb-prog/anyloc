@@ -63,12 +63,12 @@ export async function GET(request: Request) {
 
       if (user?.id && sessionUserId && user.id === sessionUserId) {
         return NextResponse.redirect(
-          new URL("/dashboard?success=true&platform=ios", origin)
+          new URL("/dashboard?success=true", origin)
         );
       }
     }
 
-    const redirectTo = `${getAppUrl()}/dashboard?success=true&platform=ios`;
+    const redirectTo = `${getAppUrl()}/dashboard?success=true`;
     const cookieStore = await cookies();
     const hasMatchingIntent =
       cookieStore.get(CHECKOUT_INTENT_COOKIE)?.value === sessionId;
