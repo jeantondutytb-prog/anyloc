@@ -4,7 +4,13 @@ App Mac qui fait le lien entre l'iPhone et le GPS. L'utilisateur branche son iPh
 
 ## Statut
 
-**v0.3** : auth Supabase, auto-sync position, GPS persistant (re-apply toutes les 5s), auto-launch au demarrage Mac, mode tray, activation du mode developpeur via USB (`amfi reveal-developer-mode`), interface identique a l'app iPhone (3 onglets : Carte, Decouvrir, Profil).
+**v0.4** : interface sombre façon carte plein écran (rail à gauche, panneau de contrôle à droite) avec trois modes :
+
+- **Téléporter** : la position est écrite dans Supabase, l'auto-sync l'applique via USB (comme depuis l'iPhone).
+- **Marche** : joystick ou clavier (ZQSD / WASD / flèches), la position est poussée directement en USB (`simulate-location set`, au plus toutes les 2 s). L'auto-sync est suspendu pendant la marche.
+- **Trajet** : recherche (itinéraire routier via routing.openstreetmap.de), dessin point par point ou import GPX. Le trajet est converti en GPX horodaté et rejoué par `simulate-location play`.
+
+Plus : favoris (lieux + trajets, avec emoji), spots « Découvrir », maison, auth Supabase, auto-launch, mode tray, activation du mode développeur via USB.
 
 ## Prerequis
 
@@ -17,6 +23,7 @@ App Mac qui fait le lien entre l'iPhone et le GPS. L'utilisateur branche son iPh
 cd apps/setup
 npm install
 npm run dev
+npm run preview:app   # écran principal avec données factices, sans iPhone
 ```
 
 ## Build

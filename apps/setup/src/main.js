@@ -149,6 +149,8 @@ function startAutoSync(session) {
   console.log("[AutoSync] Started — polling every 1s, re-apply every 5s");
 
   autoSyncInterval = setInterval(async () => {
+    // Walking or playing a route from this computer drives the GPS directly.
+    if (liveActive) return;
     try {
       const res = await fetch(
         `${SUPABASE_URL}/rest/v1/location_settings?user_id=eq.${autoSyncSession.user.id}&select=name,lat,lng,is_active,updated_at`,
@@ -195,6 +197,7 @@ function startAutoSync(session) {
 }
 
 function stopAutoSync() {
+  stopLive();
   if (autoSyncInterval) {
     clearInterval(autoSyncInterval);
     autoSyncInterval = null;
@@ -202,6 +205,90 @@ function stopAutoSync() {
     killSpoofProcess();
     console.log("[AutoSync] Stopped");
   }
+}
+
+// ── Live control (walk / route playback) ──
+// While the user walks or plays a route from this computer, the location is
+// driven straight over USB and auto-sync stops applying Supabase updates.
+// Each `simulate-location set` holds its position only while its process
+// lives, so walking respawns it, at most every LIVE_MIN_INTERVAL_MS.
+const LIVE_MIN_INTERVAL_MS = 2000;
+let liveActive = false;
+let liveChild = null;
+let liveTimer = null;
+let livePending = null;
+
+function killLiveChild() {
+  if (liveChild) {
+    try { liveChild.kill("SIGTERM"); } catch {}
+    liveChild = null;
+  }
+}
+
+function spawnLive(simulateArgs) {
+  const invocation = getPmd3Invocation();
+  if (!invocation) return false;
+  killLiveChild();
+
+  const child = spawnChild(
+    invocation.command,
+    [...invocation.prefix, "developer", "dvt", "simulate-location", ...simulateArgs],
+    { env: getSpawnEnv(), stdio: ["pipe", "pipe", "pipe"], windowsHide: true }
+  );
+  liveChild = child;
+  child.on("close", () => {
+    if (liveChild === child) liveChild = null;
+  });
+  child.stderr.on("data", (chunk) => {
+    const msg = chunk.toString().trim();
+    if (msg && !msg.includes("WARNING")) console.log("[Live]", msg);
+  });
+  return true;
+}
+
+function enterLive() {
+  liveActive = true;
+  killSpoofProcess();
+}
+
+function flushLiveMove() {
+  liveTimer = null;
+  if (!livePending) return;
+  const { lat, lng } = livePending;
+  livePending = null;
+  spawnLive(["set", "--userspace", "--", String(lat), String(lng)]);
+  liveTimer = setTimeout(flushLiveMove, LIVE_MIN_INTERVAL_MS);
+}
+
+function liveMove(lat, lng) {
+  if (!getPmd3Invocation()) return { ok: false, message: missingToolsMessage() };
+  enterLive();
+  livePending = { lat, lng };
+  if (!liveTimer) flushLiveMove();
+  return { ok: true };
+}
+
+function playRoute(gpx) {
+  if (!getPmd3Invocation()) return { ok: false, message: missingToolsMessage() };
+  enterLive();
+  clearTimeout(liveTimer);
+  liveTimer = null;
+  livePending = null;
+  const file = path.join(app.getPath("temp"), "anyloc-route.gpx");
+  fs.writeFileSync(file, gpx, "utf8");
+  spawnLive(["play", "--userspace", file]);
+  return { ok: true };
+}
+
+function stopLive() {
+  if (!liveActive) return;
+  liveActive = false;
+  clearTimeout(liveTimer);
+  liveTimer = null;
+  livePending = null;
+  killLiveChild();
+  // Re-apply whatever Supabase holds on the next auto-sync poll.
+  lastSyncedLoc = null;
 }
 
 function tryAutoStartSync() {
@@ -300,7 +387,8 @@ function revealMainWindow() {
 
 function createWindow() {
   const isMac = process.platform === "darwin";
-  const previewGuide = process.argv.includes("--preview-guide");
+  const previewApp = process.argv.includes("--preview-app");
+  const previewGuide = previewApp || process.argv.includes("--preview-guide");
   const window = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -324,7 +412,8 @@ function createWindow() {
 
   mainWindowRef = window;
   window.loadFile(
-    path.join(__dirname, "renderer", previewGuide ? "preview.html" : "index.html")
+    path.join(__dirname, "renderer", previewGuide ? "preview.html" : "index.html"),
+    previewApp ? { hash: "app" } : undefined
   );
 
   window.webContents.on("did-finish-load", () => {
@@ -726,6 +815,23 @@ ipcMain.handle("setup:stop-autosync", async () => {
   return { ok: true, message: "Auto-sync arrêté, GPS réinitialisé." };
 });
 
+ipcMain.handle("setup:live-move", async (_event, payload) => {
+  if (payload?.lat == null || payload?.lng == null) {
+    return { ok: false, message: "Coordonnées manquantes." };
+  }
+  return liveMove(payload.lat, payload.lng);
+});
+
+ipcMain.handle("setup:play-route", async (_event, payload) => {
+  if (!payload?.gpx) return { ok: false, message: "Trajet vide." };
+  return playRoute(payload.gpx);
+});
+
+ipcMain.handle("setup:stop-live", async () => {
+  stopLive();
+  return { ok: true };
+});
+
 ipcMain.handle("setup:autosync-status", async () => {
   return { active: !!autoSyncInterval };
 });
@@ -764,11 +870,14 @@ app.whenReady().then(() => {
     ]);
   }
 
+  // Preview modes run on fake data: never touch the real session or login items.
+  const isPreview = process.argv.includes("--preview-app") || process.argv.includes("--preview-guide");
+
   // Auto-launch at startup
-  if (process.platform === "darwin") {
-    app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true });
-  } else {
-    app.setLoginItemSettings({ openAtLogin: true });
+  if (!isPreview) {
+    app.setLoginItemSettings(
+      process.platform === "darwin" ? { openAtLogin: true, openAsHidden: true } : { openAtLogin: true }
+    );
   }
 
   // Tray icon in menu bar (no visible window)
@@ -776,7 +885,7 @@ app.whenReady().then(() => {
 
   createWindow();
 
-  const savedSession = loadSessionFile();
+  const savedSession = isPreview ? null : loadSessionFile();
   if (savedSession?.access_token) {
     tryAutoStartSync();
   }

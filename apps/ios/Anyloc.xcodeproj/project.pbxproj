@@ -7,44 +7,52 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		12656B2BB942AF659CF29CED /* RoutePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E845F92F91B91E29E8E5AD17 /* RoutePanel.swift */; };
+		1713D15BAE1107AA75DB2F08 /* SubscriptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F28FEC6EC8C8F1B6FF07A00E /* SubscriptionService.swift */; };
+		187558EA3BCF3D5781548FA4 /* RenewalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E175DD0BF658783555645C /* RenewalView.swift */; };
 		1A4A1A01983B46371799B42B /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8461A9F65866A329254C9446 /* Theme.swift */; };
 		1C0714F378382D8379766405 /* LocationAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFC20EDE5853BB8E68B9D20E /* LocationAPI.swift */; };
 		21487D0B8A1E885F3616133F /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D02DE99BB015A0A818066AA /* SettingsView.swift */; };
-		22073C97E0D141E0947DD634 /* FavoritesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 508575660421470B4FB84710 /* FavoritesView.swift */; };
+		4A323DB1F3D91F1DEB64CB9F /* Spots.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26079CE314542ED66C07C1B8 /* Spots.swift */; };
+		5444F7A98925EAEB78526018 /* SubscriptionModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C09F6CE9C14B8F309D4E68 /* SubscriptionModels.swift */; };
+		59EF164F980141B849123668 /* SavedModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F6704E4E43632785C1A5F34 /* SavedModels.swift */; };
 		5A681B81212BC8DB20F3BB25 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 228EED6CEDDB6F70DDC0D1CA /* AuthService.swift */; };
+		6608D882E2DF31187118E384 /* SavedSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6F81B3BD94B6B334D8B3128 /* SavedSheet.swift */; };
 		84E7E8669F64DE5C49D5217A /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68EDBF284E1E3A8E44C9DDF7 /* MainTabView.swift */; };
+		9618B333B2B17243C69190BB /* SignatureRenewalService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF93F6F18F89DA3CA6E90E20 /* SignatureRenewalService.swift */; };
 		9955F27D99BD04DCEF1598BA /* AnylocApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CD54BEF9C6AFE0282EC9304 /* AnylocApp.swift */; };
 		9AC4D649A64527E585CB8C64 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 792FF94A6595BED9D0CEF713 /* Assets.xcassets */; };
-		B7FDDFCABBCE0F6CE9FC8341 /* SpotsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E39794D1B0B2004D724176E /* SpotsView.swift */; };
-		D620DB1F5B75773C802601BC /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0834AE3BCEF22F398E3FECA /* DashboardView.swift */; };
+		C7FABBF3D04B1ECEF288F7D6 /* MapHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DA17A390E2A5A062A28BD2C /* MapHomeView.swift */; };
+		CA375C1BC5C61B29CA3EE1A7 /* RouteEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF3B1206BA4C1076D0962AD4 /* RouteEngine.swift */; };
+		CBB78CFBDC5BC9F210BF7855 /* HomeComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F4298EC273B3763B172CE59 /* HomeComponents.swift */; };
+		E23233C1FF33AA1DE83054E7 /* SubscriptionExpiredView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 365E5A6D651D16F05F577CFD /* SubscriptionExpiredView.swift */; };
 		FB53196D1FD8C12D97F6C1B1 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4146D4F32E55E6241EFCD269 /* LoginView.swift */; };
-		A1B2C3D401234567890ABCDE /* RenewalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D411234567890ABCDE /* RenewalView.swift */; };
-		A1B2C3D402234567890ABCDE /* SignatureRenewalService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D412234567890ABCDE /* SignatureRenewalService.swift */; };
-		A1B2C3D403234567890ABCDE /* SubscriptionExpiredView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D413234567890ABCDE /* SubscriptionExpiredView.swift */; };
-		A1B2C3D404234567890ABCDE /* SubscriptionModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D414234567890ABCDE /* SubscriptionModels.swift */; };
-		A1B2C3D405234567890ABCDE /* SubscriptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D415234567890ABCDE /* SubscriptionService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		228EED6CEDDB6F70DDC0D1CA /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
 		24F52AC859702015796FEBA8 /* Anyloc.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Anyloc.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		3E39794D1B0B2004D724176E /* SpotsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotsView.swift; sourceTree = "<group>"; };
+		26079CE314542ED66C07C1B8 /* Spots.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Spots.swift; sourceTree = "<group>"; };
+		2F6704E4E43632785C1A5F34 /* SavedModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedModels.swift; sourceTree = "<group>"; };
+		365E5A6D651D16F05F577CFD /* SubscriptionExpiredView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionExpiredView.swift; sourceTree = "<group>"; };
+		3F4298EC273B3763B172CE59 /* HomeComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeComponents.swift; sourceTree = "<group>"; };
 		4146D4F32E55E6241EFCD269 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		47122D6E07120D2D13CDEF9C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		49C09F6CE9C14B8F309D4E68 /* SubscriptionModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionModels.swift; sourceTree = "<group>"; };
 		4CD54BEF9C6AFE0282EC9304 /* AnylocApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnylocApp.swift; sourceTree = "<group>"; };
 		4D02DE99BB015A0A818066AA /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		508575660421470B4FB84710 /* FavoritesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesView.swift; sourceTree = "<group>"; };
+		5DA17A390E2A5A062A28BD2C /* MapHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapHomeView.swift; sourceTree = "<group>"; };
 		68EDBF284E1E3A8E44C9DDF7 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		7598C2810AD188339EA97811 /* Anyloc.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Anyloc.entitlements; sourceTree = "<group>"; };
 		792FF94A6595BED9D0CEF713 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		8461A9F65866A329254C9446 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
-		C0834AE3BCEF22F398E3FECA /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		BF93F6F18F89DA3CA6E90E20 /* SignatureRenewalService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignatureRenewalService.swift; sourceTree = "<group>"; };
 		CFC20EDE5853BB8E68B9D20E /* LocationAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationAPI.swift; sourceTree = "<group>"; };
-		A1B2C3D411234567890ABCDE /* RenewalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenewalView.swift; sourceTree = "<group>"; };
-		A1B2C3D412234567890ABCDE /* SignatureRenewalService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignatureRenewalService.swift; sourceTree = "<group>"; };
-		A1B2C3D413234567890ABCDE /* SubscriptionExpiredView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionExpiredView.swift; sourceTree = "<group>"; };
-		A1B2C3D414234567890ABCDE /* SubscriptionModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionModels.swift; sourceTree = "<group>"; };
-		A1B2C3D415234567890ABCDE /* SubscriptionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionService.swift; sourceTree = "<group>"; };
+		DF3B1206BA4C1076D0962AD4 /* RouteEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteEngine.swift; sourceTree = "<group>"; };
+		E6F81B3BD94B6B334D8B3128 /* SavedSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedSheet.swift; sourceTree = "<group>"; };
+		E845F92F91B91E29E8E5AD17 /* RoutePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutePanel.swift; sourceTree = "<group>"; };
+		F1E175DD0BF658783555645C /* RenewalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenewalView.swift; sourceTree = "<group>"; };
+		F28FEC6EC8C8F1B6FF07A00E /* SubscriptionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -63,19 +71,23 @@
 				4CD54BEF9C6AFE0282EC9304 /* AnylocApp.swift */,
 				792FF94A6595BED9D0CEF713 /* Assets.xcassets */,
 				228EED6CEDDB6F70DDC0D1CA /* AuthService.swift */,
-				C0834AE3BCEF22F398E3FECA /* DashboardView.swift */,
-				508575660421470B4FB84710 /* FavoritesView.swift */,
+				3F4298EC273B3763B172CE59 /* HomeComponents.swift */,
 				47122D6E07120D2D13CDEF9C /* Info.plist */,
 				CFC20EDE5853BB8E68B9D20E /* LocationAPI.swift */,
 				4146D4F32E55E6241EFCD269 /* LoginView.swift */,
 				68EDBF284E1E3A8E44C9DDF7 /* MainTabView.swift */,
-				A1B2C3D411234567890ABCDE /* RenewalView.swift */,
+				5DA17A390E2A5A062A28BD2C /* MapHomeView.swift */,
+				F1E175DD0BF658783555645C /* RenewalView.swift */,
+				DF3B1206BA4C1076D0962AD4 /* RouteEngine.swift */,
+				E845F92F91B91E29E8E5AD17 /* RoutePanel.swift */,
+				2F6704E4E43632785C1A5F34 /* SavedModels.swift */,
+				E6F81B3BD94B6B334D8B3128 /* SavedSheet.swift */,
 				4D02DE99BB015A0A818066AA /* SettingsView.swift */,
-				A1B2C3D412234567890ABCDE /* SignatureRenewalService.swift */,
-				3E39794D1B0B2004D724176E /* SpotsView.swift */,
-				A1B2C3D413234567890ABCDE /* SubscriptionExpiredView.swift */,
-				A1B2C3D414234567890ABCDE /* SubscriptionModels.swift */,
-				A1B2C3D415234567890ABCDE /* SubscriptionService.swift */,
+				BF93F6F18F89DA3CA6E90E20 /* SignatureRenewalService.swift */,
+				26079CE314542ED66C07C1B8 /* Spots.swift */,
+				365E5A6D651D16F05F577CFD /* SubscriptionExpiredView.swift */,
+				49C09F6CE9C14B8F309D4E68 /* SubscriptionModels.swift */,
+				F28FEC6EC8C8F1B6FF07A00E /* SubscriptionService.swift */,
 				8461A9F65866A329254C9446 /* Theme.swift */,
 			);
 			path = Anyloc;
@@ -120,7 +132,7 @@
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
 					701D3F3BD59FF61E1CB2EDF2 = {
-						DevelopmentTeam = 9Y84R64D72;
+						DevelopmentTeam = U284BGAVKL;
 					};
 				};
 			};
@@ -161,18 +173,22 @@
 			files = (
 				9955F27D99BD04DCEF1598BA /* AnylocApp.swift in Sources */,
 				5A681B81212BC8DB20F3BB25 /* AuthService.swift in Sources */,
-				D620DB1F5B75773C802601BC /* DashboardView.swift in Sources */,
-				22073C97E0D141E0947DD634 /* FavoritesView.swift in Sources */,
+				CBB78CFBDC5BC9F210BF7855 /* HomeComponents.swift in Sources */,
 				1C0714F378382D8379766405 /* LocationAPI.swift in Sources */,
 				FB53196D1FD8C12D97F6C1B1 /* LoginView.swift in Sources */,
 				84E7E8669F64DE5C49D5217A /* MainTabView.swift in Sources */,
+				C7FABBF3D04B1ECEF288F7D6 /* MapHomeView.swift in Sources */,
+				187558EA3BCF3D5781548FA4 /* RenewalView.swift in Sources */,
+				CA375C1BC5C61B29CA3EE1A7 /* RouteEngine.swift in Sources */,
+				12656B2BB942AF659CF29CED /* RoutePanel.swift in Sources */,
+				59EF164F980141B849123668 /* SavedModels.swift in Sources */,
+				6608D882E2DF31187118E384 /* SavedSheet.swift in Sources */,
 				21487D0B8A1E885F3616133F /* SettingsView.swift in Sources */,
-				B7FDDFCABBCE0F6CE9FC8341 /* SpotsView.swift in Sources */,
-				A1B2C3D401234567890ABCDE /* RenewalView.swift in Sources */,
-				A1B2C3D402234567890ABCDE /* SignatureRenewalService.swift in Sources */,
-				A1B2C3D403234567890ABCDE /* SubscriptionExpiredView.swift in Sources */,
-				A1B2C3D404234567890ABCDE /* SubscriptionModels.swift in Sources */,
-				A1B2C3D405234567890ABCDE /* SubscriptionService.swift in Sources */,
+				9618B333B2B17243C69190BB /* SignatureRenewalService.swift in Sources */,
+				4A323DB1F3D91F1DEB64CB9F /* Spots.swift in Sources */,
+				E23233C1FF33AA1DE83054E7 /* SubscriptionExpiredView.swift in Sources */,
+				5444F7A98925EAEB78526018 /* SubscriptionModels.swift in Sources */,
+				1713D15BAE1107AA75DB2F08 /* SubscriptionService.swift in Sources */,
 				1A4A1A01983B46371799B42B /* Theme.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

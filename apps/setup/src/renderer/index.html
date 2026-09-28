@@ -3,10 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src https://*.supabase.co https://nominatim.openstreetmap.org https://www.anyloc.io https://anyloc.io" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://server.arcgisonline.com; connect-src https://*.supabase.co https://nominatim.openstreetmap.org https://routing.openstreetmap.de https://www.anyloc.io https://anyloc.io" />
     <title>Anyloc</title>
     <link rel="stylesheet" href="./styles.css" />
     <link rel="stylesheet" href="./leaflet.css" />
+    <link rel="stylesheet" href="./home.css" />
   </head>
   <body>
 
@@ -44,214 +45,119 @@
 
     <!-- ── Main App ── -->
     <div id="main-screen" class="screen main-screen">
-      <aside class="app-sidebar">
-        <div class="sidebar-brand">Any<span>loc</span></div>
-        <p class="sidebar-tagline" id="sidebar-tagline">Pont ordinateur ↔ iPhone</p>
+      <nav class="h-rail">
+        <button type="button" class="h-rail-btn active" data-rail="map" title="Carte">
+          <svg viewBox="0 0 24 24"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/></svg>
+        </button>
+        <button type="button" class="h-rail-btn" data-rail="route" title="Trajets">
+          <svg viewBox="0 0 24 24"><circle cx="6" cy="19" r="2.5"/><path d="M8.5 19h8a3.5 3.5 0 0 0 0-7h-9a3.5 3.5 0 0 1 0-7h8"/><circle cx="18" cy="5" r="2.5"/></svg>
+        </button>
+        <button type="button" class="h-rail-btn" data-rail="favorites" title="Favoris">
+          <svg viewBox="0 0 24 24" class="fill"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        </button>
+        <div class="h-rail-spacer"></div>
+        <button type="button" class="h-rail-btn" data-rail="account" title="Compte">
+          <svg viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </nav>
 
-        <nav class="sidebar-nav">
-          <button type="button" class="sidebar-btn tab-btn active" data-tab="statut">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-            <span>Statut</span>
+      <section class="h-stage">
+        <div id="map" class="h-map"></div>
+
+        <div class="h-search" id="h-search">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7.5"/><path d="m20.5 20.5-4.2-4.2"/></svg>
+          <input id="search-input" type="text" placeholder="Rechercher une ville, une adresse, un lieu" autocomplete="off" spellcheck="false" />
+          <button type="button" id="search-clear" class="h-search-clear" hidden aria-label="Effacer">
+            <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
           </button>
-          <button type="button" class="sidebar-btn tab-btn" data-tab="carte">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>
-            <span>Carte</span>
-          </button>
-          <button type="button" class="sidebar-btn tab-btn" data-tab="spots">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
-            <span>Découvrir</span>
-          </button>
-          <button type="button" class="sidebar-btn tab-btn" data-tab="profil">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-            <span>Compte</span>
-          </button>
-        </nav>
-      </aside>
-
-      <div class="main-content">
-
-      <!-- Tab: Statut (home) -->
-      <div id="tab-statut" class="tab-content active">
-        <div class="status-page">
-          <header class="status-header">
-            <h1 class="page-title">Tableau de bord</h1>
-            <p class="page-subtitle">État de la connexion iPhone et de ta fausse position GPS.</p>
-          </header>
-
-          <div class="status-grid">
-            <div class="status-card" id="status-iphone-card">
-              <div class="status-card-icon" id="status-iphone-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="1" width="14" height="22" rx="3"/><path d="M12 18h.01"/></svg>
-              </div>
-              <div class="status-card-body">
-                <div class="status-card-label">iPhone</div>
-                <div class="status-card-value" id="status-iphone-text">Vérification…</div>
-              </div>
-              <span class="status-dot" id="status-iphone-dot" aria-hidden="true"></span>
-            </div>
-
-            <div class="status-card" id="status-gps-card">
-              <div class="status-card-icon" id="status-gps-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06z"/></svg>
-              </div>
-              <div class="status-card-body">
-                <div class="status-card-label">GPS simulé</div>
-                <div class="status-card-value" id="status-gps-text">Inactif</div>
-              </div>
-              <span class="status-dot" id="status-gps-dot" aria-hidden="true"></span>
-            </div>
-          </div>
-
-          <div class="status-location-panel" id="status-location-panel">
-            <div class="status-location-label">Position actuelle</div>
-            <div class="status-location-name" id="status-location-name">Aucune destination active</div>
-            <div class="status-location-meta" id="status-location-meta">Choisis un lieu sur ton iPhone ou via la carte.</div>
-            <div class="status-sync-line" id="status-sync-text">Sync automatique en attente</div>
-          </div>
-
-          <div class="status-actions">
-            <button type="button" class="status-btn status-btn-primary" id="status-change-btn">
-              Changer de destination
-            </button>
-            <button type="button" class="status-btn status-btn-danger" id="status-stop-btn" hidden>
-              Arrêter la fausse position
-            </button>
-            <button type="button" class="status-btn status-btn-secondary" id="status-reconfig-btn">
-              Reconfigurer l'iPhone
-            </button>
-          </div>
-
-          <p class="status-footnote">
-            Choisis une destination dans <strong>Découvrir</strong>, sur la <strong>Carte</strong>, ou depuis <strong>anyloc.io/app</strong> sur ton iPhone — cette app l'applique sur ton téléphone via USB.
-          </p>
         </div>
-      </div>
+        <div id="search-results" class="h-results" hidden></div>
 
-      <!-- Tab: Carte -->
-      <div id="tab-carte" class="tab-content">
-        <div class="map-container">
-          <div class="map-search">
-            <div class="search-icon">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            </div>
-            <input id="search-input" type="text" placeholder="Rechercher un lieu..." autocomplete="off" spellcheck="false" />
-            <button id="search-clear" class="search-clear" hidden>&times;</button>
-          </div>
-          <div id="search-results" class="search-results" hidden></div>
-          <div id="map"></div>
+        <button type="button" class="h-compass" id="map-recenter" title="Recentrer">
+          <svg viewBox="0 0 24 24"><path d="M12 3 5 20l7-4 7 4z"/></svg>
+        </button>
 
-          <!-- Bottom sheet -->
-          <div id="bottom-sheet" class="bottom-sheet">
-            <div id="sheet-content">
-              <p class="sheet-placeholder">Choisis où tu veux apparaître sur Snap, Insta, Tinder…</p>
-            </div>
-          </div>
-
-          <div id="status-toast" class="status-toast" hidden></div>
+        <div class="h-joystick" id="joystick" hidden>
+          <span class="n">N</span><span class="s">S</span><span class="w">O</span><span class="e">E</span>
+          <div class="h-joystick-knob" id="joystick-knob"></div>
         </div>
-      </div>
 
-      <!-- Tab: Découvrir -->
-      <div id="tab-spots" class="tab-content">
-        <div class="spots-page">
-          <div class="spots-header">
-            <h2>Découvrir</h2>
-            <p>Choisis une destination populaire — elle s'applique sur ton iPhone.</p>
-          </div>
+        <div class="h-pill" id="map-pill" hidden></div>
 
-          <div class="category-pills" id="category-pills"></div>
-
-          <div class="spots-grid" id="spots-grid"></div>
-
-          <div id="spots-status" class="spots-status" hidden></div>
-        </div>
-      </div>
-
-      <!-- Tab: Compte -->
-      <div id="tab-profil" class="tab-content">
-        <div class="profil-page">
-          <div class="profil-header">
-            <h2>Compte</h2>
-            <p>Connecté à Anyloc. L'abonnement se gère sur le site.</p>
-          </div>
-
-          <div class="profil-sections">
-            <div class="settings-section">
-              <div class="section-label">COMPTE</div>
-              <div class="settings-card">
-                <div class="info-row no-border">
-                  <span class="info-label">Email</span>
-                  <span class="info-value" id="profil-email">—</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="settings-section">
-              <div class="section-label">ABONNEMENT</div>
-              <div class="settings-card">
-                <div class="account-note">
-                  <p>Ton abonnement et ta facturation sont gérés sur <strong>anyloc.io</strong>, pas dans cette app Mac.</p>
-                </div>
-                <button type="button" class="action-row" id="manage-subscription-btn">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                  <span>Gérer mon abonnement</span>
-                  <span class="chevron">›</span>
-                </button>
-              </div>
-            </div>
-
-            <div class="settings-section">
-              <div class="section-label">APPLICATION</div>
-              <div class="settings-card">
-                <div class="info-row">
-                  <span class="info-label">Version</span>
-                  <span class="info-value" id="profil-version">—</span>
-                </div>
-                <div class="info-row no-border">
-                  <span class="info-label">Appareil</span>
-                  <span class="info-value" id="profil-device">—</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="settings-section">
-              <div class="section-label">AIDE</div>
-              <div class="settings-card profil-faq">
-                <details class="profil-faq-item">
-                  <summary>Pourquoi un ordi pour iPhone ?</summary>
-                  <p>Apple verrouille le GPS : seul un ordinateur branché en USB peut le changer. Tu choisis ta ville depuis anyloc.io/app sur l'iPhone ou depuis cet ordinateur.</p>
-                </details>
-                <details class="profil-faq-item">
-                  <summary>L'iPhone n'est pas détecté en USB</summary>
-                  <p>Essaie un autre câble, déverrouille l'iPhone et appuie Faire confiance. Sur Windows, installe iTunes pour les pilotes Apple.</p>
-                </details>
-                <details class="profil-faq-item no-border">
-                  <summary>La loc ne change pas dans Snap</summary>
-                  <p>Ferme Snap complètement et rouvre-le. Vérifie que l'iPhone est branché et qu'Anyloc Setup tourne en arrière-plan.</p>
-                </details>
-              </div>
-            </div>
-
-            <div class="settings-section">
-              <div class="section-label">ACTIONS</div>
-              <div class="settings-card">
-                <button type="button" class="action-row" id="reopen-guide-btn">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="1" width="14" height="22" rx="3"/><path d="M12 18h.01"/></svg>
-                  <span>Reconfigurer l'iPhone</span>
-                  <span class="chevron">›</span>
-                </button>
-                <button type="button" class="logout-row" id="logout-btn">
-                  <span class="logout-icon">↗</span>
-                  <span>Déconnexion</span>
-                  <span class="chevron">›</span>
-                </button>
-              </div>
-            </div>
+        <div class="h-overlay" id="applying" hidden>
+          <div class="h-dialog h-applying">
+            <img src="./images/logo.png" alt="" class="h-applying-logo" id="applying-logo" />
+            <div class="h-dots"><i></i><i></i><i></i></div>
+            <h3>Application de la position…</h3>
+            <p>Mise à jour de la position sur ton iPhone. Reste connecté, ça ne prend qu'un instant.</p>
           </div>
         </div>
-      </div>
 
-      </div><!-- /.main-content -->
+        <div class="h-overlay" id="name-dialog" hidden>
+          <form class="h-dialog h-name-dialog" id="name-form">
+            <h3 id="name-dialog-title">Ajouter aux favoris</h3>
+            <div class="h-name-row">
+              <span class="h-name-emoji" id="name-dialog-emoji">📍</span>
+              <input id="name-dialog-input" type="text" placeholder="Nom" autocomplete="off" required />
+            </div>
+            <div class="h-emoji-grid" id="name-dialog-emojis"></div>
+            <div class="h-dialog-actions">
+              <button type="button" class="h-btn h-btn-ghost" id="name-dialog-cancel">Annuler</button>
+              <button type="submit" class="h-btn h-btn-grad">Enregistrer</button>
+            </div>
+          </form>
+        </div>
+
+        <div id="status-toast" class="h-toast" hidden></div>
+      </section>
+
+      <aside class="h-panel" id="panel"></aside>
+
+      <section class="h-account" id="account-view" hidden>
+        <div class="h-account-inner">
+          <h2>Compte</h2>
+          <p class="h-account-sub">Connecté à Anyloc. L'abonnement se gère sur le site.</p>
+
+          <div class="h-section-label">Compte</div>
+          <div class="h-card">
+            <div class="h-row"><span>Email</span><b id="profil-email">—</b></div>
+          </div>
+
+          <div class="h-section-label">Abonnement</div>
+          <div class="h-card">
+            <p class="h-card-note">Ton abonnement et ta facturation sont gérés sur <b>anyloc.io</b>, pas dans cette app.</p>
+            <button type="button" class="h-row h-row-btn" id="manage-subscription-btn"><span>Gérer mon abonnement</span><span class="h-chevron">›</span></button>
+          </div>
+
+          <div class="h-section-label">Application</div>
+          <div class="h-card">
+            <div class="h-row"><span>Version</span><b id="profil-version">—</b></div>
+            <div class="h-row"><span>Ordinateur</span><b id="profil-device">—</b></div>
+          </div>
+
+          <div class="h-section-label">Aide</div>
+          <div class="h-card">
+            <details class="h-faq">
+              <summary>Pourquoi un ordinateur pour l'iPhone ?</summary>
+              <p>Apple verrouille le GPS : seul un ordinateur branché en USB peut le changer. Tu choisis ta ville depuis l'iPhone ou depuis cet ordinateur.</p>
+            </details>
+            <details class="h-faq">
+              <summary>L'iPhone n'est pas détecté en USB</summary>
+              <p>Essaie un autre câble, déverrouille l'iPhone et appuie sur Faire confiance. Sur Windows, installe iTunes pour les pilotes Apple.</p>
+            </details>
+            <details class="h-faq">
+              <summary>La position ne change pas dans Snap</summary>
+              <p>Ferme Snap complètement et rouvre-le. Vérifie que l'iPhone est branché et qu'Anyloc tourne en arrière-plan.</p>
+            </details>
+          </div>
+
+          <div class="h-section-label">Actions</div>
+          <div class="h-card">
+            <button type="button" class="h-row h-row-btn" id="reopen-guide-btn"><span>Reconfigurer l'iPhone</span><span class="h-chevron">›</span></button>
+            <button type="button" class="h-row h-row-btn h-danger" id="logout-btn"><span>Déconnexion</span><span class="h-chevron">›</span></button>
+          </div>
+        </div>
+      </section>
     </div>
 
     <!-- ── Onboarding Guide (full-screen wizard) ── -->
@@ -504,6 +410,7 @@
     </div>
 
     <script src="./leaflet.js"></script>
+    <script src="./home.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>
