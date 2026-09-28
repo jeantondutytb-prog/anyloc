@@ -55,25 +55,56 @@ jobs:
           rm "$RUNNER_TEMP/cert.p12"
           security find-identity -v -p codesigning "$KEYCHAIN"
 
+      # Notarize with the App Store Connect API key (same one the iOS
+      # pipeline uses) rather than an Apple ID + app-specific password.
+      - name: Write App Store Connect API key
+        env:
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+        run: |
+          if [ -z "$ASC_PRIVATE_KEY" ]; then
+            echo "ASC_PRIVATE_KEY absent — pas de notarisation"
+            exit 0
+          fi
+          # Same normalization as normalizeAscPrivateKey (src/lib/ios-adhoc/app-store-connect.ts).
+          node -e '
+            const PEM_RE = /-----BEGIN ([A-Z ]+)-----([\s\S]*?)-----END \1-----/;
+            function norm(raw) {
+              const v = raw.trim().replace(/^["\x27]|["\x27]$/g, "").replace(/\\n/g, "\n").trim();
+              const pem = v.match(PEM_RE);
+              const label = pem ? pem[1] : "PRIVATE KEY";
+              const body = (pem ? pem[2] : v).replace(/\s+/g, "");
+              if (!pem) {
+                const decoded = Buffer.from(body, "base64").toString("utf8");
+                if (PEM_RE.test(decoded)) return norm(decoded);
+              }
+              return `-----BEGIN ${label}-----\n${body.match(/.{1,64}/g).join("\n")}\n-----END ${label}-----\n`;
+            }
+            require("fs").writeFileSync(process.argv[1], norm(process.env.ASC_PRIVATE_KEY), { mode: 0o600 });
+          ' "$RUNNER_TEMP/asc_api_key.p8"
+          echo "APPLE_API_KEY=$RUNNER_TEMP/asc_api_key.p8" >> "$GITHUB_ENV"
+
       - name: Build macOS DMG
         working-directory: apps/setup
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: ${{ secrets.MAC_CSC_LINK != '' }}
           APPLE_IDENTITY: ${{ secrets.APPLE_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_API_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.ASC_ISSUER_ID }}
         run: npm run build:mac
 
       - name: Verify signature and notarization
-        if: env.APPLE_IDENTITY != ''
         env:
           APPLE_IDENTITY: ${{ secrets.APPLE_IDENTITY }}
         run: |
+          if [ -z "$APPLE_IDENTITY" ]; then
+            echo "APPLE_IDENTITY absent — build non signé, vérification ignorée"
+            exit 0
+          fi
           APP=$(find apps/setup/dist -maxdepth 2 -name "Anyloc.app" | head -1)
           codesign -dvv "$APP" 2>&1 | grep -E "Authority|TeamIdentifier"
           spctl -a -vvv -t exec "$APP"
           xcrun stapler validate "$APP"
+          xcrun stapler validate apps/setup/dist/Anyloc.dmg || echo "DMG non agrafé (l'app l'est)"
 
       - name: Install root deps
         run: npm ci
