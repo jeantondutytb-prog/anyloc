@@ -1,0 +1,121 @@
+import { timingSafeEqual } from "node:crypto";
+import { ascCredentialsFromEnv, createAscClient } from "./app-store-connect";
+import { getIosInstallState, needsNewBuild, type IosInstallState } from "./build-queue";
+import {
+  IOS_ADHOC_ACCOUNT_DEVICE_LIMIT,
+  IOS_ADHOC_BUILD_STALE_MS,
+  IOS_ADHOC_ENROLLMENT_TTL_MS,
+} from "./config";
+import { dispatchResignWorkflow } from "./github-dispatch";
+import { createEnrollmentChallenge, hashChallenge, type DeviceAttributes } from "./mobileconfig";
+import * as store from "./store";
+
+const ALREADY_LINKED =
+  "Cet iPhone est déjà lié à un autre compte Anyloc. Écris-nous sur le chat pour le transférer.";
+
+export async function startIosEnrollment(userId: string, now: Date) {
+  const existing = await store.getLatestDeviceForUser(userId);
+
+  if (existing?.status === "registered") {
+    return { kind: "already_registered" as const };
+  }
+
+  if ((await store.countRegisteredDevices()) >= IOS_ADHOC_ACCOUNT_DEVICE_LIMIT) {
+    return { kind: "quota_full" as const };
+  }
+
+  const { challenge, hash } = createEnrollmentChallenge();
+  const enrollmentId = await store.insertEnrollment({
+    userId,
+    challengeHash: hash,
+    expiresAt: new Date(now.getTime() + IOS_ADHOC_ENROLLMENT_TTL_MS),
+  });
+
+  return { kind: "created" as const, enrollmentId, challenge };
+}
+
+function sameHash(a: string, b: string) {
+  const left = Buffer.from(a);
+  const right = Buffer.from(b);
+  return left.length === right.length && timingSafeEqual(left, right);
+}
+
+export async function completeIosEnrollment(
+  enrollmentId: string,
+  attrs: DeviceAttributes,
+  now: Date
+) {
+  const device = await store.getDevice(enrollmentId);
+
+  if (
+    !device ||
+    device.status !== "awaiting_udid" ||
+    Date.parse(device.enrollment_expires_at) <= now.getTime() ||
+    !sameHash(hashChallenge(attrs.challenge), device.enrollment_challenge_hash)
+  ) {
+    return { ok: false };
+  }
+
+  let ascDeviceId: string;
+  try {
+    const asc = createAscClient(ascCredentialsFromEnv());
+    ascDeviceId = await asc.registerDevice(attrs.udid, `Anyloc ${device.user_id.slice(0, 8)}`);
+  } catch (error) {
+    console.error("[ios-adhoc] ASC registerDevice failed:", error);
+    await store.markDeviceFailed(enrollmentId, "Apple n'a pas accepté l'enregistrement de ton iPhone. Réessaie dans quelques minutes.");
+    return { ok: false };
+  }
+
+  const saved = await store.markDeviceRegistered(enrollmentId, {
+    udid: attrs.udid,
+    product: attrs.product,
+    osVersion: attrs.osVersion,
+    ascDeviceId,
+    now,
+  });
+
+  if (!saved) {
+    await store.markDeviceFailed(enrollmentId, ALREADY_LINKED);
+    return { ok: false };
+  }
+
+  await ensureBuildForPendingDevices(now);
+  return { ok: true };
+}
+
+export async function ensureBuildForPendingDevices(now: Date) {
+  const [registeredUdids, latestBuild, latestSucceededBuild] = await Promise.all([
+    store.listRegisteredUdids(),
+    store.getLatestBuild(),
+    store.getLatestSucceededBuild(),
+  ]);
+
+  if (!needsNewBuild({ registeredUdids, latestBuild, latestSucceededBuild, now: now.getTime() })) {
+    return;
+  }
+
+  await store.failStaleQueuedBuilds(new Date(now.getTime() - IOS_ADHOC_BUILD_STALE_MS));
+  const buildId = await store.insertQueuedBuild();
+
+  if (!buildId) {
+    return;
+  }
+
+  try {
+    await dispatchResignWorkflow(buildId);
+  } catch (error) {
+    console.error("[ios-adhoc] dispatch failed:", error);
+    await store.completeBuild(buildId, { status: "failed", error: "Déclenchement GitHub impossible." });
+  }
+}
+
+export async function getIosStatusForUser(userId: string, now: Date): Promise<IosInstallState> {
+  const device = await store.getLatestDeviceForUser(userId);
+
+  if (device?.status === "registered") {
+    await ensureBuildForPendingDevices(now);
+  }
+
+  const latestSucceededBuild = await store.getLatestSucceededBuild();
+  return getIosInstallState({ device, latestSucceededBuild, now: now.getTime() });
+}
