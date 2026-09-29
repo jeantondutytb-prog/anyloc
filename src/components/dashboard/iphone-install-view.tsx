@@ -19,10 +19,16 @@ type StatusResponse =
 
 const POLL_MS = 5000;
 
+// Seul Safari sait installer un profil .mobileconfig. Les navigateurs intégrés
+// (Gmail, app Google, Instagram…) n'ont pas le jeton « Version/ » de Safari.
 function isIphoneSafari() {
   if (typeof navigator === "undefined") return false;
   const ua = navigator.userAgent;
-  return /iPhone|iPad/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
+  return (
+    /iPhone|iPad/.test(ua) &&
+    /Version\/[\d.]+.*Safari\//.test(ua) &&
+    !/CriOS|FxiOS|EdgiOS|OPiOS|GSA|FBAN|FBAV|Instagram/.test(ua)
+  );
 }
 
 const noSubscribe = () => () => {};
@@ -30,6 +36,7 @@ const noSubscribe = () => () => {};
 export function IphoneInstallView({ embedded = false }: { embedded?: boolean } = {}) {
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<StatusResponse | null>(null);
+  const [copied, setCopied] = useState(false);
   const onIphone = useSyncExternalStore(noSubscribe, isIphoneSafari, () => false);
   const pageUrl = useSyncExternalStore(
     noSubscribe,
@@ -99,14 +106,22 @@ export function IphoneInstallView({ embedded = false }: { embedded?: boolean } =
       )}
 
       {status?.eligible && !onIphone && (
-        <Card className="flex flex-col items-center gap-2 p-6 text-center text-sm text-zinc-700">
+        <Card className="flex flex-col items-center gap-3 p-6 text-center text-sm text-zinc-700">
           <p>
-            {status.state.kind === "ready"
-              ? "Ton app est prête : ouvre cette page sur ton iPhone pour l'installer."
-              : "Ouvre cette page dans Safari, sur ton iPhone :"}
+            Ouvre cette page <strong>dans Safari</strong> pour installer l&apos;app :
           </p>
           {pageUrl && (
-            <p className="font-semibold text-zinc-900">{pageUrl.replace(/^https?:\/\//, "")}</p>
+            <>
+              <p className="font-semibold text-zinc-900">{pageUrl.replace(/^https?:\/\//, "")}</p>
+              <Button
+                type="button"
+                onClick={() => {
+                  void navigator.clipboard.writeText(pageUrl).then(() => setCopied(true));
+                }}
+              >
+                {copied ? "Lien copié — colle-le dans Safari" : "Copier le lien"}
+              </Button>
+            </>
           )}
         </Card>
       )}
