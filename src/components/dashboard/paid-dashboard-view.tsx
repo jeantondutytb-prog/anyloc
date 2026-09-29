@@ -261,6 +261,16 @@ export function PaidDashboardView({
               ))}
             </ol>
 
+            <div className="mt-8">{desktopCard}</div>
+
+            {track === "iphone" && !device.isPhone ? (
+              <p className="mt-4 text-center text-sm text-zinc-500">
+                Tu as aussi l&apos;app iPhone : ouvre{" "}
+                <span className="font-medium text-zinc-700">anyloc.io/dashboard</span>{" "}
+                sur ton iPhone.
+              </p>
+            ) : null}
+
             {device.isPhone ? (
               <div className="mt-8">
                 <WrongDeviceNotice
@@ -271,16 +281,6 @@ export function PaidDashboardView({
                   <p>L&apos;app Anyloc s&apos;installe sur un ordinateur.</p>
                 </WrongDeviceNotice>
               </div>
-            ) : null}
-
-            <div className="mt-8">{desktopCard}</div>
-
-            {track === "iphone" && !device.isPhone ? (
-              <p className="mt-4 text-center text-sm text-zinc-500">
-                Tu as aussi l&apos;app iPhone : ouvre{" "}
-                <span className="font-medium text-zinc-700">anyloc.io/dashboard</span>{" "}
-                sur ton iPhone.
-              </p>
             ) : null}
           </>
         )}
