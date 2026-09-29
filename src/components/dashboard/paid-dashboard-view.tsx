@@ -24,7 +24,7 @@ import {
   type DesktopOs,
 } from "@/lib/platform";
 
-/** Quelle app le client installe : décidé par son abonnement, pas par son appareil. */
+/** L'abonnement du client inclut-il l'app iPhone ? L'appareil décide ensuite quelle app on montre. */
 export type InstallTrack = "iphone" | "desktop";
 
 const PREVIEW_ASSETS: DownloadAssetInfo[] = [
@@ -139,7 +139,7 @@ export function PaidDashboardView({
     () => SERVER_CLIENT_DEVICE
   );
   const [desktopOs, setDesktopOs] = useState<DesktopOs>(device.desktopOs);
-  const [showDesktopOption, setShowDesktopOption] = useState(false);
+  const showIphoneInstall = track === "iphone" && device.isIos;
 
   const assets = preview ? PREVIEW_ASSETS : data?.assets ?? [];
   const hasAccess = preview || (data?.hasAccess ?? false);
@@ -224,12 +224,12 @@ export function PaidDashboardView({
 
         <div className="text-center">
           <h1 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
-            {track === "iphone"
+            {showIphoneInstall
               ? "Installe Anyloc sur ton iPhone"
               : "Installe Anyloc sur ton ordi"}
           </h1>
           <p className="mt-3 text-sm text-zinc-600 sm:text-base">
-            {track === "iphone"
+            {showIphoneInstall
               ? "Directement sur le téléphone, sans ordi ni câble."
               : "3 étapes, 10 minutes. Ensuite tout se passe dans l'app."}
           </p>
@@ -241,23 +241,10 @@ export function PaidDashboardView({
           </div>
         ) : null}
 
-        {track === "iphone" ? (
-          <>
-            <div className="mt-8">
-              <IphoneInstallView embedded />
-            </div>
-
-            <div className="mt-8 text-center">
-              <button
-                type="button"
-                className="text-sm font-medium text-zinc-500 underline-offset-2 hover:text-zinc-700 hover:underline"
-                onClick={() => setShowDesktopOption((value) => !value)}
-              >
-                Tu préfères passer par un ordi (Mac ou PC) ?
-              </button>
-            </div>
-            {showDesktopOption ? <div className="mt-4">{desktopCard}</div> : null}
-          </>
+        {showIphoneInstall ? (
+          <div className="mt-8">
+            <IphoneInstallView embedded />
+          </div>
         ) : (
           <>
             <ol className="mt-8 space-y-3">
@@ -274,6 +261,16 @@ export function PaidDashboardView({
               ))}
             </ol>
 
+            <div className="mt-8">{desktopCard}</div>
+
+            {track === "iphone" && !device.isPhone ? (
+              <p className="mt-4 text-center text-sm text-zinc-500">
+                Tu as aussi l&apos;app iPhone : ouvre{" "}
+                <span className="font-medium text-zinc-700">anyloc.io/dashboard</span>{" "}
+                sur ton iPhone.
+              </p>
+            ) : null}
+
             {device.isPhone ? (
               <div className="mt-8">
                 <WrongDeviceNotice
@@ -285,8 +282,6 @@ export function PaidDashboardView({
                 </WrongDeviceNotice>
               </div>
             ) : null}
-
-            <div className="mt-8">{desktopCard}</div>
           </>
         )}
 

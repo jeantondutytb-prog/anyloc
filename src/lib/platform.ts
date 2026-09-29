@@ -3,11 +3,13 @@ export type DesktopOs = "mac" | "win";
 
 export type ClientDevice = {
   isPhone: boolean;
+  isIos: boolean;
   desktopOs: DesktopOs;
 };
 
 export const SERVER_CLIENT_DEVICE: ClientDevice = {
   isPhone: false,
+  isIos: false,
   desktopOs: "mac",
 };
 
@@ -32,9 +34,10 @@ export function detectClientDevice(): ClientDevice {
 
   const ua = navigator.userAgent;
   const isPhone = /iphone|ipad|ipod|android/i.test(ua);
+  const isIos = detectUserPlatform(ua) === "ios";
   const desktopOs: DesktopOs = /win/i.test(ua) && !isPhone ? "win" : "mac";
 
-  return { isPhone, desktopOs };
+  return { isPhone, isIos, desktopOs };
 }
 
 /** Stable snapshot for useSyncExternalStore — must return the same object reference. */
