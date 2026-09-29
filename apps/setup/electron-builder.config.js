@@ -29,13 +29,13 @@ module.exports = {
     target: ["dmg"],
     identity: process.env.APPLE_IDENTITY || null,
     gatekeeperAssess: false,
-    // Notarization only works on a Developer ID-signed build and needs all
-    // three credentials; otherwise electron-builder fails or silently skips.
+    // Notarization only works on a Developer ID-signed build and needs the
+    // App Store Connect API key; otherwise electron-builder fails or skips.
     notarize: Boolean(
       process.env.APPLE_IDENTITY &&
-        process.env.APPLE_ID &&
-        process.env.APPLE_APP_SPECIFIC_PASSWORD &&
-        process.env.APPLE_TEAM_ID
+        process.env.APPLE_API_KEY &&
+        process.env.APPLE_API_KEY_ID &&
+        process.env.APPLE_API_ISSUER
     ),
   },
   dmg: {
