@@ -280,7 +280,6 @@ export function PaidDashboardView({
                   title="Ouvre cette page sur ton Mac ou PC"
                   href={getDashboardUrl()}
                   copyLabel="Copier le lien"
-                  qrLabel="Scanne depuis l'ordi"
                 >
                   <p>L&apos;app Anyloc s&apos;installe sur un ordinateur.</p>
                 </WrongDeviceNotice>

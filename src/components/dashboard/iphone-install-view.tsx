@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle2, Loader2, Smartphone } from "lucide-react";
-import { SetupQrCode } from "@/components/dashboard/setup-qr-code";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
@@ -99,17 +98,16 @@ export function IphoneInstallView({ embedded = false }: { embedded?: boolean } =
         </Card>
       )}
 
-      {status?.eligible && !onIphone && status.state.kind !== "ready" && (
-        <Card className="flex flex-col items-center gap-3 p-6 text-center text-sm text-zinc-700">
-          <p>Ouvre cette page <strong>dans Safari, sur ton iPhone</strong> :</p>
-          {pageUrl && <SetupQrCode value={pageUrl} label="Scanne avec l'appareil photo" />}
-        </Card>
-      )}
-
-      {status?.eligible && !onIphone && status.state.kind === "ready" && (
-        <Card className="flex flex-col items-center gap-3 p-6 text-center text-sm text-zinc-700">
-          <p>Ton app est prête : ouvre cette page sur ton iPhone pour l&apos;installer.</p>
-          {pageUrl && <SetupQrCode value={pageUrl} label="Scanne avec l'appareil photo" />}
+      {status?.eligible && !onIphone && (
+        <Card className="flex flex-col items-center gap-2 p-6 text-center text-sm text-zinc-700">
+          <p>
+            {status.state.kind === "ready"
+              ? "Ton app est prête : ouvre cette page sur ton iPhone pour l'installer."
+              : "Ouvre cette page dans Safari, sur ton iPhone :"}
+          </p>
+          {pageUrl && (
+            <p className="font-semibold text-zinc-900">{pageUrl.replace(/^https?:\/\//, "")}</p>
+          )}
         </Card>
       )}
 
