@@ -1,0 +1,21 @@
+{
+  "name": "anyloc-video",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "remotion render Vsl ../../public/vsl/anyloc-vsl.mp4 --codec=h264 --crf=26 && remotion still Vsl ../../public/vsl/anyloc-vsl-poster.jpg --frame=880 --image-format=jpeg --jpeg-quality=85",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.529",
+    "@remotion/google-fonts": "4.0.529",
+    "remotion": "4.0.529",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "typescript": "^5"
+  }
+}
