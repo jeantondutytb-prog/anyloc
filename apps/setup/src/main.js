@@ -17,7 +17,7 @@ const {
   getSpawnEnv,
   getScriptsDir,
 } = require("./usb");
-const { ensurePymobiledevice3, isBundleReady } = require("./python-setup");
+const { ensurePymobiledevice3, isBundleReady, isBundleCurrent } = require("./python-setup");
 
 const SUPABASE_URL =
   process.env.ANYLOC_SUPABASE_URL || "https://gqkxnktprctdvpwvnqli.supabase.co";
@@ -144,7 +144,8 @@ function startAutoSync(session) {
 
   autoSyncInterval = setInterval(async () => {
     // Walking or playing a route from this computer drives the GPS directly.
-    if (liveActive) return;
+    // During a tools upgrade pip is replacing the files the spoof runs from.
+    if (liveActive || toolsUpgrade) return;
     try {
       const res = await fetch(
         `${SUPABASE_URL}/rest/v1/location_settings?user_id=eq.${autoSyncSession.user.id}&select=name,lat,lng,is_active,updated_at`,
@@ -292,6 +293,27 @@ function stopLive() {
   killLiveChild();
   // Re-apply whatever Supabase holds on the next auto-sync poll.
   lastSyncedLoc = null;
+}
+
+// Installs from older app versions keep an outdated pymobiledevice3 (GPS never
+// held on 4.14.16). Upgrade it in the background at launch; auto-sync waits.
+let toolsUpgrade = null;
+
+function upgradeToolsIfOutdated() {
+  if (toolsUpgrade || !isBundleReady() || isBundleCurrent()) return toolsUpgrade;
+  console.log("[Tools] Updating pymobiledevice3...");
+  toolsUpgrade = ensurePymobiledevice3()
+    .then((result) => {
+      console.log(result.ok ? "[Tools] Up to date" : `[Tools] Update failed: ${result.message}`);
+      if (result.ok) require("./usb").clearCachedPaths();
+      return result;
+    })
+    .finally(() => {
+      toolsUpgrade = null;
+      // Re-apply the current location with the new tools.
+      lastSyncedLoc = null;
+    });
+  return toolsUpgrade;
 }
 
 function tryAutoStartSync() {
@@ -619,6 +641,7 @@ ipcMain.handle("setup:get-launch-config", () => {
 
 ipcMain.handle("setup:ensure-tools", async (event) => {
   const { clearCachedPaths } = require("./usb");
+  if (toolsUpgrade) await toolsUpgrade;
   const result = await ensurePymobiledevice3((progress) => {
     try { event.sender.send("setup:tools-progress", progress); } catch {}
   });
@@ -627,7 +650,8 @@ ipcMain.handle("setup:ensure-tools", async (event) => {
 });
 
 ipcMain.handle("setup:tools-ready", () => {
-  return isBundleReady() || !!resolvePymobiledevice3Cli();
+  if (isBundleReady()) return isBundleCurrent();
+  return !!resolvePymobiledevice3Cli();
 });
 
 ipcMain.handle("setup:check-usb", async (_event, payload) => {
@@ -887,6 +911,8 @@ app.whenReady().then(() => {
   createTray();
 
   createWindow();
+
+  if (!isPreview) upgradeToolsIfOutdated();
 
   const savedSession = isPreview ? null : loadSessionFile();
   if (savedSession?.access_token) {
