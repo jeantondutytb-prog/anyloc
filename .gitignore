@@ -25,6 +25,7 @@
 *.pem
 .ios-ci-secrets/
 apps/ios/build/
+xcuserdata/
 
 # debug
 npm-debug.log*
@@ -60,3 +61,4 @@ dist/
 
 # iOS vendor binaries (compiled locally, too large for Git)
 apps/ios/Vendor/idevice/*.a
+.claude/worktrees/

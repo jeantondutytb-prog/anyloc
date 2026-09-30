@@ -1,0 +1,28 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "next-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "port": 3000
+    },
+    {
+      "name": "legal-preview",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "--prefix",
+        "/Users/jean/anyloc-legal",
+        "next",
+        "start",
+        "/Users/jean/anyloc-legal",
+        "-p",
+        "3100"
+      ],
+      "port": 3100
+    }
+  ]
+}
