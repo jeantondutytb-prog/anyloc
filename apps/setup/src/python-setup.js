@@ -6,7 +6,9 @@ const os = require("node:os");
 
 const PYTHON_VERSION = "3.12.7";
 const PYTHON_TAG = "312";
-const PMD3_VERSION = "4.14.16";
+// Must match the version the app is written against: 4.x has no --userspace
+// flag nor typer_injector (used by scripts/live_location.py).
+const PMD3_VERSION = "10.10.3";
 const WIN_EMBED_URL = `https://www.python.org/ftp/python/${PYTHON_VERSION}/python-${PYTHON_VERSION}-embed-amd64.zip`;
 const WIN_EMBED_SHA256 =
   "0d57bb6cb078b74d23dbfe91f77d6780d45bed328911609f1f7ee2ba1606bf44";
@@ -134,6 +136,9 @@ async function setupWindowsEmbed(envDir, onProgress) {
   if (fs.existsSync(pthFile)) {
     let txt = fs.readFileSync(pthFile, "utf8");
     txt = txt.replace(/^#\s*import site/m, "import site");
+    // pywin32 (win32security, needed by pymobiledevice3) relies on a .pth
+    // file that the embedded Python may skip: list its folders explicitly.
+    txt += "\nLib\\site-packages\\win32\nLib\\site-packages\\win32\\lib\nLib\\site-packages\\Pythonwin\n";
     fs.writeFileSync(pthFile, txt);
   }
 
@@ -179,14 +184,31 @@ async function installPmd3(envDir, onProgress) {
     ? path.join(envDir, "Scripts", "python.exe")
     : path.join(envDir, "bin", "python3");
 
-  const pythonExe = fs.existsSync(rootPython) ? rootPython : venvPython;
+  const isEmbedded = fs.existsSync(rootPython);
+  const pythonExe = isEmbedded ? rootPython : venvPython;
+  const pipNet = ["--timeout", "60", "--retries", "10"];
+
+  // Some deps (hexdump) are sdist-only. The embedded Python's ._pth file
+  // ignores pip's isolated build env, so setuptools.build_meta can't be
+  // imported there: install setuptools in place and build without isolation.
+  const buildArgs = [];
+  if (isEmbedded) {
+    const st = await spawnAsync(pythonExe, [
+      "-m", "pip", "install", "setuptools", "wheel",
+      "--no-warn-script-location", ...pipNet,
+    ], { timeout: 300_000 });
+    if (st.code !== 0) throw new Error(`setuptools install failed: ${st.stderr.trim().slice(-600)}`);
+    buildArgs.push("--no-build-isolation");
+  }
 
   const r = await spawnAsync(pythonExe, [
     "-m", "pip", "install", `pymobiledevice3==${PMD3_VERSION}`,
-    "--no-warn-script-location",
+    ...(isWin() ? ["pywin32"] : []),
+    "--no-warn-script-location", ...pipNet, ...buildArgs,
   ], { timeout: 600_000 });
 
-  if (r.code !== 0) throw new Error(`pymobiledevice3 install failed: ${r.stderr.slice(0, 400)}`);
+  // The actual cause is at the end of pip's traceback, not the start.
+  if (r.code !== 0) throw new Error(`pymobiledevice3 install failed: ${r.stderr.trim().slice(-600)}`);
 
   onProgress?.({ pct: 95, message: "Vérification..." });
 }
@@ -204,7 +226,9 @@ async function ensurePymobiledevice3(onProgress) {
       fs.rmSync(envDir, { recursive: true, force: true });
     }
 
-    const sysPython = findSystemPython();
+    // Windows always uses our pinned embedded Python: a system Python 3.13+
+    // has no prebuilt lzfse wheel, so pip tries to compile it and fails.
+    const sysPython = isWin() ? null : findSystemPython();
 
     if (sysPython) {
       await createVenv(sysPython, envDir, onProgress);

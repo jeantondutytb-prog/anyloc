@@ -500,7 +500,7 @@ async function detectUsbDevice() {
         udid: null,
         deviceName: null,
         message:
-          "Aucun iPhone en USB. Déverrouille l'iPhone, branche-le, ouvre le Finder pour « Faire confiance », puis Revérifier.",
+          "Aucun iPhone en USB. Branche l'iPhone, déverrouille-le et appuie sur « Faire confiance » sur l'iPhone.",
       };
     }
 

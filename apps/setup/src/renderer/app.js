@@ -447,7 +447,7 @@ async function checkGuideUsb() {
     nextBtn.disabled = false;
   } else {
     text.textContent = "Recherche d'un iPhone...";
-    hint.textContent = "Branche ton iPhone en USB pour continuer.";
+    hint.textContent = result.message || "Branche ton iPhone en USB pour continuer.";
     icon.className = "guide-status-icon searching";
     icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>';
     statusBox.className = "guide-status-box";
