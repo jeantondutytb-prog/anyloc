@@ -12,8 +12,8 @@ const {
   clearGpsLocation,
   resolvePythonExecutable,
   resolvePymobiledevice3Cli,
-  getPmd3Invocation,
   missingToolsMessage,
+  humanizePmd3Error,
   getSpawnEnv,
   getScriptsDir,
 } = require("./usb");
@@ -67,9 +67,18 @@ function clearSessionFile() {
   try { fs.unlinkSync(getSessionFilePath()); } catch {}
 }
 
-function applySpoofOnce(lat, lng) {
+// Reports the real outcome to the UI: "applied" once live_location.py has set
+// the location on the iPhone, or the error if it exits before. `reported`
+// keeps the 5 s re-apply loop from toasting the same error over and over.
+function applySpoofOnce(loc, reported) {
   const python = resolvePythonExecutable();
-  if (!python) return false;
+  if (!python) {
+    if (!reported.error) {
+      reported.error = true;
+      sendSyncStatus(missingToolsMessage(), true, loc);
+    }
+    return false;
+  }
 
   if (autoSyncSpoofChild) {
     try { autoSyncSpoofChild.kill("SIGTERM"); } catch {}
@@ -86,14 +95,31 @@ function applySpoofOnce(lat, lng) {
     { env: getSpawnEnv(), stdio: ["pipe", "pipe", "pipe"], windowsHide: true }
   );
   child.stdin.on("error", () => {});
-  child.stdin.write(`${lat} ${lng}\n`);
+  child.stdin.write(`${loc.lat} ${loc.lng}\n`);
 
+  let applied = false;
+  let stderr = "";
   autoSyncSpoofChild = child;
+  child.stdout.on("data", (chunk) => {
+    if (applied || !chunk.toString().includes("applied")) return;
+    applied = true;
+    reported.error = false;
+    if (!reported.applied) {
+      reported.applied = true;
+      sendSyncStatus(`GPS: ${loc.name || `${loc.lat}, ${loc.lng}`}`, false, loc, { applied: true });
+    }
+  });
   child.on("close", () => {
     if (autoSyncSpoofChild === child) autoSyncSpoofChild = null;
+    // Killed on purpose (new location, stop) or never applied: only the latter is an error.
+    if (applied || child.killed || reported.error) return;
+    reported.error = true;
+    reported.applied = false;
+    sendSyncStatus(humanizePmd3Error(stderr), true, loc);
   });
   child.stderr.on("data", (chunk) => {
     const msg = chunk.toString().trim();
+    stderr += `${msg}\n`;
     if (msg && !msg.includes("WARNING")) console.log("[Spoof]", msg);
   });
 
@@ -111,25 +137,27 @@ function killSpoofProcess() {
   }
 }
 
-function sendSyncStatus(message, error, location) {
+function sendSyncStatus(message, error, location, extra = {}) {
   if (mainWindowRef) {
     mainWindowRef.webContents.send("autosync:status", {
       active: true,
       message,
       error: !!error,
       location,
+      ...extra,
     });
   }
 }
 
-function startReapplyLoop(lat, lng) {
+function startReapplyLoop(loc) {
   if (reapplyInterval) clearInterval(reapplyInterval);
 
-  applySpoofOnce(lat, lng);
+  const reported = { applied: false, error: false };
+  applySpoofOnce(loc, reported);
 
   reapplyInterval = setInterval(() => {
     if (!autoSyncSpoofChild) {
-      applySpoofOnce(lat, lng);
+      applySpoofOnce(loc, reported);
       console.log("[AutoSync] Re-applied GPS (process died)");
     }
   }, 5000);
@@ -167,7 +195,9 @@ function startAutoSync(session) {
         !lastSyncedLoc ||
         lastSyncedLoc.lat !== loc.lat ||
         lastSyncedLoc.lng !== loc.lng ||
-        lastSyncedLoc.is_active !== loc.is_active;
+        lastSyncedLoc.is_active !== loc.is_active ||
+        // Choosing the same place again must re-apply it and report back.
+        lastSyncedLoc.updated_at !== loc.updated_at;
 
       if (!changed) return;
       lastSyncedLoc = loc;
@@ -184,7 +214,7 @@ function startAutoSync(session) {
       const name = loc.name || `${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`;
       console.log(`[AutoSync] GPS → ${name} (${loc.lat}, ${loc.lng})`);
       sendSyncStatus(`GPS: ${name}`, false, loc);
-      startReapplyLoop(loc.lat, loc.lng);
+      startReapplyLoop(loc);
     } catch (err) {
       console.error("[AutoSync] Error:", err.message);
     }
@@ -247,16 +277,19 @@ function ensureLiveStream() {
   return child;
 }
 
-function spawnLive(simulateArgs) {
-  const invocation = getPmd3Invocation();
-  if (!invocation) return false;
+// Routes go through live_location.py too: pymobiledevice3's `simulate-location
+// play` blocks its loop once the route ends, so the iPhone dropped the last point.
+function spawnLive(liveArgs) {
+  const python = resolvePythonExecutable();
+  if (!python) return false;
   killLiveChild();
 
   const child = spawnChild(
-    invocation.command,
-    [...invocation.prefix, "developer", "dvt", "simulate-location", ...simulateArgs],
+    python,
+    [path.join(getScriptsDir(), "live_location.py"), ...liveArgs],
     { env: getSpawnEnv(), stdio: ["pipe", "pipe", "pipe"], windowsHide: true }
   );
+  child.stdin.on("error", () => {});
   liveChild = child;
   child.on("close", () => {
     if (liveChild === child) liveChild = null;
@@ -279,7 +312,7 @@ function liveMove(lat, lng) {
 }
 
 function playRoute(gpx) {
-  if (!getPmd3Invocation()) return { ok: false, message: missingToolsMessage() };
+  if (!resolvePythonExecutable()) return { ok: false, message: missingToolsMessage() };
   enterLive();
   const file = path.join(app.getPath("temp"), "anyloc-route.gpx");
   fs.writeFileSync(file, gpx, "utf8");
