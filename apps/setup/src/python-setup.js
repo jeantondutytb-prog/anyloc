@@ -50,6 +50,43 @@ function isBundleReady() {
   return fs.existsSync(getBundledCli());
 }
 
+let bundleCurrent = false;
+
+// Installs made by older app versions keep their pymobiledevice3 forever
+// (e.g. 4.14.16, whose GPS commands all fail), so the version is checked too.
+function isBundleCurrent() {
+  if (bundleCurrent) return true;
+  if (!isBundleReady()) return false;
+  try {
+    const r = spawnSync(getBundledPython(), [
+      "-c", "import importlib.metadata as m; print(m.version('pymobiledevice3'))",
+    ], { timeout: 15000, windowsHide: true, stdio: "pipe" });
+    bundleCurrent = r.status === 0 && String(r.stdout).trim() === PMD3_VERSION;
+  } catch {
+    bundleCurrent = false;
+  }
+  return bundleCurrent;
+}
+
+// pywin32 (win32security, needed by pymobiledevice3) relies on a .pth file
+// that the embedded Python may skip: list its folders explicitly. Idempotent,
+// so it also repairs embedded installs made by older app versions.
+const PYWIN32_PTH_DIRS = [
+  "Lib\\site-packages\\win32",
+  "Lib\\site-packages\\win32\\lib",
+  "Lib\\site-packages\\Pythonwin",
+];
+
+function patchEmbeddedPth(envDir) {
+  const pthFile = path.join(envDir, `python${PYTHON_TAG}._pth`);
+  if (!fs.existsSync(pthFile)) return;
+  let txt = fs.readFileSync(pthFile, "utf8").replace(/^#\s*import site/m, "import site");
+  const lines = txt.split(/\r?\n/).map((line) => line.trim());
+  const missing = PYWIN32_PTH_DIRS.filter((dir) => !lines.includes(dir));
+  if (missing.length) txt = `${txt.replace(/\s*$/, "")}\n${missing.join("\n")}\n`;
+  fs.writeFileSync(pthFile, txt);
+}
+
 function findSystemPython() {
   const candidates = isWin()
     ? ["py", "python3", "python"]
@@ -132,15 +169,7 @@ async function setupWindowsEmbed(envDir, onProgress) {
   onProgress?.({ pct: 30, message: "Extraction..." });
   await extractZip(zipPath, envDir);
 
-  const pthFile = path.join(envDir, `python${PYTHON_TAG}._pth`);
-  if (fs.existsSync(pthFile)) {
-    let txt = fs.readFileSync(pthFile, "utf8");
-    txt = txt.replace(/^#\s*import site/m, "import site");
-    // pywin32 (win32security, needed by pymobiledevice3) relies on a .pth
-    // file that the embedded Python may skip: list its folders explicitly.
-    txt += "\nLib\\site-packages\\win32\nLib\\site-packages\\win32\\lib\nLib\\site-packages\\Pythonwin\n";
-    fs.writeFileSync(pthFile, txt);
-  }
+  patchEmbeddedPth(envDir);
 
   onProgress?.({ pct: 40, message: "Installation de pip..." });
   const getPipPath = path.join(os.tmpdir(), `get-pip-${Date.now()}.py`);
@@ -213,8 +242,26 @@ async function installPmd3(envDir, onProgress) {
   onProgress?.({ pct: 95, message: "Vérification..." });
 }
 
+// Upgrades an existing install in place. On failure the old env is kept: the
+// app still starts, and the next launch retries.
+async function upgradePymobiledevice3(onProgress) {
+  const envDir = getEnvDir();
+  try {
+    if (isWin()) patchEmbeddedPth(envDir);
+    await installPmd3(envDir, onProgress);
+    if (!isBundleCurrent()) {
+      throw new Error(`pymobiledevice3 ${PMD3_VERSION} not found after upgrade`);
+    }
+    onProgress?.({ pct: 100, message: "Outils USB à jour !" });
+    return { ok: true, source: "upgraded" };
+  } catch (err) {
+    return { ok: false, message: err.message };
+  }
+}
+
 async function ensurePymobiledevice3(onProgress) {
   if (isBundleReady()) {
+    if (!isBundleCurrent()) return upgradePymobiledevice3(onProgress);
     onProgress?.({ pct: 100, message: "Outils USB prêts" });
     return { ok: true, source: "cached" };
   }
@@ -261,5 +308,6 @@ module.exports = {
   getBundledPython,
   getBundledCli,
   isBundleReady,
+  isBundleCurrent,
   ensurePymobiledevice3,
 };
