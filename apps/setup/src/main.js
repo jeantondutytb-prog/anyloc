@@ -88,9 +88,12 @@ function applySpoofOnce(lat, lng) {
     String(lng),
   ];
 
+  // stdin must stay open: on Windows `simulate-location set` holds the
+  // location until input() returns, so an ignored stdin (EOF) makes it exit
+  // at once and the iPhone snaps back to its real position.
   const child = spawnChild(invocation.command, args, {
     env: getSpawnEnv(),
-    stdio: ["ignore", "pipe", "pipe"],
+    stdio: ["pipe", "pipe", "pipe"],
     windowsHide: true,
   });
 
