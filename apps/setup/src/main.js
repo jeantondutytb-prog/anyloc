@@ -68,34 +68,25 @@ function clearSessionFile() {
 }
 
 function applySpoofOnce(lat, lng) {
-  const invocation = getPmd3Invocation();
-  if (!invocation) return false;
+  const python = resolvePythonExecutable();
+  if (!python) return false;
 
   if (autoSyncSpoofChild) {
     try { autoSyncSpoofChild.kill("SIGTERM"); } catch {}
     autoSyncSpoofChild = null;
   }
 
-  const args = [
-    ...invocation.prefix,
-    "developer",
-    "dvt",
-    "simulate-location",
-    "set",
-    "--userspace",
-    "--",
-    String(lat),
-    String(lng),
-  ];
-
-  // stdin must stay open: on Windows `simulate-location set` holds the
-  // location until input() returns, so an ignored stdin (EOF) makes it exit
-  // at once and the iPhone snaps back to its real position.
-  const child = spawnChild(invocation.command, args, {
-    env: getSpawnEnv(),
-    stdio: ["pipe", "pipe", "pipe"],
-    windowsHide: true,
-  });
+  // Not `simulate-location set`: it blocks its asyncio loop in wait_return(),
+  // which starves the --userspace tunnel, so the iPhone snaps back to its real
+  // position after a few seconds (and at once on Windows, where it reads stdin).
+  // live_location.py keeps the loop running; stdin stays open to hold the session.
+  const child = spawnChild(
+    python,
+    [path.join(getScriptsDir(), "live_location.py"), "stream", "--userspace"],
+    { env: getSpawnEnv(), stdio: ["pipe", "pipe", "pipe"], windowsHide: true }
+  );
+  child.stdin.on("error", () => {});
+  child.stdin.write(`${lat} ${lng}\n`);
 
   autoSyncSpoofChild = child;
   child.on("close", () => {
