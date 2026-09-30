@@ -45,14 +45,6 @@ export const DESTINATIONS = [
   "Bangkok",
 ];
 
-export const CHECKOUT_PERKS = [
-  "Changements de loc illimités sur toutes tes apps",
-  "Signal GPS réel — pas un screenshot ni un montage",
-  "Snap, Insta, Tinder, jeux : une loc pour tout le tel",
-  "Installation guidée pas à pas pour ton modèle",
-  "Garantie 48 h si le GPS ne fonctionne pas",
-];
-
 /** Bénéfices identiques sur tous les plans — seule la durée change. */
 export const PLAN_VALUE_STACK = [
   "Changements de loc illimités sur toutes tes apps",
@@ -206,7 +198,7 @@ export function getOnboardingUrl(plan?: string) {
   return planId ? `${ONBOARDING_ENTRY_URL}?plan=${planId}` : ONBOARDING_ENTRY_URL;
 }
 
-export const ONBOARDING_TOTAL_STEPS = 2;
+export const ONBOARDING_TOTAL_STEPS = 6;
 
 export function getOnboardingTrialUrl(plan?: string) {
   return getCheckoutUrl(plan);

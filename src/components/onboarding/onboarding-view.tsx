@@ -4,19 +4,27 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { capturePostHogClientEvent } from "@/lib/posthog/browser";
 import {
-  ArrowRight,
+  ArrowLeft,
   ChevronRight,
   Loader2,
+  RotateCcw,
   Search,
-  Sparkles,
 } from "lucide-react";
 import type { GeocodeResult } from "@/lib/geocoding";
-import { OnboardingAhaMoment } from "@/components/onboarding/onboarding-aha-moment";
-import { OnboardingPreviewMap } from "@/components/onboarding/onboarding-preview-map";
-import { Button } from "@/components/ui/button";
+import { OnboardingAppPreview } from "@/components/onboarding/onboarding-app-preview";
+import { OnboardingAppsStep } from "@/components/onboarding/onboarding-apps-step";
+import {
+  OnboardingDeviceStep,
+  type OnboardingDevice,
+} from "@/components/onboarding/onboarding-device-step";
+import { OnboardingPlanStep } from "@/components/onboarding/onboarding-plan-step";
+import { OnboardingProofStep } from "@/components/onboarding/onboarding-proof-step";
+import {
+  StepCta,
+  StepHeader,
+} from "@/components/onboarding/onboarding-step-layout";
 import { Logo } from "@/components/ui/logo";
 import {
-  CHECKOUT_CTA_LABEL,
   getPostOnboardingSignupUrl,
   isValidPlanId,
   ONBOARDING_TOTAL_STEPS,
@@ -28,7 +36,17 @@ import {
   TRENDING_DESTINATIONS,
   type OnboardingDestination,
 } from "@/lib/onboarding-destinations";
+import type { OnboardingUseCaseId } from "@/lib/onboarding-use-cases";
 import { cn } from "@/lib/utils";
+
+const STEP_NAMES = {
+  1: "device",
+  2: "apps",
+  3: "destination",
+  4: "demo",
+  5: "proof",
+  6: "plan",
+} as const;
 
 function ProgressBar({ step }: { step: number }) {
   const percent = Math.round((step / ONBOARDING_TOTAL_STEPS) * 100);
@@ -85,10 +103,12 @@ function DestinationCard({
 }
 
 function StepDestination({
+  step,
   query,
   onQueryChange,
   onSelect,
 }: {
+  step: number;
   query: string;
   onQueryChange: (value: string) => void;
   onSelect: (destination: OnboardingDestination) => void;
@@ -163,19 +183,15 @@ function StepDestination({
 
   return (
     <div className="mx-auto w-full min-w-0 max-w-2xl">
-      <div className="mb-8 text-center">
-        <p className="inline-flex items-center gap-1.5 text-sm font-medium text-pink-600">
-          <Sparkles className="h-4 w-4 shrink-0" />
-          Étape 1
-        </p>
-        <h1 className="mt-3 text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl lg:text-4xl">
-          Où tu veux être{" "}
-          <span className="gradient-text">maintenant</span> ?
-        </h1>
-        <p className="mt-3 text-sm text-zinc-500 sm:text-base">
-          Choisis ta destination ou tape n&apos;importe quelle ville.
-        </p>
-      </div>
+      <StepHeader
+        step={step}
+        title={
+          <>
+            Où tu veux être <span className="gradient-text">maintenant</span> ?
+          </>
+        }
+        subtitle="Choisis ta destination ou tape n'importe quelle ville."
+      />
 
       <div className="relative">
         <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400" />
@@ -239,55 +255,45 @@ function StepDestination({
 }
 
 function StepPreview({
+  step,
+  device,
   destination,
   onContinue,
-  onChangeDestination,
-  onDestinationChange,
 }: {
+  step: number;
+  device: OnboardingDevice;
   destination: OnboardingDestination;
   onContinue: () => void;
-  onChangeDestination: () => void;
-  onDestinationChange: (lat: number, lng: number) => void;
 }) {
-  return (
-    <div className="mx-auto w-full max-w-xl">
-      <div className="mb-8 text-center">
-        <p className="inline-flex items-center gap-1.5 text-sm font-medium text-pink-600">
-          <Sparkles className="h-4 w-4" />
-          Étape 2
-        </p>
-        <h1 className="mt-3 text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl lg:text-4xl">
-          On téléporte ta loc à{" "}
-          <span className="gradient-text">{destination.city}</span>
-        </h1>
-        <p className="mt-3 text-sm text-zinc-500 sm:text-base">
-          Regarde le signal GPS se mettre à jour en direct sur Snap, Insta, Tinder
-          et toutes tes apps.
-        </p>
-      </div>
+  const [replayCount, setReplayCount] = useState(0);
 
-      <OnboardingAhaMoment destination={destination} highlightApp="TES APPS" />
-      <OnboardingPreviewMap
-        destination={destination}
-        onDestinationChange={onDestinationChange}
+  return (
+    <div className="mx-auto w-full max-w-lg">
+      <StepHeader
+        step={step}
+        title={
+          <>
+            Un tap, et tu es à <span className="gradient-text">{destination.city}</span>
+          </>
+        }
+        subtitle={`Voilà l'app Anyloc sur ton ${device === "iphone" ? "iPhone" : "tel"}. Regarde.`}
       />
 
-      <p className="mt-6 text-center text-sm text-zinc-500">
-        Même signal que si ton tel était vraiment sur place.
-      </p>
+      <OnboardingAppPreview
+        key={`${destination.id}-${replayCount}`}
+        destination={destination}
+      />
 
-      <Button className="mt-6 h-14 w-full text-base" onClick={onContinue}>
-        {CHECKOUT_CTA_LABEL}
-        <ArrowRight className="h-5 w-5" />
-      </Button>
-
-      <button
-        type="button"
-        onClick={onChangeDestination}
-        className="mt-4 w-full text-center text-sm text-zinc-500 transition-colors hover:text-zinc-800"
-      >
-        Essayer une autre ville
-      </button>
+      <StepCta label="Voir ce que tes potes voient" onClick={onContinue}>
+        <button
+          type="button"
+          onClick={() => setReplayCount((count) => count + 1)}
+          className="mx-auto mt-1 flex items-center gap-1.5 py-2 text-sm text-zinc-500 transition-colors hover:text-zinc-800"
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
+          Revoir
+        </button>
+      </StepCta>
     </div>
   );
 }
@@ -314,6 +320,8 @@ function OnboardingViewContent() {
   const searchParams = useSearchParams();
   const [step, setStep] = useState(1);
   const [query, setQuery] = useState("");
+  const [device, setDevice] = useState<OnboardingDevice>("iphone");
+  const [apps, setApps] = useState<OnboardingUseCaseId[]>([]);
   const [destination, setDestination] = useState<OnboardingDestination>(
     TRENDING_DESTINATIONS[0]
   );
@@ -330,20 +338,16 @@ function OnboardingViewContent() {
   }, [step]);
 
   useEffect(() => {
-    const stepNames = {
-      1: "destination",
-      2: "preview",
-    } as const;
     capturePostHogClientEvent("onboarding_step_viewed", {
       step,
-      step_name: stepNames[step as keyof typeof stepNames],
+      step_name: STEP_NAMES[step as keyof typeof STEP_NAMES],
     });
   }, [step]);
 
   useEffect(() => {
     const stepParam = searchParams.get("step");
     const legacyTrialStep =
-      stepParam === "3" || stepParam === "6" || stepParam === String(ONBOARDING_TOTAL_STEPS + 1);
+      stepParam === "3" || stepParam === "6";
 
     if (legacyTrialStep) {
       router.replace(getPostOnboardingSignupUrl(selectedPlanId));
@@ -369,26 +373,26 @@ function OnboardingViewContent() {
 
   function selectDestination(next: OnboardingDestination) {
     persistDestination(next);
+    setStep(4);
+  }
+
+  function selectDevice(next: OnboardingDevice) {
+    setDevice(next);
     setStep(2);
   }
 
-  function updateDestinationCoords(lat: number, lng: number) {
-    setDestination((current) => {
-      const next = { ...current, lat, lng };
-      if (typeof window !== "undefined") {
-        window.sessionStorage.setItem(
-          ONBOARDING_DESTINATION_KEY,
-          JSON.stringify(next)
-        );
-      }
-      return next;
-    });
+  function toggleApp(id: OnboardingUseCaseId) {
+    setApps((current) =>
+      current.includes(id) ? current.filter((app) => app !== id) : [...current, id]
+    );
   }
 
   function continueToSignup() {
     capturePostHogClientEvent("onboarding_completed", {
       destination_city: destination.city,
       plan: selectedPlanId,
+      device,
+      apps,
     });
     router.push(getPostOnboardingSignupUrl(selectedPlanId));
   }
@@ -397,26 +401,70 @@ function OnboardingViewContent() {
     <div className="relative min-h-screen overflow-hidden bg-background">
       <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
-          <Logo href="/" size="sm" nameClassName="hidden min-[380px]:inline text-base sm:text-lg" />
+          {step > 1 ? (
+            <button
+              type="button"
+              onClick={() => setStep(step - 1)}
+              className="flex items-center gap-1.5 py-1 text-sm font-medium text-zinc-500 transition-colors hover:text-zinc-900"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Retour
+            </button>
+          ) : (
+            <Logo href="/" size="sm" nameClassName="hidden min-[380px]:inline text-base sm:text-lg" />
+          )}
           <ProgressBar step={step} />
         </div>
       </header>
 
-      <main className="relative min-w-0 max-w-full px-4 py-8 sm:px-6 sm:py-14">
-        {step === 1 && (
+      <main className="relative min-w-0 max-w-full px-4 py-6 sm:px-6 sm:py-14">
+        {step === 1 && <OnboardingDeviceStep step={1} onSelect={selectDevice} />}
+
+        {step === 2 && (
+          <OnboardingAppsStep
+            step={2}
+            selected={apps}
+            onToggle={toggleApp}
+            onContinue={() => setStep(3)}
+          />
+        )}
+
+        {step === 3 && (
           <StepDestination
+            step={3}
             query={query}
             onQueryChange={setQuery}
             onSelect={selectDestination}
           />
         )}
 
-        {step === 2 && (
+        {step === 4 && (
           <StepPreview
+            step={4}
+            device={device}
+            destination={destination}
+            onContinue={() => setStep(5)}
+          />
+        )}
+
+        {step === 5 && (
+          <OnboardingProofStep
+            step={5}
+            destination={destination}
+            apps={apps}
+            onContinue={() => setStep(6)}
+          />
+        )}
+
+        {step === 6 && (
+          <OnboardingPlanStep
+            step={6}
+            planId={selectedPlanId}
+            device={device}
+            apps={apps}
             destination={destination}
             onContinue={continueToSignup}
-            onChangeDestination={() => setStep(1)}
-            onDestinationChange={updateDestinationCoords}
+            onChangeDestination={() => setStep(3)}
           />
         )}
       </main>
