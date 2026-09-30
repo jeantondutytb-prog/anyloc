@@ -249,9 +249,7 @@ function bindAutoSyncHandlers() {
 
   window.anylocSetup.onAutoSyncStatus((status) => {
     homeOnAutoSync(status);
-    if (!status.error && status.location?.is_active && guideStep === 5 && guideSelectedSpot) {
-      updateGuideCityStatus(true, guideSelectedSpot.name);
-    }
+    onGuideCitySyncStatus(status);
   });
 }
 
@@ -297,30 +295,67 @@ async function selectGuideCity(spot, btn) {
   btn?.classList.add("active");
 
   guideSelectedSpot = spot;
-  updateGuideCityStatus(false, spot.name);
+  $("guide-city-next").disabled = true;
+  updateGuideCityStatus("pending", spot.name);
 
+  // Saving the city only queues it: success is shown once auto-sync reports
+  // that the iPhone really took the location (see onGuideCitySyncStatus).
+  clearTimeout(guideCitySlowTimer);
   const ok = await applyGuideSpot(spot);
-  if (ok) {
-    updateGuideCityStatus(true, spot.name);
+  if (guideSelectedSpot !== spot) return;
+  if (!ok) {
+    updateGuideCityStatus("error", spot.name, "Impossible d'enregistrer la ville. Vérifie ta connexion internet et réessaie.");
+    return;
+  }
+  guideCitySlowTimer = setTimeout(() => {
+    if (guideSelectedSpot === spot && $("guide-city-next").disabled) {
+      updateGuideCityStatus("slow", spot.name);
+    }
+  }, 60000);
+}
+
+let guideCitySlowTimer = null;
+
+function isGuideSpotLocation(location) {
+  return !!guideSelectedSpot && !!location &&
+    Math.abs(location.lat - guideSelectedSpot.lat) < 1e-6 &&
+    Math.abs(location.lng - guideSelectedSpot.lng) < 1e-6;
+}
+
+function onGuideCitySyncStatus(status) {
+  if (guideStep !== 5 || !isGuideSpotLocation(status.location)) return;
+  if (status.error) {
+    clearTimeout(guideCitySlowTimer);
+    updateGuideCityStatus("error", guideSelectedSpot.name, status.message);
+  } else if (status.applied) {
+    clearTimeout(guideCitySlowTimer);
+    updateGuideCityStatus("applied", guideSelectedSpot.name);
     $("guide-city-next").disabled = false;
   }
 }
 
-function updateGuideCityStatus(applied, cityName) {
+function updateGuideCityStatus(state, cityName, message) {
   const statusBox = $("guide-city-status");
   const text = $("guide-city-text");
   const hint = $("guide-city-hint");
   if (!statusBox || !text || !hint) return;
 
   statusBox.hidden = false;
-  statusBox.className = applied ? "guide-status-box ok" : "guide-status-box";
+  statusBox.className =
+    state === "applied" ? "guide-status-box ok" : state === "error" ? "guide-status-box error" : "guide-status-box";
 
-  if (applied) {
+  if (state === "applied") {
     text.textContent = `${cityName} — GPS activé`;
     hint.textContent = "Ouvre Snap ou Maps sur ton iPhone pour vérifier.";
+  } else if (state === "error") {
+    text.textContent = `${cityName} n'a pas pu être activé`;
+    hint.textContent = message || "Rebranche l'iPhone, déverrouille-le et choisis la ville à nouveau.";
+  } else if (state === "slow") {
+    text.textContent = `Activation de ${cityName}…`;
+    hint.textContent = "Ça prend plus de temps que prévu. Vérifie que l'iPhone est branché et déverrouillé, et autorise Anyloc si le Pare-feu Windows le demande.";
   } else {
     text.textContent = `Activation de ${cityName}…`;
-    hint.textContent = "Garde l'iPhone branché en USB.";
+    hint.textContent = "Garde l'iPhone branché et déverrouillé.";
   }
 }
 

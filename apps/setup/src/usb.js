@@ -187,6 +187,13 @@ function resolvePymobiledevice3Cli() {
     return cachedCli;
   }
 
+  // Our own install is trusted as is: probing it can outlast the timeout on a
+  // slow PC (pymobiledevice3 10.x is heavy to import) and read as "missing".
+  if (pythonSetup.isBundleReady()) {
+    cachedCli = pythonSetup.getBundledCli();
+    return cachedCli;
+  }
+
   const env = getSpawnEnv();
 
   for (const cli of getCliCandidates()) {
@@ -240,6 +247,11 @@ function getPythonCandidates() {
 
 function resolvePythonExecutable() {
   if (cachedPython) {
+    return cachedPython;
+  }
+
+  if (pythonSetup.isBundleReady()) {
+    cachedPython = pythonSetup.getBundledPython();
     return cachedPython;
   }
 
