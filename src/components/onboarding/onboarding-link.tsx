@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useState, type ComponentProps, type MouseEvent } from "react";
-import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import {
+  CIRCLE_REVEAL_MS,
+  CircleReveal,
+  type CircleRevealOrigin,
+} from "@/components/ui/circle-reveal";
 
 // The onboarding map opens on Paris at zoom 12 (see onboarding-app-map.tsx).
 const START = { lat: 48.8566, lng: 2.3522, zoom: 12 };
@@ -40,9 +43,7 @@ function warmUpOnboarding() {
   }
 }
 
-type Reveal = { x: number; y: number; radius: number; color: string };
-
-const REVEAL_DURATION_MS = 420;
+type Reveal = { origin: CircleRevealOrigin; color: string };
 
 /**
  * Link to the onboarding sandbox that covers the page with an expanding
@@ -86,21 +87,19 @@ export function OnboardingLink({
     }
 
     const rect = event.currentTarget.getBoundingClientRect();
-    const x = event.clientX || rect.left + rect.width / 2;
-    const y = event.clientY || rect.top + rect.height / 2;
-    const radius = Math.hypot(
-      Math.max(x, window.innerWidth - x),
-      Math.max(y, window.innerHeight - y)
-    );
+    const origin = {
+      x: event.clientX || rect.left + rect.width / 2,
+      y: event.clientY || rect.top + rect.height / 2,
+    };
     // Mobile shows the app full screen (dark); desktop frames it on the page background.
     const color = window.matchMedia("(min-width: 640px)").matches
       ? "var(--background)"
       : "#0A0A0C";
 
-    setReveal({ x, y, radius, color });
+    setReveal({ origin, color });
     // Navigate once the circle mostly covers the page; the old page stays
     // mounted (and the overlay with it) until the onboarding page is ready.
-    window.setTimeout(() => router.push(href), REVEAL_DURATION_MS * 0.75);
+    window.setTimeout(() => router.push(href), CIRCLE_REVEAL_MS * 0.75);
   }
 
   return (
@@ -114,18 +113,7 @@ export function OnboardingLink({
       >
         {children}
       </Link>
-      {reveal &&
-        createPortal(
-          <motion.div
-            aria-hidden
-            className="pointer-events-auto fixed inset-0 z-[9999]"
-            style={{ background: reveal.color }}
-            initial={{ clipPath: `circle(0px at ${reveal.x}px ${reveal.y}px)` }}
-            animate={{ clipPath: `circle(${reveal.radius}px at ${reveal.x}px ${reveal.y}px)` }}
-            transition={{ duration: REVEAL_DURATION_MS / 1000, ease: [0.65, 0, 0.35, 1] }}
-          />,
-          document.body
-        )}
+      {reveal && <CircleReveal origin={reveal.origin} color={reveal.color} />}
     </>
   );
 }

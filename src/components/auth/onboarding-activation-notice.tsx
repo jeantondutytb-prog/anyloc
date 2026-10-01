@@ -44,16 +44,16 @@ export function OnboardingActivationNotice({ action }: { action: "signup" | "log
   }
 
   return (
-    <div className="mb-6 flex items-center gap-3 rounded-2xl border border-pink-500/25 bg-gradient-to-r from-pink-500/[0.12] to-violet-500/[0.12] px-4 py-3.5">
-      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#1C1C21] text-2xl">
+    <div className="mb-6 flex items-center gap-3 rounded-2xl border border-pink-100 bg-gradient-to-r from-pink-50 to-violet-50 px-4 py-3.5">
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-2xl shadow-sm">
         {destination.emoji}
       </span>
       <div className="min-w-0">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-[#F472B6]">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-pink-600">
           Ta position est prête
         </p>
-        <p className="truncate font-semibold text-[#F4F4F5]">{destination.city}</p>
-        <p className="text-sm text-[#8B8B94]">
+        <p className="truncate font-semibold text-zinc-900">{destination.city}</p>
+        <p className="text-sm text-zinc-600">
           {action === "signup"
             ? "Crée ton compte pour l'activer."
             : "Connecte-toi pour l'activer."}

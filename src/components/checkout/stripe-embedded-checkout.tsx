@@ -18,14 +18,14 @@ export function StripeEmbeddedCheckout({
 
   if (!publishableKey) {
     return (
-      <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600 app-dark:border-red-500/30 app-dark:bg-red-500/10 app-dark:text-red-300">
+      <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
         Le paiement n&apos;est pas configuré (clé publique Stripe manquante).
       </p>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-card">
+    <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white">
       <EmbeddedCheckoutProvider
         stripe={stripePromise}
         options={{ clientSecret }}
