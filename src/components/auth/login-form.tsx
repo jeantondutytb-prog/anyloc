@@ -41,7 +41,7 @@ export function LoginForm({
         {state.error ? (
           <div
             role="alert"
-            className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+            className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
           >
             {state.error}
           </div>
@@ -83,11 +83,11 @@ export function LoginForm({
       <AuthDivider />
       <GoogleAuthLink redirectTo={destination} />
 
-      <p className="mt-4 text-center text-sm text-[#8B8B94]">
+      <p className="mt-4 text-center text-sm text-zinc-500">
         Pas encore de compte ?{" "}
         <Link
           href={`/signup?plan=${plan}&next=${encodeURIComponent(destination)}`}
-          className="font-medium text-[#F472B6] hover:underline"
+          className="font-medium text-pink-600 hover:underline"
         >
           Créer un compte
         </Link>

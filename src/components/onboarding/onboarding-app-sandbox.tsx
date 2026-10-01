@@ -186,7 +186,8 @@ export function OnboardingAppSandbox({
   initialDestination?: OnboardingDestination | null;
   onSelect?: (destination: OnboardingDestination, source: SelectionSource) => void;
   onLockedClick?: (feature: LockedFeature) => void;
-  onSetPosition: (destination: OnboardingDestination) => void;
+  /** `origin` is the tap point, where the exit transition starts. */
+  onSetPosition: (destination: OnboardingDestination, origin: { x: number; y: number }) => void;
 }) {
   const [mode, setMode] = useState<Mode>("teleport");
   const [selected, setSelected] = useState<OnboardingDestination | null>(
@@ -485,7 +486,14 @@ export function OnboardingAppSandbox({
             <button
               type="button"
               disabled={!selected}
-              onClick={() => selected && onSetPosition(selected)}
+              onClick={(event) => {
+                if (!selected) return;
+                const rect = event.currentTarget.getBoundingClientRect();
+                onSetPosition(selected, {
+                  x: event.clientX || rect.left + rect.width / 2,
+                  y: event.clientY || rect.top + rect.height / 2,
+                });
+              }}
               className="flex h-14 w-full items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-pink-500 to-purple-500 text-[17px] font-semibold text-white shadow-[0_8px_14px_rgba(236,72,153,0.45)] transition-[opacity,transform] active:scale-[0.97] disabled:opacity-45 disabled:shadow-none"
             >
               <Crosshair className="h-5 w-5" strokeWidth={2.4} />

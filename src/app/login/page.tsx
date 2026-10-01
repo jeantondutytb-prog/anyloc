@@ -32,7 +32,7 @@ export default async function LoginPage({
       {error === "oauth" ? (
         <div
           role="alert"
-          className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+          className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
         >
           La connexion Google a échoué. Réessaie, ou utilise email et mot de
           passe.
@@ -41,7 +41,7 @@ export default async function LoginPage({
       {checkout === "email-sent" ? (
         <div
           role="status"
-          className="mb-4 rounded-xl border border-pink-500/30 bg-pink-500/10 px-4 py-3 text-sm text-[#F472B6]"
+          className="mb-4 rounded-xl border border-pink-200 bg-pink-50 px-4 py-3 text-sm text-pink-700"
         >
           Paiement confirmé ! On t&apos;a envoyé un lien de connexion par
           email pour accéder à ton compte.

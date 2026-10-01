@@ -1,7 +1,5 @@
 @import "tailwindcss";
 
-/* Dark "inside the app" styling for shared components (auth pages), opt-in via .app-dark. */
-@custom-variant app-dark (&:where(.app-dark, .app-dark *));
 
 :root {
   --background: #fff9fb;
@@ -48,36 +46,6 @@ body {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-}
-
-/*
- * "Inside the app" dark scope (signup, login, checkout). Tailwind v4 colors are
- * CSS variables, so remapping the zinc scale and theme tokens here turns light
- * pages dark without touching every class. Values from apps/ios/Anyloc/Theme.swift.
- */
-.app-dark {
-  color-scheme: dark;
-  --background: #0a0a0c;
-  --foreground: #f4f4f5;
-  --surface: #0c0c0e;
-  --surface-muted: #16161a;
-  --border: #25252b;
-  --muted: #8b8b94;
-  --color-zinc-50: #16161a;
-  --color-zinc-100: #1c1c21;
-  --color-zinc-200: #25252b;
-  --color-zinc-300: #303038;
-  --color-zinc-400: #55555d;
-  --color-zinc-500: #8b8b94;
-  --color-zinc-600: #c4c4ca;
-  --color-zinc-700: #d4d4d8;
-  --color-zinc-800: #e4e4e7;
-  --color-zinc-900: #f4f4f5;
-  --color-pink-50: #2a1221;
-  --color-pink-100: #3a1529;
-  --color-pink-200: #5c1f40;
-  --color-pink-600: #f472b6;
-  --color-pink-700: #f9a8d4;
 }
 
 .btn-gradient {

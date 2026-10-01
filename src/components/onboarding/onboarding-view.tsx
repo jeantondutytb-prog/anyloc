@@ -1,7 +1,6 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { track } from "@/lib/analytics/track";
 import {
@@ -9,6 +8,11 @@ import {
   type LockedFeature,
   type SelectionSource,
 } from "@/components/onboarding/onboarding-app-sandbox";
+import {
+  CIRCLE_REVEAL_MS,
+  CircleReveal,
+  type CircleRevealOrigin,
+} from "@/components/ui/circle-reveal";
 import { Logo } from "@/components/ui/logo";
 import { getPostOnboardingSignupUrl, isValidPlanId } from "@/lib/constants";
 import {
@@ -16,8 +20,6 @@ import {
   ONBOARDING_DESTINATION_KEY,
   type OnboardingDestination,
 } from "@/lib/onboarding-destinations";
-
-const LEAVE_DURATION_MS = 350;
 
 function subscribeToNothing() {
   return () => {};
@@ -61,7 +63,7 @@ function OnboardingViewContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const storedDestination = useStoredDestination();
-  const [leaving, setLeaving] = useState(false);
+  const [leavingFrom, setLeavingFrom] = useState<CircleRevealOrigin | null>(null);
   const selectedPlanId = useMemo(() => {
     const plan = searchParams.get("plan") ?? undefined;
     if (isValidPlanId(plan)) {
@@ -97,8 +99,8 @@ function OnboardingViewContent() {
     track("onboarding_preview_locked_click", { feature });
   }
 
-  function handleSetPosition(destination: OnboardingDestination) {
-    if (leaving) {
+  function handleSetPosition(destination: OnboardingDestination, origin: CircleRevealOrigin) {
+    if (leavingFrom) {
       return;
     }
     persistDestination(destination);
@@ -109,23 +111,19 @@ function OnboardingViewContent() {
       destination_city: destination.city,
       plan: selectedPlanId,
     });
-    // Fade out before navigating so signup doesn't cut in abruptly.
-    setLeaving(true);
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    window.setTimeout(() => router.push(signupUrl), reducedMotion ? 0 : LEAVE_DURATION_MS);
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      router.push(signupUrl);
+      return;
+    }
+    // Mirror of the landing → app transition: the light site grows back from
+    // the button, then signup (light) appears on the same color.
+    setLeavingFrom(origin);
+    window.setTimeout(() => router.push(signupUrl), CIRCLE_REVEAL_MS * 0.75);
   }
 
   return (
     <div className="relative min-h-dvh overflow-hidden bg-[#0A0A0C] sm:flex sm:flex-col sm:items-center sm:justify-center sm:bg-background sm:px-6 sm:py-8">
-      <motion.div
-        className="sm:flex sm:flex-col sm:items-center"
-        animate={
-          leaving
-            ? { opacity: 0, scale: 0.97, filter: "blur(4px)" }
-            : { opacity: 1, scale: 1, filter: "blur(0px)" }
-        }
-        transition={{ duration: LEAVE_DURATION_MS / 1000, ease: [0.4, 0, 0.2, 1] }}
-      >
+      <div className="sm:flex sm:flex-col sm:items-center">
         <div className="mb-6 hidden text-center sm:block">
           <Logo href="/" size="sm" className="justify-center" />
           <h1 className="mt-4 text-2xl font-bold tracking-tight text-zinc-900 lg:text-3xl">
@@ -143,26 +141,9 @@ function OnboardingViewContent() {
             onSetPosition={handleSetPosition}
           />
         </div>
-      </motion.div>
+      </div>
 
-      <AnimatePresence>
-        {leaving && (
-          <motion.div
-            className="fixed inset-0 z-[1000] flex items-center justify-center bg-[#0A0A0C]"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: LEAVE_DURATION_MS / 1000, ease: "easeOut" }}
-          >
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: [0.8, 1.05, 1], opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-            >
-              <Logo href={null} showName={false} size="lg" />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {leavingFrom && <CircleReveal origin={leavingFrom} color="var(--background)" />}
     </div>
   );
 }
