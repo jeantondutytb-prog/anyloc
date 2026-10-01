@@ -46,3 +46,14 @@ export function capturePostHogClientEvent(
 
   posthog.capture(event, properties);
 }
+
+/** Anonymous (or identified) PostHog id of this browser, to link server events to the visit. */
+export function getPostHogDistinctId(): string | undefined {
+  initPostHogBrowser();
+
+  if (!isPostHogBrowserReady()) {
+    return undefined;
+  }
+
+  return posthog.get_distinct_id();
+}

@@ -79,12 +79,13 @@ export async function ensureStripeCustomerForUser({
   return customer.id;
 }
 
+/** Returns the Supabase user the session belongs to (found or created from its email). */
 export async function syncProfileFromCheckoutSession(
   session: Stripe.Checkout.Session
-) {
+): Promise<string | null> {
   if (!isSupabaseAdminConfigured()) {
     console.warn("[billing] Supabase admin not configured, skipping profile sync.");
-    return;
+    return null;
   }
 
   if (
@@ -95,7 +96,7 @@ export async function syncProfileFromCheckoutSession(
     console.warn(
       `[billing] Checkout session ${session.id} ignored: payment_status=${session.payment_status}`
     );
-    return;
+    return null;
   }
 
   const email =
@@ -112,7 +113,7 @@ export async function syncProfileFromCheckoutSession(
 
   if (!userId) {
     console.warn("[billing] Checkout session missing Supabase user id and email.");
-    return;
+    return null;
   }
 
   const customerId =
@@ -162,6 +163,8 @@ export async function syncProfileFromCheckoutSession(
   if (error) {
     throw new Error(`Failed to sync profile from checkout: ${error.message}`);
   }
+
+  return userId;
 }
 
 async function resolveExistingAuthUserId(

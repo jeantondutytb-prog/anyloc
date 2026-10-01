@@ -62,6 +62,32 @@ export async function capturePostHogEvent(params: {
   await flushPostHog(posthog);
 }
 
+/**
+ * Merges an anonymous browser id into a known user, so the visit that led to a
+ * purchase made without being logged in is attributed to that user.
+ */
+export async function aliasPostHogUser(params: {
+  distinctId: string;
+  alias: string;
+}) {
+  const posthog = getPostHogServerClient();
+
+  if (!posthog || params.alias === params.distinctId) {
+    return;
+  }
+
+  posthog.alias({ distinctId: params.distinctId, alias: params.alias });
+
+  await flushPostHog(posthog);
+}
+
+/** Accepts only ids shaped like PostHog's (uuid / user id), never arbitrary input. */
+export function parsePostHogDistinctId(value: unknown): string | undefined {
+  return typeof value === "string" && /^[\w.:@$-]{1,200}$/.test(value)
+    ? value
+    : undefined;
+}
+
 export async function capturePostHogException(params: {
   distinctId: string;
   error: unknown;

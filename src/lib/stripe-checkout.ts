@@ -6,6 +6,24 @@ import { getAppUrl, stripe } from "@/lib/stripe";
 
 type CheckoutMode = "embedded_page" | "hosted_page";
 
+/**
+ * Keeps the browser's PostHog id on the session so the webhook can attribute
+ * the purchase to the visit, including when nobody is logged in.
+ */
+function withAnalyticsId(
+  params: Stripe.Checkout.SessionCreateParams,
+  analyticsId?: string
+): Stripe.Checkout.SessionCreateParams {
+  if (!analyticsId) {
+    return params;
+  }
+
+  return {
+    ...params,
+    metadata: { ...params.metadata, posthog_distinct_id: analyticsId },
+  };
+}
+
 function getCheckoutReturnUrl() {
   const appUrl = getAppUrl();
   return `${appUrl}/auth/checkout-complete?session_id={CHECKOUT_SESSION_ID}`;
@@ -15,10 +33,12 @@ export async function createTrialSetupCheckoutSession({
   plan,
   user,
   uiMode,
+  analyticsId,
 }: {
   plan: Plan;
   user?: User | null;
   uiMode: CheckoutMode;
+  analyticsId?: string;
 }) {
   if (!stripe || !plan.stripePriceId) {
     throw new Error("Paiement non configuré pour ce plan");
@@ -26,9 +46,12 @@ export async function createTrialSetupCheckoutSession({
 
   const returnUrl = getCheckoutReturnUrl();
 
-  const sharedParams: Stripe.Checkout.SessionCreateParams = user?.id
-    ? await buildAuthenticatedTrialSetupParams(plan, user)
-    : buildGuestTrialSetupParams(plan);
+  const sharedParams = withAnalyticsId(
+    user?.id
+      ? await buildAuthenticatedTrialSetupParams(plan, user)
+      : buildGuestTrialSetupParams(plan),
+    analyticsId
+  );
 
   if (uiMode === "embedded_page") {
     return stripe.checkout.sessions.create({
@@ -93,10 +116,12 @@ export async function createSubscriptionCheckoutSession({
   plan,
   user,
   uiMode,
+  analyticsId,
 }: {
   plan: Plan;
   user?: User | null;
   uiMode: CheckoutMode;
+  analyticsId?: string;
 }) {
   if (!stripe || !plan.stripePriceId) {
     throw new Error("Paiement non configuré pour ce plan");
@@ -104,9 +129,12 @@ export async function createSubscriptionCheckoutSession({
 
   const returnUrl = getCheckoutReturnUrl();
 
-  const sharedParams: Stripe.Checkout.SessionCreateParams = user?.id
-    ? await buildAuthenticatedCheckoutParams(plan, user)
-    : buildGuestCheckoutParams(plan);
+  const sharedParams = withAnalyticsId(
+    user?.id
+      ? await buildAuthenticatedCheckoutParams(plan, user)
+      : buildGuestCheckoutParams(plan),
+    analyticsId
+  );
 
   if (uiMode === "embedded_page") {
     return stripe.checkout.sessions.create({
