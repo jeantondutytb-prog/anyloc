@@ -617,7 +617,6 @@ export function SettingsView({ embedded = false }: { embedded?: boolean } = {}) 
 
       <CancelSubscriptionConfirmDialog
         open={showCancelDialog}
-        context="paid"
         loading={cancelPortalLoading}
         onClose={() => setShowCancelDialog(false)}
         onConfirm={() => void openCancelPortal()}

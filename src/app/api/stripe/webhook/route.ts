@@ -4,10 +4,7 @@ import {
   syncProfileFromCheckoutSession,
   syncProfileFromSubscription,
 } from "@/lib/billing";
-import {
-  chargeSubscriptionInvoiceImmediately,
-  syncProfileFromTrialSetupSession,
-} from "@/lib/trial-billing";
+import { chargeSubscriptionInvoiceImmediately } from "@/lib/trial-billing";
 import {
   aliasPostHogUser,
   capturePostHogEvent,
@@ -47,13 +44,12 @@ async function trackCheckoutCompleted(
 
   await capturePostHogEvent({
     distinctId,
-    event: session.mode === "setup" ? "trial_start" : "purchase_completed",
+    event: "purchase_completed",
     properties: {
       plan_id: session.metadata?.plan_id,
       guest_checkout: session.metadata?.guest_checkout === "true",
-      ...(session.mode === "setup"
-        ? {}
-        : { amount_total: session.amount_total, currency: session.currency }),
+      amount_total: session.amount_total,
+      currency: session.currency,
     },
   });
 }
@@ -132,10 +128,7 @@ export async function POST(request: Request) {
 
         // The sync returns the account even for a guest checkout, where it is
         // found or created from the email typed in Stripe.
-        const userId =
-          session.mode === "setup"
-            ? await syncProfileFromTrialSetupSession(session)
-            : await syncProfileFromCheckoutSession(session);
+        const userId = await syncProfileFromCheckoutSession(session);
 
         await trackCheckoutCompleted(
           session,
@@ -156,7 +149,7 @@ export async function POST(request: Request) {
         );
         break;
       case "invoice.created":
-        // Bypass Stripe's ~1h draft window so trial-end / renewal charges
+        // Bypass Stripe's ~1h draft window so renewal charges
         // run at the intended time (e.g. 10:10, not ~11:10).
         await chargeSubscriptionInvoiceImmediately(
           event.data.object as Stripe.Invoice

@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
-import { TrialStatusBanner } from "@/components/dashboard/trial-status-banner";
 import { SUBSCRIPTION_EXPIRED_PATH } from "@/lib/subscription-inactive";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import {
@@ -29,12 +28,5 @@ export default async function ProtectedDashboardLayout({
     redirect(SUBSCRIPTION_EXPIRED_PATH);
   }
 
-  return (
-    <>
-      {access.isTrial && access.trialEndsAt ? (
-        <TrialStatusBanner trialEndsAt={access.trialEndsAt} />
-      ) : null}
-      {children}
-    </>
-  );
+  return children;
 }

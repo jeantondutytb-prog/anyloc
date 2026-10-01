@@ -1,23 +1,14 @@
+// Free trials are no longer offered. These helpers only read the trial fields
+// that older profiles and Stripe subscriptions may still carry.
+
 export const TRIAL_DURATION_MS = 24 * 60 * 60 * 1000;
-
-export const TRIAL_DURATION_SECONDS = TRIAL_DURATION_MS / 1000;
-
-export const TRIAL_DURATION_HOURS = 24;
-
-export const TRIAL_DURATION_LABEL = `${TRIAL_DURATION_HOURS} h`;
-
-export const TRIAL_DURATION_TOLERANCE_SECONDS = 300;
 
 export type TrialStatus = "active" | "converted" | "cancelled" | "charge_failed";
 
-export type TrialProfileFields = {
-  trial_started_at: string | null;
-  trial_ends_at: string | null;
+function isActiveTrial(profile: {
   trial_status: TrialStatus | null;
-  trial_payment_method_id: string | null;
-};
-
-export function isActiveTrial(profile: TrialProfileFields) {
+  trial_ends_at: string | null;
+}) {
   if (profile.trial_status !== "active" || !profile.trial_ends_at) {
     return false;
   }
@@ -25,61 +16,7 @@ export function isActiveTrial(profile: TrialProfileFields) {
   return new Date(profile.trial_ends_at).getTime() > Date.now();
 }
 
-export function getTrialRemainingMs(profile: TrialProfileFields) {
-  if (!isActiveTrial(profile) || !profile.trial_ends_at) {
-    return 0;
-  }
-
-  return Math.max(0, new Date(profile.trial_ends_at).getTime() - Date.now());
-}
-
-export function formatTrialRemaining(ms: number) {
-  const totalMinutes = Math.ceil(ms / (60 * 1000));
-
-  if (totalMinutes >= 60) {
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    return minutes > 0 ? `${hours} h ${minutes} min` : `${hours} h`;
-  }
-
-  return `${totalMinutes} min`;
-}
-
-export function getTrialEndDate(startedAt = new Date()) {
-  return new Date(startedAt.getTime() + TRIAL_DURATION_MS);
-}
-
-export function getTrialEndUnix(startedAt = new Date()) {
-  return Math.floor(getTrialEndDate(startedAt).getTime() / 1000);
-}
-
-export function getTrialEndUnixFromNow(nowMs = Date.now()) {
-  return Math.floor(nowMs / 1000) + TRIAL_DURATION_SECONDS;
-}
-
-export function isTrialDurationDrifted(
-  trialStartUnix: number,
-  trialEndUnix: number,
-  toleranceSeconds = TRIAL_DURATION_TOLERANCE_SECONDS
-) {
-  const actualDurationSeconds = trialEndUnix - trialStartUnix;
-
-  return Math.abs(actualDurationSeconds - TRIAL_DURATION_SECONDS) > toleranceSeconds;
-}
-
-export function isStripeTrialingStatus(status: string | null | undefined) {
-  return status === "trialing";
-}
-
-export function isTrialEndInFuture(trialEndsAt: string | null | undefined) {
-  if (!trialEndsAt) {
-    return false;
-  }
-
-  return new Date(trialEndsAt).getTime() > Date.now();
-}
-
-export function isCancelledTrialStatus(status: TrialStatus | null | undefined) {
+function isCancelledTrialStatus(status: TrialStatus | null | undefined) {
   return status === "cancelled" || status === "charge_failed";
 }
 
@@ -92,17 +29,11 @@ export function isTrialAccessActive(profile: {
     return false;
   }
 
-  const trialFields: TrialProfileFields = {
-    trial_status: profile.trial_status ?? null,
-    trial_ends_at: profile.trial_ends_at ?? null,
-    trial_started_at: null,
-    trial_payment_method_id: null,
-  };
-
   return (
-    isActiveTrial(trialFields) ||
-    isStripeTrialingStatus(profile.subscription_status) ||
-    (profile.trial_status === "active" && isTrialEndInFuture(profile.trial_ends_at))
+    isActiveTrial({
+      trial_status: profile.trial_status ?? null,
+      trial_ends_at: profile.trial_ends_at ?? null,
+    }) || profile.subscription_status === "trialing"
   );
 }
 
