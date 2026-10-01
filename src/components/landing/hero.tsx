@@ -13,6 +13,7 @@ import {
   getOnboardingUrl,
   SITE,
 } from "@/lib/constants";
+import { OnboardingLink } from "@/components/onboarding/onboarding-link";
 
 export function Hero() {
   return (
@@ -48,12 +49,12 @@ export function Hero() {
 
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <div className="flex w-full flex-col items-center gap-2 sm:w-auto">
-              <Link href={getOnboardingUrl("annual")} data-track="cta_clicked" data-track-location="hero" data-track-plan="annual">
+              <OnboardingLink href={getOnboardingUrl("annual")} data-track="cta_clicked" data-track-location="hero" data-track-plan="annual">
                 <Button size="lg" className="w-full sm:w-auto">
                   {CHECKOUT_CTA_LABEL}
                   <ArrowRight className="h-4 w-4" />
                 </Button>
-              </Link>
+              </OnboardingLink>
               <p className="text-center text-xs text-zinc-500 sm:text-sm">
                 {CHECKOUT_CTA_SUBLINE}
               </p>

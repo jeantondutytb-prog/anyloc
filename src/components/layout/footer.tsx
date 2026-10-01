@@ -27,7 +27,7 @@ function FooterLink({
 
 export function Footer() {
   return (
-    <footer className="border-t border-zinc-200 bg-logo-background">
+    <footer className="border-t border-zinc-200 bg-logo-background app-dark:bg-surface">
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
         <div className="grid gap-8 md:grid-cols-4">
           <div>

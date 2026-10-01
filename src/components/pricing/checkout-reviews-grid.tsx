@@ -45,7 +45,7 @@ function ReviewCard({
     .toUpperCase();
 
   return (
-    <article className="flex h-full w-[260px] flex-col rounded-xl border border-zinc-200 bg-white p-4 shadow-sm sm:w-[280px]">
+    <article className="flex h-full w-[260px] flex-col rounded-xl border border-zinc-200 bg-card p-4 shadow-sm sm:w-[280px]">
       <ReviewStars />
 
       <blockquote className="mt-2 flex-1 text-sm leading-relaxed text-zinc-700">
@@ -79,7 +79,7 @@ export function CheckoutReviewsGrid() {
   const items = [...CHECKOUT_REVIEWS, ...CHECKOUT_REVIEWS];
 
   return (
-    <section className="relative mt-10 overflow-hidden rounded-2xl border border-pink-500/15 bg-gradient-to-br from-pink-500/[0.06] via-white to-violet-500/[0.06] py-5 sm:py-6">
+    <section className="relative mt-10 overflow-hidden rounded-2xl border border-pink-500/15 bg-gradient-to-br from-pink-500/[0.06] via-white to-violet-500/[0.06] py-5 app-dark:via-[#0C0C0E] sm:py-6">
       <div className="relative px-4 text-center sm:px-6">
         <Badge className="mb-2 text-[10px]">Avis vérifiés</Badge>
         <h3 className="text-xl font-bold tracking-tight text-zinc-900 sm:text-2xl">
@@ -89,11 +89,11 @@ export function CheckoutReviewsGrid() {
 
       <div className="relative mt-4 overflow-hidden">
         <div
-          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 bg-gradient-to-r from-white to-transparent"
+          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 bg-gradient-to-r from-white to-transparent app-dark:from-[#0C0C0E]"
           aria-hidden="true"
         />
         <div
-          className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-gradient-to-l from-white to-transparent"
+          className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-gradient-to-l from-white to-transparent app-dark:from-[#0C0C0E]"
           aria-hidden="true"
         />
 

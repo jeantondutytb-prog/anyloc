@@ -9,16 +9,18 @@ import { getSubscriptionAccessForUser } from "@/lib/subscription";
 export default async function CheckoutPage({
   searchParams,
 }: {
-  searchParams: Promise<{ plan?: string; canceled?: string }>;
+  searchParams: Promise<{ plan?: string; canceled?: string; preview?: string }>;
 }) {
-  const { plan, canceled } = await searchParams;
+  const { plan, canceled, preview } = await searchParams;
+  // Local design preview without an account: /checkout?preview=1 under `next dev` only.
+  const devPreview = process.env.NODE_ENV === "development" && preview === "1";
   const planId = plan ?? "annual";
 
   if (!isValidPlanId(planId)) {
     redirect("/checkout?plan=annual");
   }
 
-  if (isSupabaseConfigured()) {
+  if (isSupabaseConfigured() && !devPreview) {
     const supabase = await createClient();
     const {
       data: { user },

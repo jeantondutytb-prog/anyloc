@@ -171,7 +171,7 @@ export function AnyLocCheckoutPanel({
   return (
     <div className={cn("anyloc-checkout mx-auto max-w-6xl px-4 sm:px-6", !paymentVisible && "pb-20")}>
       {canceled && (
-        <p className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <p className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 app-dark:border-amber-500/30 app-dark:bg-amber-500/10 app-dark:text-amber-200">
           {copy.canceled}
         </p>
       )}
@@ -353,14 +353,14 @@ export function AnyLocCheckoutPanel({
               publishableKey={stripePublishableKey}
             />
             {updating ? (
-              <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-white/70 text-sm font-semibold text-foreground backdrop-blur-[1px]">
+              <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-card/70 text-sm font-semibold text-foreground backdrop-blur-[1px]">
                 {copy.updating}
               </div>
             ) : null}
           </div>
         ) : error ? (
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-center">
-            <p className="text-sm text-red-600">{error}</p>
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-center app-dark:border-red-500/30 app-dark:bg-red-500/10">
+            <p className="text-sm text-red-600 app-dark:text-red-300">{error}</p>
             <button
               type="button"
               onClick={() => void startCheckout(selectedPlanId)}
@@ -431,7 +431,7 @@ export function AnyLocCheckoutPanel({
       ) : null}
 
       {!paymentVisible && (
-        <div className="fixed inset-x-0 bottom-0 z-50 border-t border-zinc-200 bg-white/95 px-4 py-3 backdrop-blur-sm">
+        <div className="fixed inset-x-0 bottom-0 z-50 border-t border-zinc-200 bg-card/95 px-4 py-3 backdrop-blur-sm">
           <div className="mx-auto flex max-w-2xl items-center justify-between gap-4">
             <div className="hidden sm:block">
               <p className="text-sm font-semibold text-zinc-900">
