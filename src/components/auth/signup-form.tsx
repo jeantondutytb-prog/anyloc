@@ -43,7 +43,7 @@ export function SignupForm({
         {state.error ? (
           <div
             role="alert"
-            className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+            className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
           >
             {state.error}
           </div>
@@ -82,9 +82,9 @@ export function SignupForm({
           )}
         </Button>
 
-        <p className="text-center text-xs leading-relaxed text-zinc-500">
+        <p className="text-center text-xs leading-relaxed text-[#8B8B94]">
           En créant un compte, tu acceptes nos{" "}
-          <Link href="/conditions-generales" className="text-pink-600 hover:underline">
+          <Link href="/conditions-generales" className="text-[#F472B6] hover:underline">
             conditions d&apos;utilisation
           </Link>
           .
@@ -94,11 +94,11 @@ export function SignupForm({
       <AuthDivider />
       <GoogleAuthLink redirectTo={destination} />
 
-      <p className="mt-4 text-center text-sm text-zinc-500">
+      <p className="mt-4 text-center text-sm text-[#8B8B94]">
         Déjà un compte ?{" "}
         <Link
           href={`/login?plan=${plan}&next=${encodeURIComponent(destination)}`}
-          className="font-medium text-pink-600 hover:underline"
+          className="font-medium text-[#F472B6] hover:underline"
         >
           Se connecter
         </Link>

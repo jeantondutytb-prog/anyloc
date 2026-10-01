@@ -26,7 +26,7 @@ function ProofPhone({
       >
         {label}
       </span>
-      <div className="w-full max-w-[148px] overflow-hidden rounded-[1.75rem] border-[3px] border-zinc-900 bg-zinc-900 shadow-lg shadow-pink-500/10 sm:max-w-[168px]">
+      <div className="w-full max-w-[148px] overflow-hidden rounded-[1.75rem] border-[3px] border-zinc-900 bg-zinc-900 shadow-lg shadow-pink-500/10 app-dark:border-[#303038] app-dark:bg-[#16161A] app-dark:shadow-black/50 sm:max-w-[168px]">
         <img
           src={src}
           alt={label}
@@ -123,7 +123,7 @@ export function CheckoutProofCarousel() {
         <button
           type="button"
           onClick={() => shift(-1)}
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-600 transition hover:border-pink-300 hover:text-pink-600"
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 bg-card text-zinc-600 transition hover:border-pink-300 hover:text-pink-600"
           aria-label="Preuve précédente"
         >
           <ChevronLeft className="h-4 w-4" />
@@ -149,7 +149,7 @@ export function CheckoutProofCarousel() {
         <button
           type="button"
           onClick={() => shift(1)}
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-600 transition hover:border-pink-300 hover:text-pink-600"
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 bg-card text-zinc-600 transition hover:border-pink-300 hover:text-pink-600"
           aria-label="Preuve suivante"
         >
           <ChevronRight className="h-4 w-4" />

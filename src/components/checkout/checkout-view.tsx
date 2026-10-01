@@ -48,13 +48,14 @@ export function CheckoutView({
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-background text-foreground">
+    // Dark like the app: checkout continues the onboarding sandbox and signup.
+    <div className="app-dark relative flex min-h-dvh flex-col bg-background text-foreground">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-pink-500/10 blur-[120px]" />
         <div className="absolute top-0 right-0 h-[300px] w-[400px] rounded-full bg-violet-500/10 blur-[100px]" />
       </div>
 
-      <div className="relative border-b border-zinc-200 bg-logo-background/90 backdrop-blur">
+      <div className="relative border-b border-zinc-200 bg-background/90 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-2 px-4 sm:h-16 sm:px-6">
           <Logo nameClassName="text-base font-bold tracking-tight sm:text-lg" />
           <Link

@@ -5,37 +5,42 @@ import { Logo } from "@/components/ui/logo";
 export function AuthShell({
   title,
   description,
+  notice,
   children,
 }: {
   title: string;
   description: string;
+  /** Shown above the title, e.g. the destination picked during onboarding. */
+  notice?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 py-12">
+    // Dark like the app (apps/ios/Anyloc/Theme.swift): signup/login continue
+    // the onboarding sandbox instead of switching back to the light site.
+    <div className="app-dark relative flex min-h-dvh items-center justify-center overflow-hidden bg-[#0A0A0C] px-4 py-12 [color-scheme:dark]">
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute top-1/4 left-1/2 h-[480px] w-[720px] -translate-x-1/2 rounded-full bg-pink-500/10 blur-[120px]" />
-        <div className="absolute top-0 right-0 h-[280px] w-[360px] rounded-full bg-violet-500/10 blur-[100px]" />
-        <div className="absolute bottom-0 left-0 h-[220px] w-[320px] rounded-full bg-orange-500/8 blur-[100px]" />
+        <div className="absolute top-1/4 left-1/2 h-[480px] w-[720px] -translate-x-1/2 rounded-full bg-pink-500/[0.12] blur-[120px]" />
+        <div className="absolute top-0 right-0 h-[280px] w-[360px] rounded-full bg-violet-500/[0.12] blur-[100px]" />
       </div>
 
-      <Card className="animate-auth-enter relative w-full max-w-md overflow-hidden border-zinc-200/80 p-0 shadow-lg shadow-pink-500/5">
-        <div className="flex items-center justify-between gap-4 bg-logo-background px-8 py-6">
+      <Card className="animate-auth-enter relative w-full max-w-md overflow-hidden rounded-[28px] border-[#25252B] bg-[#0C0C0E] p-0 shadow-2xl shadow-black/60">
+        <div className="flex items-center justify-between gap-4 border-b border-[#25252B] px-8 py-5 text-[#F4F4F5]">
           <Logo />
 
           <Link
             href="/"
-            className="text-sm text-zinc-500 transition hover:text-zinc-900"
+            className="text-sm text-[#8B8B94] transition hover:text-[#F4F4F5]"
           >
             Retour
           </Link>
         </div>
 
         <div className="p-8">
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-900">
+          {notice}
+          <h1 className="text-2xl font-bold tracking-tight text-[#F4F4F5]">
             {title}
           </h1>
-          <p className="mt-2 text-sm leading-relaxed text-zinc-500">
+          <p className="mt-2 text-sm leading-relaxed text-[#8B8B94]">
             {description}
           </p>
 

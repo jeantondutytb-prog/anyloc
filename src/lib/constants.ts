@@ -198,8 +198,6 @@ export function getOnboardingUrl(plan?: string) {
   return planId ? `${ONBOARDING_ENTRY_URL}?plan=${planId}` : ONBOARDING_ENTRY_URL;
 }
 
-export const ONBOARDING_TOTAL_STEPS = 2;
-
 export function getOnboardingTrialUrl(plan?: string) {
   return getCheckoutUrl(plan);
 }

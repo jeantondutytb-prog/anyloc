@@ -126,3 +126,6 @@ export function searchOnboardingDestinations(query: string) {
 }
 
 export const ONBOARDING_DESTINATION_KEY = "anyloc-onboarding-destination";
+
+/** Set when "Définir cette position" hands off to signup with a pending pick. */
+export const ONBOARDING_ACTIVATION_PENDING_KEY = "anyloc-onboarding-activation-pending";

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +10,7 @@ import {
 import { PaywallValueStack } from "@/components/pricing/paywall-value-stack";
 import { PlanPrice } from "@/components/pricing/plan-price";
 import { RefundGuaranteeNotice } from "@/components/pricing/refund-guarantee-notice";
+import { OnboardingLink } from "@/components/onboarding/onboarding-link";
 
 export function Pricing() {
   return (
@@ -66,7 +66,7 @@ export function Pricing() {
                 showHeading
               />
 
-              <Link
+              <OnboardingLink
                 href={getOnboardingUrl(plan.id)}
                 className="mt-6 block"
                 data-track="cta_clicked"
@@ -79,7 +79,7 @@ export function Pricing() {
                 >
                   {plan.ctaLabel}
                 </Button>
-              </Link>
+              </OnboardingLink>
             </Card>
           ))}
         </div>

@@ -37,7 +37,7 @@ export function GoogleAuthLink({
       href={href}
       data-track="auth_submitted"
       data-track-method="google"
-      className="flex w-full items-center justify-center gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-medium text-zinc-900 shadow-sm transition hover:border-pink-300 hover:bg-pink-50/40"
+      className="flex w-full items-center justify-center gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-medium text-zinc-900 shadow-sm transition hover:border-pink-300 hover:bg-pink-50/40 app-dark:border-[#25252B] app-dark:bg-[#16161A] app-dark:text-[#F4F4F5] app-dark:shadow-none app-dark:hover:border-pink-500/40 app-dark:hover:bg-[#1C1C21]"
     >
       <GoogleIcon />
       Continuer avec Google
