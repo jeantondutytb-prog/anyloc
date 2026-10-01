@@ -103,7 +103,7 @@ export function RoutesView() {
                 Nom du trajet
               </label>
               <input
-                className="mt-2 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm"
+                className="mt-2 w-full rounded-xl border border-zinc-200 px-3 py-2 text-base sm:text-sm"
                 value={routeName}
                 onChange={(event) => setRouteName(event.target.value)}
               />
@@ -115,7 +115,7 @@ export function RoutesView() {
                 type="number"
                 min={5}
                 max={200}
-                className="mt-2 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm"
+                className="mt-2 w-full rounded-xl border border-zinc-200 px-3 py-2 text-base sm:text-sm"
                 value={speedKmh}
                 onChange={(event) => setSpeedKmh(Number(event.target.value))}
               />

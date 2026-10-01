@@ -342,7 +342,7 @@ export function SettingsView({ embedded = false }: { embedded?: boolean } = {}) 
                       <input
                         id="confirmation"
                         name="confirmation"
-                        className="mt-1.5 w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-red-400/20"
+                        className="mt-1.5 w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-base text-zinc-900 outline-none sm:text-sm transition-colors placeholder:text-zinc-400 focus:border-red-400 focus:ring-2 focus:ring-red-400/20"
                         placeholder="SUPPRIMER"
                         required
                       />
