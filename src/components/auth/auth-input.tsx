@@ -18,7 +18,7 @@ export function AuthInput({
       <input
         id={id}
         className={cn(
-          "mt-1.5 w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-pink-500/50 focus:ring-2 focus:ring-pink-500/20",
+          "mt-1.5 w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-base text-zinc-900 outline-none sm:text-sm transition-colors placeholder:text-zinc-400 focus:border-pink-500/50 focus:ring-2 focus:ring-pink-500/20",
           error && "border-red-300 focus:border-red-400 focus:ring-red-400/20",
           className
         )}
@@ -57,7 +57,7 @@ export function AuthPasswordInput({
           id={id}
           type={showPassword ? "text" : "password"}
           className={cn(
-            "w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 pr-20 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-pink-500/50 focus:ring-2 focus:ring-pink-500/20",
+            "w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 pr-20 text-base text-zinc-900 sm:text-sm outline-none transition-colors placeholder:text-zinc-400 focus:border-pink-500/50 focus:ring-2 focus:ring-pink-500/20",
             className
           )}
           {...props}
