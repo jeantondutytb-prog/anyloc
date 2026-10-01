@@ -26,6 +26,16 @@ async function trackCheckoutCompleted(
   session: Stripe.Checkout.Session,
   userId: string | null
 ) {
+  // A delayed payment method (e.g. SEPA) completes the session before the money
+  // arrives: nothing has been bought yet, so don't count it as a purchase.
+  if (
+    session.payment_status &&
+    session.payment_status !== "paid" &&
+    session.payment_status !== "no_payment_required"
+  ) {
+    return;
+  }
+
   const browserId = parsePostHogDistinctId(session.metadata?.posthog_distinct_id);
   const distinctId = userId ?? browserId ?? `stripe:${session.id}`;
 
@@ -90,7 +100,10 @@ export async function POST(request: Request) {
     }
 
     switch (event.type) {
-      case "checkout.session.completed": {
+      case "checkout.session.completed":
+      // A delayed payment method (e.g. SEPA) is only paid here: the completed
+      // event above arrived unpaid and was skipped by the sync and tracking.
+      case "checkout.session.async_payment_succeeded": {
         const session = event.data.object as Stripe.Checkout.Session;
 
         // The sync returns the account even for a guest checkout, where it is
