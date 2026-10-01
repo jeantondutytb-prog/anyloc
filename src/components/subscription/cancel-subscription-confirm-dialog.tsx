@@ -71,6 +71,8 @@ export function CancelSubscriptionConfirmDialog({
           type="button"
           onClick={onClose}
           disabled={loading}
+          data-track="cancel_subscription_dismissed"
+          data-track-context={context}
           className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-white text-zinc-500 shadow-sm ring-1 ring-zinc-200 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50"
           aria-label="Fermer"
         >
@@ -126,6 +128,8 @@ export function CancelSubscriptionConfirmDialog({
             )}
             disabled={loading}
             onClick={onConfirm}
+            data-track="cancel_subscription_confirmed"
+            data-track-context={context}
           >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             {confirmLabel}
@@ -136,6 +140,8 @@ export function CancelSubscriptionConfirmDialog({
             className="sm:flex-1"
             disabled={loading}
             onClick={onClose}
+            data-track="cancel_subscription_dismissed"
+            data-track-context={context}
           >
             {dismissLabel}
           </Button>

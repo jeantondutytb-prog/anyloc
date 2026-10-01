@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { track } from "@/lib/analytics/track";
 import { ShieldCheck, XCircle, Zap } from "lucide-react";
 import { AuthDivider } from "@/components/auth/auth-divider";
 import { GoogleAuthLink } from "@/components/auth/google-auth-link";
@@ -89,6 +90,7 @@ export function AnyLocCheckoutPanel({
       setUpdating(true);
     }
     setError(null);
+    const startedAt = performance.now();
 
     try {
       const res = await fetch("/api/stripe/embedded-checkout", {
@@ -105,10 +107,17 @@ export function AnyLocCheckoutPanel({
 
       if (requestRef.current === controller) {
         setClientSecret(data.clientSecret);
+        track("checkout_payment_form_ready", {
+          plan: planId,
+          load_ms: Math.round(performance.now() - startedAt),
+          retry: !isInitial,
+        });
       }
     } catch (err) {
       if (controller.signal.aborted) return;
-      setError(err instanceof Error ? err.message : copy.errGeneric);
+      const message = err instanceof Error ? err.message : copy.errGeneric;
+      setError(message);
+      track("checkout_error", { plan: planId, error: message });
     } finally {
       if (requestRef.current === controller) {
         setLoading(false);
@@ -118,6 +127,7 @@ export function AnyLocCheckoutPanel({
   }
 
   function selectPlan(planId: string) {
+    track("checkout_plan_selected", { plan: planId, previous_plan: selectedPlanId });
     if (planId !== selectedPlanId) {
       onPlanChange(planId);
     }
@@ -130,6 +140,17 @@ export function AnyLocCheckoutPanel({
     void startCheckout(selectedPlanId, true);
     return () => requestRef.current?.abort();
   }, [selectedPlanId]);
+
+  useEffect(() => {
+    track("checkout_viewed", {
+      plan: selectedPlanId,
+      canceled: Boolean(canceled),
+      destination_city: destination?.city,
+      embedded_in_onboarding: Boolean(onBack),
+    });
+    // Once per mount: plan changes are tracked by checkout_plan_selected.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const el = paymentSectionRef.current;
@@ -342,6 +363,8 @@ export function AnyLocCheckoutPanel({
               type="button"
               onClick={() => void startCheckout(selectedPlanId)}
               disabled={loading}
+              data-track="checkout_retry_clicked"
+              data-track-plan={selectedPlanId}
               className="mt-3 rounded-full btn-gradient px-6 py-2.5 text-sm font-bold transition hover:opacity-90 disabled:opacity-60"
             >
               {copy.retryCta}
@@ -398,6 +421,7 @@ export function AnyLocCheckoutPanel({
         <button
           type="button"
           onClick={onBack}
+          data-track="checkout_back_clicked"
           className="mt-6 w-full text-center text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           {copy.backCta}
@@ -418,6 +442,8 @@ export function AnyLocCheckoutPanel({
             <button
               type="button"
               onClick={scrollToPayment}
+              data-track="checkout_sticky_cta_clicked"
+              data-track-plan={selectedPlanId}
               className="btn-gradient w-full rounded-full px-8 py-3 text-sm font-bold text-white transition hover:opacity-90 sm:w-auto"
             >
               {copy.stickyCta}

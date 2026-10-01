@@ -107,6 +107,8 @@ export function OnboardingChecklist({
                       size="sm"
                       className="flex-1"
                       onClick={onMarkInstallComplete}
+                      data-track="install_marked_complete"
+                      data-track-source="onboarding_checklist"
                     >
                       C&apos;est installé
                     </Button>

@@ -10,6 +10,7 @@ import {
 import { Loader2, MapPin, Search } from "lucide-react";
 import type { GeocodeResult } from "@/lib/geocoding";
 import { DESTINATION_SPOTS } from "@/lib/destination-spots";
+import { track } from "@/lib/analytics/track";
 import { cn } from "@/lib/utils";
 
 type Location = {
@@ -88,6 +89,10 @@ export const LocationSearch = forwardRef<LocationSearchHandle, LocationSearchPro
             }
 
             setResults(data.results ?? []);
+            // Places people want but can't find are product gaps.
+            if (!data.results?.length && getLocalMatches(trimmed).length === 0) {
+              track("location_search_no_results", { query: trimmed });
+            }
           })
           .catch((fetchError) => {
             if (controller.signal.aborted) {
@@ -95,6 +100,9 @@ export const LocationSearch = forwardRef<LocationSearchHandle, LocationSearchPro
             }
 
             setResults([]);
+            track("location_search_failed", {
+              error: fetchError instanceof Error ? fetchError.message : String(fetchError),
+            });
             setError(
               fetchError instanceof Error
                 ? fetchError.message
@@ -129,6 +137,10 @@ export const LocationSearch = forwardRef<LocationSearchHandle, LocationSearchPro
     const showDropdown = open && query.trim().length >= 2;
 
     function pickResult(result: GeocodeResult) {
+      track("location_search_picked", {
+        destination: result.name,
+        query_length: query.trim().length,
+      });
       onSelect({
         name: result.subtitle ? `${result.name} — ${result.subtitle}` : result.name,
         lat: result.lat,

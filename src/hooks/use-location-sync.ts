@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { track } from "@/lib/analytics/track";
 
 export type SyncedLocation = {
   name: string;
@@ -113,6 +114,13 @@ export function useLocationSync({
         }
 
         setLocation(data.location);
+        track("location_saved", {
+          destination: data.location?.name,
+          mode: data.location?.mode,
+          active: data.location?.isActive,
+          waypoints: data.location?.waypoints?.length ?? 0,
+          speed_kmh: data.location?.mode === "route" ? data.location?.speedKmh : undefined,
+        });
         onSynced?.();
         return data.location as SyncedLocation;
       } catch (saveError) {
@@ -121,6 +129,7 @@ export function useLocationSync({
             ? saveError.message
             : "Impossible d'enregistrer ta position.";
         setError(message);
+        track("location_save_failed", { error: message, active: next.isActive });
         throw saveError;
       } finally {
         setSaving(false);

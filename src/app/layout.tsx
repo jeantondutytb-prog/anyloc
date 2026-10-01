@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AmplitudeProvider } from "@/components/amplitude/amplitude-provider";
+import { AnalyticsListener } from "@/components/analytics/analytics-listener";
 import { ClarityTag } from "@/components/clarity/clarity-tag";
 import { CrispChat } from "@/components/crisp/crisp-chat";
 import { PostHogProvider } from "@/components/posthog/posthog-provider";
@@ -39,6 +40,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <ScrollToTop />
         <PostHogProvider />
         <AmplitudeProvider />
+        <AnalyticsListener />
         <ClarityTag />
         {children}
         <CrispChat />

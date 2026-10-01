@@ -129,6 +129,8 @@ function BillingPortalButton({
         size={size}
         disabled={loading}
         onClick={() => void openPortal()}
+        data-track="billing_portal_opened"
+        data-track-flow={flow}
       >
         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
         {children}
@@ -240,6 +242,7 @@ export function SettingsView({ embedded = false }: { embedded?: boolean } = {}) 
                     size="sm"
                     className="mt-4"
                     onClick={() => setShowPasswordForm(true)}
+                    data-track="settings_password_form_opened"
                   >
                     Modifier le mot de passe
                   </Button>
@@ -314,6 +317,7 @@ export function SettingsView({ embedded = false }: { embedded?: boolean } = {}) 
                     size="sm"
                     className="mt-4 border-red-200 text-red-700 hover:border-red-300 hover:bg-red-50"
                     onClick={() => setShowDeleteForm(true)}
+                    data-track="delete_account_form_opened"
                   >
                     Supprimer mon compte
                   </Button>
@@ -481,6 +485,8 @@ export function SettingsView({ embedded = false }: { embedded?: boolean } = {}) 
                     variant="secondary"
                     size="sm"
                     className="mt-4 border-amber-200 text-amber-800 hover:border-amber-300 hover:bg-amber-50"
+                    data-track="cancel_subscription_dialog_opened"
+                    data-track-context="paid"
                     onClick={() => {
                       setCancelPortalError(null);
                       setShowCancelDialog(true);

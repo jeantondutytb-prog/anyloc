@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Copy, Loader2, Smartphone, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { track } from "@/lib/analytics/track";
 import { Card } from "@/components/ui/card";
 
 type DeviceItem = {
@@ -92,13 +93,15 @@ export function DeviceLinkSection() {
         platform,
         apiBaseUrl: data.apiBaseUrl,
       });
+      track("device_link_created", { platform, source: "device_link_section" });
       await loadDevices();
     } catch (createError) {
-      setError(
+      const message =
         createError instanceof Error
           ? createError.message
-          : "Impossible de créer le token."
-      );
+          : "Impossible de créer le token.";
+      setError(message);
+      track("device_link_failed", { platform, source: "device_link_section", error: message });
     } finally {
       setCreating(null);
     }
@@ -115,6 +118,7 @@ export function DeviceLinkSection() {
         throw new Error(data.error ?? "Impossible de supprimer l'appareil.");
       }
 
+      track("device_revoked");
       await loadDevices();
     } catch (revokeError) {
       setError(
@@ -131,6 +135,7 @@ export function DeviceLinkSection() {
     }
 
     await navigator.clipboard.writeText(createdToken.token);
+    track("device_token_copied", { platform: createdToken.platform });
     setCopied(true);
     window.setTimeout(() => setCopied(false), 2000);
   };

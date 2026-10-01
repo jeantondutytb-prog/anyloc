@@ -15,7 +15,7 @@ import {
 import { SetupQrCode } from "@/components/dashboard/setup-qr-code";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { capturePostHogClientEvent } from "@/lib/posthog/browser";
+import { track } from "@/lib/analytics/track";
 import { detectClientDevice, detectUserPlatform } from "@/lib/platform";
 import { cn } from "@/lib/utils";
 import { buildWebSpoofBookmarklet } from "@/lib/web-spoof-bookmarklet";
@@ -428,7 +428,7 @@ export function WebSetupWizard({
       return;
     }
 
-    capturePostHogClientEvent("web_setup_step_viewed", {
+    track("web_setup_step_viewed", {
       step: step.id,
       step_index: stepIndex + 1,
       payment_success: paymentSuccess,
@@ -520,7 +520,7 @@ export function WebSetupWizard({
   function goNext() {
     onStepComplete?.(step.id);
     if (stepIndex >= WEB_SETUP_STEP_ITEMS.length - 1) {
-      capturePostHogClientEvent("web_setup_completed", {
+      track("web_setup_completed", {
         payment_success: paymentSuccess,
       });
       onComplete();

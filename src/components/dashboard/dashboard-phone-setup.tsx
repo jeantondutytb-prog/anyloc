@@ -25,6 +25,7 @@ import {
   getPublicApiBaseUrl,
 } from "@/lib/device-setup-link";
 import { cn } from "@/lib/utils";
+import { track } from "@/lib/analytics/track";
 
 type Platform = "ios" | "android";
 
@@ -155,13 +156,15 @@ export function DashboardPhoneSetup({
         JSON.stringify(nextToken)
       );
       setCreatedToken(nextToken);
+      track("device_link_created", { platform, source: "phone_setup" });
       onLinked?.();
     } catch (createError) {
-      setError(
+      const message =
         createError instanceof Error
           ? createError.message
-          : "Impossible de préparer ton téléphone."
-      );
+          : "Impossible de préparer ton téléphone.";
+      setError(message);
+      track("device_link_failed", { platform, source: "phone_setup", error: message });
     } finally {
       setCreating(false);
     }
@@ -210,6 +213,7 @@ export function DashboardPhoneSetup({
     }
 
     await navigator.clipboard.writeText(createdToken.token);
+    track("device_token_copied", { platform: createdToken.platform });
     setCopied(true);
     window.setTimeout(() => setCopied(false), 2000);
   };
@@ -271,6 +275,8 @@ export function DashboardPhoneSetup({
           <button
             key={value}
             type="button"
+            data-track="phone_setup_platform_selected"
+            data-track-platform={value}
             onClick={() => {
               setPlatform(value);
               setError(null);
@@ -312,6 +318,9 @@ export function DashboardPhoneSetup({
                     <a
                       href={setupDownload.downloadPath}
                       className="flex-1"
+                      data-track="app_downloaded"
+                      data-track-platform={isMac ? "mac" : "windows"}
+                      data-track-source="phone_setup"
                       onClick={() => setDownloaded(true)}
                     >
                       <Button size="sm" className="w-full">

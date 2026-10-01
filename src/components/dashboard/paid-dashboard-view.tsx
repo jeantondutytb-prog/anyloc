@@ -14,7 +14,7 @@ import { Card } from "@/components/ui/card";
 import { useAccount } from "@/hooks/use-account";
 import { useDownloads, type DownloadAssetInfo } from "@/hooks/use-downloads";
 import { usePaymentSuccess } from "@/hooks/use-payment-success";
-import { capturePostHogClientEvent } from "@/lib/posthog/browser";
+import { track as trackEvent } from "@/lib/analytics/track";
 import { formatSubscriptionStatusLabel } from "@/lib/account-billing-types";
 import { getPlanDisplayName } from "@/lib/constants";
 import { dashboardHref, getDashboardBasePath } from "@/lib/dashboard-paths";
@@ -173,7 +173,7 @@ export function PaidDashboardView({
       );
 
   function handleDownload(platform: string) {
-    capturePostHogClientEvent("app_downloaded", { platform, source: "dashboard" });
+    trackEvent("app_downloaded", { platform, source: "dashboard" });
   }
 
   const desktopCard =

@@ -35,6 +35,8 @@ export function GoogleAuthLink({
   return (
     <a
       href={href}
+      data-track="auth_submitted"
+      data-track-method="google"
       className="flex w-full items-center justify-center gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-medium text-zinc-900 shadow-sm transition hover:border-pink-300 hover:bg-pink-50/40"
     >
       <GoogleIcon />
