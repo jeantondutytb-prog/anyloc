@@ -2,14 +2,19 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Volume2, VolumeX } from "lucide-react";
+import { track } from "@/lib/analytics/track";
 
 // Rendered from apps/video (`npm run render`); re-render there to update.
 const SRC = "/vsl/anyloc-vsl.mp4";
 const POSTER = "/vsl/anyloc-vsl-poster.jpg";
+const WATCH_MILESTONES = [25, 50, 75, 100];
 
 export function VslPlayer() {
   const ref = useRef<HTMLVideoElement>(null);
   const [muted, setMuted] = useState(true);
+  // Watch progress only counts once the sound is on: the muted autoplay loop
+  // says nothing about whether the visitor actually watched the pitch.
+  const reachedRef = useRef(new Set<number>());
 
   useEffect(() => {
     const video = ref.current;
@@ -27,10 +32,30 @@ export function VslPlayer() {
       video.currentTime = 0;
       video.muted = false;
       video.play().catch(() => {});
+      reachedRef.current.clear();
+      track("vsl_sound_on");
     } else {
       video.muted = true;
+      track("vsl_sound_off", { seconds_watched: Math.round(video.currentTime) });
     }
     setMuted(!muted);
+  };
+
+  const onTimeUpdate = () => {
+    const video = ref.current;
+    if (!video || video.muted || !video.duration) return;
+
+    // `loop` never fires `ended`, so 100% is "within the last half second".
+    const percent = Math.min(
+      100,
+      Math.round(((video.currentTime + 0.5) / video.duration) * 100)
+    );
+    for (const milestone of WATCH_MILESTONES) {
+      if (percent >= milestone && !reachedRef.current.has(milestone)) {
+        reachedRef.current.add(milestone);
+        track("vsl_progress", { percent: milestone });
+      }
+    }
   };
 
   return (
@@ -45,6 +70,8 @@ export function VslPlayer() {
         playsInline
         preload="metadata"
         onClick={toggleSound}
+        onTimeUpdate={onTimeUpdate}
+        onError={() => track("vsl_load_failed")}
         aria-label="Anyloc en 30 secondes : change ta position sur Snap, Insta, Tinder et tes jeux"
         className="aspect-video w-full cursor-pointer rounded-xl bg-zinc-950 object-cover"
       />

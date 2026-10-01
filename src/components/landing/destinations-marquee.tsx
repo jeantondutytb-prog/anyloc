@@ -6,7 +6,7 @@ export function DestinationsMarquee() {
   const items = [...DESTINATIONS, ...DESTINATIONS];
 
   return (
-    <section className="overflow-hidden border-y border-pink-500/10 bg-gradient-to-r from-pink-500/5 via-violet-500/5 to-orange-500/5 py-4">
+    <section data-track-section="destinations_marquee" className="overflow-hidden border-y border-pink-500/10 bg-gradient-to-r from-pink-500/5 via-violet-500/5 to-orange-500/5 py-4">
       <div className="flex animate-marquee gap-8 whitespace-nowrap">
         {items.map((city, i) => (
           <span

@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { capturePostHogClientEvent } from "@/lib/posthog/browser";
+import { track } from "@/lib/analytics/track";
 import {
   ArrowLeft,
   ChevronRight,
@@ -338,7 +338,7 @@ function OnboardingViewContent() {
   }, [step]);
 
   useEffect(() => {
-    capturePostHogClientEvent("onboarding_step_viewed", {
+    track("onboarding_step_viewed", {
       step,
       step_name: STEP_NAMES[step as keyof typeof STEP_NAMES],
     });
@@ -388,7 +388,7 @@ function OnboardingViewContent() {
   }
 
   function continueToSignup() {
-    capturePostHogClientEvent("onboarding_completed", {
+    track("onboarding_completed", {
       destination_city: destination.city,
       plan: selectedPlanId,
       device,

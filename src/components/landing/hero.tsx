@@ -16,7 +16,7 @@ import {
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden pt-32 pb-20 sm:pt-40 sm:pb-28">
+    <section data-track-section="hero" className="relative overflow-hidden pt-32 pb-20 sm:pt-40 sm:pb-28">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute top-1/4 left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-pink-500/10 blur-[120px]" />
         <div className="absolute top-0 right-0 h-[300px] w-[400px] rounded-full bg-violet-500/10 blur-[100px]" />
@@ -48,7 +48,7 @@ export function Hero() {
 
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <div className="flex w-full flex-col items-center gap-2 sm:w-auto">
-              <Link href={getOnboardingUrl("annual")}>
+              <Link href={getOnboardingUrl("annual")} data-track="cta_clicked" data-track-location="hero" data-track-plan="annual">
                 <Button size="lg" className="w-full sm:w-auto">
                   {CHECKOUT_CTA_LABEL}
                   <ArrowRight className="h-4 w-4" />
@@ -58,7 +58,7 @@ export function Hero() {
                 {CHECKOUT_CTA_SUBLINE}
               </p>
             </div>
-            <Link href="/#how-it-works">
+            <Link href="/#how-it-works" data-track="cta_clicked" data-track-location="hero_secondary">
               <Button variant="secondary" size="lg" className="w-full sm:w-auto">
                 <Play className="h-4 w-4" />
                 Voir comment ça marche
@@ -70,6 +70,8 @@ export function Hero() {
             Déjà client ?{" "}
             <Link
               href="/login"
+              data-track="login_link_clicked"
+              data-track-location="hero"
               className="font-medium text-pink-600 transition-colors hover:text-pink-700 hover:underline"
             >
               Connexion

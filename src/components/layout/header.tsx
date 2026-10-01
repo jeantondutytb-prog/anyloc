@@ -31,12 +31,12 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <Link href="/login">
+          <Link href="/login" data-track="login_link_clicked" data-track-location="header">
             <Button variant="ghost" size="sm">
               Connexion
             </Button>
           </Link>
-          <Link href={getOnboardingUrl("annual")}>
+          <Link href={getOnboardingUrl("annual")} data-track="cta_clicked" data-track-location="header" data-track-plan="annual">
             <Button size="sm">{CHECKOUT_CTA_LABEL_SHORT}</Button>
           </Link>
         </div>

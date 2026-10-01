@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Clock3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { track } from "@/lib/analytics/track";
 import { CancelSubscriptionConfirmDialog } from "@/components/subscription/cancel-subscription-confirm-dialog";
 import { formatTrialRemaining, getTrialRemainingMs } from "@/lib/trial";
 
@@ -42,6 +43,7 @@ export function TrialStatusBanner({ trialEndsAt }: { trialEndsAt: string }) {
         throw new Error(data.error ?? "Impossible de résilier l'abonnement.");
       }
 
+      track("trial_cancelled", { remaining_hours: Math.round(remainingMs / 3_600_000) });
       setShowCancelDialog(false);
       setCancelled(true);
       window.location.reload();
@@ -83,6 +85,8 @@ export function TrialStatusBanner({ trialEndsAt }: { trialEndsAt: string }) {
           className="shrink-0"
           disabled={cancelling}
           onClick={() => setShowCancelDialog(true)}
+          data-track="cancel_subscription_dialog_opened"
+          data-track-context="trial"
         >
           Résilier avant le débit
         </Button>

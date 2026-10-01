@@ -10,7 +10,7 @@ import {
 
 export function Cta() {
   return (
-    <section className="py-24 sm:py-32">
+    <section data-track-section="final_cta" className="py-24 sm:py-32">
       <div className="mx-auto max-w-4xl px-4 text-center sm:px-6">
         <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
           Prêt à changer de life ?
@@ -19,7 +19,7 @@ export function Cta() {
           {CHECKOUT_MARKETING_LINE}
         </p>
         <div className="mt-8 flex flex-col items-center gap-4">
-          <Link href={getOnboardingUrl("annual")}>
+          <Link href={getOnboardingUrl("annual")} data-track="cta_clicked" data-track-location="final_cta" data-track-plan="annual">
             <Button size="lg">
               {CHECKOUT_CTA_LABEL}
               <ArrowRight className="h-4 w-4" />
@@ -30,6 +30,8 @@ export function Cta() {
             Déjà client ?{" "}
             <Link
               href="/login"
+              data-track="login_link_clicked"
+              data-track-location="final_cta"
               className="font-medium text-pink-600 transition-colors hover:text-pink-700 hover:underline"
             >
               Connexion

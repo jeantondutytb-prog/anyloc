@@ -23,7 +23,7 @@ const steps = [
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="border-y border-zinc-200 bg-pink-50/50 py-24 sm:py-32">
+    <section id="how-it-works" data-track-section="how_it_works" className="border-y border-zinc-200 bg-pink-50/50 py-24 sm:py-32">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">

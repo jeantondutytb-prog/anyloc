@@ -296,6 +296,7 @@ export function RemoteView() {
             <button
               type="button"
               onClick={toggleFavorite}
+              data-track="remote_favorite_toggled"
               aria-label={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
               className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-100"
             >

@@ -1,13 +1,8 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { syncProfileFromCheckoutSession } from "@/lib/billing";
 import { syncProfileFromTrialSetupSession } from "@/lib/trial-billing";
 import { CHECKOUT_INTENT_COOKIE } from "@/lib/checkout-intent-cookie";
-import {
-  createMagicLinkRedirectUrl,
-  redeemCheckoutSession,
-  sendMagicLinkEmail,
-} from "@/lib/guest-account";
+import { sendMagicLinkEmail } from "@/lib/guest-account";
 import { getAppUrl, stripe } from "@/lib/stripe";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
@@ -68,31 +63,18 @@ export async function GET(request: Request) {
       }
     }
 
+    // The checkout email is typed by the payer and never verified by Stripe,
+    // so it can belong to someone else's existing account. Never log this
+    // browser in from it: email the link to the account's own inbox.
     const redirectTo = `${getAppUrl()}/dashboard?success=true`;
-    const cookieStore = await cookies();
-    const hasMatchingIntent =
-      cookieStore.get(CHECKOUT_INTENT_COOKIE)?.value === sessionId;
-    const redeemed = hasMatchingIntent && (await redeemCheckoutSession(sessionId));
-
-    if (!redeemed) {
-      // No proof this browser is the one that started checkout (or this
-      // session_id was already used once) — never hand out an auto-login
-      // link over a redirect an attacker could have obtained. Email it to
-      // the account's own inbox instead.
-      await sendMagicLinkEmail(email, redirectTo);
-      const response = NextResponse.redirect(
-        new URL("/login?checkout=email-sent", origin)
-      );
-      response.cookies.delete({
-        name: CHECKOUT_INTENT_COOKIE,
-        path: "/auth/checkout-complete",
-      });
-      return response;
-    }
-
-    const magicLink = await createMagicLinkRedirectUrl(email, redirectTo);
-    const response = NextResponse.redirect(magicLink);
-    response.cookies.delete(CHECKOUT_INTENT_COOKIE);
+    await sendMagicLinkEmail(email, redirectTo);
+    const response = NextResponse.redirect(
+      new URL("/login?checkout=email-sent", origin)
+    );
+    response.cookies.delete({
+      name: CHECKOUT_INTENT_COOKIE,
+      path: "/auth/checkout-complete",
+    });
     return response;
   } catch (error) {
     console.error("[auth/checkout-complete]", error);

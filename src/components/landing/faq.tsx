@@ -3,13 +3,14 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { FAQ } from "@/lib/constants";
+import { track } from "@/lib/analytics/track";
 import { cn } from "@/lib/utils";
 
 export function Faq() {
   const [open, setOpen] = useState<number | null>(0);
 
   return (
-    <section id="faq" className="border-t border-zinc-200 py-24 sm:py-32">
+    <section id="faq" data-track-section="faq" className="border-t border-zinc-200 py-24 sm:py-32">
       <div className="mx-auto max-w-3xl px-4 sm:px-6">
         <div className="text-center">
           <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
@@ -25,7 +26,12 @@ export function Faq() {
             >
               <button
                 type="button"
-                onClick={() => setOpen(open === i ? null : i)}
+                onClick={() => {
+                  if (open !== i) {
+                    track("faq_opened", { question: item.q, index: i });
+                  }
+                  setOpen(open === i ? null : i);
+                }}
                 className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
               >
                 <span className="font-medium text-zinc-900">{item.q}</span>

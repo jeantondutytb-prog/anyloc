@@ -44,6 +44,8 @@ export function InstallPrompt({ onMarkComplete }: InstallPromptProps) {
         <button
           type="button"
           onClick={onMarkComplete}
+          data-track="install_marked_complete"
+          data-track-source="install_prompt"
           className="mt-6 text-sm text-pink-600 underline-offset-4 hover:underline"
         >
           J&apos;ai déjà installé Anyloc — passer à la carte

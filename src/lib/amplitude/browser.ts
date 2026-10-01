@@ -5,6 +5,7 @@ import {
   identify,
   reset,
   setUserId,
+  track,
 } from "@amplitude/unified";
 
 let initPromise: Promise<void> | null = null;
@@ -68,5 +69,18 @@ export function resetAmplitudeUser() {
     }
   } catch (error) {
     console.error("[amplitude] Failed to reset user", error);
+  }
+}
+
+export function trackAmplitudeEvent(
+  event: string,
+  properties?: Record<string, unknown>
+) {
+  try {
+    if (isAmplitudeBrowserReady()) {
+      track(event, properties);
+    }
+  } catch (error) {
+    console.error("[amplitude] Failed to track event", error);
   }
 }

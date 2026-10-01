@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { CheckCircle2, Loader2, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { track } from "@/lib/analytics/track";
 
 type InstallState =
   | { kind: "not_started" }
@@ -72,6 +73,18 @@ export function IphoneInstallView({ embedded = false }: { embedded?: boolean } =
 
   const callbackFailed = searchParams.get("etape") === "erreur";
 
+  // One event per step reached: shows where the iPhone install funnel leaks
+  // (not eligible, wrong browser, stuck on the profile, build failures…).
+  useEffect(() => {
+    if (!status) return;
+    track("iphone_install_state", {
+      state: status.eligible ? status.state.kind : "not_eligible",
+      in_safari: onIphone,
+      callback_failed: callbackFailed,
+      error: status.eligible && status.state.kind === "failed" ? status.state.message : undefined,
+    });
+  }, [status?.eligible, kind, onIphone, callbackFailed]); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <div
       className={
@@ -115,6 +128,7 @@ export function IphoneInstallView({ embedded = false }: { embedded?: boolean } =
               <p className="font-semibold text-zinc-900">{pageUrl.replace(/^https?:\/\//, "")}</p>
               <Button
                 type="button"
+                data-track="iphone_install_link_copied"
                 onClick={() => {
                   void navigator.clipboard.writeText(pageUrl).then(() => setCopied(true));
                 }}
@@ -141,7 +155,10 @@ export function IphoneInstallView({ embedded = false }: { embedded?: boolean } =
                 <li>Ouvre <strong>Réglages</strong> → <strong>Profil téléchargé</strong> → <strong>Installer</strong>.</li>
                 <li>Reviens ici : on prépare ton app (2 à 5 minutes).</li>
               </ol>
-              <Button onClick={() => { window.location.href = "/api/ios/enroll"; }}>
+              <Button
+                data-track="iphone_install_enroll_clicked"
+                onClick={() => { window.location.href = "/api/ios/enroll"; }}
+              >
                 Préparer mon iPhone
               </Button>
             </>
@@ -166,7 +183,10 @@ export function IphoneInstallView({ embedded = false }: { embedded?: boolean } =
               <p className="flex items-center gap-2 font-semibold text-emerald-700">
                 <CheckCircle2 className="h-5 w-5" /> Ton app est prête.
               </p>
-              <Button onClick={() => { window.location.href = status.installUrl!; }}>
+              <Button
+                data-track="iphone_install_app_clicked"
+                onClick={() => { window.location.href = status.installUrl!; }}
+              >
                 Installer Anyloc
               </Button>
               <p className="text-xs text-zinc-500">
@@ -178,7 +198,11 @@ export function IphoneInstallView({ embedded = false }: { embedded?: boolean } =
           {status.state.kind === "failed" && (
             <>
               <p className="rounded-xl bg-red-50 p-3 text-red-700">{status.state.message}</p>
-              <Button onClick={() => { window.location.href = "/api/ios/enroll"; }}>
+              <Button
+                data-track="iphone_install_enroll_clicked"
+                data-track-retry="true"
+                onClick={() => { window.location.href = "/api/ios/enroll"; }}
+              >
                 Réessayer
               </Button>
             </>

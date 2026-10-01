@@ -92,6 +92,7 @@ export function WebSpoofView() {
             disabled={!canEnable}
             variant={enabled ? "secondary" : "default"}
             onClick={() => setEnabled((current) => !current)}
+            data-track={enabled ? "web_spoof_disabled" : "web_spoof_enabled"}
           >
             <Power className="h-4 w-4" />
             {enabled ? "Désactiver le spoof" : "Activer le spoof web"}

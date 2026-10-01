@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { signup, type AuthState } from "@/app/auth/actions";
 import { AuthDivider } from "@/components/auth/auth-divider";
 import { AuthInput, AuthPasswordInput } from "@/components/auth/auth-input";
 import { GoogleAuthLink } from "@/components/auth/google-auth-link";
 import { Button } from "@/components/ui/button";
+import { track } from "@/lib/analytics/track";
 import { getCheckoutUrl } from "@/lib/constants";
 import { MIN_PASSWORD_LENGTH } from "@/lib/password-policy";
 
@@ -22,11 +23,22 @@ export function SignupForm({
 }) {
   const [state, formAction, pending] = useActionState(signup, initialState);
   const [showPassword, setShowPassword] = useState(false);
+
+  // A new state object comes back after every submission, even an identical error.
+  useEffect(() => {
+    if (state.error) {
+      track("auth_failed", { flow: "signup", method: "password", error: state.error });
+    }
+  }, [state]);
   const destination = redirectTo ?? getCheckoutUrl(plan);
 
   return (
     <div>
-      <form action={formAction} className="space-y-4">
+      <form
+        action={formAction}
+        onSubmit={() => track("auth_submitted", { flow: "signup", method: "password", plan })}
+        className="space-y-4"
+      >
         <input type="hidden" name="redirectTo" value={destination} />
         {state.error ? (
           <div

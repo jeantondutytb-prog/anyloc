@@ -62,3 +62,6 @@ dist/
 # iOS vendor binaries (compiled locally, too large for Git)
 apps/ios/Vendor/idevice/*.a
 .claude/worktrees/
+
+# local tool reports
+.gstack/
