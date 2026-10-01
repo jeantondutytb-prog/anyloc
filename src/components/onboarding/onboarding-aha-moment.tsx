@@ -166,11 +166,14 @@ export function OnboardingAhaMoment({
   destination,
   onDestinationChange,
   onLockedClick,
+  onSetPositionClick,
 }: {
   destination: OnboardingDestination;
   onDestinationChange: (lat: number, lng: number) => void;
   /** Called when a visitor taps the app UI, which stays locked until signup. */
   onLockedClick?: () => void;
+  /** "Définir cette position" is the one mock control that leads to signup. */
+  onSetPositionClick?: () => void;
 }) {
   const { phase, typed, syncedApps, pressed } = useTimeline(destination);
   const [lockedToast, setLockedToast] = useState(0);
@@ -377,17 +380,23 @@ export function OnboardingAhaMoment({
             })}
           </div>
 
-          <motion.div
+          <motion.button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onSetPositionClick?.();
+            }}
             animate={{ scale: pressed ? 0.96 : 1 }}
+            whileTap={{ scale: 0.96 }}
             transition={{ duration: 0.12 }}
             className={cn(
-              "mt-3 flex h-11 items-center justify-center gap-2 rounded-[14px] bg-gradient-to-r from-pink-500 to-purple-500 text-[15px] font-semibold text-white shadow-[0_8px_14px_rgba(236,72,153,0.35)] transition-opacity",
+              "mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-[14px] bg-gradient-to-r from-pink-500 to-purple-500 text-[15px] font-semibold text-white shadow-[0_8px_14px_rgba(236,72,153,0.35)] transition-opacity",
               !located && "opacity-45 shadow-none",
             )}
           >
             <Crosshair className="h-[17px] w-[17px]" strokeWidth={2.4} />
             Définir cette position
-          </motion.div>
+          </motion.button>
         </div>
 
         <AnimatePresence>

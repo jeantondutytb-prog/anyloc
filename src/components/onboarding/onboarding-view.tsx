@@ -275,6 +275,10 @@ function StepPreview({
         destination={destination}
         onDestinationChange={onDestinationChange}
         onLockedClick={handleLockedClick}
+        onSetPositionClick={() => {
+          track("onboarding_preview_cta_click", { destination_city: destination.city });
+          onContinue();
+        }}
       />
 
       <div className="mt-3 flex items-center justify-between gap-3 px-1 text-xs text-zinc-500 sm:text-sm">
