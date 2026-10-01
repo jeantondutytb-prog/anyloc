@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { PLANS } from "@/lib/constants";
-import { capturePostHogEvent } from "@/lib/posthog/server";
+import { capturePostHogEvent, parsePostHogDistinctId } from "@/lib/posthog/server";
 import {
   createSubscriptionCheckoutSession,
   getAuthenticatedCheckoutUser,
@@ -22,15 +22,17 @@ export async function POST(request: Request) {
     }
 
     const user = await getAuthenticatedCheckoutUser();
+    const analyticsId = parsePostHogDistinctId(body?.analyticsId);
 
     const session = await createSubscriptionCheckoutSession({
       plan,
       user,
+      analyticsId,
       uiMode: "embedded_page",
     });
 
     await capturePostHogEvent({
-      distinctId: user?.id ?? session.id,
+      distinctId: user?.id ?? analyticsId ?? session.id,
       event: "checkout_started",
       properties: {
         plan: plan.id,

@@ -8,7 +8,12 @@ import {
   chargeSubscriptionInvoiceImmediately,
   syncProfileFromTrialSetupSession,
 } from "@/lib/trial-billing";
-import { capturePostHogEvent, capturePostHogException } from "@/lib/posthog/server";
+import {
+  aliasPostHogUser,
+  capturePostHogEvent,
+  capturePostHogException,
+  parsePostHogDistinctId,
+} from "@/lib/posthog/server";
 import { stripe } from "@/lib/stripe";
 import {
   hasProcessedStripeEvent,
@@ -16,6 +21,32 @@ import {
 } from "@/lib/webhook-idempotency";
 
 export const runtime = "nodejs";
+
+async function trackCheckoutCompleted(
+  session: Stripe.Checkout.Session,
+  userId: string | null
+) {
+  const browserId = parsePostHogDistinctId(session.metadata?.posthog_distinct_id);
+  const distinctId = userId ?? browserId ?? `stripe:${session.id}`;
+
+  // Merge the anonymous visit into the account, so the funnel follows the same
+  // person from the landing page to the purchase.
+  if (userId && browserId) {
+    await aliasPostHogUser({ distinctId: userId, alias: browserId });
+  }
+
+  await capturePostHogEvent({
+    distinctId,
+    event: session.mode === "setup" ? "trial_start" : "purchase_completed",
+    properties: {
+      plan_id: session.metadata?.plan_id,
+      guest_checkout: session.metadata?.guest_checkout === "true",
+      ...(session.mode === "setup"
+        ? {}
+        : { amount_total: session.amount_total, currency: session.currency }),
+    },
+  });
+}
 
 export async function POST(request: Request) {
   if (!stripe) {
@@ -62,38 +93,17 @@ export async function POST(request: Request) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
 
-        if (session.mode === "setup") {
-          await syncProfileFromTrialSetupSession(session);
+        // The sync returns the account even for a guest checkout, where it is
+        // found or created from the email typed in Stripe.
+        const userId =
+          session.mode === "setup"
+            ? await syncProfileFromTrialSetupSession(session)
+            : await syncProfileFromCheckoutSession(session);
 
-          const userId =
-            session.client_reference_id ?? session.metadata?.supabase_user_id;
-
-          if (userId) {
-            await capturePostHogEvent({
-              distinctId: userId,
-              event: "trial_start",
-              properties: {
-                plan_id: session.metadata?.plan_id,
-              },
-            });
-          }
-        } else {
-          await syncProfileFromCheckoutSession(session);
-
-          const userId =
-            session.client_reference_id ?? session.metadata?.supabase_user_id;
-
-          if (userId) {
-            await capturePostHogEvent({
-              distinctId: userId,
-              event: "purchase_completed",
-              properties: {
-                amount_total: session.amount_total,
-                currency: session.currency,
-              },
-            });
-          }
-        }
+        await trackCheckoutCompleted(
+          session,
+          userId ?? session.client_reference_id ?? session.metadata?.supabase_user_id ?? null
+        );
         break;
       }
       case "customer.subscription.created":

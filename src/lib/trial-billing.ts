@@ -163,19 +163,20 @@ async function createTrialingSubscription({
   return subscription;
 }
 
+/** Returns the Supabase user the session belongs to (found or created from its email). */
 export async function syncProfileFromTrialSetupSession(
   session: Stripe.Checkout.Session
-) {
+): Promise<string | null> {
   if (!isSupabaseAdminConfigured() || !stripe) {
     console.warn("[trial-billing] Missing Stripe or Supabase admin config.");
-    return;
+    return null;
   }
 
   if (session.mode !== "setup" || session.status !== "complete") {
     console.warn(
       `[trial-billing] Session ${session.id} ignored: mode=${session.mode}, status=${session.status}`
     );
-    return;
+    return null;
   }
 
   const planId = session.metadata?.plan_id;
@@ -198,7 +199,7 @@ export async function syncProfileFromTrialSetupSession(
 
   if (!userId) {
     console.warn("[trial-billing] Setup session missing Supabase user id and email.");
-    return;
+    return null;
   }
 
   const customerId =
@@ -260,6 +261,8 @@ export async function syncProfileFromTrialSetupSession(
   if (error) {
     throw new Error(`Failed to sync trial profile: ${error.message}`);
   }
+
+  return userId;
 }
 
 export async function cancelActiveTrialForUser(userId: string) {

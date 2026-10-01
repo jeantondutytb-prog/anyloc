@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { track } from "@/lib/analytics/track";
+import { getPostHogDistinctId } from "@/lib/posthog/browser";
 import { ShieldCheck, XCircle, Zap } from "lucide-react";
 import { AuthDivider } from "@/components/auth/auth-divider";
 import { GoogleAuthLink } from "@/components/auth/google-auth-link";
@@ -96,7 +97,8 @@ export function AnyLocCheckoutPanel({
       const res = await fetch("/api/stripe/embedded-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planId }),
+        // Lets the webhook tie a purchase made without an account to this visit.
+        body: JSON.stringify({ planId, analyticsId: getPostHogDistinctId() }),
         signal: controller.signal,
       });
       const data = await parseJsonResponse(res);
