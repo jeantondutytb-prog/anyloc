@@ -406,6 +406,10 @@ function runPython(scriptName, args = []) {
 // ones customers actually hit to an instruction they can follow.
 const PMD3_ERROR_HINTS = [
   [
+    /AnylocNoDevice/,
+    "iPhone introuvable. Branche-le en USB, ou mets-le sur le même Wi-Fi que cet ordinateur et déverrouille-le.",
+  ],
+  [
     /DeveloperModeIsNotEnabled|developer mode is not enabled|DeveloperModeError/i,
     "Le mode développeur n'est pas activé. Sur l'iPhone : Réglages → Confidentialité et sécurité → Mode développeur, puis redémarre.",
   ],
@@ -900,16 +904,75 @@ async function applyGpsDirect({ udid, lat, lng }) {
   return result;
 }
 
-async function clearGpsLocation({ udid }) {
-  const cli = resolvePymobiledevice3Cli();
-  if (!cli) {
+// Goes through live_location.py so it reaches the iPhone over Wi-Fi too.
+function clearGpsLocation({ udid }) {
+  return new Promise((resolve) => {
+    const python = resolvePythonExecutable();
+    if (!python) {
+      resolve({ ok: false, message: missingToolsMessage() });
+      return;
+    }
+
+    const child = spawn(
+      python,
+      [path.join(getScriptsDir(), "live_location.py"), "clear", ...udidArgs(udid)],
+      { cwd: getScriptsDir(), env: getSpawnEnv(), windowsHide: true }
+    );
+
+    let stderr = "";
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+    child.on("error", (error) => resolve({ ok: false, message: error.message }));
+    child.on("close", (code) => {
+      resolve(code === 0 ? { ok: true } : { ok: false, message: humanizePmd3Error(stderr) });
+    });
+  });
+}
+
+// RemotePairing records live next to pymobiledevice3's other pair records.
+function remotePairRecordPath(udid) {
+  const home = process.env.HOME || process.env.USERPROFILE || "";
+  return path.join(home, ".pymobiledevice3", `remote_${udid}.plist`);
+}
+
+function hasWifiPairing(udid) {
+  if (udid) {
+    return fs.existsSync(remotePairRecordPath(udid));
+  }
+
+  try {
+    const home = process.env.HOME || process.env.USERPROFILE || "";
+    return fs
+      .readdirSync(path.join(home, ".pymobiledevice3"))
+      .some((name) => name.startsWith("remote_") && name.endsWith(".plist"));
+  } catch {
+    return false;
+  }
+}
+
+// Writes the RemotePairing record that lets live_location.py reach the iPhone
+// over Wi-Fi once unplugged. Runs over the already-trusted USB lockdown, so the
+// iPhone shows no prompt. Needs iOS 17+.
+async function ensureWifiPairing({ udid }) {
+  if (!udid) {
+    return { ok: false, message: "UDID manquant." };
+  }
+
+  if (hasWifiPairing(udid)) {
+    return { ok: true };
+  }
+
+  const result = await runCli(["lockdown", "remotepairing", "--pair", "--udid", udid], 30000);
+
+  if (!result.ok || !hasWifiPairing(udid)) {
     return {
       ok: false,
-      message: "pymobiledevice3 introuvable. Terminal : pip3 install pymobiledevice3",
+      message: humanizePmd3Error(result.stderr || result.stdout),
     };
   }
 
-  return runSimulateLocation({ type: "clear" }, udid);
+  return { ok: true };
 }
 
 function clearCachedPaths() {
@@ -943,6 +1006,8 @@ module.exports = {
   applyGpsLocation,
   applyGpsDirect,
   clearGpsLocation,
+  hasWifiPairing,
+  ensureWifiPairing,
   exportPairingFile,
   savePairingLocalCopy,
   resolvePythonExecutable,
