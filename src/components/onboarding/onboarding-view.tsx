@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { track } from "@/lib/analytics/track";
 import {
@@ -312,6 +312,8 @@ function StepPreview({
   );
 }
 
+const LEAVE_DURATION_MS = 350;
+
 function readStoredDestination(): OnboardingDestination | null {
   if (typeof window === "undefined") {
     return null;
@@ -337,6 +339,7 @@ function OnboardingViewContent() {
   const [destination, setDestination] = useState<OnboardingDestination>(
     TRENDING_DESTINATIONS[0]
   );
+  const [leaving, setLeaving] = useState(false);
   const selectedPlanId = useMemo(() => {
     const plan = searchParams.get("plan") ?? undefined;
     if (isValidPlanId(plan)) {
@@ -348,6 +351,14 @@ function OnboardingViewContent() {
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0 });
   }, [step]);
+
+  // Signup is the only way forward from step 2: load it early so the
+  // hand-off after the exit animation is instant.
+  useEffect(() => {
+    if (step === 2) {
+      router.prefetch(getPostOnboardingSignupUrl(selectedPlanId));
+    }
+  }, [router, step, selectedPlanId]);
 
   useEffect(() => {
     const stepNames = {
@@ -406,11 +417,20 @@ function OnboardingViewContent() {
   }
 
   function continueToSignup() {
+    if (leaving) {
+      return;
+    }
     track("onboarding_completed", {
       destination_city: destination.city,
       plan: selectedPlanId,
     });
-    router.push(getPostOnboardingSignupUrl(selectedPlanId));
+    // Fade the page out before navigating so signup doesn't cut in abruptly.
+    setLeaving(true);
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.setTimeout(
+      () => router.push(getPostOnboardingSignupUrl(selectedPlanId)),
+      reducedMotion ? 0 : LEAVE_DURATION_MS
+    );
   }
 
   return (
@@ -422,7 +442,15 @@ function OnboardingViewContent() {
         </div>
       </header>
 
-      <main className="relative min-w-0 max-w-full px-4 py-8 sm:px-6 sm:py-14">
+      <motion.main
+        className="relative min-w-0 max-w-full px-4 py-8 sm:px-6 sm:py-14"
+        animate={
+          leaving
+            ? { opacity: 0, scale: 0.97, y: -8, filter: "blur(4px)" }
+            : { opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }
+        }
+        transition={{ duration: LEAVE_DURATION_MS / 1000, ease: [0.4, 0, 0.2, 1] }}
+      >
         {step === 1 && (
           <StepDestination
             query={query}
@@ -439,7 +467,26 @@ function OnboardingViewContent() {
             onDestinationChange={updateDestinationCoords}
           />
         )}
-      </main>
+      </motion.main>
+
+      <AnimatePresence>
+        {leaving && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: LEAVE_DURATION_MS / 1000, ease: "easeOut" }}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: [0.8, 1.05, 1], opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+            >
+              <Logo href={null} showName={false} size="lg" />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

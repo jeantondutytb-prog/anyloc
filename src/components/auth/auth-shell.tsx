@@ -19,7 +19,7 @@ export function AuthShell({
         <div className="absolute bottom-0 left-0 h-[220px] w-[320px] rounded-full bg-orange-500/8 blur-[100px]" />
       </div>
 
-      <Card className="relative w-full max-w-md overflow-hidden border-zinc-200/80 p-0 shadow-lg shadow-pink-500/5">
+      <Card className="animate-auth-enter relative w-full max-w-md overflow-hidden border-zinc-200/80 p-0 shadow-lg shadow-pink-500/5">
         <div className="flex items-center justify-between gap-4 bg-logo-background px-8 py-6">
           <Logo />
 
