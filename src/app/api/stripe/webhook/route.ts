@@ -58,6 +58,30 @@ async function trackCheckoutCompleted(
   });
 }
 
+/**
+ * A delayed payment (e.g. SEPA) that bounced after checkout. The account and
+ * subscription status are synced by the customer.subscription.* events; this
+ * only records the failure in the funnel.
+ */
+async function trackCheckoutPaymentFailed(session: Stripe.Checkout.Session) {
+  const distinctId =
+    session.client_reference_id ??
+    session.metadata?.supabase_user_id ??
+    parsePostHogDistinctId(session.metadata?.posthog_distinct_id) ??
+    `stripe:${session.id}`;
+
+  await capturePostHogEvent({
+    distinctId,
+    event: "purchase_failed",
+    properties: {
+      plan_id: session.metadata?.plan_id,
+      guest_checkout: session.metadata?.guest_checkout === "true",
+      amount_total: session.amount_total,
+      currency: session.currency,
+    },
+  });
+}
+
 export async function POST(request: Request) {
   if (!stripe) {
     return NextResponse.json(
@@ -119,6 +143,11 @@ export async function POST(request: Request) {
         );
         break;
       }
+      case "checkout.session.async_payment_failed":
+        await trackCheckoutPaymentFailed(
+          event.data.object as Stripe.Checkout.Session
+        );
+        break;
       case "customer.subscription.created":
       case "customer.subscription.updated":
       case "customer.subscription.deleted":
