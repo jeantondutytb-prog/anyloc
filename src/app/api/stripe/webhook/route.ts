@@ -100,7 +100,10 @@ export async function POST(request: Request) {
     }
 
     switch (event.type) {
-      case "checkout.session.completed": {
+      case "checkout.session.completed":
+      // A delayed payment method (e.g. SEPA) is only paid here: the completed
+      // event above arrived unpaid and was skipped by the sync and tracking.
+      case "checkout.session.async_payment_succeeded": {
         const session = event.data.object as Stripe.Checkout.Session;
 
         // The sync returns the account even for a guest checkout, where it is
