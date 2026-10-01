@@ -29,6 +29,15 @@ function getCheckoutReturnUrl() {
   return `${appUrl}/auth/checkout-complete?session_id={CHECKOUT_SESSION_ID}`;
 }
 
+// The embedded form is a Stripe iframe our CSS can't reach: theme it per
+// session so it matches the dark checkout page (.app-dark, apps/ios Theme.swift).
+const EMBEDDED_CHECKOUT_BRANDING: Stripe.Checkout.SessionCreateParams.BrandingSettings = {
+  background_color: "#0C0C0E",
+  button_color: "#EC4899",
+  border_style: "rounded",
+  font_family: "inter",
+};
+
 export async function createTrialSetupCheckoutSession({
   plan,
   user,
@@ -58,6 +67,7 @@ export async function createTrialSetupCheckoutSession({
       ...sharedParams,
       ui_mode: "embedded_page",
       return_url: returnUrl,
+      branding_settings: EMBEDDED_CHECKOUT_BRANDING,
     });
   }
 
@@ -141,6 +151,7 @@ export async function createSubscriptionCheckoutSession({
       ...sharedParams,
       ui_mode: "embedded_page",
       return_url: returnUrl,
+      branding_settings: EMBEDDED_CHECKOUT_BRANDING,
     });
   }
 
