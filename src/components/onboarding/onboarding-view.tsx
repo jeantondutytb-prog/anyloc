@@ -1,18 +1,19 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { track } from "@/lib/analytics/track";
 import {
   ArrowRight,
   ChevronRight,
   Loader2,
+  Lock,
   Search,
   Sparkles,
 } from "lucide-react";
 import type { GeocodeResult } from "@/lib/geocoding";
 import { OnboardingAhaMoment } from "@/components/onboarding/onboarding-aha-moment";
-import { OnboardingPreviewMap } from "@/components/onboarding/onboarding-preview-map";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import {
@@ -249,45 +250,60 @@ function StepPreview({
   onChangeDestination: () => void;
   onDestinationChange: (lat: number, lng: number) => void;
 }) {
+  const [nudge, setNudge] = useState(0);
+
+  function handleLockedClick() {
+    setNudge((count) => count + 1);
+    track("onboarding_preview_locked_click", { destination_city: destination.city });
+  }
+
   return (
     <div className="mx-auto w-full max-w-xl">
-      <div className="mb-8 text-center">
-        <p className="inline-flex items-center gap-1.5 text-sm font-medium text-pink-600">
-          <Sparkles className="h-4 w-4" />
-          Étape 2
-        </p>
-        <h1 className="mt-3 text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl lg:text-4xl">
+      <div className="mb-6 text-center sm:mb-9">
+        <h1 className="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl lg:text-4xl">
           On téléporte ta loc à{" "}
           <span className="gradient-text">{destination.city}</span>
         </h1>
-        <p className="mt-3 text-sm text-zinc-500 sm:text-base">
-          Regarde le signal GPS se mettre à jour en direct sur Snap, Insta, Tinder
+        <p className="mt-2 hidden text-sm text-zinc-500 sm:block sm:text-base">
+          Même signal que si ton tel y était vraiment, sur Snap, Insta, Tinder
           et toutes tes apps.
         </p>
       </div>
 
-      <OnboardingAhaMoment key={destination.id} destination={destination} highlightApp="TES APPS" />
-      <OnboardingPreviewMap
+      <OnboardingAhaMoment
+        key={destination.id}
         destination={destination}
         onDestinationChange={onDestinationChange}
+        onLockedClick={handleLockedClick}
       />
 
-      <p className="mt-6 text-center text-sm text-zinc-500">
-        Même signal que si ton tel était vraiment sur place.
-      </p>
+      <div className="mt-3 flex items-center justify-between gap-3 px-1 text-xs text-zinc-500 sm:text-sm">
+        <span>Touche la carte pour ajuster</span>
+        <button
+          type="button"
+          onClick={onChangeDestination}
+          className="font-medium text-pink-600 transition-colors hover:text-pink-700"
+        >
+          Changer de ville
+        </button>
+      </div>
 
-      <Button className="mt-6 h-14 w-full text-base" onClick={onContinue}>
-        {CHECKOUT_CTA_LABEL}
-        <ArrowRight className="h-5 w-5" />
-      </Button>
-
-      <button
-        type="button"
-        onClick={onChangeDestination}
-        className="mt-4 w-full text-center text-sm text-zinc-500 transition-colors hover:text-zinc-800"
+      <motion.div
+        key={nudge}
+        animate={nudge ? { scale: [1, 1.04, 1, 1.04, 1] } : undefined}
+        transition={{ duration: 0.6 }}
+        className="mt-5"
       >
-        Essayer une autre ville
-      </button>
+        <Button className="h-14 w-full text-base" onClick={onContinue}>
+          {CHECKOUT_CTA_LABEL}
+          <ArrowRight className="h-5 w-5" />
+        </Button>
+      </motion.div>
+
+      <p className="mt-2.5 flex items-center justify-center gap-1.5 text-xs text-zinc-500">
+        <Lock className="h-3.5 w-3.5" />
+        Aperçu : l&apos;app se débloque après ton inscription.
+      </p>
     </div>
   );
 }

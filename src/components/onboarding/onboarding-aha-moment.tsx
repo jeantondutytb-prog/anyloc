@@ -1,460 +1,416 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import Image from "next/image";
+import dynamic from "next/dynamic";
+import { AnimatePresence, motion } from "framer-motion";
 import {
-  AnimatePresence,
-  animate,
-  motion,
-  useMotionValue,
-  useMotionValueEvent,
-} from "framer-motion";
-import { Check, Loader2, MapPin } from "lucide-react";
+  Bookmark,
+  Crosshair,
+  Globe,
+  Lock,
+  Navigation,
+  Route,
+  Search,
+  Settings,
+} from "lucide-react";
 import type { OnboardingDestination } from "@/lib/onboarding-destinations";
 import { cn } from "@/lib/utils";
 
-type Phase = "connect" | "travel" | "lock" | "sync" | "done";
+// Mirrors the iOS app's dark map screen (apps/ios/Anyloc/MapHomeView.swift):
+// floating top bar + search, gradient pin, "Téléporter" bottom sheet and the
+// "Application de la position…" overlay.
 
-const MAP_PATH = "M 56 130 Q 140 50 220 90 T 340 70";
-const MAP_VIEWBOX = { width: 400, height: 176 };
-const TRAVEL_DURATION = 1.5;
+const OnboardingAppMap = dynamic(
+  () => import("@/components/onboarding/onboarding-app-map"),
+  { ssr: false, loading: () => <div className="h-full w-full bg-[#1b1b1f]" /> },
+);
 
-const APPS = [
-  { label: "SNAP MAP", pinClass: "text-yellow-500" },
-  { label: "INSTAGRAM", pinClass: "text-pink-500" },
-  { label: "TINDER", pinClass: "text-rose-500" },
-  { label: "LIFE360", pinClass: "text-emerald-500" },
-];
+type Phase = "connect" | "lock" | "applying" | "sync" | "done";
 
-const PHASE_CONFIG: Record<
-  Phase,
-  { label: string; progress: number; headerClass: string }
-> = {
-  connect: {
-    label: "Connexion au signal GPS…",
-    progress: 15,
-    headerClass: "from-zinc-500 to-zinc-600",
-  },
-  travel: {
-    label: "Téléportation en cours…",
-    progress: 45,
-    headerClass: "from-violet-500 to-pink-500",
-  },
-  lock: {
-    label: "Position verrouillée",
-    progress: 65,
-    headerClass: "from-pink-500 to-rose-500",
-  },
-  sync: {
-    label: "Synchronisation de tes apps…",
-    progress: 85,
-    headerClass: "from-pink-500 to-violet-500",
-  },
-  done: {
-    label: "Signal GPS actif",
-    progress: 100,
-    headerClass: "from-emerald-500 to-teal-500",
-  },
+const APPS = ["Snap", "Insta", "Tinder", "Life360"];
+
+const CAPTIONS: Record<Phase, string> = {
+  connect: "Connexion au GPS…",
+  lock: "Position verrouillée",
+  applying: "Position verrouillée",
+  sync: "Synchro des apps…",
+  done: "Position active",
 };
 
-function usePhaseTimeline(destinationId: string) {
+const TYPING_START = 300;
+const TYPING_SPEED = 70;
+
+function useTimeline(destination: OnboardingDestination) {
   const [phase, setPhase] = useState<Phase>("connect");
+  const [typed, setTyped] = useState(0);
   const [syncedApps, setSyncedApps] = useState(0);
+  const [pressed, setPressed] = useState(false);
 
   // Remounted via `key` when the destination changes, so state starts fresh.
   useEffect(() => {
+    const at = (ms: number, fn: () => void) => window.setTimeout(fn, ms);
+    const chars = destination.city.length;
+    const lockAt = TYPING_START + chars * TYPING_SPEED + 350;
+
     const timers = [
-      window.setTimeout(() => setPhase("travel"), 900),
-      window.setTimeout(() => setPhase("lock"), 2400),
-      window.setTimeout(() => setPhase("sync"), 3000),
-      window.setTimeout(() => setSyncedApps(1), 3400),
-      window.setTimeout(() => setSyncedApps(2), 3800),
-      window.setTimeout(() => setSyncedApps(3), 4200),
-      window.setTimeout(() => setSyncedApps(4), 4600),
-      window.setTimeout(() => setPhase("done"), 5000),
+      ...Array.from({ length: chars }, (_, i) =>
+        at(TYPING_START + (i + 1) * TYPING_SPEED, () => setTyped(i + 1)),
+      ),
+      at(lockAt, () => setPhase("lock")),
+      at(lockAt + 700, () => setPressed(true)),
+      at(lockAt + 850, () => {
+        setPressed(false);
+        setPhase("applying");
+      }),
+      at(lockAt + 2000, () => setPhase("sync")),
+      ...APPS.map((_, i) =>
+        at(lockAt + 2250 + i * 300, () => setSyncedApps(i + 1)),
+      ),
+      at(lockAt + 2250 + APPS.length * 300, () => setPhase("done")),
     ];
 
     return () => timers.forEach(clearTimeout);
-  }, [destinationId]);
+  }, [destination.city]);
 
-  return { phase, syncedApps };
+  return { phase, typed, syncedApps, pressed };
 }
 
-function getPointOnMapPath(path: SVGPathElement, progress: number) {
-  const length = path.getTotalLength();
-  return path.getPointAtLength(progress * length);
-}
+/** Measures where the visible map area sits between the top UI and the sheet. */
+function useFocusY() {
+  const topRef = useRef<HTMLDivElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const [focusY, setFocusY] = useState(180);
 
-function AnimatedMap({
-  destination,
-  phase,
-}: {
-  destination: OnboardingDestination;
-  phase: Phase;
-}) {
-  const pathRef = useRef<SVGPathElement>(null);
-  const travelProgress = useMotionValue(0);
-  const pinX = useMotionValue(56);
-  const pinY = useMotionValue(130);
-  const [labelPoint, setLabelPoint] = useState({ x: 56, y: 130 });
-  const traveling = phase === "travel";
-  const arrived = phase === "lock" || phase === "sync" || phase === "done";
-
-  const updatePinPosition = (progress: number) => {
-    const path = pathRef.current;
-    if (!path) {
+  useLayoutEffect(() => {
+    const top = topRef.current;
+    const sheet = sheetRef.current;
+    if (!top || !sheet) {
       return;
     }
 
-    const point = getPointOnMapPath(path, progress);
-    pinX.set(point.x);
-    pinY.set(point.y);
-    setLabelPoint({ x: point.x, y: point.y });
-  };
+    const measure = () => {
+      setFocusY((top.offsetTop + top.offsetHeight + sheet.offsetTop) / 2);
+    };
 
-  useMotionValueEvent(travelProgress, "change", updatePinPosition);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(top);
+    observer.observe(sheet);
+    return () => observer.disconnect();
+  }, []);
 
-  useEffect(() => {
-    if (phase === "travel") {
-      travelProgress.set(0);
-      requestAnimationFrame(() => updatePinPosition(0));
+  return { topRef, sheetRef, focusY };
+}
 
-      const controls = animate(travelProgress, 1, {
-        duration: TRAVEL_DURATION,
-        ease: "easeInOut",
-      });
-
-      return () => controls.stop();
-    }
-
-    if (phase === "lock" || phase === "sync" || phase === "done") {
-      travelProgress.set(1);
-      requestAnimationFrame(() => updatePinPosition(1));
-    }
-  }, [phase, destination.id, travelProgress, pinX, pinY]);
-
+function GradientPin({ live }: { live: boolean }) {
   return (
-    <div className="relative aspect-[400/176] w-full overflow-hidden rounded-2xl bg-gradient-to-br from-sky-100 via-emerald-50 to-amber-50">
-      {phase === "connect" && (
-        <motion.div
-          className="absolute inset-0 flex items-center justify-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
-          <motion.div
-            className="absolute h-28 w-28 rounded-full border-2 border-pink-300/60"
-            animate={{ scale: [0.6, 1.4], opacity: [0.8, 0] }}
-            transition={{ duration: 1.6, repeat: Infinity, ease: "easeOut" }}
-          />
-          <motion.div
-            className="absolute h-20 w-20 rounded-full border-2 border-pink-400/80"
-            animate={{ scale: [0.5, 1.2], opacity: [0.9, 0] }}
-            transition={{
-              duration: 1.6,
-              repeat: Infinity,
-              ease: "easeOut",
-              delay: 0.3,
-            }}
-          />
-          <div className="relative z-10 flex flex-col items-center gap-2">
-            <Loader2 className="h-7 w-7 animate-spin text-pink-500" />
-            <p className="text-xs font-medium text-zinc-600">Recherche du signal…</p>
-          </div>
-        </motion.div>
+    <div className="relative flex h-[40px] w-[56px] justify-center">
+      <span className="absolute top-[24px] h-4 w-14 rounded-full bg-[radial-gradient(closest-side,rgba(236,72,153,0.55),transparent)]" />
+      {live && (
+        <motion.span
+          className="absolute top-[20px] h-6 w-6 rounded-full border-2 border-pink-400"
+          animate={{ scale: [0.6, 2.4], opacity: [0.8, 0] }}
+          transition={{ duration: 1.8, repeat: Infinity, ease: "easeOut" }}
+        />
       )}
-
-      {(traveling || arrived) && (
-        <>
-          <svg
-            className="absolute inset-0 h-full w-full"
-            viewBox={`0 0 ${MAP_VIEWBOX.width} ${MAP_VIEWBOX.height}`}
-          >
-            <path ref={pathRef} d={MAP_PATH} fill="none" stroke="none" />
-            <motion.path
-              d={MAP_PATH}
-              fill="none"
-              stroke="#ec4899"
-              strokeWidth="3"
-              vectorEffect="non-scaling-stroke"
-              strokeDasharray="10 8"
-              strokeLinecap="round"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: traveling || arrived ? 0.75 : 0 }}
-              style={{ pathLength: travelProgress }}
-            />
-
-            <motion.g style={{ x: pinX, y: pinY }}>
-              <motion.g
-                animate={
-                  arrived
-                    ? { scale: [1, 1.2, 1] }
-                    : traveling
-                      ? { y: [0, -2, 0] }
-                      : {}
-                }
-                transition={
-                  arrived
-                    ? { duration: 0.55 }
-                    : traveling
-                      ? { duration: 0.8, repeat: Infinity }
-                      : {}
-                }
-              >
-                <circle
-                  cx="0"
-                  cy="0"
-                  r="11"
-                  fill="#ec4899"
-                  stroke="#ffffff"
-                  strokeWidth="2"
-                />
-                <path
-                  d="M0 -4.5 L3.2 2.2 H-3.2 Z"
-                  fill="#ffffff"
-                  transform="translate(0, 1)"
-                />
-              </motion.g>
-            </motion.g>
-
-            {arrived && (
-              <motion.g
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ type: "spring", stiffness: 320, damping: 20 }}
-              >
-                <rect
-                  x={labelPoint.x - 42}
-                  y={labelPoint.y + 14}
-                  width="84"
-                  height="20"
-                  rx="10"
-                  fill="#ffffff"
-                />
-                <text
-                  x={labelPoint.x}
-                  y={labelPoint.y + 27}
-                  textAnchor="middle"
-                  fontSize="10"
-                  fontWeight="600"
-                  fill="#db2777"
-                >
-                  {destination.emoji} {destination.city}
-                </text>
-              </motion.g>
-            )}
-          </svg>
-
-          {traveling && (
-            <motion.p
-              className="absolute bottom-3 left-0 right-0 text-center text-[11px] font-medium text-pink-600"
-              animate={{ opacity: [0.5, 1, 0.5] }}
-              transition={{ duration: 1.2, repeat: Infinity }}
-            >
-              En route vers {destination.city}…
-            </motion.p>
-          )}
-        </>
-      )}
+      <span className="relative flex h-8 w-8 -rotate-45 items-center justify-center rounded-full rounded-bl-none bg-gradient-to-br from-pink-500 to-purple-500 shadow-[0_6px_14px_rgba(236,72,153,0.55)]">
+        <span className="h-3 w-3 rounded-full bg-white" />
+      </span>
     </div>
   );
 }
 
-function CoordinatesTicker({
-  destination,
-  phase,
-}: {
-  destination: OnboardingDestination;
-  phase: Phase;
-}) {
-  const showCoords = phase !== "connect";
-
+function ApplyingOverlay() {
   return (
-    <div className="mt-3 overflow-hidden rounded-xl border border-zinc-100 bg-zinc-50 px-3 py-2">
-      <div className="flex items-center justify-between gap-2 text-[11px]">
-        <span className="font-medium text-zinc-500">Coordonnées</span>
-        <AnimatePresence mode="wait">
-          {!showCoords ? (
-            <motion.span
-              key="waiting"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="font-mono text-zinc-400"
-            >
-              --.----, --.----
-            </motion.span>
-          ) : (
-            <motion.span
-              key="coords"
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="font-mono font-medium text-pink-600"
-            >
-              {destination.lat.toFixed(4)}, {destination.lng.toFixed(4)}
-            </motion.span>
-          )}
-        </AnimatePresence>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="absolute inset-0 z-[600] flex flex-col items-center justify-center bg-black/75 px-8 text-center backdrop-blur-sm"
+    >
+      <Image
+        src="/logo.png"
+        alt=""
+        width={56}
+        height={56}
+        unoptimized
+        className="h-14 w-14 rounded-2xl drop-shadow-[0_0_16px_rgba(236,72,153,0.6)]"
+      />
+      <div className="mb-3.5 mt-2.5 flex gap-1.5">
+        {[0, 1, 2].map((i) => (
+          <motion.span
+            key={i}
+            className="h-1.5 w-1.5 rounded-full bg-pink-500"
+            animate={{ opacity: [0.35, 1, 0.35] }}
+            transition={{ duration: 0.9, repeat: Infinity, delay: i * 0.3 }}
+          />
+        ))}
       </div>
-    </div>
+      <p className="text-[15px] font-semibold text-[#F4F4F5]">
+        Application de la position…
+      </p>
+      <p className="mt-1.5 text-[11.5px] leading-snug text-[#8B8B94]">
+        Mise à jour de la position sur ton iPhone. Reste connecté, ça ne prend
+        qu&apos;un instant.
+      </p>
+    </motion.div>
   );
 }
+
+const floatingCard =
+  "rounded-[18px] border border-[#25252B] bg-[#0A0A0C]/[0.93] backdrop-blur-md";
 
 export function OnboardingAhaMoment({
   destination,
-  highlightApp,
+  onDestinationChange,
+  onLockedClick,
 }: {
   destination: OnboardingDestination;
-  highlightApp?: string;
+  onDestinationChange: (lat: number, lng: number) => void;
+  /** Called when a visitor taps the app UI, which stays locked until signup. */
+  onLockedClick?: () => void;
 }) {
-  const orderedApps = highlightApp
-    ? [
-        ...APPS.filter((app) => app.label === highlightApp),
-        ...APPS.filter((app) => app.label !== highlightApp),
-      ]
-    : APPS;
-  const { phase, syncedApps } = usePhaseTimeline(destination.id);
-  const config = PHASE_CONFIG[phase];
+  const { phase, typed, syncedApps, pressed } = useTimeline(destination);
+  const [lockedToast, setLockedToast] = useState(0);
+
+  useEffect(() => {
+    if (!lockedToast) {
+      return;
+    }
+    const timer = window.setTimeout(() => setLockedToast(0), 2200);
+    return () => window.clearTimeout(timer);
+  }, [lockedToast]);
+
+  const showLocked = () => {
+    setLockedToast((count) => count + 1);
+    onLockedClick?.();
+  };
+  const { topRef, sheetRef, focusY } = useFocusY();
+  const located = phase !== "connect";
   const isDone = phase === "done";
-  const showDestination = phase === "lock" || phase === "sync" || isDone;
+  const query = located ? "" : destination.city.slice(0, typed);
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl sm:rounded-3xl">
-      <motion.div
-        layout
-        className={cn(
-          "bg-gradient-to-r px-3 py-2.5 text-center text-xs font-medium text-white transition-colors duration-500 sm:px-5 sm:py-3 sm:text-sm",
-          config.headerClass
-        )}
-      >
-        <span className="inline-flex items-center gap-2">
-          {isDone ? (
-            <Check className="h-4 w-4" />
-          ) : (
-            <motion.span
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
-            >
-              <Loader2 className="h-4 w-4" />
-            </motion.span>
-          )}
-          <AnimatePresence mode="wait">
-            <motion.span
-              key={config.label}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.25 }}
-            >
-              {config.label}
-            </motion.span>
-          </AnimatePresence>
-        </span>
-      </motion.div>
-
-      <div className="h-1 bg-zinc-100">
-        <motion.div
-          className="h-full bg-gradient-to-r from-pink-500 to-violet-500"
-          initial={{ width: "0%" }}
-          animate={{ width: `${config.progress}%` }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-        />
-      </div>
-
-      <div className="p-4 sm:p-6">
-        <AnimatedMap destination={destination} phase={phase} />
-        <CoordinatesTicker destination={destination} phase={phase} />
-
-        <motion.div
-          initial={false}
-          animate={{
-            opacity: showDestination ? 1 : 0.4,
-            y: showDestination ? 0 : 4,
-          }}
-          transition={{ duration: 0.35 }}
-          className="mt-4 flex items-center gap-2.5 rounded-2xl border border-zinc-100 bg-zinc-50 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3"
-        >
-          <span className="text-2xl sm:text-3xl">{destination.emoji}</span>
-          <div className="min-w-0 flex-1">
-            <p className="truncate font-semibold text-zinc-900">
-              {showDestination ? destination.city : "Localisation en cours…"}
-            </p>
-            <p className="truncate text-xs text-zinc-500 sm:text-sm">
-              {showDestination ? destination.area : "Patientez quelques secondes"}
-            </p>
-          </div>
-          {showDestination && (
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 400, damping: 18 }}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100"
-            >
-              <Check className="h-4 w-4 text-emerald-600" />
-            </motion.div>
-          )}
-        </motion.div>
-
-        <div className="mt-4 grid grid-cols-2 gap-2 sm:gap-3">
-          {orderedApps.map((app, index) => {
-            const synced = syncedApps > index;
-            const syncing = phase === "sync" && syncedApps === index;
-
-            return (
-              <motion.div
-                key={app.label}
-                animate={{
-                  opacity: synced || isDone ? 1 : showDestination ? 0.55 : 0.35,
-                  scale: synced ? 1 : 0.98,
-                }}
-                transition={{ duration: 0.3 }}
-                className={cn(
-                  "rounded-xl border px-2.5 py-2.5 transition-colors sm:px-3 sm:py-3",
-                  synced || isDone
-                    ? "border-pink-100 bg-pink-50/50"
-                    : "border-zinc-100 bg-zinc-50"
-                )}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400">
-                    {app.label}
-                  </p>
-                  {syncing && (
-                    <Loader2 className="h-3 w-3 animate-spin text-pink-500" />
-                  )}
-                  {(synced || isDone) && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500"
-                    >
-                      <Check className="h-2.5 w-2.5 text-white" />
-                    </motion.div>
-                  )}
-                </div>
-                <p className="mt-1 flex min-w-0 items-center gap-1 text-xs font-medium text-zinc-800 sm:text-sm">
-                  <MapPin className={cn("h-3.5 w-3.5 shrink-0", app.pinClass)} />
-                  <span className="truncate">
-                    {synced || isDone ? destination.city : "…"}
-                  </span>
-                </p>
-              </motion.div>
-            );
-          })}
+    <div className="relative mx-auto w-full max-w-sm">
+      <span className="absolute -top-3 left-1/2 z-[700] -translate-x-1/2 whitespace-nowrap rounded-full bg-zinc-900 px-3 py-1 text-[11px] font-semibold text-white shadow-lg ring-2 ring-white">
+        👀 Aperçu de l&apos;app
+      </span>
+      <div className="relative h-[510px] w-full overflow-hidden rounded-[32px] bg-[#0A0A0C] shadow-2xl shadow-pink-500/20 ring-1 ring-black/10 sm:h-[540px]">
+        <div className="absolute inset-0 z-0">
+          <OnboardingAppMap
+            lat={destination.lat}
+            lng={destination.lng}
+            zoom={located ? 14 : 11}
+            focusY={focusY}
+            onSelect={onDestinationChange}
+          />
         </div>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: isDone ? 1 : 0 }}
-          transition={{ duration: 0.35 }}
-          className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-emerald-50 px-4 py-2.5 text-sm text-emerald-700"
+        {/* Top bar + search */}
+        <div
+          ref={topRef}
+          onClick={showLocked}
+          className="absolute inset-x-3 top-3 z-[500] space-y-2"
         >
-          <motion.span
-            animate={isDone ? { scale: [1, 1.35, 1] } : {}}
-            transition={{ duration: 1.4, repeat: Infinity }}
-            className="h-2 w-2 rounded-full bg-emerald-500"
-          />
-          Coordonnées GPS mises à jour en temps réel
-        </motion.div>
+          <div
+            className={cn(
+              floatingCard,
+              "flex h-[46px] items-center gap-2 pl-3.5 pr-2",
+            )}
+          >
+            <Image
+              src="/logo.png"
+              alt=""
+              width={26}
+              height={26}
+              unoptimized
+              className="h-[26px] w-[26px] rounded-lg"
+            />
+            <span className="text-[17px] font-semibold text-[#F4F4F5]">
+              Anyloc
+            </span>
+            <span className="flex-1" />
+            <Bookmark
+              className="mx-2 h-[18px] w-[18px] text-[#F472B6]"
+              strokeWidth={2.4}
+            />
+            <Settings className="mx-2 h-[18px] w-[18px] text-[#C4C4CA]" />
+          </div>
+          <div
+            className={cn(
+              floatingCard,
+              "flex h-[44px] items-center gap-2.5 px-4 text-[14px]",
+            )}
+          >
+            <Search className="h-4 w-4 shrink-0 text-[#C4C4CA]" />
+            {query ? (
+              <span className="truncate text-[#F4F4F5]">
+                {query}
+                <motion.span
+                  className="ml-px inline-block h-4 w-[1.5px] translate-y-[3px] bg-pink-400"
+                  animate={{ opacity: [1, 0, 1] }}
+                  transition={{ duration: 0.9, repeat: Infinity }}
+                />
+              </span>
+            ) : (
+              <span className="truncate text-[#8B8B94]">
+                Rechercher une ville, une adresse, un lieu
+              </span>
+            )}
+          </div>
+          <p className="pr-1 text-right text-[9px] text-white/35">
+            © Esri · © OpenStreetMap
+          </p>
+        </div>
+
+        {/* Pin — drops in once the position is locked */}
+        <AnimatePresence>
+          {located && (
+            <motion.div
+              className="pointer-events-none absolute left-1/2 z-[450] -ml-7"
+              style={{ top: focusY - 38 }}
+              initial={{ y: -60, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 420, damping: 18 }}
+            >
+              <GradientPin live={isDone} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Bottom sheet */}
+        <div
+          ref={sheetRef}
+          onClick={showLocked}
+          className="absolute inset-x-2.5 bottom-2.5 z-[500] rounded-[24px] border border-[#25252B] bg-[#0C0C0E]/[0.97] px-3.5 pb-3.5 pt-2 shadow-[0_-6px_20px_rgba(0,0,0,0.4)]"
+        >
+          <div className="mx-auto mb-2.5 h-1 w-9 rounded-full bg-[#303038]" />
+
+          <div className="flex gap-1">
+            {[
+              { label: "Téléporter", Icon: Navigation, on: true },
+              { label: "Trajet", Icon: Route, on: false },
+              { label: "Explorer", Icon: Globe, on: false },
+            ].map(({ label, Icon, on }) => (
+              <div
+                key={label}
+                className={cn(
+                  "flex h-9 flex-1 items-center justify-center gap-1.5 rounded-[11px] text-[13px] font-medium",
+                  on ? "bg-pink-500/[0.13] text-[#F472B6]" : "text-[#C4C4CA]",
+                )}
+              >
+                <Icon className={cn("h-3.5 w-3.5", on && "fill-current")} />
+                {label}
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-3 flex items-center gap-2.5">
+            <div className="min-w-0 flex-1">
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.p
+                  key={CAPTIONS[phase]}
+                  initial={{ opacity: 0, y: 3 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -3 }}
+                  transition={{ duration: 0.18 }}
+                  className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#F472B6]"
+                >
+                  {CAPTIONS[phase]}
+                </motion.p>
+              </AnimatePresence>
+              {located ? (
+                <>
+                  <p className="truncate text-[17px] font-semibold text-[#F4F4F5]">
+                    {destination.emoji} {destination.city}
+                  </p>
+                  <p className="truncate font-mono text-[12px] text-[#8B8B94]">
+                    {destination.lat.toFixed(4)}, {destination.lng.toFixed(4)}
+                  </p>
+                </>
+              ) : (
+                <p className="mt-0.5 pb-[18px] text-[15px] font-medium text-[#C4C4CA]">
+                  Touche la carte ou cherche un lieu
+                </p>
+              )}
+            </div>
+            {located && (
+              <div className="flex gap-2">
+                <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-pink-500/[0.13] text-[#F472B6]">
+                  <Bookmark className="h-[17px] w-[17px]" strokeWidth={2.4} />
+                </span>
+                <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-pink-500/[0.13] text-[#F472B6]">
+                  <Navigation className="h-[17px] w-[17px] fill-current" />
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-3 grid grid-cols-4 gap-1.5">
+            {APPS.map((app, index) => {
+              const synced = syncedApps > index;
+              const syncing = phase === "sync" && syncedApps === index;
+
+              return (
+                <div
+                  key={app}
+                  className={cn(
+                    "rounded-[10px] border py-1.5 text-center transition-colors duration-300",
+                    synced
+                      ? "border-pink-500/[0.42] bg-pink-500/[0.13] text-[#F472B6]"
+                      : "border-[#25252B] bg-[#16161A] text-[#C4C4CA]",
+                  )}
+                >
+                  <p className="text-[12px] font-medium leading-tight">{app}</p>
+                  <p
+                    className={cn(
+                      "truncate px-1 text-[10px] leading-tight",
+                      synced ? "opacity-75" : "text-[#55555D]",
+                    )}
+                  >
+                    {synced ? destination.city : syncing ? "Synchro…" : "—"}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+
+          <motion.div
+            animate={{ scale: pressed ? 0.96 : 1 }}
+            transition={{ duration: 0.12 }}
+            className={cn(
+              "mt-3 flex h-11 items-center justify-center gap-2 rounded-[14px] bg-gradient-to-r from-pink-500 to-purple-500 text-[15px] font-semibold text-white shadow-[0_8px_14px_rgba(236,72,153,0.35)] transition-opacity",
+              !located && "opacity-45 shadow-none",
+            )}
+          >
+            <Crosshair className="h-[17px] w-[17px]" strokeWidth={2.4} />
+            Définir cette position
+          </motion.div>
+        </div>
+
+        <AnimatePresence>
+          {lockedToast > 0 && (
+            <motion.div
+              key={lockedToast}
+              role="status"
+              className="pointer-events-none absolute inset-x-6 z-[550] flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-center text-[13px] font-semibold text-zinc-900 shadow-2xl"
+              style={{ top: focusY - 24 }}
+              initial={{ opacity: 0, y: 8, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ type: "spring", stiffness: 420, damping: 26 }}
+            >
+              <Lock className="h-4 w-4 shrink-0 text-pink-500" />
+              Disponible après ton inscription
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {phase === "applying" && <ApplyingOverlay />}
+        </AnimatePresence>
       </div>
     </div>
   );
