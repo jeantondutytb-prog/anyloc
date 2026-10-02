@@ -72,10 +72,6 @@ function afterAuth() {
   enterMain();
 }
 
-function hasInstalledIphone() {
-  try { return localStorage.getItem(STORAGE_KEYS.iphoneInstalled) === "1"; } catch { return false; }
-}
-
 function markIphoneInstalled() {
   try { localStorage.setItem(STORAGE_KEYS.iphoneInstalled, "1"); } catch {}
 }
@@ -623,12 +619,6 @@ function onDevModeEnabled() {
   markIphoneInstalled();
   ensureGuideAutoSync();
   if (guideStep === 3) setTimeout(guideNext, 800);
-}
-
-function showReadyScreen() {
-  stopGuideUsbPolling();
-  stopGuideDevModePolling();
-  showScreen("ready");
 }
 
 function finishReadyScreen() {

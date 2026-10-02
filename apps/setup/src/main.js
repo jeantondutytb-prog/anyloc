@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, Tray, Menu, nativeImage } = require("electron");
+const { app, BrowserWindow, ipcMain, shell, Tray, Menu, nativeImage, safeStorage } = require("electron");
 const { spawn: spawnChild } = require("node:child_process");
 const path = require("path");
 const {
@@ -8,7 +8,6 @@ const {
   applyGpsLocation,
   exportPairingFile,
   savePairingLocalCopy,
-  applyGpsDirect,
   clearGpsLocation,
   resolvePythonExecutable,
   resolvePymobiledevice3Cli,
@@ -47,18 +46,30 @@ function getSessionFilePath() {
   }
 }
 
+// The session holds a refresh token: encrypt it with the OS keychain (macOS
+// Keychain, Windows DPAPI). Files written by older versions are plain JSON.
 function saveSessionFile(session) {
   try {
+    const json = JSON.stringify(session);
+    const payload = safeStorage.isEncryptionAvailable()
+      ? JSON.stringify({ v: 2, data: safeStorage.encryptString(json).toString("base64") })
+      : json;
     const p = getSessionFilePath();
     const fd = fs.openSync(p, "w", 0o600);
-    try { fs.writeFileSync(fd, JSON.stringify(session)); } finally { fs.closeSync(fd); }
+    try { fs.writeFileSync(fd, payload); } finally { fs.closeSync(fd); }
   } catch {}
 }
 
 function loadSessionFile() {
   try {
-    const data = fs.readFileSync(getSessionFilePath(), "utf-8");
-    return JSON.parse(data);
+    const stored = JSON.parse(fs.readFileSync(getSessionFilePath(), "utf-8"));
+    if (stored?.v === 2 && typeof stored.data === "string") {
+      return JSON.parse(safeStorage.decryptString(Buffer.from(stored.data, "base64")));
+    }
+    if (stored?.access_token && safeStorage.isEncryptionAvailable()) {
+      saveSessionFile(stored);
+    }
+    return stored;
   } catch {
     return null;
   }

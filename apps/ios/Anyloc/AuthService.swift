@@ -1,5 +1,6 @@
 import AuthenticationServices
 import Foundation
+import Security
 import UIKit
 
 struct SupabaseSession: Codable {
@@ -121,7 +122,8 @@ final class AuthService: ObservableObject {
 
     func logout() {
         session = nil
-        UserDefaults.standard.removeObject(forKey: "anyloc.session")
+        SessionKeychain.delete()
+        UserDefaults.standard.removeObject(forKey: Self.legacySessionKey)
     }
 
     func verifySession() async {
@@ -173,17 +175,65 @@ final class AuthService: ObservableObject {
         return SupabaseSession(accessToken: decoded.access_token, refreshToken: decoded.refresh_token, user: user)
     }
 
+    /// Versions up to 1.0 kept the tokens in UserDefaults (a plain plist on disk).
+    private static let legacySessionKey = "anyloc.session"
+
     private func saveSession() {
         guard let session else { return }
         if let data = try? JSONEncoder().encode(session) {
-            UserDefaults.standard.set(data, forKey: "anyloc.session")
+            SessionKeychain.save(data)
         }
     }
 
     private func restoreSession() {
-        guard let data = UserDefaults.standard.data(forKey: "anyloc.session"),
+        if let legacy = UserDefaults.standard.data(forKey: Self.legacySessionKey) {
+            SessionKeychain.save(legacy)
+            UserDefaults.standard.removeObject(forKey: Self.legacySessionKey)
+        }
+
+        guard let data = SessionKeychain.load(),
               let saved = try? JSONDecoder().decode(SupabaseSession.self, from: data) else { return }
         session = saved
+    }
+}
+
+// MARK: - Keychain
+
+/// Tokens live in the Keychain: encrypted, never in backups, and only readable
+/// once the iPhone has been unlocked after boot (the app keeps a GPS session alive
+/// in the background, so it must work while the screen is locked).
+private enum SessionKeychain {
+    private static let query: [String: Any] = [
+        kSecClass as String: kSecClassGenericPassword,
+        kSecAttrService as String: "io.anyloc.app.session",
+        kSecAttrAccount as String: "supabase",
+    ]
+
+    static func save(_ data: Data) {
+        let attributes: [String: Any] = [
+            kSecValueData as String: data,
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+        ]
+        let status = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
+        if status == errSecItemNotFound {
+            SecItemAdd(query.merging(attributes) { $1 } as CFDictionary, nil)
+        }
+    }
+
+    static func load() -> Data? {
+        var item: CFTypeRef?
+        let status = SecItemCopyMatching(
+            query.merging([
+                kSecReturnData as String: true,
+                kSecMatchLimit as String: kSecMatchLimitOne,
+            ]) { $1 } as CFDictionary,
+            &item
+        )
+        return status == errSecSuccess ? item as? Data : nil
+    }
+
+    static func delete() {
+        SecItemDelete(query as CFDictionary)
     }
 }
 
