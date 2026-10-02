@@ -21,6 +21,7 @@ contextBridge.exposeInMainWorld("anylocSetup", {
       udid: "preview-udid",
     }),
   openExternal: () => Promise.resolve(),
+  installAppleDriver: () => Promise.resolve({ ok: true, message: "Pilote Apple installé." }),
   // Simulates the customer enabling Developer Mode a few seconds in.
   revealDevMode: () => Promise.resolve({ ok: true, enabled: false }),
   getRemoteQr: () => ipcRenderer.invoke("setup:remote-qr"),

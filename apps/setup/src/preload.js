@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld("anylocSetup", {
     return () => ipcRenderer.removeListener("setup:tools-progress", listener);
   },
   checkUsb: (payload) => ipcRenderer.invoke("setup:check-usb", payload),
+  installAppleDriver: () => ipcRenderer.invoke("setup:install-apple-driver"),
   openExternal: (url) => ipcRenderer.invoke("setup:open-external", url),
   devModeStatus: (payload) => ipcRenderer.invoke("setup:devmode-status", payload),
   revealDevMode: (payload) => ipcRenderer.invoke("setup:reveal-devmode", payload),
