@@ -112,6 +112,8 @@ html {
 .btn-primary:hover { background: var(--accent-hover); }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
+.login-browser-hint { text-align: center; font-size: 12px; color: var(--text-dim); margin: 8px 0 20px; }
+
 .login-error { color: var(--error); font-size: 13px; margin-bottom: 12px; min-height: 18px; }
 
 .login-toggle { text-align: center; margin-top: 20px; font-size: 13px; color: var(--text-muted); }
@@ -484,50 +486,6 @@ html {
 
 .guide-details p { padding-left: 0; }
 
-.guide-city-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.guide-city-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 16px 8px;
-  background: var(--bg-surface);
-  border: 2px solid var(--border);
-  border-radius: var(--radius);
-  cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
-  font: inherit;
-  text-align: center;
-}
-
-.guide-city-btn:hover {
-  border-color: rgba(236, 72, 153, 0.4);
-  background: var(--bg-surface-hover);
-}
-
-.guide-city-btn.active {
-  border-color: var(--accent);
-  background: var(--accent-bg);
-}
-
-.guide-city-emoji { font-size: 24px; line-height: 1; }
-
-.guide-city-name {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.guide-city-country {
-  font-size: 11px;
-  color: var(--text-dim);
-}
 
 .profil-faq .profil-faq-item {
   border-bottom: 1px solid var(--border);
@@ -573,126 +531,18 @@ html {
 .action-row:hover { background: var(--bg-surface-hover); color: var(--text); }
 .action-row svg { flex-shrink: 0; }
 
-/* ── Post-install ready screen ── */
-.ready-screen {
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  background: var(--bg);
-  overflow-y: auto;
-}
-
-.ready-container {
-  width: 100%;
-  max-width: 440px;
-  padding: 28px 20px 32px;
-}
-
-.ready-hero {
-  text-align: center;
-  margin-bottom: 24px;
-}
-
-.ready-icon-wrap {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 72px;
-  height: 72px;
-  margin-bottom: 16px;
-  background: rgba(52, 211, 153, 0.08);
-  border: 1px solid rgba(52, 211, 153, 0.25);
-  border-radius: 20px;
-}
-
-.ready-title {
-  font-size: 24px;
-  font-weight: 800;
-  margin-bottom: 8px;
-}
-
-.ready-subtitle {
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--text-muted);
-}
-
-.ready-steps {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 16px;
-}
-
-.ready-step {
-  display: flex;
-  gap: 12px;
-  padding: 14px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-}
-
-.ready-step-num {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  flex-shrink: 0;
-  background: var(--accent-bg);
-  color: var(--accent);
-  border-radius: 50%;
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.ready-step h3 {
-  font-size: 14px;
-  font-weight: 700;
-  margin-bottom: 4px;
-}
-
-.ready-step p {
-  font-size: 13px;
-  line-height: 1.45;
-  color: var(--text-muted);
-}
-
-.ready-step p strong { color: var(--text); }
-
-.guide-qr {
-  margin: 0 auto 16px;
-}
-
-.ready-qr {
-  display: block;
-  margin-top: 10px;
-  padding: 6px;
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-}
-
-.ready-note {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 12px 14px;
-  margin-bottom: 20px;
-  background: rgba(236, 72, 153, 0.06);
-  border: 1px solid rgba(236, 72, 153, 0.18);
-  border-radius: var(--radius);
-  font-size: 13px;
-  line-height: 1.45;
-  color: var(--text-muted);
-}
-
-.ready-note-icon { flex-shrink: 0; }
-
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
 
+
+.guide-qr {
+  display: block;
+  margin: 0 auto 16px;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}

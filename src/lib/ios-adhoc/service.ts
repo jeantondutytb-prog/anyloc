@@ -83,6 +83,58 @@ export async function completeIosEnrollment(
   return { ok: true };
 }
 
+const UDID_RE = /^[0-9A-Fa-f-]{24,40}$/;
+
+/**
+ * Anyloc Setup lit l'UDID directement en USB : pas besoin du profil
+ * .mobileconfig, on enregistre l'iPhone en un appel.
+ */
+export async function registerIosDeviceFromDesktop(
+  userId: string,
+  input: { udid: string; product: string | null; osVersion: string | null },
+  now: Date
+) {
+  if (!UDID_RE.test(input.udid)) {
+    return { ok: false as const, message: "iPhone non reconnu. Rebranche-le et réessaie." };
+  }
+
+  const existing = await store.getLatestDeviceForUser(userId);
+  if (existing?.status === "registered") {
+    if (existing.udid?.toLowerCase() === input.udid.toLowerCase()) {
+      await ensureBuildForPendingDevices(now);
+      return { ok: true as const };
+    }
+    return {
+      ok: false as const,
+      message: "Ton compte est déjà lié à un autre iPhone. Écris-nous sur le chat pour changer d'iPhone.",
+    };
+  }
+
+  const started = await startIosEnrollment(userId, now);
+  if (started.kind === "quota_full") {
+    return {
+      ok: false as const,
+      message: "Les places iPhone sont pleines pour le moment. Écris-nous sur le chat, on te réserve la prochaine.",
+    };
+  }
+  if (started.kind === "already_registered") {
+    return { ok: true as const };
+  }
+
+  const done = await completeIosEnrollment(
+    started.enrollmentId,
+    { ...input, challenge: started.challenge },
+    now
+  );
+  if (done.ok) return { ok: true as const };
+
+  const device = await store.getDevice(started.enrollmentId);
+  return {
+    ok: false as const,
+    message: device?.error ?? "On n'a pas pu enregistrer ton iPhone. Réessaie, ou écris-nous sur le chat.",
+  };
+}
+
 export async function ensureBuildForPendingDevices(now: Date) {
   const [registeredUdids, latestBuild, latestSucceededBuild] = await Promise.all([
     store.listRegisteredUdids(),

@@ -1,7 +1,9 @@
 const STORAGE_KEYS = {
   session: "anyloc.session",
-  iphoneInstalled: "anyloc.iphoneInstalled",
+  autoConnectTried: "anyloc.autoConnectTried",
 };
+
+const CONNECT_URL = "https://www.anyloc.io/desktop/connect";
 
 let session = null;
 let desktopPlatform = "mac";
@@ -9,12 +11,6 @@ let desktopPlatform = "mac";
 // ── Helpers ──
 
 function $(id) { return document.getElementById(id); }
-
-function escapeHtml(str) {
-  const div = document.createElement("div");
-  div.textContent = str;
-  return div.innerHTML;
-}
 
 function showScreen(name) {
   document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
@@ -30,6 +26,16 @@ function restoreSession() {
 function clearSession() {
   session = null;
   try { localStorage.removeItem(STORAGE_KEYS.session); } catch {}
+  void window.anylocSetup.setSession?.(null);
+}
+
+// Single place a new session lands: renderer, home view and main process
+// (which keeps it refreshed) all get the same one.
+function adoptSession(s) {
+  session = s;
+  persistSession(s);
+  window.homeSetSession?.(s);
+  void window.anylocSetup.setSession?.(s);
 }
 
 // ── Auth ──
@@ -47,14 +53,13 @@ async function handleLogin(email, password) {
 
   $("login-submit").disabled = false;
 
-  if (!result.ok) {
+  if (!result.ok || !result.session) {
     $("login-error").textContent = result.message || "Erreur de connexion.";
     return;
   }
 
-  session = result.session;
-  persistSession(session);
-  afterAuth();
+  adoptSession(result.session);
+  enterMain();
 }
 
 async function handleOAuth(provider) {
@@ -63,71 +68,43 @@ async function handleOAuth(provider) {
     $("login-error").textContent = result.message || "Erreur OAuth.";
     return;
   }
-  session = result.session;
-  persistSession(session);
-  afterAuth();
-}
-
-function afterAuth() {
+  adoptSession(result.session);
   enterMain();
 }
 
-function hasInstalledIphone() {
-  try { return localStorage.getItem(STORAGE_KEYS.iphoneInstalled) === "1"; } catch { return false; }
+// The website (already logged in) hands the app a one-time login link.
+function connectWithBrowser() {
+  $("login-error").textContent = "";
+  $("login-browser-hint").textContent = "Accepte « Ouvrir Anyloc » dans ton navigateur…";
+  void window.anylocSetup.openExternal(CONNECT_URL);
 }
 
-function markIphoneInstalled() {
-  try { localStorage.setItem(STORAGE_KEYS.iphoneInstalled, "1"); } catch {}
+function onLaunchConfig(config) {
+  if (!config) return;
+  if (config.session) {
+    adoptSession(config.session);
+    enterMain();
+    showToast("Connecté à ton compte Anyloc.", "ok");
+  } else if (config.error && !session) {
+    $("login-error").textContent = config.error;
+  } else if (config.token && session) {
+    showToast("Configuration reçue.", "ok");
+  }
 }
 
 async function applyPlatformHints() {
   try {
     desktopPlatform = (await window.anylocSetup.getPlatform()) || desktopPlatform;
   } catch {}
-  guidePlatform = desktopPlatform;
   document.body.dataset.platform = desktopPlatform;
 
   const isWin = desktopPlatform === "win";
-  const computerLabel = isWin ? "PC Windows" : "Mac";
-  const computerShort = isWin ? "PC" : "Mac";
-
-  const guideStep1Title = $("guide-step1-title");
-  if (guideStep1Title) {
-    guideStep1Title.textContent = isWin ? "Prépare ton PC" : "Prépare ton Mac";
-  }
-
-  const platformReq = $("guide-platform-req");
-  if (platformReq) {
-    platformReq.textContent = isWin ? "ce PC Windows" : "ce Mac";
-  }
-
-  const guideHint = $("guide-win-hint");
-  if (guideHint) guideHint.hidden = !isWin;
 
   const usbHelpWin = $("guide-usb-help-win");
   if (usbHelpWin) usbHelpWin.hidden = !isWin;
 
-  const readyStep2 = $("ready-step2-text");
-  if (readyStep2) {
-    readyStep2.innerHTML = `Sur l'iPhone, ou ici sur le ${computerShort}.`;
-  }
-
-  const readyStep3Title = $("ready-step3-title");
-  if (readyStep3Title) {
-    readyStep3Title.textContent = isWin ? "Le PC applique le GPS" : "Le Mac applique le GPS";
-  }
-
-  const readyStep3Text = $("ready-step3-text");
-  if (readyStep3Text) {
-    readyStep3Text.textContent = isWin
-      ? "Garde cette app ouverte (icône près de l'horloge) — ta fausse position se met à jour toute seule sur Snap, Insta, Tinder…"
-      : "Garde cette app ouverte (barre de menus) — ta fausse position se met à jour toute seule sur Snap, Insta, Tinder…";
-  }
-
   const deviceLabel = $("profil-device");
-  if (deviceLabel) {
-    deviceLabel.textContent = computerLabel;
-  }
+  if (deviceLabel) deviceLabel.textContent = isWin ? "PC Windows" : "Mac";
 
   const versionLabel = $("profil-version");
   if (versionLabel) {
@@ -140,13 +117,16 @@ async function applyPlatformHints() {
   }
 }
 
-async function fillGuideVersion() {
-  const el = $("guide-version");
-  if (!el) return;
-  try {
-    const version = await window.anylocSetup.getVersion();
-    if (version) el.textContent = `Anyloc ${version}`;
-  } catch {}
+let autoSyncStarted = false;
+let autoSyncHandlersBound = false;
+
+function ensureAutoSync() {
+  if (!session || autoSyncStarted) return;
+  autoSyncStarted = true;
+  window.anylocSetup.startAutoSync({ session });
+  if (autoSyncHandlersBound) return;
+  autoSyncHandlersBound = true;
+  window.anylocSetup.onAutoSyncStatus((status) => homeOnAutoSync(status));
 }
 
 function enterMain() {
@@ -160,20 +140,16 @@ function enterMain() {
     return;
   }
 
+  stopGuide();
   showScreen("main");
   homeEnter(session);
-
-  if (!guideAutoSyncStarted) {
-    window.anylocSetup.startAutoSync({ session });
-    guideAutoSyncStarted = true;
-  }
-  bindAutoSyncHandlers();
+  ensureAutoSync();
 }
 
 function logout() {
   window.anylocSetup.stopAutoSync();
-  guideAutoSyncStarted = false;
-  stopGuideUsbPolling();
+  autoSyncStarted = false;
+  stopGuide();
   void homeLeave();
   homeReset();
   clearSession();
@@ -181,27 +157,31 @@ function logout() {
   $("login-email").value = "";
   $("login-password").value = "";
   $("login-error").textContent = "";
+  $("login-browser-hint").textContent = "Déjà connecté sur le site ? Un clic suffit.";
 }
 
 // ── Onboarding Guide ──
-
-let guideStep = 1;
-let guideUsbInterval = null;
-let guidePlatform = "mac";
-let guideDetectedUdid = null;
+// plug → install → devmode → nocable → done → carte (install et nocable :
+// formule 1 an seulement, les autres pilotent la position depuis l'ordinateur)
 
 const GUIDE_DONE_KEY = "anyloc.guideComplete";
-const GUIDE_TOTAL_STEPS = 6;
 
-const GUIDE_STARTER_SPOTS = [
-  { name: "Marbella", country: "Espagne", lat: 36.5099, lng: -4.8862, emoji: "🇪🇸" },
-  { name: "Paris", country: "France", lat: 48.8584, lng: 2.2945, emoji: "🇫🇷" },
-  { name: "Miami Beach", country: "États-Unis", lat: 25.7907, lng: -80.13, emoji: "🇺🇸" },
-];
+const ICON_OK = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>';
+const ICON_WAIT = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>';
+const ICON_ERROR = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>';
 
-let guideAutoSyncStarted = false;
-let autoSyncHandlersBound = false;
-let guideSelectedSpot = null;
+const guide = {
+  steps: ["plug", "devmode", "done"],
+  current: "plug",
+  udid: null,
+  appEligible: false,
+  eligibilityKnown: false,
+  instance: 0, // bumps when the guide (re)opens
+  usbTimer: null,
+  devModeTimer: null,
+  installTimer: null,
+  run: 0, // bumps on every (re)start so stale async callbacks bail out
+};
 
 function isGuideComplete() {
   try { return localStorage.getItem(GUIDE_DONE_KEY) === "true"; } catch { return false; }
@@ -215,281 +195,161 @@ function clearGuideComplete() {
   try { localStorage.removeItem(GUIDE_DONE_KEY); } catch {}
 }
 
-function showGuide() {
+function setStatus(prefix, state, text, hint = "") {
+  const icon = $(`guide-${prefix}-icon`);
+  icon.className = `guide-status-icon ${state === "ok" ? "ok" : state === "error" ? "error" : "searching"}`;
+  icon.innerHTML = state === "ok" ? ICON_OK : state === "error" ? ICON_ERROR : ICON_WAIT;
+  $(`guide-${prefix}-status`).className = `guide-status-box${state === "ok" ? " ok" : state === "error" ? " error" : ""}`;
+  $(`guide-${prefix}-text`).textContent = text;
+  $(`guide-${prefix}-hint`).textContent = hint;
+}
+
+function stopGuide() {
+  guide.run++;
+  guide.instance++;
+  clearInterval(guide.usbTimer);
+  clearInterval(guide.devModeTimer);
+  clearTimeout(guide.installTimer);
+  guide.usbTimer = guide.devModeTimer = guide.installTimer = null;
+}
+
+async function showGuide() {
   void homeLeave();
-  guideStep = 1;
-  guideDetectedUdid = null;
+  stopGuide();
+  guide.udid = null;
+  guide.appEligible = false;
+  guide.eligibilityKnown = false;
+  guide.steps = ["plug", "devmode", "done"];
   showScreen("guide");
-  updateGuideStep();
+  goToStep("plug");
+
+  // Annual / clipper / admin accounts get the iPhone app; others drive the
+  // location from this computer only.
+  const instance = ++guide.instance;
+  const status = await window.anylocSetup.iphoneAppStatus();
+  if (instance !== guide.instance) return;
+  guide.appEligible = Boolean(status.ok && status.eligible);
+  guide.eligibilityKnown = true;
+  guide.steps = guide.appEligible
+    ? ["plug", "install", "devmode", "nocable", "done"]
+    : ["plug", "devmode", "done"];
+  $("guide-done-text").textContent = guide.appEligible
+    ? "Change ta position depuis l'app Anyloc sur ton iPhone (LocalDevVPN connecté), ou depuis la carte sur cet ordinateur."
+    : "Choisis une ville sur la carte, ta position change tout de suite. Laisse Anyloc ouvert sur cet ordinateur : la position reste active tant que l'iPhone est branché ou sur le même Wi-Fi.";
+  renderGuideProgress();
+  renderPlugButton();
 }
 
-function updateGuideStep() {
-  for (let i = 1; i <= GUIDE_TOTAL_STEPS; i++) {
-    const el = $(`guide-step-${i}`);
-    if (el) el.hidden = i !== guideStep;
+function renderGuideProgress() {
+  const index = guide.steps.indexOf(guide.current);
+  $("guide-progress-bar").style.width = `${((index + 1) / guide.steps.length) * 100}%`;
+  $("guide-step-label").textContent = `Étape ${index + 1} / ${guide.steps.length}`;
+}
+
+function goToStep(step) {
+  guide.run++;
+  guide.current = step;
+  for (const name of ["plug", "install", "devmode", "nocable", "done"]) {
+    $(`guide-step-${name}`).hidden = name !== step;
   }
+  renderGuideProgress();
 
-  const pct = (guideStep / GUIDE_TOTAL_STEPS) * 100;
-  $("guide-progress-bar").style.width = pct + "%";
-  $("guide-step-label").textContent = `Étape ${guideStep} / ${GUIDE_TOTAL_STEPS}`;
+  clearInterval(guide.usbTimer);
+  clearInterval(guide.devModeTimer);
+  clearTimeout(guide.installTimer);
 
-  if (guideStep === 1) initGuideToolsStep();
-  if (guideStep === 2) startGuideUsbPolling();
-  else stopGuideUsbPolling();
-  if (guideStep === 3) void startGuideDevModeStep();
-  else stopGuideDevModePolling();
-  if (guideStep === 4) void showRemoteQr();
-  if (guideStep === 5) initGuideCityStep();
-  if (guideStep === 6) initGuideVerifyStep();
+  if (step === "plug") void startPlugStep();
+  if (step === "install") void startInstallStep();
+  if (step === "devmode") void startDevModeStep();
+  if (step === "nocable") void showVpnQr();
 }
 
-function bindAutoSyncHandlers() {
-  if (autoSyncHandlersBound) return;
-  autoSyncHandlersBound = true;
-
-  window.anylocSetup.onAutoSyncStatus((status) => {
-    homeOnAutoSync(status);
-    onGuideCitySyncStatus(status);
-  });
+async function showVpnQr() {
+  const img = $("guide-vpn-qr");
+  if (img.src) return;
+  try {
+    img.src = await window.anylocSetup.getLocalDevVpnQr();
+    img.hidden = false;
+  } catch {
+    // The App Store name is written out in the first instruction.
+  }
 }
 
-function ensureGuideAutoSync() {
-  if (!session || guideAutoSyncStarted) return;
-  guideAutoSyncStarted = true;
-  window.anylocSetup.startAutoSync({ session });
-  bindAutoSyncHandlers();
+function nextStep() {
+  const index = guide.steps.indexOf(guide.current);
+  const next = guide.steps[index + 1];
+  if (next) goToStep(next);
+  else finishGuide();
 }
 
-function initGuideCityStep() {
-  ensureGuideAutoSync();
-  guideSelectedSpot = null;
+function finishGuide() {
+  markGuideComplete();
+  enterMain();
+}
 
-  const grid = $("guide-city-grid");
-  const nextBtn = $("guide-city-next");
-  const statusBox = $("guide-city-status");
+// ── Step: plug ──
+// Prepares the USB tools silently first, then waits for the iPhone.
 
-  if (!grid || !nextBtn) return;
+async function startPlugStep() {
+  const run = guide.run;
+  guide.udid = null;
+  $("guide-plug-retry").hidden = true;
+  renderPlugButton();
 
-  statusBox.hidden = true;
-  nextBtn.disabled = true;
-
-  grid.innerHTML = GUIDE_STARTER_SPOTS.map((spot, index) =>
-    `<button type="button" class="guide-city-btn" data-city="${index}">
-      <span class="guide-city-emoji">${spot.emoji}</span>
-      <span class="guide-city-name">${escapeHtml(spot.name)}</span>
-      <span class="guide-city-country">${escapeHtml(spot.country)}</span>
-    </button>`
-  ).join("");
-
-  grid.querySelectorAll(".guide-city-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const spot = GUIDE_STARTER_SPOTS[parseInt(btn.dataset.city, 10)];
-      if (spot) void selectGuideCity(spot, btn);
+  if (!(await window.anylocSetup.toolsReady())) {
+    setStatus("plug", "wait", "Préparation d'Anyloc…", "Ça prend environ une minute la première fois.");
+    const progressWrap = $("guide-tools-progress");
+    const progressBar = $("guide-tools-progress-bar");
+    progressWrap.hidden = false;
+    progressBar.style.width = "5%";
+    const cleanup = window.anylocSetup.onToolsProgress((p) => {
+      if (p.pct) progressBar.style.width = `${p.pct}%`;
     });
-  });
-}
-
-async function selectGuideCity(spot, btn) {
-  const grid = $("guide-city-grid");
-  grid?.querySelectorAll(".guide-city-btn").forEach((el) => el.classList.remove("active"));
-  btn?.classList.add("active");
-
-  guideSelectedSpot = spot;
-  $("guide-city-next").disabled = true;
-  updateGuideCityStatus("pending", spot.name);
-
-  // Saving the city only queues it: success is shown once auto-sync reports
-  // that the iPhone really took the location (see onGuideCitySyncStatus).
-  clearTimeout(guideCitySlowTimer);
-  const ok = await applyGuideSpot(spot);
-  if (guideSelectedSpot !== spot) return;
-  if (!ok) {
-    updateGuideCityStatus("error", spot.name, "Impossible d'enregistrer la ville. Vérifie ta connexion internet et réessaie.");
-    return;
-  }
-  guideCitySlowTimer = setTimeout(() => {
-    if (guideSelectedSpot === spot && $("guide-city-next").disabled) {
-      updateGuideCityStatus("slow", spot.name);
-    }
-  }, 60000);
-}
-
-let guideCitySlowTimer = null;
-
-function isGuideSpotLocation(location) {
-  return !!guideSelectedSpot && !!location &&
-    Math.abs(location.lat - guideSelectedSpot.lat) < 1e-6 &&
-    Math.abs(location.lng - guideSelectedSpot.lng) < 1e-6;
-}
-
-function onGuideCitySyncStatus(status) {
-  if (guideStep !== 5 || !isGuideSpotLocation(status.location)) return;
-  if (status.error) {
-    clearTimeout(guideCitySlowTimer);
-    updateGuideCityStatus("error", guideSelectedSpot.name, status.message);
-  } else if (status.applied) {
-    clearTimeout(guideCitySlowTimer);
-    updateGuideCityStatus("applied", guideSelectedSpot.name);
-    $("guide-city-next").disabled = false;
-  }
-}
-
-function updateGuideCityStatus(state, cityName, message) {
-  const statusBox = $("guide-city-status");
-  const text = $("guide-city-text");
-  const hint = $("guide-city-hint");
-  if (!statusBox || !text || !hint) return;
-
-  statusBox.hidden = false;
-  statusBox.className =
-    state === "applied" ? "guide-status-box ok" : state === "error" ? "guide-status-box error" : "guide-status-box";
-
-  if (state === "applied") {
-    text.textContent = `${cityName} — GPS activé`;
-    hint.textContent = "Ouvre Snap ou Maps sur ton iPhone pour vérifier.";
-  } else if (state === "error") {
-    text.textContent = `${cityName} n'a pas pu être activé`;
-    hint.textContent = message || "Rebranche l'iPhone, déverrouille-le et choisis la ville à nouveau.";
-  } else if (state === "slow") {
-    text.textContent = `Activation de ${cityName}…`;
-    hint.textContent = "Ça prend plus de temps que prévu. Vérifie que l'iPhone est branché et déverrouillé, et autorise Anyloc si le Pare-feu Windows le demande.";
-  } else {
-    text.textContent = `Activation de ${cityName}…`;
-    hint.textContent = "Garde l'iPhone branché et déverrouillé.";
-  }
-}
-
-async function applyGuideSpot(spot) {
-  const ok = await upsertLocation({ name: spot.name, lat: spot.lat, lng: spot.lng, isActive: true });
-  if (ok) homeSetActive(spot);
-  return ok;
-}
-
-function initGuideVerifyStep() {
-  const cityLabel = $("guide-verify-city");
-  if (cityLabel) {
-    cityLabel.textContent = guideSelectedSpot?.name || "ta ville";
-  }
-
-  const bgText = $("guide-verify-bg-text");
-  if (bgText) {
-    const isWin = guidePlatform === "win";
-    bgText.textContent = isWin
-      ? "Garde Anyloc Setup ouvert (icône près de l'horloge) tant que l'iPhone est branché."
-      : "Garde Anyloc Setup ouvert (barre de menus) tant que l'iPhone est branché.";
-  }
-}
-
-function guideNext() {
-  if (guideStep < GUIDE_TOTAL_STEPS) {
-    guideStep++;
-    updateGuideStep();
-  }
-}
-
-async function initGuideToolsStep() {
-  const statusBox = $("guide-tools-status");
-  const icon = $("guide-tools-icon");
-  const text = $("guide-tools-text");
-  const hint = $("guide-tools-hint");
-  const nextBtn = $("guide-tools-next");
-  const retryBtn = $("guide-tools-retry");
-  const progressWrap = $("guide-tools-progress");
-  const progressBar = $("guide-tools-progress-bar");
-  const errorBox = $("guide-tools-error");
-
-  nextBtn.disabled = true;
-  retryBtn.hidden = true;
-  errorBox.hidden = true;
-
-  const alreadyReady = await window.anylocSetup.toolsReady();
-  if (alreadyReady) {
-    text.textContent = "Outils USB prêts";
-    hint.textContent = "Tout est installé. Tu peux continuer.";
-    icon.className = "guide-status-icon ok";
-    icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>';
-    statusBox.className = "guide-status-box ok";
-    nextBtn.disabled = false;
-    return;
-  }
-
-  text.textContent = "Installation en cours...";
-  hint.textContent = "Ça peut prendre 1-2 minutes la première fois.";
-  icon.className = "guide-status-icon searching";
-  statusBox.className = "guide-status-box";
-  progressWrap.hidden = false;
-  progressBar.style.width = "5%";
-
-  const cleanupProgress = window.anylocSetup.onToolsProgress((progress) => {
-    if (progress.message) text.textContent = progress.message;
-    if (progress.pct) progressBar.style.width = progress.pct + "%";
-  });
-
-  const result = await window.anylocSetup.ensureTools();
-  cleanupProgress();
-
-  if (result.ok) {
-    text.textContent = "Outils USB prêts !";
-    hint.textContent = "Tout est installé. Tu peux continuer.";
-    icon.className = "guide-status-icon ok";
-    icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>';
-    statusBox.className = "guide-status-box ok";
-    progressBar.style.width = "100%";
-    nextBtn.disabled = false;
-  } else {
-    text.textContent = "Échec de l'installation";
-    hint.textContent = "Vérifie ta connexion internet et réessaie.";
-    icon.className = "guide-status-icon error";
-    icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>';
-    statusBox.className = "guide-status-box error";
+    const result = await window.anylocSetup.ensureTools();
+    cleanup();
     progressWrap.hidden = true;
-    errorBox.hidden = false;
-    $("guide-tools-error-text").textContent = result.message || "Erreur inconnue";
-    retryBtn.hidden = false;
+    if (run !== guide.run) return;
+
+    if (!result.ok) {
+      console.warn("[tools]", result.message);
+      setStatus(
+        "plug",
+        "error",
+        "Anyloc n'a pas pu se préparer",
+        desktopPlatform === "win"
+          ? "Vérifie ta connexion internet. Si ton antivirus a bloqué Anyloc, autorise-le, puis réessaie."
+          : "Vérifie ta connexion internet, puis réessaie."
+      );
+      $("guide-plug-retry").hidden = false;
+      return;
+    }
   }
+
+  setStatus("plug", "wait", "Recherche de ton iPhone…", "Branche-le avec un câble USB.");
+  void checkPlug(run);
+  guide.usbTimer = setInterval(() => void checkPlug(run), 2500);
 }
 
-function startGuideUsbPolling() {
-  stopGuideUsbPolling();
-  checkGuideUsb();
-  guideUsbInterval = setInterval(checkGuideUsb, 2500);
-}
-
-function stopGuideUsbPolling() {
-  if (guideUsbInterval) {
-    clearInterval(guideUsbInterval);
-    guideUsbInterval = null;
-  }
-}
-
-async function checkGuideUsb() {
-  const statusBox = $("guide-usb-status");
-  const icon = $("guide-usb-icon");
-  const text = $("guide-usb-text");
-  const hint = $("guide-usb-hint");
-  const nextBtn = $("guide-usb-next");
-
+async function checkPlug(run) {
   const result = await window.anylocSetup.checkUsb();
+  if (run !== guide.run || guide.current !== "plug") return;
 
   if (result.connected) {
-    stopGuideUsbPolling();
-    guideDetectedUdid = result.udid;
-    text.textContent = `${result.deviceName} — connecté`;
-    hint.textContent = "iPhone détecté ! Tu peux continuer.";
-    icon.className = "guide-status-icon ok";
-    icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>';
-    statusBox.className = "guide-status-box ok";
-    nextBtn.disabled = false;
+    clearInterval(guide.usbTimer);
+    guide.udid = result.udid;
+    setStatus("plug", "ok", `${result.deviceName} détecté`, "");
     renderDriverBox(null);
+    renderPlugButton();
   } else {
     renderDriverBox(result);
-    text.textContent = "Recherche d'un iPhone...";
-    hint.textContent = result.message || "Branche ton iPhone en USB pour continuer.";
-    icon.className = "guide-status-icon searching";
-    icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>';
-    statusBox.className = "guide-status-box";
-    nextBtn.disabled = true;
+    setStatus("plug", "wait", "Recherche de ton iPhone…", "Branche-le avec un câble USB, puis déverrouille-le.");
   }
+}
+
+function renderPlugButton() {
+  const btn = $("guide-plug-next");
+  btn.disabled = !(guide.udid && guide.eligibilityKnown && guide.current === "plug");
+  btn.textContent = guide.udid && guide.appEligible ? "Installer l'app sur mon iPhone" : "Continuer";
 }
 
 const ITUNES_DOWNLOAD_URL = "https://www.apple.com/itunes/download/win64";
@@ -512,7 +372,7 @@ function renderDriverBox(result) {
   $("guide-driver-install-btn").hidden = !canInstall;
   $("guide-driver-itunes-btn").hidden = canInstall;
   $("guide-driver-text").textContent = driverNote || (canInstall
-    ? "Clique ci-dessous et accepte la demande d'autorisation de Windows."
+    ? "Clique ci-dessous et accepte la demande de Windows."
     : "Installe iTunes depuis apple.com (pas le Microsoft Store), puis redémarre le PC.");
 }
 
@@ -536,143 +396,146 @@ async function installAppleDriver() {
   }
 }
 
-// ── Step 3: developer mode ──
-// The iPhone "app" is the web remote at anyloc.io/app, so nothing is
-// installed on the phone. Location simulation only needs Developer Mode.
+// ── Step: install the iPhone app ──
+// Registers the UDID, waits for the app signed for this iPhone (a few minutes
+// the first time), then installs it over USB.
 
-let guideDevModeInterval = null;
-
-const ICON_OK = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>';
-const ICON_WAIT = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>';
-const ICON_ERROR = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>';
-
-function setDevModeStatus(state, text, hint) {
-  const icon = $("guide-devmode-icon");
-  icon.className = `guide-status-icon ${state === "ok" ? "ok" : state === "error" ? "error" : "searching"}`;
-  icon.innerHTML = state === "ok" ? ICON_OK : state === "error" ? ICON_ERROR : ICON_WAIT;
-  $("guide-devmode-status").className = `guide-status-box${state === "ok" ? " ok" : state === "error" ? " error" : ""}`;
-  $("guide-devmode-text").textContent = text;
-  $("guide-devmode-hint").textContent = hint;
+function installFailed(message) {
+  setStatus("install", "error", "L'installation n'a pas abouti", message);
+  $("guide-install-retry").hidden = false;
 }
 
-function stopGuideDevModePolling() {
-  if (guideDevModeInterval) {
-    clearInterval(guideDevModeInterval);
-    guideDevModeInterval = null;
-  }
+async function startInstallStep() {
+  const run = guide.run;
+  $("guide-install-retry").hidden = true;
+  setStatus("install", "wait", "Enregistrement de ton iPhone…", "");
+
+  const registered = await window.anylocSetup.iphoneAppRegister({ udid: guide.udid });
+  if (run !== guide.run) return;
+  if (!registered.ok) return installFailed(registered.message);
+
+  const startedAt = Date.now();
+  const waitForApp = async () => {
+    const status = await window.anylocSetup.iphoneAppStatus();
+    if (run !== guide.run) return;
+    if (!status.ok) return installFailed(status.message);
+
+    const state = status.state?.kind;
+    if (state === "failed") return installFailed(status.state.message);
+    if (state === "ready") return void installApp(run);
+
+    if (Date.now() - startedAt > 20 * 60 * 1000) {
+      return installFailed("Ça prend plus de temps que prévu. Réessaie, ou écris-nous sur le chat.");
+    }
+    setStatus(
+      "install",
+      "wait",
+      "Préparation de ton app…",
+      "Apple signe l'app pour ton iPhone. Ça prend 3 à 5 minutes la première fois, laisse cette fenêtre ouverte."
+    );
+    guide.installTimer = setTimeout(() => void waitForApp(), 8000);
+  };
+  void waitForApp();
 }
 
-async function startGuideDevModeStep() {
-  stopGuideDevModePolling();
+async function installApp(run) {
+  setStatus("install", "wait", "Installation sur ton iPhone…", "Garde-le branché et déverrouillé.");
+  const result = await window.anylocSetup.iphoneAppInstall({ udid: guide.udid });
+  if (run !== guide.run) return;
+  if (!result.ok) return installFailed(result.message);
+
+  setStatus("install", "ok", "App installée sur ton iPhone", "");
+  guide.installTimer = setTimeout(nextStep, 900);
+}
+
+// ── Step: developer mode ──
+
+async function startDevModeStep() {
+  const run = guide.run;
   $("guide-devmode-retry").hidden = true;
-  setDevModeStatus("wait", "Préparation de l'iPhone...", "On fait apparaître l'option dans les Réglages.");
+  setStatus("devmode", "wait", "Préparation de l'iPhone…", "");
 
-  const revealed = await window.anylocSetup.revealDevMode({ udid: guideDetectedUdid });
+  const revealed = await window.anylocSetup.revealDevMode({ udid: guide.udid });
+  if (run !== guide.run) return;
 
-  if (revealed.ok && revealed.enabled) {
-    onDevModeEnabled();
-    return;
-  }
+  if (revealed.ok && revealed.enabled) return onDevModeEnabled();
 
   if (!revealed.ok) {
-    setDevModeStatus("error", "L'iPhone ne répond pas", revealed.message || "Rebranche l'iPhone et réessaie.");
+    setStatus("devmode", "error", "L'iPhone ne répond pas", revealed.message || "Rebranche l'iPhone et réessaie.");
     $("guide-devmode-retry").hidden = false;
     return;
   }
 
-  setDevModeStatus(
-    "wait",
-    "En attente du mode développeur...",
-    "Active-le dans les Réglages de l'iPhone. On détecte tout seul quand c'est fait."
-  );
-  guideDevModeInterval = setInterval(pollDevMode, 3000);
+  setStatus("devmode", "wait", "En attente…", "Fais les étapes ci-dessus sur ton iPhone. On détecte tout seul quand c'est fait.");
+  guide.devModeTimer = setInterval(() => void pollDevMode(run), 3000);
 }
 
-async function pollDevMode() {
-  const status = await window.anylocSetup.devModeStatus({ udid: guideDetectedUdid });
+async function pollDevMode(run) {
+  const status = await window.anylocSetup.devModeStatus({ udid: guide.udid });
+  if (run !== guide.run || guide.current !== "devmode") return;
 
-  if (status.ok && status.enabled) {
-    onDevModeEnabled();
-    return;
-  }
+  if (status.ok && status.enabled) return onDevModeEnabled();
 
   // While the iPhone reboots it disappears from USB: keep waiting quietly.
   if (!status.ok) {
-    setDevModeStatus(
-      "wait",
-      "L'iPhone redémarre ?",
-      "Déverrouille-le après le redémarrage et appuie sur « Activer »."
-    );
-  }
-}
-
-async function showRemoteQr() {
-  const img = $("guide-qr");
-  if (!img || img.src) return;
-  try {
-    img.src = await window.anylocSetup.getRemoteQr();
-    img.hidden = false;
-  } catch {
-    // The anyloc.io/app link is still written out below the QR code.
+    setStatus("devmode", "wait", "L'iPhone redémarre…", "Après le redémarrage, déverrouille-le et touche « Activer ».");
   }
 }
 
 function onDevModeEnabled() {
-  stopGuideDevModePolling();
-  setDevModeStatus("ok", "Mode développeur activé", "Tout est prêt.");
-  markIphoneInstalled();
-  ensureGuideAutoSync();
-  if (guideStep === 3) setTimeout(guideNext, 800);
-}
-
-function showReadyScreen() {
-  stopGuideUsbPolling();
-  stopGuideDevModePolling();
-  showScreen("ready");
-}
-
-function finishReadyScreen() {
-  markGuideComplete();
-  markIphoneInstalled();
-  enterMain();
+  clearInterval(guide.devModeTimer);
+  setStatus("devmode", "ok", "C'est activé", "");
+  ensureAutoSync();
+  guide.installTimer = setTimeout(nextStep, 800);
 }
 
 // ── Init ──
 
 async function init() {
+  // Registered first: a login link can arrive while the saved session is checked.
+  window.anylocSetup.onLaunchConfig(onLaunchConfig);
+  window.anylocSetup.onSession?.((fresh) => {
+    if (!session || fresh?.user?.id !== session.user?.id) return;
+    session = fresh;
+    persistSession(fresh);
+    window.homeSetSession?.(fresh);
+  });
+
   void applyPlatformHints();
-  void fillGuideVersion();
 
   try {
     const saved = restoreSession();
     if (saved?.access_token) {
       const verified = await window.anylocSetup.auth("verify", { session: saved });
-      if (verified.ok) {
-        session = verified.session || saved;
-        persistSession(session);
-      } else {
-        clearSession();
-      }
+      if (verified.ok) adoptSession(verified.session || saved);
+      // Offline: keep the saved session rather than logging the user out.
+      else if (verified.message) adoptSession(saved);
+      else clearSession();
     }
   } catch {
     clearSession();
   }
 
-  if (session) afterAuth();
+  if (session) {
+    enterMain();
+  } else {
+    // First launch: try the one-click login through the browser right away.
+    try {
+      if (!localStorage.getItem(STORAGE_KEYS.autoConnectTried)) {
+        localStorage.setItem(STORAGE_KEYS.autoConnectTried, "1");
+        connectWithBrowser();
+      }
+    } catch {}
+  }
 
-  // Handle launch config
-  const launchConfig = await window.anylocSetup.getLaunchConfig();
-  if (launchConfig?.token && session) showToast("Connecté depuis le site.", "ok");
-
-  window.anylocSetup.onLaunchConfig((config) => {
-    if (config?.token && session) showToast("Configuration reçue.", "ok");
-  });
+  onLaunchConfig(await window.anylocSetup.getLaunchConfig());
 
   window.anylocSetup.onShowGuide?.(() => {
     if (session) showGuide();
   });
 
   // Login
+  $("login-browser").addEventListener("click", connectWithBrowser);
   $("login-form").addEventListener("submit", (e) => {
     e.preventDefault();
     handleLogin($("login-email").value, $("login-password").value);
@@ -686,39 +549,27 @@ async function init() {
     $("login-error").textContent = "";
   });
 
-  // Logout
+  // Account
   $("logout-btn").addEventListener("click", logout);
   $("manage-subscription-btn")?.addEventListener("click", () => {
     void window.anylocSetup.openExternal("https://anyloc.io/dashboard?tab=account");
   });
-
-  // Guide
-  void applyPlatformHints();
-
-  $("guide-win-itunes-btn")?.addEventListener("click", openItunesDownload);
-  $("guide-driver-itunes-btn")?.addEventListener("click", openItunesDownload);
-  $("guide-driver-install-btn")?.addEventListener("click", () => void installAppleDriver());
-
-  $("guide-skip-btn")?.addEventListener("click", () => {
-    markGuideComplete();
-    enterMain();
-  });
-  $("guide-tools-next")?.addEventListener("click", guideNext);
-  $("guide-tools-retry")?.addEventListener("click", initGuideToolsStep);
-  $("guide-usb-next")?.addEventListener("click", guideNext);
-  $("guide-devmode-retry")?.addEventListener("click", () => void startGuideDevModeStep());
-  $("guide-trust-next")?.addEventListener("click", guideNext);
-  $("guide-city-next")?.addEventListener("click", guideNext);
-  $("guide-verify-done")?.addEventListener("click", () => finishReadyScreen());
-  $("guide-verify-skip")?.addEventListener("click", () => finishReadyScreen());
-  $("ready-dashboard-btn")?.addEventListener("click", () => finishReadyScreen());
-  $("ready-try-btn")?.addEventListener("click", () => finishReadyScreen());
-
-  // Profile: reopen guide
   $("reopen-guide-btn").addEventListener("click", () => {
     clearGuideComplete();
     showGuide();
   });
+
+  // Guide
+  $("guide-driver-itunes-btn")?.addEventListener("click", openItunesDownload);
+  $("guide-driver-install-btn")?.addEventListener("click", () => void installAppleDriver());
+  $("guide-skip-btn").addEventListener("click", finishGuide);
+  $("guide-plug-next").addEventListener("click", nextStep);
+  $("guide-plug-retry").addEventListener("click", () => goToStep("plug"));
+  $("guide-install-retry").addEventListener("click", () => goToStep("install"));
+  $("guide-devmode-retry").addEventListener("click", () => goToStep("devmode"));
+  $("guide-nocable-next").addEventListener("click", nextStep);
+  $("guide-nocable-skip").addEventListener("click", nextStep);
+  $("guide-done-btn").addEventListener("click", finishGuide);
 }
 
 void init();

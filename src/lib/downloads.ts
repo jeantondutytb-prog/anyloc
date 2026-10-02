@@ -1,5 +1,6 @@
 export type DownloadPlatform =
   | "setup-mac"
+  | "setup-mac-intel"
   | "setup-win"
   | "setup-win-zip"
   | "apk";
@@ -22,13 +23,22 @@ export const DOWNLOAD_ASSETS: DownloadAsset[] = [
   {
     id: "setup-mac",
     label: "Anyloc (Mac)",
-    description: "macOS Ventura ou plus récent — branche ton iPhone et installe en un clic",
+    description: "Mac avec puce Apple (M1, M2, M3, M4…) — macOS Ventura ou plus récent",
     filename: "Anyloc.dmg",
     envKey: "ANYLOC_DOWNLOAD_SETUP_MAC",
     blobPath: "releases/Anyloc.dmg",
     fromLatestRelease: true,
     alternateFilenames: ["Anyloc-Setup.dmg"],
     alternateBlobPaths: ["releases/Anyloc-Setup.dmg"],
+  },
+  {
+    id: "setup-mac-intel",
+    label: "Anyloc (Mac Intel)",
+    description: "Mac avec processeur Intel (souvent avant 2021) — menu Pomme → À propos de ce Mac pour vérifier",
+    filename: "Anyloc-Intel.dmg",
+    envKey: "ANYLOC_DOWNLOAD_SETUP_MAC_INTEL",
+    blobPath: "releases/Anyloc-Intel.dmg",
+    fromLatestRelease: true,
   },
   {
     id: "setup-win",

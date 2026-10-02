@@ -1430,6 +1430,7 @@
     S.usb = { connected: false, name: null, wifi: false };
   }
 
+  window.homeSetSession = (session) => { S.session = session; };
   window.homeEnter = enter;
   window.homeLeave = leave;
   window.homeReset = reset;

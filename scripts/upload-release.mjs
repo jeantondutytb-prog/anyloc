@@ -27,6 +27,11 @@ const TARGETS = {
     blobPath: "releases/Anyloc.dmg",
     contentType: "application/x-apple-diskimage",
   },
+  "setup-mac-intel": {
+    envKey: "ANYLOC_DOWNLOAD_SETUP_MAC_INTEL",
+    blobPath: "releases/Anyloc-Intel.dmg",
+    contentType: "application/x-apple-diskimage",
+  },
   "setup-win": {
     envKey: "ANYLOC_DOWNLOAD_SETUP_WIN",
     blobPath: "releases/Anyloc-Setup.exe",
@@ -45,7 +50,7 @@ async function main() {
 
   if (!targetKey || !filePath) {
     console.error(
-      "Usage: BLOB_READ_WRITE_TOKEN=xxx node scripts/upload-release.mjs <android|ios|setup-mac|setup-win|setup-win-zip> <file-path>"
+      "Usage: BLOB_READ_WRITE_TOKEN=xxx node scripts/upload-release.mjs <android|ios|setup-mac|setup-mac-intel|setup-win|setup-win-zip> <file-path>"
     );
     process.exit(1);
   }

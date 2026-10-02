@@ -137,6 +137,9 @@ function getSpawnEnv() {
         "/usr/local/bin",
       ];
 
+  const packaged = pythonSetup.getPackagedPython();
+  if (packaged) extraPaths.unshift(path.dirname(packaged));
+
   const currentPath = process.env.PATH || "";
   const mergedPath = [...extraPaths, currentPath].join(sep);
 
@@ -185,6 +188,13 @@ function getCliCandidates() {
 
 function resolvePymobiledevice3Cli() {
   if (cachedCli) {
+    return cachedCli;
+  }
+
+  // Shipped with the app: always run as `python -m pymobiledevice3` (see
+  // getPmd3Invocation), its console-script launchers are not shipped.
+  if (pythonSetup.getPackagedPython()) {
+    cachedCli = pythonSetup.getPackagedPython();
     return cachedCli;
   }
 
@@ -279,20 +289,21 @@ function resolvePythonExecutable() {
 
 function runCli(args, timeoutMs = 30000) {
   return new Promise((resolve) => {
-    const cli = resolvePymobiledevice3Cli();
+    const invocation = getPmd3Invocation();
 
-    if (!cli) {
+    if (!invocation) {
       resolve({
         ok: false,
         stdout: "",
         stderr:
-          "pymobiledevice3 introuvable. Terminal : pip3 install pymobiledevice3",
+          missingToolsMessage(),
       });
       return;
     }
 
-    const child = spawn(cli, args, {
+    const child = spawn(invocation.command, [...invocation.prefix, ...args], {
       env: getSpawnEnv(),
+      windowsHide: true,
     });
 
     let stdout = "";
@@ -340,7 +351,7 @@ function runPython(scriptName, args = []) {
         udid: null,
         deviceName: null,
         message:
-          "Python avec pymobiledevice3 introuvable. Terminal : pip3 install pymobiledevice3",
+          missingToolsMessage(),
       });
       return;
     }
@@ -435,6 +446,14 @@ const PMD3_ERROR_HINTS = [
     "Connexion développeur impossible (iOS 17+). Garde Anyloc ouvert, déverrouille l'iPhone et réessaie dans quelques secondes.",
   ],
   [
+    /ApplicationVerificationFailed|DeviceNotProvisioned|provisioning profile|0xe8008012/i,
+    "Ton app n'est pas encore prête pour cet iPhone. Attends une minute et réessaie.",
+  ],
+  [
+    /NotEnoughDiskSpace|insufficient space|disk space/i,
+    "Plus assez de place sur l'iPhone. Libère un peu d'espace et réessaie.",
+  ],
+  [
     /Timeout/i,
     "L'iPhone ne répond pas. Déverrouille-le, vérifie le câble et réessaie.",
   ],
@@ -449,8 +468,9 @@ function humanizePmd3Error(raw) {
     }
   }
 
-  const lastLine = text.split("\n").map((line) => line.trim()).filter(Boolean).pop();
-  return lastLine || "Erreur inconnue avec l'iPhone. Rebranche-le et réessaie.";
+  // Raw Python errors mean nothing to customers: log them, show a next step.
+  if (text) console.warn("[pmd3]", text.split("\n").slice(-5).join("\n"));
+  return "L'iPhone n'a pas répondu comme prévu. Débranche-le, rebranche-le, déverrouille-le et réessaie.";
 }
 
 function udidArgs(udid) {
@@ -661,7 +681,7 @@ async function applyGpsLocation({ udid, token, apiBaseUrl }) {
     return {
       ok: false,
       message:
-        "pymobiledevice3 introuvable. Terminal : pip3 install pymobiledevice3 puis relance Anyloc Setup avec :\nPATH=\"/Library/Frameworks/Python.framework/Versions/3.14/bin:$PATH\" open -a \"Anyloc Setup\"",
+        missingToolsMessage(),
     };
   }
 
@@ -889,7 +909,7 @@ async function applyGpsDirect({ udid, lat, lng }) {
   if (!cli) {
     return {
       ok: false,
-      message: "pymobiledevice3 introuvable. Terminal : pip3 install pymobiledevice3",
+      message: missingToolsMessage(),
     };
   }
 
@@ -1011,12 +1031,28 @@ async function pushPairingToApp({ udid }) {
   }
 }
 
+// Installs the ad hoc-signed Anyloc IPA (built for this iPhone's UDID) over USB.
+async function installIphoneApp({ udid, ipaPath }) {
+  if (!udid) {
+    return { ok: false, message: "Branche ton iPhone en USB." };
+  }
+  const result = await runCli(["apps", "install", ipaPath, "--udid", udid], 240000);
+  return result.ok
+    ? { ok: true }
+    : { ok: false, message: humanizePmd3Error(result.stderr || result.stdout) };
+}
+
 function clearCachedPaths() {
   cachedCli = null;
   cachedPython = null;
 }
 
 function getPmd3Invocation() {
+  const packaged = pythonSetup.getPackagedPython();
+  if (packaged) {
+    return { command: packaged, prefix: ["-m", "pymobiledevice3"] };
+  }
+
   const cli = resolvePymobiledevice3Cli();
   if (cli) {
     return { command: cli, prefix: [] };
@@ -1031,7 +1067,7 @@ function getPmd3Invocation() {
 }
 
 function missingToolsMessage() {
-  return "pymobiledevice3 introuvable. Relance Anyloc — il s'installe automatiquement au premier lancement.";
+  return "Anyloc n'est pas encore prêt sur cet ordinateur. Ferme Anyloc complètement et rouvre-le.";
 }
 
 module.exports = {
@@ -1045,6 +1081,7 @@ module.exports = {
   hasWifiPairing,
   ensureWifiPairing,
   pushPairingToApp,
+  installIphoneApp,
   exportPairingFile,
   savePairingLocalCopy,
   resolvePythonExecutable,

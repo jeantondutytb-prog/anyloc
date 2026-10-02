@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, Tray, Menu, nativeImage } = require("electron");
+const { app, BrowserWindow, ipcMain, shell, Tray, Menu, nativeImage, powerSaveBlocker } = require("electron");
 const { spawn: spawnChild } = require("node:child_process");
 const path = require("path");
 const {
@@ -13,6 +13,7 @@ const {
   hasWifiPairing,
   ensureWifiPairing,
   pushPairingToApp,
+  installIphoneApp,
   resolvePythonExecutable,
   resolvePymobiledevice3Cli,
   missingToolsMessage,
@@ -20,7 +21,7 @@ const {
   getSpawnEnv,
   getScriptsDir,
 } = require("./usb");
-const { ensurePymobiledevice3, isBundleReady, isBundleCurrent } = require("./python-setup");
+const { ensurePymobiledevice3, isBundleReady, isBundleCurrent, removeLegacyEnv } = require("./python-setup");
 const { ITUNES_DOWNLOAD_URL, checkAppleDriver, installAppleDriver } = require("./windows-driver");
 
 const SUPABASE_URL =
@@ -160,6 +161,7 @@ function applySpoofOnce(loc, reported) {
 // Clears through the open stream when there is one, keeping it for the next
 // location; otherwise a one-off live_location.py clear.
 function clearSpoof() {
+  holdAwake(false);
   if (reapplyInterval) {
     clearInterval(reapplyInterval);
     reapplyInterval = null;
@@ -173,6 +175,7 @@ function clearSpoof() {
 }
 
 function killSpoofProcess() {
+  holdAwake(false);
   if (autoSyncSpoofChild) {
     try { autoSyncSpoofChild.kill("SIGTERM"); } catch {}
     autoSyncSpoofChild = null;
@@ -195,8 +198,23 @@ function sendSyncStatus(message, error, location, extra = {}) {
   }
 }
 
+// iOS drops the simulated location as soon as the computer stops talking to
+// the iPhone, so the computer must not fall asleep while a location is on.
+// (Closing a laptop lid still sleeps it: nothing an app can do about that.)
+let awakeBlockerId = null;
+
+function holdAwake(on) {
+  if (on && awakeBlockerId === null) {
+    awakeBlockerId = powerSaveBlocker.start("prevent-app-suspension");
+  } else if (!on && awakeBlockerId !== null) {
+    powerSaveBlocker.stop(awakeBlockerId);
+    awakeBlockerId = null;
+  }
+}
+
 function startReapplyLoop(loc) {
   if (reapplyInterval) clearInterval(reapplyInterval);
+  holdAwake(true);
 
   const reported = { applied: false, error: false };
   applySpoofOnce(loc, reported);
@@ -347,6 +365,7 @@ function spawnLive(liveArgs) {
 function enterLive() {
   liveActive = true;
   killSpoofProcess();
+  holdAwake(true);
 }
 
 function liveMove(lat, lng) {
@@ -370,6 +389,7 @@ function stopLive() {
   if (!liveActive) return;
   liveActive = false;
   killLiveChild();
+  holdAwake(false);
   // Re-apply whatever Supabase holds on the next auto-sync poll.
   lastSyncedLoc = null;
 }
@@ -400,6 +420,8 @@ function tryAutoStartSync() {
   if (saved?.access_token && saved?.user?.id) {
     console.log("[AutoSync] Auto-starting with saved session");
     startAutoSync(saved);
+    currentSession = saved;
+    void keepSessionFresh();
   }
 }
 
@@ -407,6 +429,9 @@ function parseSetupUrl(rawUrl) {
   try {
     const url = new URL(rawUrl);
     if (url.protocol !== "anyloc-setup:") return null;
+    // anyloc.io/desktop/connect: one-time login link from the logged-in browser.
+    const tokenHash = url.searchParams.get("token_hash")?.trim();
+    if (tokenHash) return { tokenHash };
     const token = url.searchParams.get("token")?.trim();
     const apiBaseUrl = url.searchParams.get("api")?.trim();
     if (!token) return null;
@@ -422,9 +447,15 @@ function deliverLaunchConfig(window) {
   pendingLaunchConfig = null;
 }
 
-function handleSetupUrl(rawUrl) {
-  const config = parseSetupUrl(rawUrl);
+async function handleSetupUrl(rawUrl) {
+  let config = parseSetupUrl(rawUrl);
   if (!config) return;
+  if (config.tokenHash) {
+    const session = await exchangeLoginLink(config.tokenHash);
+    config = session
+      ? { session }
+      : { error: "Le lien de connexion a expiré. Reclique sur « Se connecter avec anyloc.io »." };
+  }
   pendingLaunchConfig = config;
   if (mainWindowRef) {
     if (mainWindowRef.isMinimized()) mainWindowRef.restore();
@@ -564,6 +595,78 @@ async function supabaseFetch(endpoint, options = {}) {
   return { ok: res.ok, status: res.status, data };
 }
 
+// ── Session freshness ──
+// Supabase access tokens last ~1 h. Without refreshing, auto-sync and every
+// API call fail silently after an hour and the next launch logs the user out.
+
+let currentSession = null;
+
+async function exchangeLoginLink(tokenHash) {
+  try {
+    const res = await supabaseFetch("/verify", {
+      method: "POST",
+      body: JSON.stringify({ type: "magiclink", token_hash: tokenHash }),
+    });
+    return res.ok && res.data?.access_token && res.data?.user ? res.data : null;
+  } catch {
+    return null;
+  }
+}
+
+// Refresh tokens are single-use: concurrent callers share one request.
+const refreshesInFlight = new Map();
+
+function refreshSession(session) {
+  const refreshToken = session?.refresh_token;
+  if (!refreshToken) return Promise.resolve(null);
+  if (!refreshesInFlight.has(refreshToken)) {
+    const request = supabaseFetch("/token?grant_type=refresh_token", {
+      method: "POST",
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    })
+      .then((res) => (res.ok && res.data?.access_token ? res.data : null))
+      .catch(() => null)
+      .then((fresh) => {
+        if (fresh) adoptSession(fresh);
+        return fresh;
+      })
+      .finally(() => setTimeout(() => refreshesInFlight.delete(refreshToken), 30000));
+    refreshesInFlight.set(refreshToken, request);
+  }
+  return refreshesInFlight.get(refreshToken);
+}
+
+function tokenExpiresAt(session) {
+  if (session?.expires_at) return session.expires_at * 1000;
+  try {
+    const payload = JSON.parse(Buffer.from(session.access_token.split(".")[1], "base64url").toString());
+    return payload.exp * 1000;
+  } catch {
+    return 0;
+  }
+}
+
+function adoptSession(session) {
+  currentSession = session;
+  if (autoSyncSession) {
+    autoSyncSession = session;
+    saveSessionFile(session);
+  }
+  try { mainWindowRef?.webContents.send("setup:session", session); } catch {}
+}
+
+async function keepSessionFresh() {
+  if (!currentSession || tokenExpiresAt(currentSession) - Date.now() > 10 * 60 * 1000) return;
+  await refreshSession(currentSession);
+}
+
+setInterval(() => void keepSessionFresh(), 60 * 1000);
+
+ipcMain.handle("setup:set-session", (_event, session) => {
+  currentSession = session?.access_token ? session : null;
+  void keepSessionFresh();
+});
+
 ipcMain.handle("setup:auth", async (_event, action, payload) => {
   try {
     if (action === "login") {
@@ -611,14 +714,21 @@ ipcMain.handle("setup:auth", async (_event, action, payload) => {
     }
 
     if (action === "verify") {
+      // The main process may already hold a newer token for this user (it
+      // refreshed in the background); the renderer's copy is then stale.
+      if (currentSession && currentSession.user?.id === payload.session?.user?.id) {
+        payload = { ...payload, session: currentSession };
+      }
       const token = payload.session?.access_token;
       if (!token) return { ok: false };
       const res = await supabaseFetch("/user", {
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) return { ok: false };
-      return { ok: true, session: { ...payload.session, user: res.data } };
+      if (res.ok) return { ok: true, session: { ...payload.session, user: res.data } };
+      // Expired access token: the refresh token keeps the user logged in.
+      const fresh = await refreshSession(payload.session);
+      return fresh ? { ok: true, session: fresh } : { ok: false };
     }
 
     if (action === "oauth") {
@@ -811,12 +921,12 @@ ipcMain.handle("setup:open-external", async (_event, url) => {
   return { ok: false };
 });
 
-// QR code for the iPhone remote, generated locally so it works offline and
-// does not depend on the website being deployed.
-ipcMain.handle("setup:remote-qr", async () => {
+// QR code to LocalDevVPN on the App Store (onboarding, annual plan), made
+// locally so it works offline.
+ipcMain.handle("setup:localdevvpn-qr", async () => {
   const QRCode = require("qrcode");
-  return QRCode.toDataURL("https://www.anyloc.io/app", {
-    width: 296,
+  return QRCode.toDataURL("https://apps.apple.com/app/localdevvpn/id6755608044", {
+    width: 264,
     margin: 1,
     color: { dark: "#18181b", light: "#ffffff" },
   });
@@ -824,6 +934,71 @@ ipcMain.handle("setup:remote-qr", async () => {
 
 ipcMain.handle("setup:devmode-status", async (_event, payload) => {
   return getDeveloperModeStatus({ udid: payload?.udid ?? null });
+});
+
+// ── iPhone app (annual plan): registered + installed straight over USB ──
+
+const ANYLOC_API = process.env.ANYLOC_API_URL || "https://www.anyloc.io";
+
+async function anylocApi(pathname, options = {}) {
+  if (!currentSession?.access_token) {
+    return { ok: false, message: "Reconnecte-toi à ton compte Anyloc." };
+  }
+  await keepSessionFresh();
+  try {
+    const res = await fetch(`${ANYLOC_API}${pathname}`, {
+      ...options,
+      headers: {
+        Authorization: `Bearer ${currentSession.access_token}`,
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+    });
+    const data = await res.json().catch(() => ({}));
+    return res.ok
+      ? { ok: true, ...data }
+      : { ok: false, message: data.error || "Le serveur Anyloc ne répond pas. Réessaie dans un instant." };
+  } catch {
+    return { ok: false, message: "Pas de connexion internet. Vérifie ta connexion et réessaie." };
+  }
+}
+
+ipcMain.handle("setup:iphone-app-status", () => anylocApi("/api/ios/desktop"));
+
+ipcMain.handle("setup:iphone-app-register", (_event, payload) =>
+  anylocApi("/api/ios/desktop", {
+    method: "POST",
+    body: JSON.stringify({ udid: payload?.udid }),
+  })
+);
+
+ipcMain.handle("setup:iphone-app-install", async (_event, payload) => {
+  const udid = payload?.udid;
+  const status = await anylocApi("/api/ios/desktop");
+  if (!status.ok) return status;
+  if (!status.ipaUrl) return { ok: false, message: "Ton app n'est pas encore prête. Réessaie dans une minute." };
+
+  const ipaPath = path.join(app.getPath("temp"), `Anyloc-${Date.now()}.ipa`);
+  try {
+    const res = await fetch(status.ipaUrl);
+    if (!res.ok) throw new Error(String(res.status));
+    fs.writeFileSync(ipaPath, Buffer.from(await res.arrayBuffer()));
+  } catch {
+    return { ok: false, message: "Téléchargement de l'app impossible. Vérifie ta connexion et réessaie." };
+  }
+
+  try {
+    const result = await installIphoneApp({ udid, ipaPath });
+    // Hand the app its pairing record right away so it works unplugged.
+    if (result.ok) {
+      appPairingDone.delete(udid);
+      appPairingLastTry.delete(udid);
+      pairForApp(udid);
+    }
+    return result;
+  } finally {
+    fs.rmSync(ipaPath, { force: true });
+  }
 });
 
 ipcMain.handle("setup:reveal-devmode", async (_event, payload) => {
@@ -1031,7 +1206,10 @@ app.whenReady().then(() => {
 
   createWindow();
 
-  if (!isPreview) upgradeToolsIfOutdated();
+  if (!isPreview) {
+    upgradeToolsIfOutdated();
+    removeLegacyEnv();
+  }
 
   const savedSession = isPreview ? null : loadSessionFile();
   if (savedSession?.access_token) {

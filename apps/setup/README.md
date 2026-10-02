@@ -14,8 +14,8 @@ Plus : favoris (lieux + trajets, avec emoji), spots « Découvrir », maison, au
 
 ## Prerequis
 
-- macOS Ventura ou plus recent
-- `pymobiledevice3` : `pip3 install pymobiledevice3`
+- macOS Ventura ou plus recent (puce Apple ou Intel), ou Windows 10+
+- Rien d'autre : Python et `pymobiledevice3` sont embarques dans l'installeur
 
 ## Developpement
 
@@ -29,8 +29,13 @@ npm run preview:app   # écran principal avec données factices, sans iPhone
 ## Build
 
 ```bash
-npm run build:mac   # dist/Anyloc.dmg
+node build-tools/bundle-python.mjs arm64   # python-dist/arm64 (x64 pour Intel / Windows)
+npm run build:mac -- --arm64               # dist/Anyloc.dmg
 ```
+
+`bundle-python.mjs` telecharge un CPython relocalisable (python-build-standalone,
+version et SHA-256 figes), y installe `pymobiledevice3` avec les versions de
+`build-tools/python-constraints.txt`, et l'app l'utilise via `python -m pymobiledevice3`.
 
 Pour un DMG signe et notarise (sans alerte Gatekeeper), la CI a besoin des secrets
 `MAC_CSC_LINK`, `MAC_CSC_KEY_PASSWORD`, `APPLE_IDENTITY`, `APPLE_ID`,

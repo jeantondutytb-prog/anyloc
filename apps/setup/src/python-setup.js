@@ -28,7 +28,30 @@ function getEnvDir() {
   }
 }
 
+// Python + pymobiledevice3 shipped inside the installer (build-tools/
+// bundle-python.mjs). When present, nothing is downloaded or pip-installed.
+function getPackagedPythonDir() {
+  try {
+    const { app } = require("electron");
+    if (app.isPackaged) return path.join(process.resourcesPath, "python");
+  } catch {}
+  return path.join(__dirname, "..", "python-dist", process.arch, "python");
+}
+
+let packagedPython;
+
+function getPackagedPython() {
+  if (packagedPython === undefined) {
+    const dir = getPackagedPythonDir();
+    const exe = isWin() ? path.join(dir, "python.exe") : path.join(dir, "bin", "python3");
+    packagedPython = fs.existsSync(exe) ? exe : null;
+  }
+  return packagedPython;
+}
+
 function getBundledPython() {
+  const packaged = getPackagedPython();
+  if (packaged) return packaged;
   const dir = getEnvDir();
   if (isWin()) {
     const root = path.join(dir, "python.exe");
@@ -47,7 +70,7 @@ function getBundledCli() {
 }
 
 function isBundleReady() {
-  return fs.existsSync(getBundledCli());
+  return Boolean(getPackagedPython()) || fs.existsSync(getBundledCli());
 }
 
 let bundleCurrent = false;
@@ -55,7 +78,7 @@ let bundleCurrent = false;
 // Installs made by older app versions keep their pymobiledevice3 forever
 // (e.g. 4.14.16, whose GPS commands all fail), so the version is checked too.
 function isBundleCurrent() {
-  if (bundleCurrent) return true;
+  if (bundleCurrent || getPackagedPython()) return true;
   if (!isBundleReady()) return false;
   try {
     const r = spawnSync(getBundledPython(), [
@@ -303,8 +326,17 @@ async function ensurePymobiledevice3(onProgress) {
   }
 }
 
+// Versions before the bundled runtime installed Python under userData:
+// reclaim that space once the app ships its own.
+function removeLegacyEnv() {
+  if (!getPackagedPython()) return;
+  fs.rm(getEnvDir(), { recursive: true, force: true }, () => {});
+}
+
 module.exports = {
+  removeLegacyEnv,
   getEnvDir,
+  getPackagedPython,
   getBundledPython,
   getBundledCli,
   isBundleReady,
