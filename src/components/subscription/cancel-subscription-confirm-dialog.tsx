@@ -46,7 +46,7 @@ export function CancelSubscriptionConfirmDialog({
     ? trialRemainingMs && trialRemainingMs > 0
       ? `Si tu résilies maintenant, ton accès est coupé tout de suite — même s'il te reste ${formatTrialRemaining(trialRemainingMs)}. Tu ne pourras plus utiliser Anyloc sur Snap, Insta et toutes tes apps.`
       : "Si tu résilies maintenant, ton accès est coupé immédiatement. Tu ne pourras plus utiliser Anyloc sur Snap, Insta et toutes tes apps."
-    : "La résiliation prend effet immédiatement. Tu ne pourras plus changer ta position GPS, ni accéder au dashboard, aux guides et aux téléchargements.";
+    : "Ton abonnement ne sera plus renouvelé. Tu gardes l'accès jusqu'à la fin de la période déjà payée, puis tu ne pourras plus changer ta position GPS, ni accéder au dashboard, aux guides et aux téléchargements.";
 
   const confirmLabel = isTrial
     ? "Oui, résilier"
@@ -110,7 +110,7 @@ export function CancelSubscriptionConfirmDialog({
           <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-900">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
             <p>
-              Aucun remboursement au prorata. Si tu envisages une demande de
+              Si tu envisages une demande de
               remboursement au titre de la garantie 48 h, fais-la{" "}
               <strong>avant</strong> de résilier.
             </p>

@@ -24,6 +24,8 @@ export type AccountBillingDetails = {
   paymentMethod: AccountPaymentMethod | null;
   invoices: AccountInvoice[];
   canManageBilling: boolean;
+  /** ISO date when a scheduled cancellation ends access, if any. */
+  cancelsAt: string | null;
 };
 
 const STATUS_LABELS: Record<string, string> = {

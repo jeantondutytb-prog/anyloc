@@ -107,7 +107,7 @@ export const REFUND_GUARANTEE_SUMMARY =
   "Garantie 48 h : installation complète + test du service. Demande sous 48 h après l'achat, abonnement actif. Voir la politique de remboursement.";
 
 export const CANCELLATION_WARNING =
-  "La résiliation prend effet immédiatement. Tu perds l'accès au service, au dashboard et aux téléchargements dès confirmation. Aucun remboursement au prorata.";
+  "Ton abonnement ne sera plus renouvelé. Tu gardes l'accès au service, au dashboard et aux téléchargements jusqu'à la fin de la période déjà payée.";
 
 /** Anciens price IDs Stripe — abonnés existants conservent leur tarif (ne pas migrer). */
 export const LEGACY_STRIPE_PRICE_IDS = [
@@ -130,7 +130,7 @@ export const PLANS = [
     perDay: "0,33",
     perDayLabel: "€/jour",
     billedNote:
-      "Facturé 9,90 € chaque mois. Résiliation immédiate — perte d'accès instantanée.",
+      "Facturé 9,90 € chaque mois. Résiliable à tout moment — accès conservé jusqu'à la fin du mois payé.",
     compare: "Flexible si tu testes encore",
     description: "Sans engagement, tu paies mois par mois.",
     savings: undefined,
@@ -147,7 +147,7 @@ export const PLANS = [
     perDay: "≈ 0,19",
     perDayLabel: "€/jour",
     billedNote:
-      "Facturé 34,90 € tous les 6 mois. Résiliation immédiate — perte d'accès instantanée.",
+      "Facturé 34,90 € tous les 6 mois. Résiliable à tout moment — accès conservé jusqu'à la fin de la période payée.",
     compare: "Soit 69,80 € sur l'année si tu reprends",
     description: "Le sweet spot si tu l'utilises souvent.",
     savings: "Économise 42 % vs mensuel",

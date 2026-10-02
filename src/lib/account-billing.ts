@@ -107,6 +107,7 @@ export async function getAccountBillingDetails({
 
   let paymentMethod: AccountPaymentMethod | null = null;
   let invoices: AccountInvoice[] = [];
+  let cancelsAt: string | null = null;
 
   if (stripe && customerId) {
     try {
@@ -116,6 +117,13 @@ export async function getAccountBillingDetails({
         limit: 10,
       });
       invoices = invoiceList.data.map(mapInvoice);
+
+      if (profile?.stripe_subscription_id) {
+        const subscription = await stripe.subscriptions.retrieve(
+          profile.stripe_subscription_id
+        );
+        cancelsAt = getScheduledCancellationDate(subscription);
+      }
     } catch (error) {
       console.error("[account-billing] Failed to load Stripe data:", error);
     }
@@ -133,6 +141,7 @@ export async function getAccountBillingDetails({
     paymentMethod,
     invoices,
     canManageBilling: Boolean(stripe && customerId),
+    cancelsAt,
   };
 }
 
@@ -178,6 +187,43 @@ export async function createBillingPortalSession({
 
   const session = await stripe.billingPortal.sessions.create(sessionParams);
   return session.url;
+}
+
+function getScheduledCancellationDate(subscription: Stripe.Subscription) {
+  if (subscription.status === "canceled") {
+    return null;
+  }
+
+  const cancelAt =
+    subscription.cancel_at ??
+    (subscription.cancel_at_period_end
+      ? subscription.items.data[0]?.current_period_end ?? null
+      : null);
+
+  return cancelAt ? new Date(cancelAt * 1000).toISOString() : null;
+}
+
+/**
+ * Stops renewal but keeps access until the end of the period already paid.
+ * The profile flips to canceled when Stripe sends customer.subscription.deleted.
+ */
+export async function cancelActiveSubscriptionForUser(userId: string) {
+  if (!stripe) {
+    throw new Error("La gestion de facturation n'est pas configurée.");
+  }
+
+  const profile = await getProfileForUser(userId);
+
+  if (!profile?.stripe_subscription_id) {
+    throw new Error("Aucun abonnement actif à résilier.");
+  }
+
+  const subscription = await stripe.subscriptions.update(
+    profile.stripe_subscription_id,
+    { cancel_at_period_end: true }
+  );
+
+  return getScheduledCancellationDate(subscription);
 }
 
 export async function cancelStripeSubscriptionForUser(userId: string) {
