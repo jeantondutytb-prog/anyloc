@@ -20,6 +20,43 @@ type CreatedToken = {
   apiBaseUrl: string;
 };
 
+type DevicesResult =
+  | { ok: true; devices: DeviceItem[] }
+  | { ok: false; devices?: DeviceItem[]; error: string };
+
+async function fetchDevices(): Promise<DevicesResult> {
+  try {
+    const response = await fetch("/api/device");
+
+    if (response.status === 401) {
+      return { ok: true, devices: [] };
+    }
+
+    if (response.status === 403) {
+      return {
+        ok: false,
+        devices: [],
+        error: "Abonnement actif requis pour lier un appareil.",
+      };
+    }
+
+    if (!response.ok) {
+      throw new Error("Impossible de charger les appareils.");
+    }
+
+    const data = await response.json();
+    return { ok: true, devices: data.devices ?? [] };
+  } catch (loadError) {
+    return {
+      ok: false,
+      error:
+        loadError instanceof Error
+          ? loadError.message
+          : "Impossible de charger les appareils.",
+    };
+  }
+}
+
 export function DeviceLinkSection() {
   const [devices, setDevices] = useState<DeviceItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,44 +65,31 @@ export function DeviceLinkSection() {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
+  const apply = useCallback((result: DevicesResult) => {
+    if (result.devices) {
+      setDevices(result.devices);
+    }
+    if (!result.ok) {
+      setError(result.error);
+    }
+    setLoading(false);
+  }, []);
+
   const loadDevices = useCallback(async () => {
     setLoading(true);
     setError(null);
-
-    try {
-      const response = await fetch("/api/device");
-
-      if (response.status === 401) {
-        setDevices([]);
-        return;
-      }
-
-      if (response.status === 403) {
-        setDevices([]);
-        setError("Abonnement actif requis pour lier un appareil.");
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error("Impossible de charger les appareils.");
-      }
-
-      const data = await response.json();
-      setDevices(data.devices ?? []);
-    } catch (loadError) {
-      setError(
-        loadError instanceof Error
-          ? loadError.message
-          : "Impossible de charger les appareils."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    apply(await fetchDevices());
+  }, [apply]);
 
   useEffect(() => {
-    void loadDevices();
-  }, [loadDevices]);
+    let active = true;
+    void fetchDevices().then((result) => {
+      if (active) apply(result);
+    });
+    return () => {
+      active = false;
+    };
+  }, [apply]);
 
   const createToken = async (platform: "android" | "ios") => {
     setCreating(platform);

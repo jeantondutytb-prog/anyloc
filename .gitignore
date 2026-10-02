@@ -65,3 +65,6 @@ apps/ios/Vendor/idevice/*.a
 
 # local tool reports
 .gstack/
+
+# Playwright MCP traces
+.playwright-mcp/

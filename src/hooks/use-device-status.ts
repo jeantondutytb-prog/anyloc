@@ -21,41 +21,63 @@ function isDeviceOnline(lastSeenAt: string | null) {
   return Date.now() - new Date(lastSeenAt).getTime() < ONLINE_THRESHOLD_MS;
 }
 
+type DevicesResult =
+  | { ok: true; devices: DeviceItem[] }
+  | { ok: false; error: string };
+
+async function fetchDevices(): Promise<DevicesResult> {
+  try {
+    const response = await fetch("/api/device");
+
+    if (response.status === 401 || response.status === 403) {
+      return { ok: true, devices: [] };
+    }
+
+    if (!response.ok) {
+      throw new Error("Impossible de charger les appareils.");
+    }
+
+    const data = await response.json();
+    return { ok: true, devices: data.devices ?? [] };
+  } catch (loadError) {
+    return {
+      ok: false,
+      error:
+        loadError instanceof Error
+          ? loadError.message
+          : "Impossible de charger les appareils.",
+    };
+  }
+}
+
 export function useDeviceStatus() {
   const [devices, setDevices] = useState<DeviceItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadDevices = useCallback(async () => {
-    try {
-      const response = await fetch("/api/device");
-
-      if (response.status === 401 || response.status === 403) {
-        setDevices([]);
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error("Impossible de charger les appareils.");
-      }
-
-      const data = await response.json();
-      setDevices(data.devices ?? []);
+  const apply = useCallback((result: DevicesResult) => {
+    if (result.ok) {
+      setDevices(result.devices);
       setError(null);
-    } catch (loadError) {
-      setError(
-        loadError instanceof Error
-          ? loadError.message
-          : "Impossible de charger les appareils."
-      );
-    } finally {
-      setLoading(false);
+    } else {
+      setError(result.error);
     }
+    setLoading(false);
   }, []);
 
+  const loadDevices = useCallback(async () => {
+    apply(await fetchDevices());
+  }, [apply]);
+
   useEffect(() => {
-    void loadDevices();
-  }, [loadDevices]);
+    let active = true;
+    void fetchDevices().then((result) => {
+      if (active) apply(result);
+    });
+    return () => {
+      active = false;
+    };
+  }, [apply]);
 
   useEffect(() => {
     const interval = window.setInterval(() => {

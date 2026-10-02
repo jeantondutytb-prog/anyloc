@@ -25,9 +25,10 @@ export function Hero() {
       </div>
 
       <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
+        {/* No fade-in: the headline is the LCP element, it must paint with the HTML. */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ y: 12 }}
+          animate={{ y: 0 }}
           transition={{ duration: 0.6 }}
           className="mx-auto max-w-3xl text-center"
         >

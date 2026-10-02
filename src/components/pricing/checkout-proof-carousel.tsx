@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { CHECKOUT_PROOF_SLIDES } from "@/lib/checkout-copy";
 import { cn } from "@/lib/utils";
@@ -27,11 +28,13 @@ function ProofPhone({
         {label}
       </span>
       <div className="w-full max-w-[148px] overflow-hidden rounded-[1.75rem] border-[3px] border-zinc-900 bg-zinc-900 shadow-lg shadow-pink-500/10 sm:max-w-[168px]">
-        <img
+        <Image
           src={src}
           alt={label}
+          width={336}
+          height={728}
+          sizes="168px"
           className="aspect-[9/19.5] w-full object-cover object-top"
-          loading="lazy"
           draggable={false}
         />
       </div>

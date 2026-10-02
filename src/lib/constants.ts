@@ -150,7 +150,7 @@ export const PLANS = [
       "Facturé 34,90 € tous les 6 mois. Résiliation immédiate — perte d'accès instantanée.",
     compare: "Soit 69,80 € sur l'année si tu reprends",
     description: "Le sweet spot si tu l'utilises souvent.",
-    savings: "Économise 42 % vs mensuel",
+    savings: "Économise 41 % vs mensuel",
     features: PLAN_VALUE_STACK,
     popular: false,
     ctaLabel: CHECKOUT_CTA_LABEL,

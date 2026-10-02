@@ -136,11 +136,14 @@ export function AnyLocCheckoutPanel({
     scrollToPayment();
   }
 
+  // A new plan needs a new Stripe session: drop the old form and start over.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setClientSecret(null);
     setError(null);
     void startCheckout(selectedPlanId, true);
     return () => requestRef.current?.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPlanId]);
 
   useEffect(() => {

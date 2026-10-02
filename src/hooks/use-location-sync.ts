@@ -17,6 +17,42 @@ export type SyncedLocation = {
   updatedAt: string | null;
 };
 
+type LocationResult =
+  | { ok: true; location: SyncedLocation | null }
+  | { ok: false; error: string };
+
+async function fetchLocation(): Promise<LocationResult> {
+  try {
+    const response = await fetch("/api/location");
+
+    if (response.status === 401) {
+      return { ok: true, location: null };
+    }
+
+    if (response.status === 403) {
+      const data = await response.json().catch(() => null);
+      throw new Error(
+        data?.error ?? "Un abonnement actif est requis pour cette action."
+      );
+    }
+
+    if (!response.ok) {
+      throw new Error("Impossible de charger ta position.");
+    }
+
+    const data = await response.json();
+    return { ok: true, location: data.location };
+  } catch (loadError) {
+    return {
+      ok: false,
+      error:
+        loadError instanceof Error
+          ? loadError.message
+          : "Impossible de charger ta position.",
+    };
+  }
+}
+
 type UseLocationSyncOptions = {
   onSynced?: () => void;
   pollIntervalMs?: number;
@@ -31,45 +67,30 @@ export function useLocationSync({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const apply = useCallback((result: LocationResult) => {
+    if (result.ok) {
+      setLocation(result.location);
+    } else {
+      setError(result.error);
+    }
+    setLoading(false);
+  }, []);
+
   const loadLocation = useCallback(async () => {
     setLoading(true);
     setError(null);
-
-    try {
-      const response = await fetch("/api/location");
-
-      if (response.status === 401) {
-        setLocation(null);
-        return;
-      }
-
-      if (response.status === 403) {
-        const data = await response.json().catch(() => null);
-        throw new Error(
-          data?.error ?? "Un abonnement actif est requis pour cette action."
-        );
-      }
-
-      if (!response.ok) {
-        throw new Error("Impossible de charger ta position.");
-      }
-
-      const data = await response.json();
-      setLocation(data.location);
-    } catch (loadError) {
-      setError(
-        loadError instanceof Error
-          ? loadError.message
-          : "Impossible de charger ta position."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    apply(await fetchLocation());
+  }, [apply]);
 
   useEffect(() => {
-    void loadLocation();
-  }, [loadLocation]);
+    let active = true;
+    void fetchLocation().then((result) => {
+      if (active) apply(result);
+    });
+    return () => {
+      active = false;
+    };
+  }, [apply]);
 
   useEffect(() => {
     if (!pollIntervalMs || pollIntervalMs <= 0) {

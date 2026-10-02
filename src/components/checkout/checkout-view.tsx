@@ -31,10 +31,12 @@ export function CheckoutView({
   );
   const [destination, setDestination] = useState<OnboardingDestination | undefined>();
 
+  // sessionStorage only exists in the browser: read it after hydration.
   useEffect(() => {
     try {
       const stored = window.sessionStorage.getItem(ONBOARDING_DESTINATION_KEY);
       if (stored) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setDestination(JSON.parse(stored) as OnboardingDestination);
       }
     } catch {
