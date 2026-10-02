@@ -480,13 +480,59 @@ async function checkGuideUsb() {
     icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>';
     statusBox.className = "guide-status-box ok";
     nextBtn.disabled = false;
+    renderDriverBox(null);
   } else {
+    renderDriverBox(result);
     text.textContent = "Recherche d'un iPhone...";
     hint.textContent = result.message || "Branche ton iPhone en USB pour continuer.";
     icon.className = "guide-status-icon searching";
     icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>';
     statusBox.className = "guide-status-box";
     nextBtn.disabled = true;
+  }
+}
+
+const ITUNES_DOWNLOAD_URL = "https://www.apple.com/itunes/download/win64";
+
+function openItunesDownload() {
+  void window.anylocSetup.openExternal(ITUNES_DOWNLOAD_URL);
+}
+
+let driverInstalling = false;
+let driverNote = null; // last install outcome, kept across polls
+
+// Windows: the iPhone is plugged in but only has the generic photo driver.
+function renderDriverBox(result) {
+  const box = $("guide-driver-box");
+  if (!box || driverInstalling) return;
+  box.hidden = !result?.driverMissing;
+  if (box.hidden) return;
+
+  const canInstall = Boolean(result.driverInfAvailable);
+  $("guide-driver-install-btn").hidden = !canInstall;
+  $("guide-driver-itunes-btn").hidden = canInstall;
+  $("guide-driver-text").textContent = driverNote || (canInstall
+    ? "Clique ci-dessous et accepte la demande d'autorisation de Windows."
+    : "Installe iTunes depuis apple.com (pas le Microsoft Store), puis redémarre le PC.");
+}
+
+async function installAppleDriver() {
+  const btn = $("guide-driver-install-btn");
+  driverInstalling = true;
+  btn.disabled = true;
+  btn.textContent = "Installation…";
+  try {
+    const result = await window.anylocSetup.installAppleDriver();
+    driverNote = result.message;
+    $("guide-driver-text").textContent = result.message;
+    if (result.needsItunes) {
+      btn.hidden = true;
+      $("guide-driver-itunes-btn").hidden = false;
+    }
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Installer le pilote Apple";
+    driverInstalling = false;
   }
 }
 
@@ -649,9 +695,9 @@ async function init() {
   // Guide
   void applyPlatformHints();
 
-  $("guide-win-itunes-btn")?.addEventListener("click", () => {
-    void window.anylocSetup.openExternal("https://apps.microsoft.com/detail/9np83lwlpz9k");
-  });
+  $("guide-win-itunes-btn")?.addEventListener("click", openItunesDownload);
+  $("guide-driver-itunes-btn")?.addEventListener("click", openItunesDownload);
+  $("guide-driver-install-btn")?.addEventListener("click", () => void installAppleDriver());
 
   $("guide-skip-btn")?.addEventListener("click", () => {
     markGuideComplete();

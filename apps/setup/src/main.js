@@ -18,6 +18,7 @@ const {
   getScriptsDir,
 } = require("./usb");
 const { ensurePymobiledevice3, isBundleReady, isBundleCurrent } = require("./python-setup");
+const { ITUNES_DOWNLOAD_URL, checkAppleDriver, installAppleDriver } = require("./windows-driver");
 
 const SUPABASE_URL =
   process.env.ANYLOC_SUPABASE_URL || "https://gqkxnktprctdvpwvnqli.supabase.co";
@@ -688,10 +689,19 @@ ipcMain.handle("setup:tools-ready", () => {
 });
 
 ipcMain.handle("setup:check-usb", async (_event, payload) => {
-  return detectUsbDevice({
+  const device = await detectUsbDevice({
     installTools: payload?.installTools !== false,
   });
+  // Windows sees the iPhone but usbmux can't: Apple's USB driver is missing.
+  const appleDriver = !device.connected && process.platform === "win32" ? await checkAppleDriver() : null;
+  return {
+    ...device,
+    driverMissing: appleDriver?.status === "missing",
+    driverInfAvailable: Boolean(appleDriver?.infAvailable),
+  };
 });
+
+ipcMain.handle("setup:install-apple-driver", async () => installAppleDriver());
 
 ipcMain.handle("setup:open-external", async (_event, url) => {
   const raw = String(url || "");
@@ -699,8 +709,7 @@ ipcMain.handle("setup:open-external", async (_event, url) => {
 
   const allowedExact = new Set([
     "https://www.python.org/downloads/windows/",
-    "https://apps.microsoft.com/detail/9np83lwlpz9k",
-    "ms-windows-store://pdp/?ProductId=9NP83LWLPZ9K",
+    ITUNES_DOWNLOAD_URL,
   ]);
   if (allowedExact.has(raw)) {
     await shell.openExternal(raw);
