@@ -12,6 +12,7 @@ const {
   clearGpsLocation,
   hasWifiPairing,
   ensureWifiPairing,
+  pushPairingToApp,
   resolvePythonExecutable,
   resolvePymobiledevice3Cli,
   missingToolsMessage,
@@ -744,11 +745,28 @@ function pairForWifi(udid) {
   });
 }
 
+// Hands the iPhone app its pairing record so it works with no computer at all.
+// Once per device per launch once it lands; retried every minute until the
+// Anyloc app is installed on the iPhone.
+const appPairingDone = new Set();
+const appPairingLastTry = new Map();
+
+function pairForApp(udid) {
+  if (!udid || appPairingDone.has(udid)) return;
+  if (Date.now() - (appPairingLastTry.get(udid) || 0) < 60000) return;
+  appPairingLastTry.set(udid, Date.now());
+  pushPairingToApp({ udid }).then((result) => {
+    if (result.ok) appPairingDone.add(udid);
+    console.log("[App pairing]", result.ok ? `Pushed to ${udid}` : `Push failed: ${result.message}`);
+  });
+}
+
 ipcMain.handle("setup:check-usb", async (_event, payload) => {
   const device = await detectUsbDevice({
     installTools: payload?.installTools !== false,
   });
   if (device.connected) pairForWifi(device.udid);
+  if (device.connected) pairForApp(device.udid);
   return { ...device, wifiPaired: hasWifiPairing(device.connected ? device.udid : null) };
 });
 

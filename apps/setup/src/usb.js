@@ -1,5 +1,6 @@
 const { spawn, spawnSync } = require("node:child_process");
 const fs = require("node:fs");
+const os = require("node:os");
 const path = require("node:path");
 
 const pythonSetup = require("./python-setup");
@@ -975,6 +976,41 @@ async function ensureWifiPairing({ udid }) {
   return { ok: true };
 }
 
+// Drops the lockdown pair record straight into the Anyloc iPhone app's
+// Documents, so the app can drive its own location through LocalDevVPN with no
+// computer. Goes over USB only (never through our server): the record grants
+// full developer access to the iPhone. Fails quietly until the app is installed.
+async function pushPairingToApp({ udid }) {
+  if (!udid) {
+    return { ok: false, message: "UDID manquant." };
+  }
+
+  // Without this (Xcode's "Connect via network"), lockdown drops every
+  // network session, LocalDevVPN included.
+  const wifi = await runCli(["lockdown", "wifi-connections", "--state", "on", "--udid", udid], 20000);
+  if (!wifi.ok) {
+    return { ok: false, message: humanizePmd3Error(wifi.stderr || wifi.stdout) };
+  }
+
+  const tmp = path.join(os.tmpdir(), `anyloc-pair-${udid}.plist`);
+  try {
+    const saved = await runCli(["lockdown", "save-pair-record", tmp, "--udid", udid], 20000);
+    if (!saved.ok || !fs.existsSync(tmp)) {
+      return { ok: false, message: humanizePmd3Error(saved.stderr || saved.stdout) };
+    }
+
+    const pushed = await runCli(
+      ["apps", "push", "io.anyloc.app", tmp, "/Documents/AnylocPairing.plist", "--udid", udid],
+      20000
+    );
+    return pushed.ok
+      ? { ok: true }
+      : { ok: false, message: humanizePmd3Error(pushed.stderr || pushed.stdout) };
+  } finally {
+    fs.rmSync(tmp, { force: true });
+  }
+}
+
 function clearCachedPaths() {
   cachedCli = null;
   cachedPython = null;
@@ -1008,6 +1044,7 @@ module.exports = {
   clearGpsLocation,
   hasWifiPairing,
   ensureWifiPairing,
+  pushPairingToApp,
   exportPairingFile,
   savePairingLocalCopy,
   resolvePythonExecutable,
