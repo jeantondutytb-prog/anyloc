@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, Tray, Menu, nativeImage } = require("electron");
+const { app, BrowserWindow, ipcMain, shell, Tray, Menu, nativeImage, powerSaveBlocker } = require("electron");
 const { spawn: spawnChild } = require("node:child_process");
 const path = require("path");
 const {
@@ -10,6 +10,10 @@ const {
   savePairingLocalCopy,
   applyGpsDirect,
   clearGpsLocation,
+  hasWifiPairing,
+  ensureWifiPairing,
+  pushPairingToApp,
+  installIphoneApp,
   resolvePythonExecutable,
   resolvePymobiledevice3Cli,
   missingToolsMessage,
@@ -17,7 +21,7 @@ const {
   getSpawnEnv,
   getScriptsDir,
 } = require("./usb");
-const { ensurePymobiledevice3, isBundleReady, isBundleCurrent } = require("./python-setup");
+const { ensurePymobiledevice3, isBundleReady, isBundleCurrent, removeLegacyEnv } = require("./python-setup");
 const { ITUNES_DOWNLOAD_URL, checkAppleDriver, installAppleDriver } = require("./windows-driver");
 
 const SUPABASE_URL =
@@ -68,12 +72,80 @@ function clearSessionFile() {
   try { fs.unlinkSync(getSessionFilePath()); } catch {}
 }
 
-// Reports the real outcome to the UI: "applied" once live_location.py has set
-// the location on the iPhone, or the error if it exits before. `reported`
-// keeps the 5 s re-apply loop from toasting the same error over and over.
-function applySpoofOnce(loc, reported) {
+// Auto-sync keeps one live_location.py stream open and writes each new
+// location to its stdin, so a change lands in well under a second instead of
+// paying for Python start-up, the Wi-Fi lookup and a new tunnel every time.
+// Not `simulate-location set`: it blocks its asyncio loop in wait_return(),
+// which starves the userspace tunnel, so the iPhone snaps back to its real
+// position after a few seconds (and at once on Windows, where it reads stdin).
+//
+// spoofTarget is the location last written; it is reported "applied" once the
+// stream has caught up with every line written so far. `reported` keeps the
+// 5 s re-apply loop from toasting the same error over and over.
+let spoofTarget = null;
+
+function spawnSpoofChild() {
   const python = resolvePythonExecutable();
-  if (!python) {
+  if (!python) return null;
+
+  const child = spawnChild(
+    python,
+    [path.join(getScriptsDir(), "live_location.py"), "stream"],
+    { env: getSpawnEnv(), stdio: ["pipe", "pipe", "pipe"], windowsHide: true }
+  );
+  child.stdin.on("error", () => {});
+
+  let pending = 0;
+  let stderr = "";
+  child.writeLine = (line) => {
+    if (line !== "clear") pending += 1;
+    child.stdin.write(`${line}\n`);
+  };
+
+  child.stdout.on("data", (chunk) => {
+    const applied = chunk.toString().split("\n").filter((line) => line.trim() === "applied").length;
+    if (!applied) return;
+    pending = Math.max(0, pending - applied);
+    const target = spoofTarget;
+    if (pending || !target || target.child !== child || target.applied) return;
+    target.applied = true;
+    target.reported.error = false;
+    if (!target.reported.applied) {
+      target.reported.applied = true;
+      const { loc } = target;
+      sendSyncStatus(`GPS: ${loc.name || `${loc.lat}, ${loc.lng}`}`, false, loc, { applied: true });
+    }
+  });
+  child.stderr.on("data", (chunk) => {
+    const msg = chunk.toString().trim();
+    stderr += `${msg}\n`;
+    if (msg && !msg.includes("WARNING")) console.log("[Spoof]", msg);
+  });
+  child.on("close", () => {
+    if (autoSyncSpoofChild === child) autoSyncSpoofChild = null;
+    // Killed on purpose (live mode, stop), already applied (the re-apply loop
+    // reconnects quietly) or never asked for a location: only a location that
+    // never landed is an error.
+    const target = spoofTarget;
+    if (child.killed || !target || target.child !== child || target.applied || target.reported.error) return;
+    target.reported.error = true;
+    target.reported.applied = false;
+    sendSyncStatus(humanizePmd3Error(stderr), true, target.loc);
+  });
+
+  autoSyncSpoofChild = child;
+  return child;
+}
+
+// Opens the stream ahead of the first location so even that one is instant.
+// Failures stay quiet here: they are reported once a location is asked for.
+function prewarmSpoofChild() {
+  if (!autoSyncSpoofChild && !liveActive && !toolsUpgrade) spawnSpoofChild();
+}
+
+function applySpoofOnce(loc, reported) {
+  const child = autoSyncSpoofChild || spawnSpoofChild();
+  if (!child) {
     if (!reported.error) {
       reported.error = true;
       sendSyncStatus(missingToolsMessage(), true, loc);
@@ -81,53 +153,29 @@ function applySpoofOnce(loc, reported) {
     return false;
   }
 
-  if (autoSyncSpoofChild) {
-    try { autoSyncSpoofChild.kill("SIGTERM"); } catch {}
-    autoSyncSpoofChild = null;
-  }
-
-  // Not `simulate-location set`: it blocks its asyncio loop in wait_return(),
-  // which starves the --userspace tunnel, so the iPhone snaps back to its real
-  // position after a few seconds (and at once on Windows, where it reads stdin).
-  // live_location.py keeps the loop running; stdin stays open to hold the session.
-  const child = spawnChild(
-    python,
-    [path.join(getScriptsDir(), "live_location.py"), "stream", "--userspace"],
-    { env: getSpawnEnv(), stdio: ["pipe", "pipe", "pipe"], windowsHide: true }
-  );
-  child.stdin.on("error", () => {});
-  child.stdin.write(`${loc.lat} ${loc.lng}\n`);
-
-  let applied = false;
-  let stderr = "";
-  autoSyncSpoofChild = child;
-  child.stdout.on("data", (chunk) => {
-    if (applied || !chunk.toString().includes("applied")) return;
-    applied = true;
-    reported.error = false;
-    if (!reported.applied) {
-      reported.applied = true;
-      sendSyncStatus(`GPS: ${loc.name || `${loc.lat}, ${loc.lng}`}`, false, loc, { applied: true });
-    }
-  });
-  child.on("close", () => {
-    if (autoSyncSpoofChild === child) autoSyncSpoofChild = null;
-    // Killed on purpose (new location, stop) or never applied: only the latter is an error.
-    if (applied || child.killed || reported.error) return;
-    reported.error = true;
-    reported.applied = false;
-    sendSyncStatus(humanizePmd3Error(stderr), true, loc);
-  });
-  child.stderr.on("data", (chunk) => {
-    const msg = chunk.toString().trim();
-    stderr += `${msg}\n`;
-    if (msg && !msg.includes("WARNING")) console.log("[Spoof]", msg);
-  });
-
+  spoofTarget = { loc, reported, child, applied: false };
+  child.writeLine(`${loc.lat} ${loc.lng}`);
   return true;
 }
 
+// Clears through the open stream when there is one, keeping it for the next
+// location; otherwise a one-off live_location.py clear.
+function clearSpoof() {
+  holdAwake(false);
+  if (reapplyInterval) {
+    clearInterval(reapplyInterval);
+    reapplyInterval = null;
+  }
+  spoofTarget = null;
+  if (autoSyncSpoofChild) {
+    autoSyncSpoofChild.writeLine("clear");
+    return;
+  }
+  clearGpsLocation({}).catch(() => {});
+}
+
 function killSpoofProcess() {
+  holdAwake(false);
   if (autoSyncSpoofChild) {
     try { autoSyncSpoofChild.kill("SIGTERM"); } catch {}
     autoSyncSpoofChild = null;
@@ -150,8 +198,23 @@ function sendSyncStatus(message, error, location, extra = {}) {
   }
 }
 
+// iOS drops the simulated location as soon as the computer stops talking to
+// the iPhone, so the computer must not fall asleep while a location is on.
+// (Closing a laptop lid still sleeps it: nothing an app can do about that.)
+let awakeBlockerId = null;
+
+function holdAwake(on) {
+  if (on && awakeBlockerId === null) {
+    awakeBlockerId = powerSaveBlocker.start("prevent-app-suspension");
+  } else if (!on && awakeBlockerId !== null) {
+    powerSaveBlocker.stop(awakeBlockerId);
+    awakeBlockerId = null;
+  }
+}
+
 function startReapplyLoop(loc) {
   if (reapplyInterval) clearInterval(reapplyInterval);
+  holdAwake(true);
 
   const reported = { applied: false, error: false };
   applySpoofOnce(loc, reported);
@@ -170,6 +233,7 @@ function startAutoSync(session) {
   autoSyncSession = session;
   saveSessionFile(session);
   console.log("[AutoSync] Started — polling every 1s, re-apply every 5s");
+  prewarmSpoofChild();
 
   autoSyncInterval = setInterval(async () => {
     // Walking or playing a route from this computer drives the GPS directly.
@@ -204,8 +268,7 @@ function startAutoSync(session) {
       lastSyncedLoc = loc;
 
       if (!loc.is_active) {
-        killSpoofProcess();
-        clearGpsLocation({}).catch(() => {});
+        clearSpoof();
         console.log("[AutoSync] GPS cleared");
         sendSyncStatus("GPS réinitialisé", false, loc);
         return;
@@ -264,7 +327,7 @@ function ensureLiveStream() {
 
   const child = spawnChild(
     python,
-    [path.join(getScriptsDir(), "live_location.py"), "stream", "--userspace"],
+    [path.join(getScriptsDir(), "live_location.py"), "stream"],
     { env: getSpawnEnv(), stdio: ["pipe", "pipe", "pipe"], windowsHide: true }
   );
   liveChild = child;
@@ -302,6 +365,7 @@ function spawnLive(liveArgs) {
 function enterLive() {
   liveActive = true;
   killSpoofProcess();
+  holdAwake(true);
 }
 
 function liveMove(lat, lng) {
@@ -317,7 +381,7 @@ function playRoute(gpx) {
   enterLive();
   const file = path.join(app.getPath("temp"), "anyloc-route.gpx");
   fs.writeFileSync(file, gpx, "utf8");
-  spawnLive(["play", "--userspace", file]);
+  spawnLive(["play", file]);
   return { ok: true };
 }
 
@@ -325,6 +389,7 @@ function stopLive() {
   if (!liveActive) return;
   liveActive = false;
   killLiveChild();
+  holdAwake(false);
   // Re-apply whatever Supabase holds on the next auto-sync poll.
   lastSyncedLoc = null;
 }
@@ -355,6 +420,8 @@ function tryAutoStartSync() {
   if (saved?.access_token && saved?.user?.id) {
     console.log("[AutoSync] Auto-starting with saved session");
     startAutoSync(saved);
+    currentSession = saved;
+    void keepSessionFresh();
   }
 }
 
@@ -362,6 +429,9 @@ function parseSetupUrl(rawUrl) {
   try {
     const url = new URL(rawUrl);
     if (url.protocol !== "anyloc-setup:") return null;
+    // anyloc.io/desktop/connect: one-time login link from the logged-in browser.
+    const tokenHash = url.searchParams.get("token_hash")?.trim();
+    if (tokenHash) return { tokenHash };
     const token = url.searchParams.get("token")?.trim();
     const apiBaseUrl = url.searchParams.get("api")?.trim();
     if (!token) return null;
@@ -377,9 +447,15 @@ function deliverLaunchConfig(window) {
   pendingLaunchConfig = null;
 }
 
-function handleSetupUrl(rawUrl) {
-  const config = parseSetupUrl(rawUrl);
+async function handleSetupUrl(rawUrl) {
+  let config = parseSetupUrl(rawUrl);
   if (!config) return;
+  if (config.tokenHash) {
+    const session = await exchangeLoginLink(config.tokenHash);
+    config = session
+      ? { session }
+      : { error: "Le lien de connexion a expiré. Reclique sur « Se connecter avec anyloc.io »." };
+  }
   pendingLaunchConfig = config;
   if (mainWindowRef) {
     if (mainWindowRef.isMinimized()) mainWindowRef.restore();
@@ -519,6 +595,78 @@ async function supabaseFetch(endpoint, options = {}) {
   return { ok: res.ok, status: res.status, data };
 }
 
+// ── Session freshness ──
+// Supabase access tokens last ~1 h. Without refreshing, auto-sync and every
+// API call fail silently after an hour and the next launch logs the user out.
+
+let currentSession = null;
+
+async function exchangeLoginLink(tokenHash) {
+  try {
+    const res = await supabaseFetch("/verify", {
+      method: "POST",
+      body: JSON.stringify({ type: "magiclink", token_hash: tokenHash }),
+    });
+    return res.ok && res.data?.access_token && res.data?.user ? res.data : null;
+  } catch {
+    return null;
+  }
+}
+
+// Refresh tokens are single-use: concurrent callers share one request.
+const refreshesInFlight = new Map();
+
+function refreshSession(session) {
+  const refreshToken = session?.refresh_token;
+  if (!refreshToken) return Promise.resolve(null);
+  if (!refreshesInFlight.has(refreshToken)) {
+    const request = supabaseFetch("/token?grant_type=refresh_token", {
+      method: "POST",
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    })
+      .then((res) => (res.ok && res.data?.access_token ? res.data : null))
+      .catch(() => null)
+      .then((fresh) => {
+        if (fresh) adoptSession(fresh);
+        return fresh;
+      })
+      .finally(() => setTimeout(() => refreshesInFlight.delete(refreshToken), 30000));
+    refreshesInFlight.set(refreshToken, request);
+  }
+  return refreshesInFlight.get(refreshToken);
+}
+
+function tokenExpiresAt(session) {
+  if (session?.expires_at) return session.expires_at * 1000;
+  try {
+    const payload = JSON.parse(Buffer.from(session.access_token.split(".")[1], "base64url").toString());
+    return payload.exp * 1000;
+  } catch {
+    return 0;
+  }
+}
+
+function adoptSession(session) {
+  currentSession = session;
+  if (autoSyncSession) {
+    autoSyncSession = session;
+    saveSessionFile(session);
+  }
+  try { mainWindowRef?.webContents.send("setup:session", session); } catch {}
+}
+
+async function keepSessionFresh() {
+  if (!currentSession || tokenExpiresAt(currentSession) - Date.now() > 10 * 60 * 1000) return;
+  await refreshSession(currentSession);
+}
+
+setInterval(() => void keepSessionFresh(), 60 * 1000);
+
+ipcMain.handle("setup:set-session", (_event, session) => {
+  currentSession = session?.access_token ? session : null;
+  void keepSessionFresh();
+});
+
 ipcMain.handle("setup:auth", async (_event, action, payload) => {
   try {
     if (action === "login") {
@@ -566,14 +714,21 @@ ipcMain.handle("setup:auth", async (_event, action, payload) => {
     }
 
     if (action === "verify") {
+      // The main process may already hold a newer token for this user (it
+      // refreshed in the background); the renderer's copy is then stale.
+      if (currentSession && currentSession.user?.id === payload.session?.user?.id) {
+        payload = { ...payload, session: currentSession };
+      }
       const token = payload.session?.access_token;
       if (!token) return { ok: false };
       const res = await supabaseFetch("/user", {
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) return { ok: false };
-      return { ok: true, session: { ...payload.session, user: res.data } };
+      if (res.ok) return { ok: true, session: { ...payload.session, user: res.data } };
+      // Expired access token: the refresh token keeps the user logged in.
+      const fresh = await refreshSession(payload.session);
+      return fresh ? { ok: true, session: fresh } : { ok: false };
     }
 
     if (action === "oauth") {
@@ -688,14 +843,46 @@ ipcMain.handle("setup:tools-ready", () => {
   return !!resolvePymobiledevice3Cli();
 });
 
+// While the iPhone is plugged in, pair it for Wi-Fi once so it keeps working
+// unplugged. One attempt per device per launch: an iPhone below iOS 17 fails
+// every time and the UI polls this every 3 s.
+const wifiPairingAttempted = new Set();
+
+function pairForWifi(udid) {
+  if (!udid || wifiPairingAttempted.has(udid) || hasWifiPairing(udid)) return;
+  wifiPairingAttempted.add(udid);
+  ensureWifiPairing({ udid }).then((result) => {
+    console.log("[Wi-Fi]", result.ok ? `Paired ${udid}` : `Pairing failed: ${result.message}`);
+  });
+}
+
+// Hands the iPhone app its pairing record so it works with no computer at all.
+// Once per device per launch once it lands; retried every minute until the
+// Anyloc app is installed on the iPhone.
+const appPairingDone = new Set();
+const appPairingLastTry = new Map();
+
+function pairForApp(udid) {
+  if (!udid || appPairingDone.has(udid)) return;
+  if (Date.now() - (appPairingLastTry.get(udid) || 0) < 60000) return;
+  appPairingLastTry.set(udid, Date.now());
+  pushPairingToApp({ udid }).then((result) => {
+    if (result.ok) appPairingDone.add(udid);
+    console.log("[App pairing]", result.ok ? `Pushed to ${udid}` : `Push failed: ${result.message}`);
+  });
+}
+
 ipcMain.handle("setup:check-usb", async (_event, payload) => {
   const device = await detectUsbDevice({
     installTools: payload?.installTools !== false,
   });
+  if (device.connected) pairForWifi(device.udid);
+  if (device.connected) pairForApp(device.udid);
   // Windows sees the iPhone but usbmux can't: Apple's USB driver is missing.
   const appleDriver = !device.connected && process.platform === "win32" ? await checkAppleDriver() : null;
   return {
     ...device,
+    wifiPaired: hasWifiPairing(device.connected ? device.udid : null),
     driverMissing: appleDriver?.status === "missing",
     driverInfAvailable: Boolean(appleDriver?.infAvailable),
   };
@@ -734,12 +921,12 @@ ipcMain.handle("setup:open-external", async (_event, url) => {
   return { ok: false };
 });
 
-// QR code for the iPhone remote, generated locally so it works offline and
-// does not depend on the website being deployed.
-ipcMain.handle("setup:remote-qr", async () => {
+// QR code to LocalDevVPN on the App Store (onboarding, annual plan), made
+// locally so it works offline.
+ipcMain.handle("setup:localdevvpn-qr", async () => {
   const QRCode = require("qrcode");
-  return QRCode.toDataURL("https://www.anyloc.io/app", {
-    width: 296,
+  return QRCode.toDataURL("https://apps.apple.com/app/localdevvpn/id6755608044", {
+    width: 264,
     margin: 1,
     color: { dark: "#18181b", light: "#ffffff" },
   });
@@ -747,6 +934,71 @@ ipcMain.handle("setup:remote-qr", async () => {
 
 ipcMain.handle("setup:devmode-status", async (_event, payload) => {
   return getDeveloperModeStatus({ udid: payload?.udid ?? null });
+});
+
+// ── iPhone app (annual plan): registered + installed straight over USB ──
+
+const ANYLOC_API = process.env.ANYLOC_API_URL || "https://www.anyloc.io";
+
+async function anylocApi(pathname, options = {}) {
+  if (!currentSession?.access_token) {
+    return { ok: false, message: "Reconnecte-toi à ton compte Anyloc." };
+  }
+  await keepSessionFresh();
+  try {
+    const res = await fetch(`${ANYLOC_API}${pathname}`, {
+      ...options,
+      headers: {
+        Authorization: `Bearer ${currentSession.access_token}`,
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+    });
+    const data = await res.json().catch(() => ({}));
+    return res.ok
+      ? { ok: true, ...data }
+      : { ok: false, message: data.error || "Le serveur Anyloc ne répond pas. Réessaie dans un instant." };
+  } catch {
+    return { ok: false, message: "Pas de connexion internet. Vérifie ta connexion et réessaie." };
+  }
+}
+
+ipcMain.handle("setup:iphone-app-status", () => anylocApi("/api/ios/desktop"));
+
+ipcMain.handle("setup:iphone-app-register", (_event, payload) =>
+  anylocApi("/api/ios/desktop", {
+    method: "POST",
+    body: JSON.stringify({ udid: payload?.udid }),
+  })
+);
+
+ipcMain.handle("setup:iphone-app-install", async (_event, payload) => {
+  const udid = payload?.udid;
+  const status = await anylocApi("/api/ios/desktop");
+  if (!status.ok) return status;
+  if (!status.ipaUrl) return { ok: false, message: "Ton app n'est pas encore prête. Réessaie dans une minute." };
+
+  const ipaPath = path.join(app.getPath("temp"), `Anyloc-${Date.now()}.ipa`);
+  try {
+    const res = await fetch(status.ipaUrl);
+    if (!res.ok) throw new Error(String(res.status));
+    fs.writeFileSync(ipaPath, Buffer.from(await res.arrayBuffer()));
+  } catch {
+    return { ok: false, message: "Téléchargement de l'app impossible. Vérifie ta connexion et réessaie." };
+  }
+
+  try {
+    const result = await installIphoneApp({ udid, ipaPath });
+    // Hand the app its pairing record right away so it works unplugged.
+    if (result.ok) {
+      appPairingDone.delete(udid);
+      appPairingLastTry.delete(udid);
+      pairForApp(udid);
+    }
+    return result;
+  } finally {
+    fs.rmSync(ipaPath, { force: true });
+  }
 });
 
 ipcMain.handle("setup:reveal-devmode", async (_event, payload) => {
@@ -954,7 +1206,10 @@ app.whenReady().then(() => {
 
   createWindow();
 
-  if (!isPreview) upgradeToolsIfOutdated();
+  if (!isPreview) {
+    upgradeToolsIfOutdated();
+    removeLegacyEnv();
+  }
 
   const savedSession = isPreview ? null : loadSessionFile();
   if (savedSession?.access_token) {

@@ -66,6 +66,7 @@ function DesktopDownloadCard({
   desktopOs,
   onDesktopOsChange,
   mac,
+  macIntel,
   windows,
   windowsZip,
   onDownload,
@@ -75,6 +76,7 @@ function DesktopDownloadCard({
   desktopOs: DesktopOs;
   onDesktopOsChange: (os: DesktopOs) => void;
   mac?: DownloadAssetInfo;
+  macIntel?: DownloadAssetInfo;
   windows?: DownloadAssetInfo;
   windowsZip?: DownloadAssetInfo;
   onDownload: (platform: string) => void;
@@ -111,9 +113,34 @@ function DesktopDownloadCard({
         >
           {desktopOs === "mac" ? "J'ai un PC Windows" : "J'ai un Mac"}
         </button>
+        {desktopOs === "mac" && hasAccess && !preview && macIntel?.available ? (
+          <p className="mt-2 text-xs text-zinc-500">
+            Mac avec processeur Intel ?{" "}
+            <a
+              href={macIntel.downloadPath}
+              onClick={() => onDownload(macIntel.id)}
+              className="font-medium text-pink-600 underline-offset-2 hover:underline"
+            >
+              Télécharger cette version
+            </a>
+          </p>
+        ) : null}
         {desktopOs === "win" ? (
           <div className="mt-4 text-left">
             <WindowsOpenHelp compact zipDownloadPath={windowsZip?.downloadPath} />
+          </div>
+        ) : null}
+        {hasAccess && !preview ? (
+          <div className="mt-6 border-t border-zinc-100 pt-5">
+            <p className="text-sm text-zinc-600">
+              App installée ? Connecte-la à ton compte en un clic.
+            </p>
+            {/* Route handler, pas une page : un <Link> le préchargerait. */}
+            <a href="/desktop/connect" className="mt-3 inline-block">
+              <Button size="sm" variant="secondary">
+                Ouvrir et connecter Anyloc
+              </Button>
+            </a>
           </div>
         ) : null}
       </div>
@@ -145,6 +172,7 @@ export function PaidDashboardView({
   const hasAccess = preview || (data?.hasAccess ?? false);
   const needsSetupPassword = !preview && Boolean(data?.needsSetupPassword);
   const mac = assets.find((asset) => asset.id === "setup-mac");
+  const macIntel = assets.find((asset) => asset.id === "setup-mac-intel");
   const windows = assets.find((asset) => asset.id === "setup-win");
   const windowsZip = assets.find(
     (asset) => asset.id === "setup-win-zip" && asset.available
@@ -191,6 +219,7 @@ export function PaidDashboardView({
         desktopOs={desktopOs}
         onDesktopOsChange={setDesktopOs}
         mac={mac}
+        macIntel={macIntel}
         windows={windows}
         windowsZip={windowsZip}
         onDownload={handleDownload}

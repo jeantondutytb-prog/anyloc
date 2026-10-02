@@ -5,29 +5,82 @@ Keep one DVT location-simulation session open and move the iPhone for every
 (and its tunnel) for each step, which made the position jump every ~2 s.
 
 pymobiledevice3's own `simulate-location set/play` block their asyncio loop in
-wait_return() once done, which starves the --userspace tunnel: the iPhone goes
+wait_return() once done, which starves the userspace tunnel: the iPhone goes
 back to its real position after a few seconds. Here the loop keeps running and
 the session holds until stdin closes.
 
-Prints "ready" once connected and "applied" after each location is set.
+The iPhone is reached over USB when it is plugged in, otherwise over Wi-Fi
+(same network) through the RemotePairing record `lockdown remotepairing --pair`
+wrote while it was plugged in. Both use the no-root userspace tunnel.
 
-Usage: python3 live_location.py stream --userspace [--udid UDID]
-       python3 live_location.py play --userspace [--udid UDID] ROUTE.gpx
+Prints "ready" once connected, "applied" after each location is set and
+"cleared" after a "clear" line.
+
+Usage: python3 live_location.py stream [--udid UDID]
+       python3 live_location.py play [--udid UDID] ROUTE.gpx
+       python3 live_location.py clear [--udid UDID]
 """
 
 import asyncio
 import sys
+from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Optional
 
 import typer
-from typer_injector import InjectingTyper
 
-from pymobiledevice3.cli.cli_common import ServiceProviderDep, async_command
+from pymobiledevice3 import usbmux
+from pymobiledevice3.pair_records import iter_remote_paired_identifiers
+from pymobiledevice3.remote import tunnel_service, userspace_tunnel
 from pymobiledevice3.services.dvt.instruments.dvt_provider import DvtProvider
 from pymobiledevice3.services.dvt.instruments.location_simulation import LocationSimulation
 
-cli = InjectingTyper(name="live-location", no_args_is_help=True)
+cli = typer.Typer(name="live-location", no_args_is_help=True)
+
+UdidOption = Annotated[Optional[str], typer.Option("--udid", help="Target device UDID")]
+
+# Matched by humanizePmd3Error in src/usb.js.
+NO_DEVICE_MESSAGE = (
+    "AnylocNoDevice: iPhone not found over USB nor on this Wi-Fi network."
+)
+
+
+async def _wifi_tunnel_provider(serial, autopair, remotepairing_fallback=True):
+    # Same contract as userspace_tunnel._create_no_root_tunnel_provider, but
+    # skips usbmux and goes straight to RemotePairing over bonjour (Wi-Fi).
+    services = await tunnel_service.get_remote_pairing_tunnel_services(udid=serial)
+    if not services:
+        raise ConnectionError(NO_DEVICE_MESSAGE)
+    return services[0], None
+
+
+async def _usb_serial(udid: Optional[str]) -> Optional[str]:
+    try:
+        device = await usbmux.select_device(udid, connection_type="USB")
+    except Exception:
+        # No usbmuxd (e.g. Windows without Apple Devices): Wi-Fi only.
+        return None
+    return device.serial if device else None
+
+
+@asynccontextmanager
+async def location_simulation(udid: Optional[str]):
+    serial = await _usb_serial(udid)
+    if serial is None:
+        if not any(True for _ in iter_remote_paired_identifiers()):
+            raise ConnectionError(NO_DEVICE_MESSAGE)
+        # pymobiledevice3 10.10.3 has no public hook to pick the RemotePairing
+        # provider; the version is pinned in src/python-setup.js.
+        userspace_tunnel._create_no_root_tunnel_provider = _wifi_tunnel_provider
+        # None lets any paired iPhone found on the network answer.
+        serial = udid
+
+    async with (
+        userspace_tunnel.UserspaceRsdTunnel(serial=serial) as rsd,
+        DvtProvider(rsd) as dvt,
+        LocationSimulation(dvt) as simulation,
+    ):
+        yield simulation
 
 
 async def wait_stdin_closed(loop: asyncio.AbstractEventLoop) -> None:
@@ -35,41 +88,63 @@ async def wait_stdin_closed(loop: asyncio.AbstractEventLoop) -> None:
         pass
 
 
-@cli.command("stream")
-@async_command
-async def stream(service_provider: ServiceProviderDep) -> None:
-    """Apply each "lat lng" stdin line; exit when stdin closes."""
+async def _stream(udid: Optional[str]) -> None:
     loop = asyncio.get_running_loop()
-    async with DvtProvider(service_provider) as dvt, LocationSimulation(dvt) as location_simulation:
+    async with location_simulation(udid) as simulation:
         print("ready", flush=True)
         while True:
             line = await loop.run_in_executor(None, sys.stdin.readline)
             if not line:
                 break
             parts = line.split()
+            if parts == ["clear"]:
+                await simulation.clear()
+                print("cleared", flush=True)
+                continue
             if len(parts) != 2:
                 continue
             try:
                 lat, lng = float(parts[0]), float(parts[1])
             except ValueError:
                 continue
-            await location_simulation.set(lat, lng)
+            await simulation.set(lat, lng)
             print("applied", flush=True)
 
 
-@cli.command("play")
-@async_command
-async def play(
-    service_provider: ServiceProviderDep,
-    filename: Annotated[Path, typer.Argument(exists=True, file_okay=True, dir_okay=False)],
-) -> None:
-    """Replay a GPX route, then hold its last point until stdin closes."""
+async def _play(udid: Optional[str], filename: Path) -> None:
     loop = asyncio.get_running_loop()
-    async with DvtProvider(service_provider) as dvt, LocationSimulation(dvt) as location_simulation:
+    async with location_simulation(udid) as simulation:
         print("ready", flush=True)
-        await location_simulation.play_gpx_file(str(filename))
+        await simulation.play_gpx_file(str(filename))
         print("done", flush=True)
         await wait_stdin_closed(loop)
+
+
+async def _clear(udid: Optional[str]) -> None:
+    async with location_simulation(udid) as simulation:
+        await simulation.clear()
+        print("cleared", flush=True)
+
+
+@cli.command("stream")
+def stream(udid: UdidOption = None) -> None:
+    """Apply each "lat lng" (or "clear") stdin line; exit when stdin closes."""
+    asyncio.run(_stream(udid))
+
+
+@cli.command("play")
+def play(
+    filename: Annotated[Path, typer.Argument(exists=True, file_okay=True, dir_okay=False)],
+    udid: UdidOption = None,
+) -> None:
+    """Replay a GPX route, then hold its last point until stdin closes."""
+    asyncio.run(_play(udid, filename))
+
+
+@cli.command("clear")
+def clear(udid: UdidOption = None) -> None:
+    """Stop simulating the location."""
+    asyncio.run(_clear(udid))
 
 
 if __name__ == "__main__":

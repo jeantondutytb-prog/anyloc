@@ -52,6 +52,7 @@ __pycache__/
 # Native apps
 apps/setup/node_modules/
 apps/setup/dist/
+apps/setup/python-dist/
 apps/android/app/build/
 apps/android/.gradle/
 apps/android/local.properties
@@ -65,3 +66,4 @@ apps/ios/Vendor/idevice/*.a
 
 # local tool reports
 .gstack/
+apps/ios/Vendor/

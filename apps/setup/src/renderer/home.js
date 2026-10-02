@@ -1,6 +1,6 @@
 /* global L */
 // Main screen: dark map, rail on the left, control panel on the right.
-// Teleport goes through Supabase (auto-sync applies it over USB); walking and
+// Teleport goes through Supabase (auto-sync applies it over USB or Wi-Fi); walking and
 // route playback drive the iPhone directly through the main process.
 
 (function () {
@@ -111,7 +111,7 @@
     mode: "teleport", // teleport | walk | route
     selected: null, // { name, lat, lng }
     active: null, // location currently applied on the iPhone
-    usb: { connected: false, name: null },
+    usb: { connected: false, name: null, wifi: false },
     lastSyncAt: null,
     applying: false,
     walk: { pos: null, speed: "walk", running: false, heading: 0, trail: [], keys: new Set(), stick: null, lastPush: 0 },
@@ -957,10 +957,21 @@
   }
 
   function deviceHtml() {
-    const { connected, name } = S.usb;
+    const { connected, name, wifi } = S.usb;
+    // Unplugged but paired: the iPhone is reached over Wi-Fi when on the same network.
+    const status = connected
+      ? "<b>Connecté en USB</b>"
+      : wifi
+        ? "<b>Wi-Fi</b>"
+        : '<span class="off">Non connecté</span>';
+    const detail = connected
+      ? name || "iPhone"
+      : wifi
+        ? "Même réseau que cet ordinateur"
+        : "Branche ton iPhone en USB";
     return `<div class="h-card">
       <div class="h-cap">Appareil</div>
-      <div class="h-dev-row"><span class="h-dev-dot ${connected ? "" : "off"}"></span>${connected ? "<b>Connecté</b>" : '<span class="off">Non connecté</span>'}<span style="color:#55555d">·</span><span class="name">${esc(connected ? name || "iPhone" : "Branche ton iPhone en USB")}</span></div>
+      <div class="h-dev-row"><span class="h-dev-dot ${connected || wifi ? "" : "off"}"></span>${status}<span style="color:#55555d">·</span><span class="name">${esc(detail)}</span></div>
       <div class="h-dev-row">${I.crosshair}<span>GPS simulé : ${S.active || S.walk.running || S.runner ? "<b>actif</b>" : "inactif"}</span></div>
       <div class="h-dev-row">${I.clock}<span id="h-sync">${formatSync(S.lastSyncAt)}</span></div>
     </div>`;
@@ -1280,8 +1291,12 @@
   async function refreshUsb() {
     try {
       const res = await window.anylocSetup.checkUsb();
-      const next = { connected: Boolean(res?.connected), name: res?.deviceName || null };
-      if (next.connected !== S.usb.connected || next.name !== S.usb.name) {
+      const next = {
+        connected: Boolean(res?.connected),
+        name: res?.deviceName || null,
+        wifi: Boolean(res?.wifiPaired),
+      };
+      if (next.connected !== S.usb.connected || next.name !== S.usb.name || next.wifi !== S.usb.wifi) {
         S.usb = next;
         renderDevice();
       }
@@ -1412,9 +1427,10 @@
   function reset() {
     S.active = null;
     S.lastSyncAt = null;
-    S.usb = { connected: false, name: null };
+    S.usb = { connected: false, name: null, wifi: false };
   }
 
+  window.homeSetSession = (session) => { S.session = session; };
   window.homeEnter = enter;
   window.homeLeave = leave;
   window.homeReset = reset;

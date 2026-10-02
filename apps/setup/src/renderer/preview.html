@@ -17,6 +17,11 @@
         <div class="logo-big">Any<span>loc</span></div>
         <p class="tagline">Change ta position. Partout dans le monde.</p>
 
+        <button type="button" class="btn-primary" id="login-browser">Se connecter avec anyloc.io</button>
+        <p class="login-browser-hint" id="login-browser-hint">Déjà connecté sur le site ? Un clic suffit.</p>
+
+        <div class="divider">ou</div>
+
         <div class="oauth-buttons">
           <button class="oauth-btn" id="login-google">
             <svg viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09a6.97 6.97 0 0 1 0-4.17V7.07H2.18a11.97 11.97 0 0 0 0 9.86l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
@@ -161,34 +166,28 @@
     </div>
 
     <!-- ── Onboarding Guide (full-screen wizard) ── -->
+    <!-- Branche l'iPhone → installe l'app (formule 1 an) → dernier réglage →
+         sans câble (formule 1 an) → prêt. Tout le reste (outils USB, pilotes) se fait tout seul. -->
     <div id="guide-screen" class="screen guide-screen">
       <div class="guide-container">
-        <!-- Progress bar -->
         <div class="guide-progress">
           <div class="guide-progress-bar" id="guide-progress-bar"></div>
         </div>
-        <div class="guide-step-label" id="guide-step-label">Étape 1 / 6</div>
+        <div class="guide-step-label" id="guide-step-label">Étape 1 / 3</div>
 
-        <!-- Step 1: Prépare ton Mac -->
-        <div class="guide-step-content" id="guide-step-1">
-          <div class="guide-icon-wrap">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        <!-- Branche ton iPhone -->
+        <div class="guide-step-content" id="guide-step-plug">
+          <div class="guide-icon-wrap pulse">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><rect x="5" y="1" width="14" height="22" rx="3"/><path d="M12 18h.01"/></svg>
           </div>
-          <h2 class="guide-title" id="guide-step1-title">Prépare ton ordinateur</h2>
-          <p class="guide-subtitle">Anyloc installe automatiquement les outils USB. Il te faut un iPhone, un câble et <span id="guide-platform-req">ton ordinateur</span>.</p>
+          <h2 class="guide-title">Branche ton iPhone</h2>
+          <p class="guide-subtitle">Avec un câble USB. Déverrouille-le et appuie sur <strong>Faire confiance</strong> s'il te le demande.</p>
 
-          <div class="guide-tip-box" id="guide-win-hint" hidden>
-            <p>Sur Windows, installe d'abord <strong>iTunes depuis apple.com</strong> (pilotes Apple USB) — sans ça l'iPhone n'est souvent pas détecté. Évite la version du Microsoft Store : elle n'installe pas toujours le pilote.</p>
-            <button type="button" class="guide-btn-secondary" id="guide-win-itunes-btn">Télécharger iTunes sur apple.com</button>
-          </div>
-
-          <div class="guide-status-box" id="guide-tools-status">
-            <div class="guide-status-icon searching" id="guide-tools-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-            </div>
+          <div class="guide-status-box" id="guide-plug-status">
+            <div class="guide-status-icon searching" id="guide-plug-icon"></div>
             <div>
-              <div class="guide-status-text" id="guide-tools-text">Vérification en cours...</div>
-              <div class="guide-status-hint" id="guide-tools-hint">Ça peut prendre 1-2 minutes la première fois.</div>
+              <div class="guide-status-text" id="guide-plug-text">Préparation d'Anyloc…</div>
+              <div class="guide-status-hint" id="guide-plug-hint">Ça prend environ une minute la première fois.</div>
             </div>
           </div>
 
@@ -196,228 +195,121 @@
             <div class="guide-progress-bar" id="guide-tools-progress-bar" style="width: 0%"></div>
           </div>
 
-          <div class="guide-tip-box" id="guide-tools-error" hidden>
-            <p id="guide-tools-error-text"></p>
-          </div>
-
-          <button class="guide-btn-primary" id="guide-tools-next" disabled>Continuer</button>
-          <button class="guide-btn-secondary" id="guide-tools-retry" hidden>Réessayer</button>
-          <button type="button" class="guide-btn-skip" id="guide-skip-btn">J'ai déjà configuré mon iPhone</button>
-        </div>
-
-        <!-- Step 2: Branche ton iPhone -->
-        <div class="guide-step-content" id="guide-step-2" hidden>
-          <div class="guide-icon-wrap pulse">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><rect x="5" y="1" width="14" height="22" rx="3"/><path d="M12 18h.01"/></svg>
-          </div>
-          <h2 class="guide-title">Branche ton iPhone</h2>
-          <p class="guide-subtitle">Un câble USB et un « Faire confiance » sur l'iPhone.</p>
-
-          <div class="guide-instruction-card">
-            <div class="guide-instruction-num">1</div>
-            <div><h3>Branche le câble USB</h3><p>Lightning ou USB-C, puis déverrouille l'iPhone.</p></div>
-          </div>
-          <div class="guide-instruction-card">
-            <div class="guide-instruction-num">2</div>
-            <div><h3>Fais confiance</h3><p>Appuie sur <strong>Faire confiance</strong> sur l'écran de l'iPhone, puis tape ton code.</p></div>
-          </div>
-
-          <details class="guide-details" id="guide-usb-help">
-            <summary>L'iPhone n'est pas détecté ?</summary>
-            <ol>
-              <li>Essaie un autre câble USB (certains ne font que charger)</li>
-              <li>Déverrouille l'iPhone et appuie <strong>Faire confiance</strong> quand ça apparaît</li>
-              <li>Débranche et rebranche le câble</li>
-              <li id="guide-usb-help-win" hidden>Sur Windows, vérifie qu'iTunes est installé depuis apple.com (pilotes Apple USB)</li>
-            </ol>
-          </details>
-
-          <div class="guide-status-box" id="guide-usb-status">
-            <div class="guide-status-icon searching" id="guide-usb-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-            </div>
-            <div>
-              <div class="guide-status-text" id="guide-usb-text">Recherche d'un iPhone...</div>
-              <div class="guide-status-hint" id="guide-usb-hint">Branche ton iPhone en USB pour continuer.</div>
-            </div>
-          </div>
-
           <div class="guide-tip-box guide-driver-box" id="guide-driver-box" hidden>
-            <p><strong>Le pilote Apple n'est pas installé.</strong> Windows voit ton iPhone, mais seulement pour les photos. <span id="guide-driver-text"></span></p>
+            <p><strong>Il manque le pilote Apple.</strong> Windows voit ton iPhone, mais seulement pour les photos. <span id="guide-driver-text"></span></p>
             <button type="button" class="guide-btn-secondary" id="guide-driver-install-btn" hidden>Installer le pilote Apple</button>
             <button type="button" class="guide-btn-secondary" id="guide-driver-itunes-btn" hidden>Télécharger iTunes sur apple.com</button>
           </div>
 
-          <button class="guide-btn-primary" id="guide-usb-next" disabled>Continuer</button>
+          <details class="guide-details" id="guide-usb-help">
+            <summary>Mon iPhone n'est pas détecté</summary>
+            <ol>
+              <li>Essaie un autre câble (certains ne font que charger)</li>
+              <li>Déverrouille l'iPhone et appuie sur <strong>Faire confiance</strong></li>
+              <li>Débranche et rebranche le câble</li>
+              <li id="guide-usb-help-win" hidden>Sur Windows : installe iTunes depuis apple.com (pas le Microsoft Store), puis redémarre le PC</li>
+            </ol>
+          </details>
+
+          <button class="guide-btn-primary" id="guide-plug-next" disabled>Continuer</button>
+          <button class="guide-btn-secondary" id="guide-plug-retry" hidden>Réessayer</button>
+          <button type="button" class="guide-btn-skip" id="guide-skip-btn">J'ai déjà tout configuré</button>
         </div>
 
-        <!-- Step 3: Mode développeur -->
-        <div class="guide-step-content" id="guide-step-3" hidden>
+        <!-- Installe l'app sur l'iPhone (formule 1 an) -->
+        <div class="guide-step-content" id="guide-step-install" hidden>
+          <div class="guide-icon-wrap">
+            <img src="./images/logo.png" alt="" width="48" height="48" />
+          </div>
+          <h2 class="guide-title">Installation de l'app</h2>
+          <p class="guide-subtitle">Anyloc s'installe sur ton iPhone. Garde-le branché et déverrouillé.</p>
+
+          <div class="guide-status-box" id="guide-install-status">
+            <div class="guide-status-icon searching" id="guide-install-icon"></div>
+            <div>
+              <div class="guide-status-text" id="guide-install-text">Préparation…</div>
+              <div class="guide-status-hint" id="guide-install-hint"></div>
+            </div>
+          </div>
+
+          <button class="guide-btn-secondary" id="guide-install-retry" hidden>Réessayer</button>
+        </div>
+
+        <!-- Mode développeur -->
+        <div class="guide-step-content" id="guide-step-devmode" hidden>
           <div class="guide-icon-wrap">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
           </div>
-          <h2 class="guide-title">Active le mode développeur</h2>
-          <p class="guide-subtitle">C'est ce qui permet à ton ordinateur de changer le GPS de l'iPhone. Une seule fois.</p>
+          <h2 class="guide-title">Dernier réglage sur l'iPhone</h2>
+          <p class="guide-subtitle">Apple demande d'autoriser le changement de position. À faire une seule fois, ça prend une minute.</p>
 
           <div class="guide-instruction-card">
             <div class="guide-instruction-num">1</div>
-            <div><h3>Ouvre les Réglages de l'iPhone</h3><p><strong>Confidentialité et sécurité → Mode développeur</strong> (tout en bas), puis active-le.</p></div>
+            <div><h3>Ouvre Réglages → Confidentialité et sécurité</h3><p>Descends tout en bas et touche <strong>Mode développeur</strong>.</p></div>
           </div>
           <div class="guide-instruction-card">
             <div class="guide-instruction-num">2</div>
-            <div><h3>Redémarre et confirme</h3><p>L'iPhone redémarre. Déverrouille-le et appuie sur <strong>Activer</strong>, puis tape ton code. Laisse-le branché.</p></div>
+            <div><h3>Active-le, puis touche Redémarrer</h3><p>L'iPhone redémarre tout seul. Laisse-le branché.</p></div>
+          </div>
+          <div class="guide-instruction-card">
+            <div class="guide-instruction-num">3</div>
+            <div><h3>Touche « Activer » après le redémarrage</h3><p>Puis tape ton code. C'est tout.</p></div>
           </div>
 
           <div class="guide-status-box" id="guide-devmode-status">
-            <div class="guide-status-icon searching" id="guide-devmode-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-            </div>
+            <div class="guide-status-icon searching" id="guide-devmode-icon"></div>
             <div>
-              <div class="guide-status-text" id="guide-devmode-text">Préparation de l'iPhone...</div>
-              <div class="guide-status-hint" id="guide-devmode-hint">On fait apparaître l'option dans les Réglages.</div>
+              <div class="guide-status-text" id="guide-devmode-text">Préparation de l'iPhone…</div>
+              <div class="guide-status-hint" id="guide-devmode-hint"></div>
             </div>
           </div>
 
           <button class="guide-btn-secondary" id="guide-devmode-retry" hidden>Réessayer</button>
         </div>
 
-        <!-- Step 4: Télécommande iPhone (web app) -->
-        <div class="guide-step-content" id="guide-step-4" hidden>
+        <!-- Sans câble : LocalDevVPN (formule 1 an) -->
+        <div class="guide-step-content" id="guide-step-nocable" hidden>
           <div class="guide-icon-wrap">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><rect x="5" y="1" width="14" height="22" rx="3"/><path d="M12 18h.01"/></svg>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><path d="M12 20h.01"/></svg>
           </div>
-          <h2 class="guide-title">Ajoute Anyloc sur ton iPhone</h2>
-          <p class="guide-subtitle">Rien à télécharger : c'est une web app, elle n'expire jamais.</p>
+          <h2 class="guide-title">Utilise-le sans câble</h2>
+          <p class="guide-subtitle">Avec l'app gratuite LocalDevVPN, ton iPhone change sa position tout seul, sans ordinateur. À faire une seule fois.</p>
 
-          <img class="ready-qr guide-qr" id="guide-qr" alt="QR code anyloc.io/app" width="148" height="148" hidden />
+          <img class="guide-qr" id="guide-vpn-qr" alt="QR code LocalDevVPN sur l'App Store" width="132" height="132" hidden />
 
           <div class="guide-instruction-card">
             <div class="guide-instruction-num">1</div>
-            <div>
-              <h3>Scanne avec l'appareil photo</h3>
-              <p>Ouvre le lien dans <strong>Safari</strong> (ou tape <strong>anyloc.io/app</strong>) et connecte-toi avec le <strong>même email</strong> que sur cet ordinateur.</p>
-            </div>
+            <div><h3>Installe LocalDevVPN</h3><p>Scanne le QR code avec l'appareil photo de l'iPhone, ou cherche <strong>LocalDevVPN</strong> dans l'App Store.</p></div>
           </div>
           <div class="guide-instruction-card">
             <div class="guide-instruction-num">2</div>
-            <div>
-              <h3>Ajoute-la à l'écran d'accueil</h3>
-              <p>Touche <strong>Partager</strong> puis <strong>Sur l'écran d'accueil</strong>. Tu l'ouvriras comme une app.</p>
-            </div>
+            <div><h3>Ouvre-la et touche Connect</h3><p>Accepte l'ajout du VPN, puis attends que le bouton passe au vert.</p></div>
+          </div>
+          <div class="guide-instruction-card">
+            <div class="guide-instruction-num">3</div>
+            <div><h3>Ouvre Anyloc sur ton iPhone</h3><p>Choisis une ville : la position change, même câble débranché.</p></div>
           </div>
 
-          <button class="guide-btn-primary" id="guide-trust-next">C'est fait, continuer</button>
+          <button type="button" class="guide-btn-primary" id="guide-nocable-next">C'est fait</button>
+          <button type="button" class="guide-btn-skip" id="guide-nocable-skip">Je le ferai plus tard</button>
         </div>
 
-        <!-- Step 5: Choisis ta première ville -->
-        <div class="guide-step-content" id="guide-step-5" hidden>
-          <div class="guide-icon-wrap">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-          </div>
-          <h2 class="guide-title">Choisis ta première ville</h2>
-          <p class="guide-subtitle">Garde l'iPhone branché en USB — l'ordinateur applique le GPS sur ton tel.</p>
-
-          <div class="guide-city-grid" id="guide-city-grid"></div>
-
-          <div class="guide-status-box" id="guide-city-status" hidden>
-            <div class="guide-status-icon ok" id="guide-city-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
-            </div>
-            <div>
-              <div class="guide-status-text" id="guide-city-text">Destination activée</div>
-              <div class="guide-status-hint" id="guide-city-hint">Le GPS se met à jour sur ton iPhone…</div>
-            </div>
-          </div>
-
-          <button class="guide-btn-primary" id="guide-city-next" disabled>Continuer</button>
-        </div>
-
-        <!-- Step 6: Vérifie dans Snap ou Maps -->
-        <div class="guide-step-content" id="guide-step-6" hidden>
+        <!-- C'est prêt -->
+        <div class="guide-step-content" id="guide-step-done" hidden>
           <div class="guide-icon-wrap">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
           </div>
-          <h2 class="guide-title">Vérifie dans Snap ou Maps</h2>
-          <p class="guide-subtitle">Ouvre Snap, Insta ou Plans sur ton iPhone — ta position doit avoir changé.</p>
+          <h2 class="guide-title">C'est prêt !</h2>
+          <p class="guide-subtitle" id="guide-done-text">Choisis une ville sur la carte, ta position change tout de suite. Laisse Anyloc ouvert sur cet ordinateur : la position reste active tant que l'iPhone est branché ou sur le même Wi-Fi.</p>
 
-          <div class="guide-instruction-card">
-            <div class="guide-instruction-num">1</div>
-            <div>
-              <h3>Ouvre Snap ou Maps</h3>
-              <p>Tu dois voir la ville que tu viens de choisir (<strong id="guide-verify-city">—</strong>).</p>
-            </div>
-          </div>
-          <div class="guide-instruction-card">
-            <div class="guide-instruction-num">2</div>
-            <div>
-              <h3>Garde Anyloc Setup ouvert</h3>
-              <p id="guide-verify-bg-text">L'app reste en arrière-plan tant que l'iPhone est branché — le GPS reste actif.</p>
-            </div>
-          </div>
-
-          <details class="guide-details">
-            <summary>La loc ne change pas ?</summary>
-            <ol>
-              <li>Ferme Snap complètement, puis rouvre-le</li>
-              <li>Vérifie que l'iPhone est toujours branché en USB</li>
-              <li>Active le GPS sur l'iPhone (Réglages → Confidentialité → Service de localisation)</li>
-            </ol>
-          </details>
-
-          <button class="guide-btn-primary" id="guide-verify-done">Oui, ça marche</button>
-          <button type="button" class="guide-btn-secondary" id="guide-verify-skip">Je testerai plus tard</button>
+          <button type="button" class="guide-btn-primary" id="guide-done-btn">Aller sur la carte</button>
         </div>
       </div>
     </div>
 
-    <!-- ── Post-install: C'est prêt ── -->
-    <div id="ready-screen" class="screen ready-screen">
-      <div class="ready-container">
-        <div class="ready-hero">
-          <div class="ready-icon-wrap">
-            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
-          </div>
-          <h2 class="ready-title">C'est prêt !</h2>
-          <p class="ready-subtitle">Ton iPhone est configuré. Voici comment utiliser Anyloc au quotidien.</p>
-        </div>
-
-        <div class="ready-steps">
-          <div class="ready-step">
-            <div class="ready-step-num">1</div>
-            <div>
-              <h3>Ouvre Anyloc sur ton iPhone</h3>
-              <p id="ready-step1-text">Depuis l'icône sur ton écran d'accueil (ou <strong>anyloc.io/app</strong>).</p>
-            </div>
-          </div>
-          <div class="ready-step">
-            <div class="ready-step-num">2</div>
-            <div>
-              <h3>Choisis ta destination</h3>
-              <p id="ready-step2-text">Sur l'iPhone, ou ici sur l'ordinateur.</p>
-            </div>
-          </div>
-          <div class="ready-step">
-            <div class="ready-step-num">3</div>
-            <div>
-              <h3 id="ready-step3-title">L'ordinateur applique le GPS</h3>
-              <p id="ready-step3-text">Garde cette app ouverte en arrière-plan — ta fausse position se met à jour toute seule sur Snap, Insta, Tinder…</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="ready-note">
-          <span class="ready-note-icon">💡</span>
-          <span>Laisse Anyloc Setup tourner en arrière-plan tant que tu utilises la fausse position.</span>
-        </div>
-
-        <button type="button" class="guide-btn-primary" id="ready-dashboard-btn">Voir mon tableau de bord</button>
-        <button type="button" class="guide-btn-secondary" id="ready-try-btn">Choisir une destination maintenant</button>
-      </div>
-    </div>
-
-    <script src="./preview-boot.js"></script>
     <script src="./leaflet.js"></script>
     <script src="./home.js"></script>
+    <script src="./preview-boot.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>

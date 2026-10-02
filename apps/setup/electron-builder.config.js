@@ -21,6 +21,12 @@ module.exports = {
     {
       from: "scripts",
       to: "scripts",
+      filter: ["**/*", "!__pycache__/**"],
+    },
+    // Python + pymobiledevice3, built per arch by build-tools/bundle-python.mjs.
+    {
+      from: "python-dist/${arch}/python",
+      to: "python",
       filter: ["**/*"],
     },
   ],
@@ -29,6 +35,9 @@ module.exports = {
     target: ["dmg"],
     identity: process.env.APPLE_IDENTITY || null,
     gatekeeperAssess: false,
+    // Only the bundled Python's real executables need a signature; the
+    // thousands of .pyc/data files would otherwise each get one.
+    signIgnore: ["/Resources/python/(?!bin/python3)(?!.*\\.(so|dylib)$)"],
     // Notarization only works on a Developer ID-signed build and needs the
     // App Store Connect API key; otherwise electron-builder fails or skips.
     notarize: Boolean(

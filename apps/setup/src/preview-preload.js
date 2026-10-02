@@ -6,6 +6,8 @@ const demoSession = {
 };
 
 let devModePolls = 0;
+let appStatusPolls = 0;
+const wait = (ms, value) => new Promise((resolve) => setTimeout(() => resolve(value), ms));
 
 contextBridge.exposeInMainWorld("anylocSetup", {
   getPlatform: () => Promise.resolve("mac"),
@@ -24,7 +26,7 @@ contextBridge.exposeInMainWorld("anylocSetup", {
   installAppleDriver: () => Promise.resolve({ ok: true, message: "Pilote Apple installé." }),
   // Simulates the customer enabling Developer Mode a few seconds in.
   revealDevMode: () => Promise.resolve({ ok: true, enabled: false }),
-  getRemoteQr: () => ipcRenderer.invoke("setup:remote-qr"),
+  getLocalDevVpnQr: () => ipcRenderer.invoke("setup:localdevvpn-qr"),
   devModeStatus: () => {
     devModePolls += 1;
     return Promise.resolve({ ok: true, enabled: devModePolls >= 3 });
@@ -48,6 +50,16 @@ contextBridge.exposeInMainWorld("anylocSetup", {
   stopAutoSync: () => Promise.resolve(),
   getAutoSyncStatus: () => Promise.resolve({ running: false }),
   onAutoSyncStatus: () => {},
+  setSession: () => Promise.resolve(),
+  onSession: () => () => {},
+  // Simulates an annual account: the app is signed after two polls.
+  iphoneAppStatus: () => {
+    appStatusPolls += 1;
+    const kind = appStatusPolls >= 4 ? "ready" : "preparing";
+    return wait(400, { ok: true, eligible: true, state: { kind }, ipaUrl: null });
+  },
+  iphoneAppRegister: () => wait(600, { ok: true }),
+  iphoneAppInstall: () => wait(1500, { ok: true }),
   getVersion: () => Promise.resolve("0.3.2"),
   onShowGuide: () => {},
 });

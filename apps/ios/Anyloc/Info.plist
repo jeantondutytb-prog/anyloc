@@ -28,7 +28,13 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>2</string>
+	<string>1</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Anyloc s'appuie sur la localisation pour rester actif en arrière-plan : c'est ce qui garde ta position simulée appliquée quand l'app est fermée. Ta vraie position n'est ni enregistrée ni envoyée.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict/>
 </dict>
