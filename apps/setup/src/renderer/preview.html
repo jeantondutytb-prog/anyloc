@@ -143,7 +143,7 @@
             </details>
             <details class="h-faq">
               <summary>L'iPhone n'est pas détecté en USB</summary>
-              <p>Essaie un autre câble, déverrouille l'iPhone et appuie sur Faire confiance. Sur Windows, installe iTunes pour les pilotes Apple.</p>
+              <p>Essaie un autre câble, déverrouille l'iPhone et appuie sur Faire confiance. Sur Windows, installe iTunes depuis apple.com (pas le Microsoft Store) pour les pilotes Apple.</p>
             </details>
             <details class="h-faq">
               <summary>La position ne change pas dans Snap</summary>
@@ -178,8 +178,8 @@
           <p class="guide-subtitle">Anyloc installe automatiquement les outils USB. Il te faut un iPhone, un câble et <span id="guide-platform-req">ton ordinateur</span>.</p>
 
           <div class="guide-tip-box" id="guide-win-hint" hidden>
-            <p>Sur Windows, installe d'abord <strong>iTunes</strong> (pilotes Apple USB) — sans ça l'iPhone n'est souvent pas détecté.</p>
-            <button type="button" class="guide-btn-secondary" id="guide-win-itunes-btn">Ouvrir iTunes dans le Microsoft Store</button>
+            <p>Sur Windows, installe d'abord <strong>iTunes depuis apple.com</strong> (pilotes Apple USB) — sans ça l'iPhone n'est souvent pas détecté. Évite la version du Microsoft Store : elle n'installe pas toujours le pilote.</p>
+            <button type="button" class="guide-btn-secondary" id="guide-win-itunes-btn">Télécharger iTunes sur apple.com</button>
           </div>
 
           <div class="guide-status-box" id="guide-tools-status">
@@ -228,7 +228,7 @@
               <li>Essaie un autre câble USB (certains ne font que charger)</li>
               <li>Déverrouille l'iPhone et appuie <strong>Faire confiance</strong> quand ça apparaît</li>
               <li>Débranche et rebranche le câble</li>
-              <li id="guide-usb-help-win" hidden>Sur Windows, vérifie qu'iTunes est installé (pilotes Apple USB)</li>
+              <li id="guide-usb-help-win" hidden>Sur Windows, vérifie qu'iTunes est installé depuis apple.com (pilotes Apple USB)</li>
             </ol>
           </details>
 
@@ -240,6 +240,12 @@
               <div class="guide-status-text" id="guide-usb-text">Recherche d'un iPhone...</div>
               <div class="guide-status-hint" id="guide-usb-hint">Branche ton iPhone en USB pour continuer.</div>
             </div>
+          </div>
+
+          <div class="guide-tip-box guide-driver-box" id="guide-driver-box" hidden>
+            <p><strong>Le pilote Apple n'est pas installé.</strong> Windows voit ton iPhone, mais seulement pour les photos. <span id="guide-driver-text"></span></p>
+            <button type="button" class="guide-btn-secondary" id="guide-driver-install-btn" hidden>Installer le pilote Apple</button>
+            <button type="button" class="guide-btn-secondary" id="guide-driver-itunes-btn" hidden>Télécharger iTunes sur apple.com</button>
           </div>
 
           <button class="guide-btn-primary" id="guide-usb-next" disabled>Continuer</button>
