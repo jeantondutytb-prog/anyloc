@@ -31,6 +31,7 @@ module.exports = {
     },
   ],
   mac: {
+    icon: "build/icon.png",
     category: "public.app-category.utilities",
     target: ["dmg"],
     identity: process.env.APPLE_IDENTITY || null,
@@ -68,6 +69,7 @@ module.exports = {
   },
   win: {
     target: ["nsis"],
+    icon: "build/icon.ico",
     // Distinct from the installed Anyloc.exe so: Chrome cache of the old
     // installer is bypassed, and NSIS can taskkill the running app safely.
     artifactName: "Anyloc-Setup.${ext}",
@@ -85,6 +87,8 @@ module.exports = {
     createDesktopShortcut: true,
     createStartMenuShortcut: true,
     shortcutName: "Anyloc",
+    installerIcon: "build/icon.ico",
+    uninstallerIcon: "build/icon.ico",
     uninstallDisplayName: "Anyloc",
     installerLanguages: ["fr_FR", "en_US"],
     include: path.join(__dirname, "build", "installer.nsh"),
