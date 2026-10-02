@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { syncProfileFromCheckoutSession } from "@/lib/billing";
-import { syncProfileFromTrialSetupSession } from "@/lib/trial-billing";
 import { CHECKOUT_INTENT_COOKIE } from "@/lib/checkout-intent-cookie";
 import { sendMagicLinkEmail } from "@/lib/guest-account";
 import { getAppUrl, stripe } from "@/lib/stripe";
@@ -21,12 +20,10 @@ export async function GET(request: Request) {
   try {
     const session = await stripe.checkout.sessions.retrieve(sessionId);
 
-    const isTrialSetup = session.mode === "setup";
     const isComplete =
       session.status === "complete" &&
       (session.payment_status === "paid" ||
-        session.payment_status === "no_payment_required" ||
-        isTrialSetup);
+        session.payment_status === "no_payment_required");
 
     if (!isComplete) {
       return NextResponse.redirect(new URL("/checkout?canceled=true", origin));
@@ -41,11 +38,7 @@ export async function GET(request: Request) {
       return NextResponse.redirect(new URL("/login?error=checkout-email", origin));
     }
 
-    if (isTrialSetup) {
-      await syncProfileFromTrialSetupSession(session);
-    } else {
-      await syncProfileFromCheckoutSession(session);
-    }
+    await syncProfileFromCheckoutSession(session);
 
     if (isSupabaseConfigured()) {
       const supabase = await createClient();
