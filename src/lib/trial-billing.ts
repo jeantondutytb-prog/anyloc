@@ -3,6 +3,7 @@ import { PLANS, isValidPlanId } from "@/lib/constants";
 import { ensureUserForEmail } from "@/lib/guest-account";
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 import { stripe } from "@/lib/stripe";
+import { UserFacingError } from "@/lib/errors";
 import {
   getTrialEndUnixFromNow,
   isTrialDurationDrifted,
@@ -280,14 +281,14 @@ export async function cancelActiveTrialForUser(userId: string) {
     .maybeSingle();
 
   if (fetchError || !data) {
-    throw new Error("Profil introuvable.");
+    throw new UserFacingError("Profil introuvable.");
   }
 
   const hasActiveTrial =
     data.trial_status === "active" || data.subscription_status === "trialing";
 
   if (!hasActiveTrial) {
-    throw new Error("Aucun abonnement actif à annuler.");
+    throw new UserFacingError("Aucun abonnement actif à annuler.");
   }
 
   if (data.stripe_subscription_id) {

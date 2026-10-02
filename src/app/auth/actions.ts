@@ -11,9 +11,12 @@ import {
 import { validateEmail, validatePassword } from "@/lib/password-policy";
 import { sanitizeRedirectPath } from "@/lib/safe-redirect";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { getAppUrl } from "@/lib/stripe";
 
 export type AuthState = {
   error?: string;
+  /** Set when the account still has to be confirmed from the email inbox. */
+  notice?: string;
 };
 
 export async function signOut() {
@@ -31,6 +34,9 @@ function translateAuthError(message: string) {
 
   if (normalized.includes("invalid login credentials")) {
     return "Email ou mot de passe incorrect.";
+  }
+  if (normalized.includes("email not confirmed")) {
+    return "Confirme d'abord ton email : clique sur le lien qu'on t'a envoyé.";
   }
   if (normalized.includes("user already registered")) {
     return "Un compte existe déjà avec cet email.";
@@ -137,10 +143,30 @@ export async function signup(
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.signUp({ email, password });
+  const redirectTo = getRedirectTo(formData);
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: `${getAppUrl()}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
+    },
+  });
 
   if (error) {
     return { error: translateAuthError(error.message) };
+  }
+
+  // With "Confirm email" on, nobody is logged in until the inbox owner clicks
+  // the link: an email typed here proves nothing yet, so it must not unlock
+  // an admin allowlist or attach the Stripe customer of that address.
+  if (data.user && !data.session) {
+    await capturePostHogEvent({
+      distinctId: data.user.id,
+      event: "signup_pending_confirmation",
+    });
+    return {
+      notice: `On t'a envoyé un email à ${email}. Clique sur le lien pour activer ton compte.`,
+    };
   }
 
   if (data.user) {
@@ -161,10 +187,10 @@ export async function signup(
       await resolvePostAuthRedirect(
         data.user.id,
         data.user.email,
-        getRedirectTo(formData)
+        redirectTo
       )
     );
   }
 
-  redirect(getRedirectTo(formData));
+  redirect(redirectTo);
 }

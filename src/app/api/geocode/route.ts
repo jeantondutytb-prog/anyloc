@@ -9,8 +9,20 @@ import {
   searchNominatimPlaces,
 } from "@/lib/nominatim-geocoding";
 import { searchPhotonPlaces } from "@/lib/photon-geocoding";
+import { limitByIp } from "@/lib/rate-limit";
+
+// Same query, same answer: let Vercel's CDN serve repeats instead of
+// hitting Nominatim (1 request/second policy) again.
+const CACHE_HEADERS = {
+  "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=604800",
+};
 
 export async function GET(request: Request) {
+  const limited = limitByIp(request, "geocode", 30, 60_000);
+  if (limited) {
+    return limited;
+  }
+
   const { searchParams } = new URL(request.url);
   const query = searchParams.get("q")?.trim();
 
@@ -49,12 +61,15 @@ export async function GET(request: Request) {
       return Response.json({
         results,
         source: coordinates ? "coordinates+nominatim" : "nominatim",
-      });
+      }, { headers: CACHE_HEADERS });
     }
 
     const photonQuery = textQuery.length >= 2 ? textQuery : query;
     const photonResults = await searchPhotonPlaces(photonQuery);
-    return Response.json({ results: photonResults, source: "photon-fallback" });
+    return Response.json(
+      { results: photonResults, source: "photon-fallback" },
+      { headers: CACHE_HEADERS }
+    );
   } catch (error) {
     console.error("[geocode] Search failed:", error);
     return Response.json(

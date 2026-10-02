@@ -149,7 +149,7 @@ export async function syncProfileFromCheckoutSession(
   const { error } = await admin.from("profiles").upsert(
     {
       id: userId,
-      email: session.customer_details?.email ?? session.customer_email ?? null,
+      email: email?.toLowerCase() ?? null,
       stripe_customer_id: customerId ?? null,
       stripe_subscription_id: subscriptionId ?? null,
       subscription_status: subscriptionStatus,

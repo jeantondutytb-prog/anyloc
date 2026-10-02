@@ -15,10 +15,7 @@ import {
   parsePostHogDistinctId,
 } from "@/lib/posthog/server";
 import { stripe } from "@/lib/stripe";
-import {
-  hasProcessedStripeEvent,
-  markStripeEventProcessed,
-} from "@/lib/webhook-idempotency";
+import { claimStripeEvent, releaseStripeEvent } from "@/lib/webhook-idempotency";
 
 export const runtime = "nodejs";
 
@@ -112,16 +109,15 @@ export async function POST(request: Request) {
   try {
     event = stripe.webhooks.constructEvent(payload, signature, webhookSecret);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Invalid webhook signature.";
-    console.error("[stripe-webhook]", message);
-    return NextResponse.json({ error: message }, { status: 400 });
+    console.error("[stripe-webhook]", error);
+    return NextResponse.json({ error: "Invalid webhook signature." }, { status: 400 });
+  }
+
+  if (!(await claimStripeEvent(event.id, event.type))) {
+    return NextResponse.json({ received: true, duplicate: true });
   }
 
   try {
-    if (await hasProcessedStripeEvent(event.id)) {
-      return NextResponse.json({ received: true, duplicate: true });
-    }
 
     switch (event.type) {
       case "checkout.session.completed":
@@ -165,9 +161,8 @@ export async function POST(request: Request) {
       default:
         break;
     }
-
-    await markStripeEventProcessed(event.id, event.type);
   } catch (error) {
+    await releaseStripeEvent(event.id);
     console.error(`[stripe-webhook] ${event.type}`, error);
     await capturePostHogException({
       distinctId: `stripe:${event.id}`,

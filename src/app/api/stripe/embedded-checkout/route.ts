@@ -1,12 +1,19 @@
 import { NextResponse } from "next/server";
 import { PLANS } from "@/lib/constants";
 import { capturePostHogEvent, parsePostHogDistinctId } from "@/lib/posthog/server";
+import { publicErrorMessage } from "@/lib/errors";
+import { limitByIp } from "@/lib/rate-limit";
 import {
   createSubscriptionCheckoutSession,
   getAuthenticatedCheckoutUser,
 } from "@/lib/stripe-checkout";
 
 export async function POST(request: Request) {
+  const limited = limitByIp(request, "checkout", 10, 60_000);
+  if (limited) {
+    return limited;
+  }
+
   try {
     const body = await request.json().catch(() => null);
     const planId = body?.planId;
@@ -53,10 +60,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("[embedded-checkout]", error);
 
-    const message =
-      error instanceof Error
-        ? error.message
-        : "Impossible de démarrer le paiement.";
+    const message = publicErrorMessage(error, "Impossible de démarrer le paiement.");
 
     return NextResponse.json({ error: message }, { status: 500 });
   }

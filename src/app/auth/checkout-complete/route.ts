@@ -2,11 +2,17 @@ import { NextResponse } from "next/server";
 import { syncProfileFromCheckoutSession } from "@/lib/billing";
 import { syncProfileFromTrialSetupSession } from "@/lib/trial-billing";
 import { CHECKOUT_INTENT_COOKIE } from "@/lib/checkout-intent-cookie";
-import { sendMagicLinkEmail } from "@/lib/guest-account";
+import { redeemCheckoutSession, sendMagicLinkEmail } from "@/lib/guest-account";
 import { getAppUrl, stripe } from "@/lib/stripe";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { limitByIp } from "@/lib/rate-limit";
 
 export async function GET(request: Request) {
+  const limited = limitByIp(request, "checkout-complete", 10, 60_000);
+  if (limited) {
+    return limited;
+  }
+
   const { searchParams, origin } = new URL(request.url);
   const sessionId = searchParams.get("session_id")?.trim();
 
@@ -67,7 +73,9 @@ export async function GET(request: Request) {
     // so it can belong to someone else's existing account. Never log this
     // browser in from it: email the link to the account's own inbox.
     const redirectTo = `${getAppUrl()}/dashboard?success=true`;
-    await sendMagicLinkEmail(email, redirectTo);
+    if (await redeemCheckoutSession(session.id)) {
+      await sendMagicLinkEmail(email, redirectTo);
+    }
     const response = NextResponse.redirect(
       new URL("/login?checkout=email-sent", origin)
     );

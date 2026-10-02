@@ -5,6 +5,8 @@ import {
   parseDeviceRegisterBody,
 } from "@/lib/device";
 import { requireActiveSubscription } from "@/lib/subscription";
+import { limitByIp } from "@/lib/rate-limit";
+import { DEVICE_LIMIT_ERROR, hasReachedDeviceLimit } from "@/lib/device-server";
 
 export async function GET() {
   const { user, error } = await requireActiveSubscription();
@@ -40,6 +42,11 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const limited = limitByIp(request, "device-register", 10, 60 * 60_000);
+  if (limited) {
+    return limited;
+  }
+
   const { user, error } = await requireActiveSubscription();
 
   if (!user) {
@@ -62,6 +69,10 @@ export async function POST(request: Request) {
       { error: "Plateforme invalide. Utilise android ou ios." },
       { status: 400 }
     );
+  }
+
+  if (await hasReachedDeviceLimit(user.id)) {
+    return Response.json({ error: DEVICE_LIMIT_ERROR }, { status: 409 });
   }
 
   const token = generateDeviceToken();

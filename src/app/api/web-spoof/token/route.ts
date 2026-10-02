@@ -4,11 +4,21 @@ import {
   generateDeviceToken,
   hashDeviceToken,
 } from "@/lib/device";
-import { getDeviceByToken } from "@/lib/device-server";
+import {
+  DEVICE_LIMIT_ERROR,
+  getDeviceByToken,
+  hasReachedDeviceLimit,
+} from "@/lib/device-server";
 import { rejectCrossSiteMutation } from "@/lib/csrf";
 import { requireActiveSubscription } from "@/lib/subscription";
+import { limitByIp } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  const limited = limitByIp(request, "web-spoof-token", 20, 60 * 60_000);
+  if (limited) {
+    return limited;
+  }
+
   const crossSiteResponse = rejectCrossSiteMutation(request);
 
   if (crossSiteResponse) {
@@ -41,6 +51,10 @@ export async function POST(request: Request) {
     if (device && device.user_id === user.id) {
       return Response.json({ token: existingToken, reused: true });
     }
+  }
+
+  if (await hasReachedDeviceLimit(user.id)) {
+    return Response.json({ error: DEVICE_LIMIT_ERROR }, { status: 409 });
   }
 
   const userAgent = request.headers.get("user-agent") ?? "";

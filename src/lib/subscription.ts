@@ -51,44 +51,60 @@ export function isActiveSubscriptionStatus(status: string | null | undefined) {
   return status !== null && status !== undefined && ACTIVE_STATUSES.has(status);
 }
 
+const ADMIN_ACCESS: SubscriptionAccess = {
+  hasAccess: true,
+  status: "admin",
+  planId: "admin",
+  isAdmin: true,
+  isClipper: false,
+  isTrial: false,
+  trialEndsAt: null,
+};
+
+const CLIPPER_ACCESS: SubscriptionAccess = {
+  hasAccess: true,
+  status: "clipper",
+  planId: "clipper",
+  isAdmin: false,
+  isClipper: true,
+  isTrial: false,
+  trialEndsAt: null,
+};
+
+const NO_ACCESS: SubscriptionAccess = {
+  hasAccess: false,
+  status: null,
+  planId: null,
+  isAdmin: false,
+  isClipper: false,
+  isTrial: false,
+  trialEndsAt: null,
+};
+
+/**
+ * The env allowlists match on an email, which anyone can type at signup: it
+ * only counts once the inbox owner confirmed the account.
+ */
+async function hasConfirmedEmail(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string,
+  email: string
+) {
+  const { data, error } = await admin.auth.admin.getUserById(userId);
+
+  return (
+    !error &&
+    Boolean(data.user?.email_confirmed_at) &&
+    data.user?.email?.trim().toLowerCase() === email.trim().toLowerCase()
+  );
+}
+
 export async function getSubscriptionAccessForUser(
   userId: string,
   email?: string | null
 ): Promise<SubscriptionAccess> {
-  if (isAdminEmail(email)) {
-    return {
-      hasAccess: true,
-      status: "admin",
-      planId: "admin",
-      isAdmin: true,
-      isClipper: false,
-      isTrial: false,
-      trialEndsAt: null,
-    };
-  }
-
-  if (isClipperEmail(email)) {
-    return {
-      hasAccess: true,
-      status: "clipper",
-      planId: "clipper",
-      isAdmin: false,
-      isClipper: true,
-      isTrial: false,
-      trialEndsAt: null,
-    };
-  }
-
   if (!isSupabaseAdminConfigured()) {
-    return {
-      hasAccess: false,
-      status: null,
-      planId: null,
-      isAdmin: false,
-      isClipper: false,
-      isTrial: false,
-      trialEndsAt: null,
-    };
+    return NO_ACCESS;
   }
 
   const admin = createAdminClient();
@@ -100,40 +116,26 @@ export async function getSubscriptionAccessForUser(
     .eq("id", userId)
     .maybeSingle();
 
+  if (data?.is_admin) {
+    return ADMIN_ACCESS;
+  }
+
+  if (data?.is_clipper) {
+    return CLIPPER_ACCESS;
+  }
+
+  const allowlistEmail = email ?? data?.email ?? null;
+
+  if (
+    allowlistEmail &&
+    (isAdminEmail(allowlistEmail) || isClipperEmail(allowlistEmail)) &&
+    (await hasConfirmedEmail(admin, userId, allowlistEmail))
+  ) {
+    return isAdminEmail(allowlistEmail) ? ADMIN_ACCESS : CLIPPER_ACCESS;
+  }
+
   if (error || !data) {
-    return {
-      hasAccess: false,
-      status: null,
-      planId: null,
-      isAdmin: false,
-      isClipper: false,
-      isTrial: false,
-      trialEndsAt: null,
-    };
-  }
-
-  if (data.is_admin || isAdminEmail(data.email)) {
-    return {
-      hasAccess: true,
-      status: "admin",
-      planId: "admin",
-      isAdmin: true,
-      isClipper: false,
-      isTrial: false,
-      trialEndsAt: null,
-    };
-  }
-
-  if (data.is_clipper || isClipperEmail(data.email)) {
-    return {
-      hasAccess: true,
-      status: "clipper",
-      planId: "clipper",
-      isAdmin: false,
-      isClipper: true,
-      isTrial: false,
-      trialEndsAt: null,
-    };
+    return NO_ACCESS;
   }
 
   const trialActive = isTrialAccessActive(data);

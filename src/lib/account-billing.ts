@@ -9,6 +9,7 @@ import { getProfileStripeCustomerId, type ProfileRow } from "@/lib/billing";
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 import { getAppUrl, stripe } from "@/lib/stripe";
 import { isActiveSubscriptionStatus } from "@/lib/subscription";
+import { UserFacingError } from "@/lib/errors";
 
 export function getPlanLabel(planId: string | null) {
   if (!planId) {
@@ -144,13 +145,13 @@ export async function createBillingPortalSession({
   flow?: "default" | "subscription" | "payment_method";
 }) {
   if (!stripe) {
-    throw new Error("La gestion de facturation n'est pas configurée.");
+    throw new UserFacingError("La gestion de facturation n'est pas configurée.");
   }
 
   const customerId = await getProfileStripeCustomerId(userId);
 
   if (!customerId) {
-    throw new Error("Aucun client Stripe associé à ce compte.");
+    throw new UserFacingError("Aucun client Stripe associé à ce compte.");
   }
 
   const profile = await getProfileForUser(userId);

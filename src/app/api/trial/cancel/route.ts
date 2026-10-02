@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cancelActiveTrialForUser } from "@/lib/trial-billing";
 import { requireAuthenticatedUser } from "@/lib/subscription";
+import { publicErrorMessage } from "@/lib/errors";
 
 export async function POST() {
   const { user, error } = await requireAuthenticatedUser();
@@ -13,10 +14,8 @@ export async function POST() {
     await cancelActiveTrialForUser(user.id);
     return NextResponse.json({ ok: true });
   } catch (cancelError) {
-    const message =
-      cancelError instanceof Error
-        ? cancelError.message
-        : "Impossible de résilier l'abonnement.";
+    console.error("[trial/cancel]", cancelError);
+    const message = publicErrorMessage(cancelError, "Impossible de résilier l'abonnement.");
 
     return NextResponse.json({ error: message }, { status: 400 });
   }

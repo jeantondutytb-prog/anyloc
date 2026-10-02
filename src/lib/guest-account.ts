@@ -4,10 +4,16 @@ function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
+/** `_` and `%` are wildcards in ILIKE, and both are legal in an email. */
+export function escapeLikePattern(value: string) {
+  return value.replace(/[\\%_]/g, (char) => `\\${char}`);
+}
+
 async function findAuthUserIdByEmail(email: string) {
   const admin = createAdminClient();
 
-  for (let page = 1; page <= 10; page += 1) {
+  // Walk every page: stopping early would miss accounts once the base grows.
+  for (let page = 1; ; page += 1) {
     const { data, error } = await admin.auth.admin.listUsers({
       page,
       perPage: 200,
@@ -41,10 +47,12 @@ export async function ensureUserForEmail(email: string) {
   const normalizedEmail = normalizeEmail(email);
   const admin = createAdminClient();
 
+  // Profiles keep the email as typed, so match it case-insensitively.
   const { data: existingProfile } = await admin
     .from("profiles")
     .select("id")
-    .eq("email", normalizedEmail)
+    .ilike("email", escapeLikePattern(normalizedEmail))
+    .limit(1)
     .maybeSingle();
 
   if (existingProfile?.id) {
@@ -97,4 +105,30 @@ export async function sendMagicLinkEmail(email: string, redirectTo: string) {
   if (error) {
     throw new Error(error.message);
   }
+}
+
+/**
+ * Records that this checkout session already triggered its magic link.
+ * Returns false when it did, so replaying the return URL can't spam the inbox.
+ */
+export async function redeemCheckoutSession(sessionId: string) {
+  if (!isSupabaseAdminConfigured()) {
+    return true;
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("checkout_session_redemptions")
+    .insert({ session_id: sessionId });
+
+  if (!error) {
+    return true;
+  }
+
+  if (error.code === "23505") {
+    return false;
+  }
+
+  console.error("[checkout] Failed to record redemption:", error);
+  return true;
 }

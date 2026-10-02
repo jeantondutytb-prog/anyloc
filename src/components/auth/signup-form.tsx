@@ -48,6 +48,14 @@ export function SignupForm({
             {state.error}
           </div>
         ) : null}
+        {state.notice ? (
+          <div
+            role="status"
+            className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+          >
+            {state.notice}
+          </div>
+        ) : null}
 
         <AuthInput
           id="email"
