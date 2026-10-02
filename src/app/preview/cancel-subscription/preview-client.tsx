@@ -52,6 +52,7 @@ export function CancelSubscriptionPreview() {
         open={open}
         onClose={() => setOpen(false)}
         onConfirm={() => setOpen(false)}
+        previewOffer={{ eligible: true, kind: "repeating", label: "-50 % sur tes 3 prochains mois" }}
       />
     </div>
   );
