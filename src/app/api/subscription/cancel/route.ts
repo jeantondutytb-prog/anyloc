@@ -10,8 +10,8 @@ export async function POST() {
   }
 
   try {
-    await cancelActiveSubscriptionForUser(user.id);
-    return NextResponse.json({ ok: true });
+    const cancelsAt = await cancelActiveSubscriptionForUser(user.id);
+    return NextResponse.json({ ok: true, cancelsAt });
   } catch (cancelError) {
     const message =
       cancelError instanceof Error

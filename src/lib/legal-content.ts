@@ -19,7 +19,7 @@ export type LegalPageContent = {
   sections: LegalPageSection[];
 };
 
-const LAST_UPDATED = "10 septembre 2026";
+const LAST_UPDATED = "2 octobre 2026";
 
 export const LEGAL_PAGES: Record<string, LegalPageContent> = {
   "conditions-generales": {
@@ -52,7 +52,7 @@ export const LEGAL_PAGES: Record<string, LegalPageContent> = {
         title: "4. Abonnements et paiement",
         paragraphs: [
           "Les tarifs en vigueur sont affichés sur la page Tarification. Les paiements sont traités de manière sécurisée par Stripe. L'abonnement est renouvelé automatiquement à chaque échéance, sauf résiliation depuis ton espace client.",
-          "En cas de résiliation, l'abonnement prend fin immédiatement et l'accès au service est coupé sans délai.",
+          "En cas de résiliation, l'abonnement n'est plus renouvelé : tu conserves l'accès au service jusqu'à la fin de la période déjà payée, puis il prend fin automatiquement.",
         ],
       },
       {
@@ -81,7 +81,7 @@ export const LEGAL_PAGES: Record<string, LegalPageContent> = {
       {
         title: "8. Résiliation",
         paragraphs: [
-          "Tu peux résilier ton abonnement à tout moment depuis ton espace client. La résiliation prend effet immédiatement : tu perds l'accès au dashboard, aux guides et aux téléchargements dès confirmation.",
+          "Tu peux résilier ton abonnement à tout moment depuis ton espace client. La résiliation prend effet à la fin de la période en cours : aucun nouveau prélèvement n'est effectué et tu gardes l'accès au dashboard, aux guides et aux téléchargements jusqu'à cette date.",
           "Nous pouvons suspendre ou résilier un compte en cas de violation des présentes CGU.",
         ],
       },
@@ -316,7 +316,7 @@ export const LEGAL_PAGES: Record<string, LegalPageContent> = {
         title: "7. Résiliation de l'abonnement",
         paragraphs: [
           "Ton abonnement se renouvelle automatiquement au prix indiqué avant l'achat. Tu peux le résilier à tout moment depuis ton espace client (Paramètres → Résilier mon abonnement), sans frais.",
-          "Attention : la résiliation prend effet immédiatement. Tu perds l'accès au service, au dashboard et aux téléchargements dès confirmation. Aucun remboursement au prorata n'est effectué pour la période en cours.",
+          "La résiliation prend effet à la fin de la période en cours : tu conserves l'accès au service, au dashboard et aux téléchargements jusqu'à cette date, et aucun nouveau prélèvement n'est effectué. La période en cours, dont tu profites jusqu'à son terme, n'est pas remboursée au prorata.",
         ],
       },
     ],
@@ -332,7 +332,7 @@ export const LEGAL_PAGES: Record<string, LegalPageContent> = {
         title: "1. Résiliation libre",
         paragraphs: [
           "Tu peux annuler ton abonnement à tout moment, sans justification ni frais de résiliation.",
-          "Important : l'annulation prend effet immédiatement. Tu n'as plus accès au service, au dashboard, aux guides d'installation ni aux téléchargements dès que tu confirmes la résiliation.",
+          "L'annulation prend effet à la fin de la période déjà payée. Jusqu'à cette date, tu gardes l'accès au service, au dashboard, aux guides d'installation et aux téléchargements.",
         ],
       },
       {
@@ -341,21 +341,21 @@ export const LEGAL_PAGES: Record<string, LegalPageContent> = {
           "Assure-toi d'avoir bien compris les conséquences avant de confirmer :",
         ],
         list: [
-          "Ton accès est coupé sur-le-champ, pas à la fin de la période payée.",
-          "Tu perds l'accès aux fonctionnalités GPS, au dashboard et aux téléchargements.",
+          "Ton abonnement ne sera plus renouvelé ; ton accès reste actif jusqu'à la fin de la période payée.",
+          "À cette date, tu perds l'accès aux fonctionnalités GPS, au dashboard et aux téléchargements.",
           "Si tu envisages une demande de remboursement au titre de la garantie « 48 h », fais-la avant de résilier — une résiliation vaut renoncement à cette garantie.",
         ],
       },
       {
         title: "3. Comment annuler",
         paragraphs: [
-          "Connecte-toi à ton espace client, rends-toi dans Paramètres, puis clique sur « Résilier mon abonnement ». Un rappel des conséquences s'affiche avant redirection vers le portail Stripe pour confirmer.",
+          "Connecte-toi à ton espace client, rends-toi dans Paramètres, puis clique sur « Résilier mon abonnement ». Un rappel des conséquences s'affiche, puis tu confirmes la résiliation. La date de fin de ton accès est ensuite indiquée dans tes Paramètres.",
         ],
       },
       {
         title: "4. Effet de l'annulation",
         paragraphs: [
-          "Une fois l'annulation confirmée, aucun nouveau prélèvement ne sera effectué et ton accès est immédiatement révoqué. Aucun remboursement au prorata n'est effectué pour la période en cours.",
+          "Une fois l'annulation confirmée, aucun nouveau prélèvement ne sera effectué. Ton accès reste actif jusqu'à la fin de la période en cours, puis il est révoqué automatiquement. Cette période n'est pas remboursée au prorata.",
         ],
       },
       {

@@ -465,32 +465,54 @@ export function SettingsView({ embedded = false }: { embedded?: boolean } = {}) 
                   <AlertTriangle className="h-5 w-5 text-amber-600" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium text-zinc-900">
-                    Résilier mon abonnement
-                  </p>
-                  <p className="mt-1 text-sm text-zinc-500">
-                    {CANCELLATION_WARNING}
-                  </p>
-                  <p className="mt-2 text-sm text-zinc-500">
-                    Si tu envisages une demande de remboursement au titre de la
-                    garantie 48 h, fais-la{" "}
-                    <strong>avant</strong> de résilier.
-                  </p>
+                  {data.cancelsAt ? (
+                    <>
+                      <p className="font-medium text-zinc-900">
+                        Résiliation programmée
+                      </p>
+                      <p className="mt-1 text-sm text-zinc-500">
+                        Ton abonnement ne sera pas renouvelé. Tu gardes
+                        l&apos;accès jusqu&apos;au{" "}
+                        <strong>
+                          {new Date(data.cancelsAt).toLocaleDateString("fr-FR", {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          })}
+                        </strong>
+                        , puis il prendra fin automatiquement.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="font-medium text-zinc-900">
+                        Résilier mon abonnement
+                      </p>
+                      <p className="mt-1 text-sm text-zinc-500">
+                        {CANCELLATION_WARNING}
+                      </p>
+                      <p className="mt-2 text-sm text-zinc-500">
+                        Si tu envisages une demande de remboursement au titre de la
+                        garantie 48 h, fais-la{" "}
+                        <strong>avant</strong> de résilier.
+                      </p>
 
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    className="mt-4 border-amber-200 text-amber-800 hover:border-amber-300 hover:bg-amber-50"
-                    data-track="cancel_subscription_dialog_opened"
-                    data-track-context="paid"
-                    onClick={() => {
-                      setCancelPortalError(null);
-                      setShowCancelDialog(true);
-                    }}
-                  >
-                    Résilier mon abonnement
-                  </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        className="mt-4 border-amber-200 text-amber-800 hover:border-amber-300 hover:bg-amber-50"
+                        data-track="cancel_subscription_dialog_opened"
+                        data-track-context="paid"
+                        onClick={() => {
+                          setCancelPortalError(null);
+                          setShowCancelDialog(true);
+                        }}
+                      >
+                        Résilier mon abonnement
+                      </Button>
+                    </>
+                  )}
 
                   {cancelPortalError ? (
                     <p className="mt-2 text-xs text-red-600">{cancelPortalError}</p>
