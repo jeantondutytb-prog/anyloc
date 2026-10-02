@@ -1,5 +1,6 @@
 const { spawn, spawnSync } = require("node:child_process");
 const fs = require("node:fs");
+const os = require("node:os");
 const path = require("node:path");
 
 const pythonSetup = require("./python-setup");
@@ -405,6 +406,10 @@ function runPython(scriptName, args = []) {
 // pymobiledevice3 errors are Python exception names / tracebacks. Map the
 // ones customers actually hit to an instruction they can follow.
 const PMD3_ERROR_HINTS = [
+  [
+    /AnylocNoDevice/,
+    "iPhone introuvable. Branche-le en USB, ou mets-le sur le même Wi-Fi que cet ordinateur et déverrouille-le.",
+  ],
   [
     /DeveloperModeIsNotEnabled|developer mode is not enabled|DeveloperModeError/i,
     "Le mode développeur n'est pas activé. Sur l'iPhone : Réglages → Confidentialité et sécurité → Mode développeur, puis redémarre.",
@@ -900,16 +905,110 @@ async function applyGpsDirect({ udid, lat, lng }) {
   return result;
 }
 
-async function clearGpsLocation({ udid }) {
-  const cli = resolvePymobiledevice3Cli();
-  if (!cli) {
+// Goes through live_location.py so it reaches the iPhone over Wi-Fi too.
+function clearGpsLocation({ udid }) {
+  return new Promise((resolve) => {
+    const python = resolvePythonExecutable();
+    if (!python) {
+      resolve({ ok: false, message: missingToolsMessage() });
+      return;
+    }
+
+    const child = spawn(
+      python,
+      [path.join(getScriptsDir(), "live_location.py"), "clear", ...udidArgs(udid)],
+      { cwd: getScriptsDir(), env: getSpawnEnv(), windowsHide: true }
+    );
+
+    let stderr = "";
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+    child.on("error", (error) => resolve({ ok: false, message: error.message }));
+    child.on("close", (code) => {
+      resolve(code === 0 ? { ok: true } : { ok: false, message: humanizePmd3Error(stderr) });
+    });
+  });
+}
+
+// RemotePairing records live next to pymobiledevice3's other pair records.
+function remotePairRecordPath(udid) {
+  const home = process.env.HOME || process.env.USERPROFILE || "";
+  return path.join(home, ".pymobiledevice3", `remote_${udid}.plist`);
+}
+
+function hasWifiPairing(udid) {
+  if (udid) {
+    return fs.existsSync(remotePairRecordPath(udid));
+  }
+
+  try {
+    const home = process.env.HOME || process.env.USERPROFILE || "";
+    return fs
+      .readdirSync(path.join(home, ".pymobiledevice3"))
+      .some((name) => name.startsWith("remote_") && name.endsWith(".plist"));
+  } catch {
+    return false;
+  }
+}
+
+// Writes the RemotePairing record that lets live_location.py reach the iPhone
+// over Wi-Fi once unplugged. Runs over the already-trusted USB lockdown, so the
+// iPhone shows no prompt. Needs iOS 17+.
+async function ensureWifiPairing({ udid }) {
+  if (!udid) {
+    return { ok: false, message: "UDID manquant." };
+  }
+
+  if (hasWifiPairing(udid)) {
+    return { ok: true };
+  }
+
+  const result = await runCli(["lockdown", "remotepairing", "--pair", "--udid", udid], 30000);
+
+  if (!result.ok || !hasWifiPairing(udid)) {
     return {
       ok: false,
-      message: "pymobiledevice3 introuvable. Terminal : pip3 install pymobiledevice3",
+      message: humanizePmd3Error(result.stderr || result.stdout),
     };
   }
 
-  return runSimulateLocation({ type: "clear" }, udid);
+  return { ok: true };
+}
+
+// Drops the lockdown pair record straight into the Anyloc iPhone app's
+// Documents, so the app can drive its own location through LocalDevVPN with no
+// computer. Goes over USB only (never through our server): the record grants
+// full developer access to the iPhone. Fails quietly until the app is installed.
+async function pushPairingToApp({ udid }) {
+  if (!udid) {
+    return { ok: false, message: "UDID manquant." };
+  }
+
+  // Without this (Xcode's "Connect via network"), lockdown drops every
+  // network session, LocalDevVPN included.
+  const wifi = await runCli(["lockdown", "wifi-connections", "--state", "on", "--udid", udid], 20000);
+  if (!wifi.ok) {
+    return { ok: false, message: humanizePmd3Error(wifi.stderr || wifi.stdout) };
+  }
+
+  const tmp = path.join(os.tmpdir(), `anyloc-pair-${udid}.plist`);
+  try {
+    const saved = await runCli(["lockdown", "save-pair-record", tmp, "--udid", udid], 20000);
+    if (!saved.ok || !fs.existsSync(tmp)) {
+      return { ok: false, message: humanizePmd3Error(saved.stderr || saved.stdout) };
+    }
+
+    const pushed = await runCli(
+      ["apps", "push", "io.anyloc.app", tmp, "/Documents/AnylocPairing.plist", "--udid", udid],
+      20000
+    );
+    return pushed.ok
+      ? { ok: true }
+      : { ok: false, message: humanizePmd3Error(pushed.stderr || pushed.stdout) };
+  } finally {
+    fs.rmSync(tmp, { force: true });
+  }
 }
 
 function clearCachedPaths() {
@@ -943,6 +1042,9 @@ module.exports = {
   applyGpsLocation,
   applyGpsDirect,
   clearGpsLocation,
+  hasWifiPairing,
+  ensureWifiPairing,
+  pushPairingToApp,
   exportPairingFile,
   savePairingLocalCopy,
   resolvePythonExecutable,

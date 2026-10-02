@@ -10,6 +10,9 @@ const {
   savePairingLocalCopy,
   applyGpsDirect,
   clearGpsLocation,
+  hasWifiPairing,
+  ensureWifiPairing,
+  pushPairingToApp,
   resolvePythonExecutable,
   resolvePymobiledevice3Cli,
   missingToolsMessage,
@@ -68,12 +71,80 @@ function clearSessionFile() {
   try { fs.unlinkSync(getSessionFilePath()); } catch {}
 }
 
-// Reports the real outcome to the UI: "applied" once live_location.py has set
-// the location on the iPhone, or the error if it exits before. `reported`
-// keeps the 5 s re-apply loop from toasting the same error over and over.
-function applySpoofOnce(loc, reported) {
+// Auto-sync keeps one live_location.py stream open and writes each new
+// location to its stdin, so a change lands in well under a second instead of
+// paying for Python start-up, the Wi-Fi lookup and a new tunnel every time.
+// Not `simulate-location set`: it blocks its asyncio loop in wait_return(),
+// which starves the userspace tunnel, so the iPhone snaps back to its real
+// position after a few seconds (and at once on Windows, where it reads stdin).
+//
+// spoofTarget is the location last written; it is reported "applied" once the
+// stream has caught up with every line written so far. `reported` keeps the
+// 5 s re-apply loop from toasting the same error over and over.
+let spoofTarget = null;
+
+function spawnSpoofChild() {
   const python = resolvePythonExecutable();
-  if (!python) {
+  if (!python) return null;
+
+  const child = spawnChild(
+    python,
+    [path.join(getScriptsDir(), "live_location.py"), "stream"],
+    { env: getSpawnEnv(), stdio: ["pipe", "pipe", "pipe"], windowsHide: true }
+  );
+  child.stdin.on("error", () => {});
+
+  let pending = 0;
+  let stderr = "";
+  child.writeLine = (line) => {
+    if (line !== "clear") pending += 1;
+    child.stdin.write(`${line}\n`);
+  };
+
+  child.stdout.on("data", (chunk) => {
+    const applied = chunk.toString().split("\n").filter((line) => line.trim() === "applied").length;
+    if (!applied) return;
+    pending = Math.max(0, pending - applied);
+    const target = spoofTarget;
+    if (pending || !target || target.child !== child || target.applied) return;
+    target.applied = true;
+    target.reported.error = false;
+    if (!target.reported.applied) {
+      target.reported.applied = true;
+      const { loc } = target;
+      sendSyncStatus(`GPS: ${loc.name || `${loc.lat}, ${loc.lng}`}`, false, loc, { applied: true });
+    }
+  });
+  child.stderr.on("data", (chunk) => {
+    const msg = chunk.toString().trim();
+    stderr += `${msg}\n`;
+    if (msg && !msg.includes("WARNING")) console.log("[Spoof]", msg);
+  });
+  child.on("close", () => {
+    if (autoSyncSpoofChild === child) autoSyncSpoofChild = null;
+    // Killed on purpose (live mode, stop), already applied (the re-apply loop
+    // reconnects quietly) or never asked for a location: only a location that
+    // never landed is an error.
+    const target = spoofTarget;
+    if (child.killed || !target || target.child !== child || target.applied || target.reported.error) return;
+    target.reported.error = true;
+    target.reported.applied = false;
+    sendSyncStatus(humanizePmd3Error(stderr), true, target.loc);
+  });
+
+  autoSyncSpoofChild = child;
+  return child;
+}
+
+// Opens the stream ahead of the first location so even that one is instant.
+// Failures stay quiet here: they are reported once a location is asked for.
+function prewarmSpoofChild() {
+  if (!autoSyncSpoofChild && !liveActive && !toolsUpgrade) spawnSpoofChild();
+}
+
+function applySpoofOnce(loc, reported) {
+  const child = autoSyncSpoofChild || spawnSpoofChild();
+  if (!child) {
     if (!reported.error) {
       reported.error = true;
       sendSyncStatus(missingToolsMessage(), true, loc);
@@ -81,50 +152,24 @@ function applySpoofOnce(loc, reported) {
     return false;
   }
 
-  if (autoSyncSpoofChild) {
-    try { autoSyncSpoofChild.kill("SIGTERM"); } catch {}
-    autoSyncSpoofChild = null;
-  }
-
-  // Not `simulate-location set`: it blocks its asyncio loop in wait_return(),
-  // which starves the --userspace tunnel, so the iPhone snaps back to its real
-  // position after a few seconds (and at once on Windows, where it reads stdin).
-  // live_location.py keeps the loop running; stdin stays open to hold the session.
-  const child = spawnChild(
-    python,
-    [path.join(getScriptsDir(), "live_location.py"), "stream", "--userspace"],
-    { env: getSpawnEnv(), stdio: ["pipe", "pipe", "pipe"], windowsHide: true }
-  );
-  child.stdin.on("error", () => {});
-  child.stdin.write(`${loc.lat} ${loc.lng}\n`);
-
-  let applied = false;
-  let stderr = "";
-  autoSyncSpoofChild = child;
-  child.stdout.on("data", (chunk) => {
-    if (applied || !chunk.toString().includes("applied")) return;
-    applied = true;
-    reported.error = false;
-    if (!reported.applied) {
-      reported.applied = true;
-      sendSyncStatus(`GPS: ${loc.name || `${loc.lat}, ${loc.lng}`}`, false, loc, { applied: true });
-    }
-  });
-  child.on("close", () => {
-    if (autoSyncSpoofChild === child) autoSyncSpoofChild = null;
-    // Killed on purpose (new location, stop) or never applied: only the latter is an error.
-    if (applied || child.killed || reported.error) return;
-    reported.error = true;
-    reported.applied = false;
-    sendSyncStatus(humanizePmd3Error(stderr), true, loc);
-  });
-  child.stderr.on("data", (chunk) => {
-    const msg = chunk.toString().trim();
-    stderr += `${msg}\n`;
-    if (msg && !msg.includes("WARNING")) console.log("[Spoof]", msg);
-  });
-
+  spoofTarget = { loc, reported, child, applied: false };
+  child.writeLine(`${loc.lat} ${loc.lng}`);
   return true;
+}
+
+// Clears through the open stream when there is one, keeping it for the next
+// location; otherwise a one-off live_location.py clear.
+function clearSpoof() {
+  if (reapplyInterval) {
+    clearInterval(reapplyInterval);
+    reapplyInterval = null;
+  }
+  spoofTarget = null;
+  if (autoSyncSpoofChild) {
+    autoSyncSpoofChild.writeLine("clear");
+    return;
+  }
+  clearGpsLocation({}).catch(() => {});
 }
 
 function killSpoofProcess() {
@@ -170,6 +215,7 @@ function startAutoSync(session) {
   autoSyncSession = session;
   saveSessionFile(session);
   console.log("[AutoSync] Started — polling every 1s, re-apply every 5s");
+  prewarmSpoofChild();
 
   autoSyncInterval = setInterval(async () => {
     // Walking or playing a route from this computer drives the GPS directly.
@@ -204,8 +250,7 @@ function startAutoSync(session) {
       lastSyncedLoc = loc;
 
       if (!loc.is_active) {
-        killSpoofProcess();
-        clearGpsLocation({}).catch(() => {});
+        clearSpoof();
         console.log("[AutoSync] GPS cleared");
         sendSyncStatus("GPS réinitialisé", false, loc);
         return;
@@ -264,7 +309,7 @@ function ensureLiveStream() {
 
   const child = spawnChild(
     python,
-    [path.join(getScriptsDir(), "live_location.py"), "stream", "--userspace"],
+    [path.join(getScriptsDir(), "live_location.py"), "stream"],
     { env: getSpawnEnv(), stdio: ["pipe", "pipe", "pipe"], windowsHide: true }
   );
   liveChild = child;
@@ -317,7 +362,7 @@ function playRoute(gpx) {
   enterLive();
   const file = path.join(app.getPath("temp"), "anyloc-route.gpx");
   fs.writeFileSync(file, gpx, "utf8");
-  spawnLive(["play", "--userspace", file]);
+  spawnLive(["play", file]);
   return { ok: true };
 }
 
@@ -688,14 +733,46 @@ ipcMain.handle("setup:tools-ready", () => {
   return !!resolvePymobiledevice3Cli();
 });
 
+// While the iPhone is plugged in, pair it for Wi-Fi once so it keeps working
+// unplugged. One attempt per device per launch: an iPhone below iOS 17 fails
+// every time and the UI polls this every 3 s.
+const wifiPairingAttempted = new Set();
+
+function pairForWifi(udid) {
+  if (!udid || wifiPairingAttempted.has(udid) || hasWifiPairing(udid)) return;
+  wifiPairingAttempted.add(udid);
+  ensureWifiPairing({ udid }).then((result) => {
+    console.log("[Wi-Fi]", result.ok ? `Paired ${udid}` : `Pairing failed: ${result.message}`);
+  });
+}
+
+// Hands the iPhone app its pairing record so it works with no computer at all.
+// Once per device per launch once it lands; retried every minute until the
+// Anyloc app is installed on the iPhone.
+const appPairingDone = new Set();
+const appPairingLastTry = new Map();
+
+function pairForApp(udid) {
+  if (!udid || appPairingDone.has(udid)) return;
+  if (Date.now() - (appPairingLastTry.get(udid) || 0) < 60000) return;
+  appPairingLastTry.set(udid, Date.now());
+  pushPairingToApp({ udid }).then((result) => {
+    if (result.ok) appPairingDone.add(udid);
+    console.log("[App pairing]", result.ok ? `Pushed to ${udid}` : `Push failed: ${result.message}`);
+  });
+}
+
 ipcMain.handle("setup:check-usb", async (_event, payload) => {
   const device = await detectUsbDevice({
     installTools: payload?.installTools !== false,
   });
+  if (device.connected) pairForWifi(device.udid);
+  if (device.connected) pairForApp(device.udid);
   // Windows sees the iPhone but usbmux can't: Apple's USB driver is missing.
   const appleDriver = !device.connected && process.platform === "win32" ? await checkAppleDriver() : null;
   return {
     ...device,
+    wifiPaired: hasWifiPairing(device.connected ? device.udid : null),
     driverMissing: appleDriver?.status === "missing",
     driverInfAvailable: Boolean(appleDriver?.infAvailable),
   };

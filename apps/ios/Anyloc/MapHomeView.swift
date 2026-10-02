@@ -9,6 +9,8 @@ struct MapHomeView: View {
     @StateObject private var vm = MapHomeViewModel()
     @StateObject private var builder = RouteBuilder()
     @StateObject private var network = NetworkMonitor()
+    @ObservedObject private var onDevice = OnDeviceLocationService.shared
+    @Environment(\.scenePhase) private var scenePhase
     @ObservedObject private var runner = RouteRunner.shared
     @ObservedObject private var store = FavoritesStore.shared
 
@@ -53,6 +55,18 @@ struct MapHomeView: View {
         .animation(.easeInOut(duration: 0.2), value: mode)
         .preferredColorScheme(.dark)
         .task { await vm.loadCurrentLocation() }
+        .task { await onDevice.warmUp() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { Task { await onDevice.warmUp() } }
+        }
+        .alert("Active LocalDevVPN", isPresented: $onDevice.needsVPN) {
+            Button("Ouvrir LocalDevVPN") {
+                UIApplication.shared.open(SignatureRenewalService.localDevVpnAppStoreURL)
+            }
+            Button("Annuler", role: .cancel) {}
+        } message: {
+            Text("Ouvre LocalDevVPN, appuie sur Connect, puis reviens dans Anyloc.")
+        }
         .onChange(of: builder.legs) { _, _ in fitRoute() }
         .onChange(of: sheetTop) { old, new in
             // Re-frame once the panel settles to a new height (points added, mode switched…).
@@ -328,7 +342,7 @@ struct MapHomeView: View {
             if let p = vm.selected {
                 HStack(spacing: 10) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Caption(text: statusText, color: network.isOffline ? Theme.error : Theme.Dark.accent)
+                        Caption(text: statusText, color: network.isOffline && !onDevice.isConnected ? Theme.error : Theme.Dark.accent)
                         Text(p.name)
                             .font(.system(size: 20, weight: .semibold))
                             .foregroundColor(Theme.Dark.text)
@@ -345,7 +359,7 @@ struct MapHomeView: View {
                 }
             } else {
                 VStack(alignment: .leading, spacing: 4) {
-                    Caption(text: network.label, color: network.isOffline ? Theme.error : Theme.Dark.accent)
+                    Caption(text: readyLabel, color: network.isOffline && !onDevice.isConnected ? Theme.error : Theme.Dark.accent)
                     Text("Touche la carte ou cherche un lieu")
                         .font(.system(size: 17, weight: .medium))
                         .foregroundColor(Theme.Dark.textSoft)
@@ -355,7 +369,7 @@ struct MapHomeView: View {
             Rectangle().fill(Theme.Dark.line).frame(height: 1).padding(.vertical, 14)
 
             GradientCTA(title: "Définir cette position", icon: "scope",
-                        isDisabled: vm.selected == nil || network.isOffline) {
+                        isDisabled: vm.selected == nil || (network.isOffline && !onDevice.hasPairing)) {
                 runner.stop()
                 Task { await vm.teleport() }
             }
@@ -443,9 +457,12 @@ struct MapHomeView: View {
     }
 
     private var statusText: String {
-        if network.isOffline { return network.label }
         if let active = vm.activeCoord, active == vm.selected?.coord { return "Position active" }
-        return network.label
+        return readyLabel
+    }
+
+    private var readyLabel: String {
+        onDevice.isConnected ? "Prêt sans ordi" : network.label
     }
 
     // MARK: - Actions
@@ -559,7 +576,15 @@ final class MapHomeViewModel: ObservableObject {
         isApplying = true
         let started = Date()
         do {
-            try await api.upsertLocation(name: p.name, lat: p.coord.lat, lng: p.coord.lng, isActive: true)
+            let onDevice = OnDeviceLocationService.shared
+            if onDevice.hasPairing {
+                // No computer: the iPhone moves itself. The sync only keeps the
+                // dashboard up to date, so it may fail (e.g. Wi-Fi with no internet).
+                try await onDevice.setLocation(lat: p.coord.lat, lng: p.coord.lng)
+                try? await api.upsertLocation(name: p.name, lat: p.coord.lat, lng: p.coord.lng, isActive: true)
+            } else {
+                try await api.upsertLocation(name: p.name, lat: p.coord.lat, lng: p.coord.lng, isActive: true)
+            }
             activeCoord = p.coord
             show("Position définie : \(p.name)", isError: false)
         } catch {
@@ -574,7 +599,13 @@ final class MapHomeViewModel: ObservableObject {
     func stop() async {
         guard let p = selected ?? activeCoord.map({ SelectedPosition(name: "", coord: $0) }) else { return }
         do {
-            try await api.upsertLocation(name: p.name, lat: p.coord.lat, lng: p.coord.lng, isActive: false)
+            let onDevice = OnDeviceLocationService.shared
+            if onDevice.hasPairing {
+                await onDevice.clearLocation()
+                try? await api.upsertLocation(name: p.name, lat: p.coord.lat, lng: p.coord.lng, isActive: false)
+            } else {
+                try await api.upsertLocation(name: p.name, lat: p.coord.lat, lng: p.coord.lng, isActive: false)
+            }
             activeCoord = nil
             show("Position réelle rétablie", isError: false)
         } catch {

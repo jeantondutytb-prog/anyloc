@@ -23,6 +23,8 @@ fi
 
 mkdir -p "$DIST_DIR" "$IOS_DIR/build"
 
+"$ROOT/scripts/build-idevice-ios.sh"
+
 cd "$IOS_DIR"
 
 if command -v xcodegen >/dev/null 2>&1; then

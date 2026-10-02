@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		019B27DCF7DD8A85B5DC418B /* OnDeviceLocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F9D1B701173CFAE257511FF /* OnDeviceLocationService.swift */; };
 		12656B2BB942AF659CF29CED /* RoutePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E845F92F91B91E29E8E5AD17 /* RoutePanel.swift */; };
 		1713D15BAE1107AA75DB2F08 /* SubscriptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F28FEC6EC8C8F1B6FF07A00E /* SubscriptionService.swift */; };
 		187558EA3BCF3D5781548FA4 /* RenewalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E175DD0BF658783555645C /* RenewalView.swift */; };
@@ -18,6 +19,7 @@
 		59EF164F980141B849123668 /* SavedModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F6704E4E43632785C1A5F34 /* SavedModels.swift */; };
 		5A681B81212BC8DB20F3BB25 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 228EED6CEDDB6F70DDC0D1CA /* AuthService.swift */; };
 		6608D882E2DF31187118E384 /* SavedSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6F81B3BD94B6B334D8B3128 /* SavedSheet.swift */; };
+		82C2FBF1A4565749BFC55B46 /* IDevice.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = EE02B48DA61E22DDB85708FE /* IDevice.xcframework */; };
 		84E7E8669F64DE5C49D5217A /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68EDBF284E1E3A8E44C9DDF7 /* MainTabView.swift */; };
 		9618B333B2B17243C69190BB /* SignatureRenewalService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF93F6F18F89DA3CA6E90E20 /* SignatureRenewalService.swift */; };
 		9955F27D99BD04DCEF1598BA /* AnylocApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CD54BEF9C6AFE0282EC9304 /* AnylocApp.swift */; };
@@ -41,6 +43,7 @@
 		49C09F6CE9C14B8F309D4E68 /* SubscriptionModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionModels.swift; sourceTree = "<group>"; };
 		4CD54BEF9C6AFE0282EC9304 /* AnylocApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnylocApp.swift; sourceTree = "<group>"; };
 		4D02DE99BB015A0A818066AA /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		4F9D1B701173CFAE257511FF /* OnDeviceLocationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnDeviceLocationService.swift; sourceTree = "<group>"; };
 		5DA17A390E2A5A062A28BD2C /* MapHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapHomeView.swift; sourceTree = "<group>"; };
 		68EDBF284E1E3A8E44C9DDF7 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		7598C2810AD188339EA97811 /* Anyloc.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Anyloc.entitlements; sourceTree = "<group>"; };
@@ -51,17 +54,38 @@
 		DF3B1206BA4C1076D0962AD4 /* RouteEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteEngine.swift; sourceTree = "<group>"; };
 		E6F81B3BD94B6B334D8B3128 /* SavedSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedSheet.swift; sourceTree = "<group>"; };
 		E845F92F91B91E29E8E5AD17 /* RoutePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutePanel.swift; sourceTree = "<group>"; };
+		EE02B48DA61E22DDB85708FE /* IDevice.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = IDevice.xcframework; path = Vendor/IDevice.xcframework; sourceTree = "<group>"; };
 		F1E175DD0BF658783555645C /* RenewalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenewalView.swift; sourceTree = "<group>"; };
 		F28FEC6EC8C8F1B6FF07A00E /* SubscriptionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		52DC76173DCFDC66C873EDDF /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				82C2FBF1A4565749BFC55B46 /* IDevice.xcframework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		49BF93E731F21B8F36398D71 = {
 			isa = PBXGroup;
 			children = (
 				785CEED69DE9D496F870A925 /* Anyloc */,
+				4D3D5A3F9F5E3581C3D19DA1 /* Frameworks */,
 				AD156425435B8D9D422CAFE1 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		4D3D5A3F9F5E3581C3D19DA1 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				EE02B48DA61E22DDB85708FE /* IDevice.xcframework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		785CEED69DE9D496F870A925 /* Anyloc */ = {
@@ -77,6 +101,7 @@
 				4146D4F32E55E6241EFCD269 /* LoginView.swift */,
 				68EDBF284E1E3A8E44C9DDF7 /* MainTabView.swift */,
 				5DA17A390E2A5A062A28BD2C /* MapHomeView.swift */,
+				4F9D1B701173CFAE257511FF /* OnDeviceLocationService.swift */,
 				F1E175DD0BF658783555645C /* RenewalView.swift */,
 				DF3B1206BA4C1076D0962AD4 /* RouteEngine.swift */,
 				E845F92F91B91E29E8E5AD17 /* RoutePanel.swift */,
@@ -110,6 +135,7 @@
 			buildPhases = (
 				27FDC74D370131CFBA372710 /* Sources */,
 				528B47DF30635F7459CF19DA /* Resources */,
+				52DC76173DCFDC66C873EDDF /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -178,6 +204,7 @@
 				FB53196D1FD8C12D97F6C1B1 /* LoginView.swift in Sources */,
 				84E7E8669F64DE5C49D5217A /* MainTabView.swift in Sources */,
 				C7FABBF3D04B1ECEF288F7D6 /* MapHomeView.swift in Sources */,
+				019B27DCF7DD8A85B5DC418B /* OnDeviceLocationService.swift in Sources */,
 				187558EA3BCF3D5781548FA4 /* RenewalView.swift in Sources */,
 				CA375C1BC5C61B29CA3EE1A7 /* RouteEngine.swift in Sources */,
 				12656B2BB942AF659CF29CED /* RoutePanel.swift in Sources */,
@@ -202,6 +229,11 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Anyloc/Anyloc.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"Vendor\"",
+				);
 				INFOPLIST_FILE = Anyloc/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Anyloc;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -284,6 +316,11 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Anyloc/Anyloc.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"Vendor\"",
+				);
 				INFOPLIST_FILE = Anyloc/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Anyloc;
 				LD_RUNPATH_SEARCH_PATHS = (

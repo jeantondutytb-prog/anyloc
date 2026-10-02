@@ -65,3 +65,4 @@ apps/ios/Vendor/idevice/*.a
 
 # local tool reports
 .gstack/
+apps/ios/Vendor/
