@@ -29,11 +29,18 @@ from typing import Annotated, Optional
 
 import typer
 
+from packaging.version import Version
 from pymobiledevice3 import usbmux
+from pymobiledevice3.exceptions import AlreadyMountedError, DeveloperModeIsNotEnabledError
 from pymobiledevice3.pair_records import iter_remote_paired_identifiers
 from pymobiledevice3.remote import tunnel_service, userspace_tunnel
 from pymobiledevice3.services.dvt.instruments.dvt_provider import DvtProvider
 from pymobiledevice3.services.dvt.instruments.location_simulation import LocationSimulation
+from pymobiledevice3.services.mobile_image_mounter import (
+    DeveloperDiskImageMounter,
+    PersonalizedImageMounter,
+    auto_mount,
+)
 
 cli = typer.Typer(name="live-location", no_args_is_help=True)
 
@@ -43,6 +50,7 @@ UdidOption = Annotated[Optional[str], typer.Option("--udid", help="Target device
 NO_DEVICE_MESSAGE = (
     "AnylocNoDevice: iPhone not found over USB nor on this Wi-Fi network."
 )
+DDI_FAILED_MESSAGE = "AnylocDdiFailed: could not mount the Developer Disk Image."
 
 
 async def _wifi_tunnel_provider(serial, autopair, remotepairing_fallback=True):
@@ -75,12 +83,42 @@ async def location_simulation(udid: Optional[str]):
         # None lets any paired iPhone found on the network answer.
         serial = udid
 
+    # The location service only exists once Apple's Developer Disk Image is
+    # mounted. Xcode does it on a developer's iPhone; a customer's iPhone never
+    # had it, and a reboot unmounts it. The device lists its services when the
+    # tunnel opens, so after a fresh mount the tunnel is opened again.
+    async with userspace_tunnel.UserspaceRsdTunnel(serial=serial) as rsd:
+        mounted_now = await ensure_developer_image(rsd)
+        if not mounted_now:
+            async with DvtProvider(rsd) as dvt, LocationSimulation(dvt) as simulation:
+                yield simulation
+            return
+
     async with (
         userspace_tunnel.UserspaceRsdTunnel(serial=serial) as rsd,
         DvtProvider(rsd) as dvt,
         LocationSimulation(dvt) as simulation,
     ):
         yield simulation
+
+
+async def ensure_developer_image(provider) -> bool:
+    """Mount the Developer Disk Image if needed; True when it was mounted now."""
+    personalized = Version(provider.product_version) >= Version("17.0")
+    mounter = (PersonalizedImageMounter if personalized else DeveloperDiskImageMounter)(provider)
+    if await mounter.is_image_mounted(mounter.IMAGE_TYPE):
+        return False
+    try:
+        # Downloads the image once (cached in ~/.pymobiledevice3), then Apple
+        # signs it for this iPhone: needs internet the first time.
+        await auto_mount(provider)
+    except AlreadyMountedError:
+        return False
+    except DeveloperModeIsNotEnabledError:
+        raise
+    except Exception as error:
+        raise RuntimeError(f"{DDI_FAILED_MESSAGE} ({type(error).__name__}: {error})") from error
+    return True
 
 
 async def wait_stdin_closed(loop: asyncio.AbstractEventLoop) -> None:
