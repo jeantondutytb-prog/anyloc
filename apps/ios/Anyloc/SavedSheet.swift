@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// "Favoris" sheet: saved places, saved routes and the curated spots list.
+/// "Favoris" sheet: saved places and the curated spots list.
 struct SavedSheet: View {
-    enum Tab: Hashable { case places, routes, discover }
+    enum Tab: Hashable { case places, discover }
 
     @ObservedObject private var store = FavoritesStore.shared
     @Environment(\.dismiss) private var dismiss
@@ -11,7 +11,6 @@ struct SavedSheet: View {
     @State private var draft: NameEmojiDraft?
 
     let onGoPlace: (FavoriteLocation) -> Void
-    let onLaunchRoute: (SavedRoute) -> Void
     let onSpot: (Spot) -> Void
 
     var body: some View {
@@ -23,13 +22,11 @@ struct SavedSheet: View {
 
             DarkSegmented(items: [
                 .init(value: Tab.places, label: "Lieux · \(store.places.count)"),
-                .init(value: Tab.routes, label: "Trajets · \(store.routes.count)"),
                 .init(value: Tab.discover, label: "Découvrir"),
             ], selection: $tab, compact: true)
 
             switch tab {
             case .places: placesList
-            case .routes: routesList
             case .discover: discover
             }
         }
@@ -80,50 +77,6 @@ struct SavedSheet: View {
             updated.name = name
             updated.emoji = emoji
             store.upsertPlace(updated)
-        }
-    }
-
-    // MARK: Routes
-
-    @ViewBuilder
-    private var routesList: some View {
-        if store.routes.isEmpty {
-            empty(icon: "point.topleft.down.to.point.bottomright.curvepath", title: "Aucun trajet enregistré",
-                  subtitle: "Crée un trajet puis touche le signet pour le retrouver ici.")
-        } else {
-            List {
-                ForEach(store.routes) { route in
-                    let stops = max(route.points.count - 2, 0)
-                    let detail = [
-                        route.method == .gpx ? "GPX" : "\(stops) étape\(stops > 1 ? "s" : "")",
-                        route.speedMode.label,
-                        Format.duration(route.duration),
-                    ].joined(separator: " · ")
-                    row(emoji: route.emoji, title: route.name, subtitle: detail, isRoute: true,
-                        action: "Lancer", icon: "play.fill") {
-                        dismiss()
-                        onLaunchRoute(route)
-                    }
-                    .swipeActions {
-                        Button(role: .destructive) { store.deleteRoute(route) } label: { Label("Supprimer", systemImage: "trash") }
-                        Button { editRoute(route) } label: { Label("Modifier", systemImage: "pencil") }.tint(Theme.accentEnd)
-                    }
-                    .contextMenu {
-                        Button { editRoute(route) } label: { Label("Modifier", systemImage: "pencil") }
-                        Button(role: .destructive) { store.deleteRoute(route) } label: { Label("Supprimer", systemImage: "trash") }
-                    }
-                }
-            }
-            .darkList()
-        }
-    }
-
-    private func editRoute(_ route: SavedRoute) {
-        draft = NameEmojiDraft(title: "Modifier le trajet", name: route.name, emoji: route.emoji) { name, emoji in
-            var updated = route
-            updated.name = name
-            updated.emoji = emoji
-            store.upsertRoute(updated)
         }
     }
 

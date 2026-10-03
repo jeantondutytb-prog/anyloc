@@ -146,6 +146,11 @@ export async function ensureBuildForPendingDevices(now: Date) {
     return;
   }
 
+  await queueBuild(now);
+}
+
+/** Re-signs the current base app for every registered iPhone. */
+export async function queueBuild(now: Date) {
   await store.failStaleQueuedBuilds(new Date(now.getTime() - IOS_ADHOC_BUILD_STALE_MS));
   const buildId = await store.insertQueuedBuild();
 
@@ -168,6 +173,9 @@ export async function getIosStatusForUser(userId: string, now: Date): Promise<Io
     await ensureBuildForPendingDevices(now);
   }
 
-  const latestSucceededBuild = await store.getLatestSucceededBuild();
-  return getIosInstallState({ device, latestSucceededBuild, now: now.getTime() });
+  const [latestSucceededBuild, latestBuild] = await Promise.all([
+    store.getLatestSucceededBuild(),
+    store.getLatestBuild(),
+  ]);
+  return getIosInstallState({ device, latestSucceededBuild, latestBuild, now: now.getTime() });
 }

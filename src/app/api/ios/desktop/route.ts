@@ -1,5 +1,5 @@
-import { presignPrivateBlobUrl } from "@/lib/downloads";
 import { isEligibleForIosAdhoc } from "@/lib/ios-adhoc/config";
+import { signedIpaUrl } from "@/lib/ios-adhoc/ipa-storage";
 import { getIosStatusForUser, registerIosDeviceFromDesktop } from "@/lib/ios-adhoc/service";
 import { getBuild } from "@/lib/ios-adhoc/store";
 import { requireActiveSubscription } from "@/lib/subscription";
@@ -28,12 +28,11 @@ export async function GET() {
   let ipaUrl: string | null = null;
 
   if (state.kind === "ready") {
-    const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
     const build = await getBuild(state.buildId);
-    if (!blobToken || !build?.ipa_blob_path) {
+    if (!build?.ipa_blob_path) {
       return Response.json({ error: "Installation indisponible." }, { status: 503 });
     }
-    ipaUrl = await presignPrivateBlobUrl(build.ipa_blob_path, blobToken);
+    ipaUrl = await signedIpaUrl(build.ipa_blob_path);
   }
 
   return Response.json({ eligible: true, state, ipaUrl }, { headers: NO_STORE });

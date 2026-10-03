@@ -9,11 +9,12 @@ import { AuthInput, AuthPasswordInput } from "@/components/auth/auth-input";
 import { GoogleAuthLink } from "@/components/auth/google-auth-link";
 import { Button } from "@/components/ui/button";
 import { track } from "@/lib/analytics/track";
+import { DEFAULT_PLAN_ID } from "@/lib/constants";
 
 const initialState: AuthState = {};
 
 export function LoginForm({
-  plan = "annual",
+  plan = DEFAULT_PLAN_ID,
   redirectTo,
 }: {
   plan?: string;

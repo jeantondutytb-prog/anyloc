@@ -466,9 +466,12 @@ async function handleSetupUrl(rawUrl) {
 }
 
 function createTray() {
-  const icon = nativeImage.createFromDataURL(
-    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAAXNSR0IArs4c6QAAAJRJREFUOBFjYBhowIgbwMDAEA/EP4D4AxA/AOL/uNQxoUsiKUgA4v9AfACIHwDxfyTxBzAxdBNRFCQA8X8gPgDE/4H4PxAfAOIHSGoeIIsx4TOIUfcghBk5mf4DMSNIHxAbA/F/JPoAECMbBDIYJg7SDyJBBuGyhpERWz5CthFkEIi+j8IhEFAdLiADsOUjZE5qGwAclzW6GaTVSwAAAABJRU5ErkJggg=="
+  // macOS: black "Template" image so the menu bar tints it for light/dark mode.
+  // Electron picks up the @2x file automatically on Retina screens.
+  const icon = nativeImage.createFromPath(
+    path.join(__dirname, "tray", process.platform === "darwin" ? "trayTemplate.png" : "tray-win.png")
   );
+  if (process.platform === "darwin") icon.setTemplateImage(true);
   tray = new Tray(icon);
   tray.setToolTip("Anyloc");
 

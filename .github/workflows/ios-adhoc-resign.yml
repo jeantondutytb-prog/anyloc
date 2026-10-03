@@ -17,7 +17,6 @@ jobs:
     timeout-minutes: 30
     env:
       BUILD_ID: ${{ inputs.build_id }}
-      BLOB_PATH: releases/ios-adhoc/Anyloc-${{ inputs.build_id }}.ipa
     steps:
       - uses: actions/checkout@v4
 
@@ -64,23 +63,20 @@ jobs:
           VERSION="$(scripts/resign-ios-adhoc.sh "$RUNNER_TEMP/Anyloc.ipa" "$RUNNER_TEMP/adhoc.mobileprovision" "$RUNNER_TEMP/Anyloc-adhoc.ipa" | tail -1)"
           echo "bundle_version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Upload to Vercel Blob
-        env:
-          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
-        run: node scripts/upload-ios-adhoc.mjs "$RUNNER_TEMP/Anyloc-adhoc.ipa" "$BLOB_PATH"
-
       - name: Report success
         env:
           ANYLOC_API_URL: ${{ secrets.ANYLOC_API_URL }}
           IOS_BUILD_CALLBACK_SECRET: ${{ secrets.IOS_BUILD_CALLBACK_SECRET }}
           BUNDLE_VERSION: ${{ steps.resign.outputs.bundle_version }}
+        # The IPA (~1 MB) goes to the API, which stores it in Supabase Storage.
         run: |
+          base64 -i "$RUNNER_TEMP/Anyloc-adhoc.ipa" | tr -d '\n' > "$RUNNER_TEMP/ipa.b64"
           jq -n \
             --arg id "$BUILD_ID" \
-            --arg path "$BLOB_PATH" \
             --arg version "$BUNDLE_VERSION" \
+            --rawfile ipa "$RUNNER_TEMP/ipa.b64" \
             --slurpfile udids "$RUNNER_TEMP/udids.json" \
-            '{buildId: $id, status: "succeeded", ipaBlobPath: $path, bundleVersion: $version, udids: $udids[0]}' |
+            '{buildId: $id, status: "succeeded", ipaBase64: $ipa, bundleVersion: $version, udids: $udids[0]}' |
             curl -fsS -X POST "$ANYLOC_API_URL/api/ios/builds/complete" \
               -H "Authorization: Bearer $IOS_BUILD_CALLBACK_SECRET" \
               -H "Content-Type: application/json" \

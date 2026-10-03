@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import {
   CHECKOUT_CTA_LABEL,
+  DEFAULT_PLAN_ID,
   getPostOnboardingSignupUrl,
   isValidPlanId,
 } from "@/lib/constants";
@@ -344,7 +345,7 @@ function OnboardingViewContent() {
     if (isValidPlanId(plan)) {
       return plan!;
     }
-    return "annual";
+    return DEFAULT_PLAN_ID;
   }, [searchParams]);
 
   useEffect(() => {

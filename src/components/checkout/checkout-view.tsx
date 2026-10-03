@@ -6,30 +6,35 @@ import { useRouter } from "next/navigation";
 import { Footer } from "@/components/layout/footer";
 import { AnyLocCheckoutPanel } from "@/components/pricing/anyloc-checkout-panel";
 import { Logo } from "@/components/ui/logo";
-import { isValidPlanId } from "@/lib/constants";
+import { DEFAULT_PLAN_ID, isValidPlanId } from "@/lib/constants";
 import {
   ONBOARDING_DESTINATION_KEY,
   type OnboardingDestination,
 } from "@/lib/onboarding-destinations";
 
 function normalizeCheckoutPlan(planId: string) {
-  return isValidPlanId(planId) ? planId : "annual";
+  return isValidPlanId(planId) ? planId : DEFAULT_PLAN_ID;
 }
 
 export function CheckoutView({
   initialPlanId,
   canceled,
   stripePublishableKey,
+  recoveryOffer,
+  focusPayment: initialFocusPayment,
 }: {
   initialPlanId: string;
   canceled?: boolean;
   stripePublishableKey: string;
+  recoveryOffer?: boolean;
+  focusPayment?: boolean;
 }) {
   const router = useRouter();
   const [selectedPlanId, setSelectedPlanId] = useState(
     normalizeCheckoutPlan(initialPlanId)
   );
   const [destination, setDestination] = useState<OnboardingDestination | undefined>();
+  const [focusPayment, setFocusPayment] = useState(Boolean(initialFocusPayment));
 
   useEffect(() => {
     try {
@@ -74,6 +79,9 @@ export function CheckoutView({
           stripePublishableKey={stripePublishableKey}
           destination={destination}
           canceled={canceled}
+          recoveryOffer={recoveryOffer}
+          focusPayment={focusPayment}
+          onShowAllPlans={() => setFocusPayment(false)}
         />
       </main>
 

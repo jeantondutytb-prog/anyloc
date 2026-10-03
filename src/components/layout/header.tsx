@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
-import { CHECKOUT_CTA_LABEL_SHORT, getOnboardingUrl } from "@/lib/constants";
+import { CHECKOUT_CTA_LABEL_SHORT, DEFAULT_PLAN_ID, getOnboardingUrl } from "@/lib/constants";
 import { OnboardingLink } from "@/components/onboarding/onboarding-link";
 
 export function Header() {
@@ -37,7 +37,7 @@ export function Header() {
               Connexion
             </Button>
           </Link>
-          <OnboardingLink href={getOnboardingUrl("annual")} data-track="cta_clicked" data-track-location="header" data-track-plan="annual">
+          <OnboardingLink href={getOnboardingUrl(DEFAULT_PLAN_ID)} data-track="cta_clicked" data-track-location="header" data-track-plan={DEFAULT_PLAN_ID}>
             <Button size="sm">{CHECKOUT_CTA_LABEL_SHORT}</Button>
           </OnboardingLink>
         </div>

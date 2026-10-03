@@ -1,7 +1,7 @@
 import { AuthShell } from "@/components/auth/auth-shell";
 import { OnboardingActivationNotice } from "@/components/auth/onboarding-activation-notice";
 import { LoginForm } from "@/components/auth/login-form";
-import { isValidPlanId } from "@/lib/constants";
+import { DEFAULT_PLAN_ID, isValidPlanId } from "@/lib/constants";
 import { sanitizeRedirectPath } from "@/lib/safe-redirect";
 
 export default async function LoginPage({
@@ -17,7 +17,7 @@ export default async function LoginPage({
 }) {
   const { plan, next, redirectTo: redirectToParam, checkout, error } =
     await searchParams;
-  const planId = isValidPlanId(plan) ? plan! : "annual";
+  const planId = isValidPlanId(plan) ? plan! : DEFAULT_PLAN_ID;
   const redirectTo = sanitizeRedirectPath(
     next ?? redirectToParam,
     "/dashboard"

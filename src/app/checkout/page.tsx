@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { CheckoutView } from "@/components/checkout/checkout-view";
 import { ensureStripeCustomerForUser } from "@/lib/billing";
-import { getCheckoutUrl, isValidPlanId } from "@/lib/constants";
+import { hasActiveRecoveryOffer } from "@/lib/checkout-recovery-server";
+import { DEFAULT_PLAN_ID, getCheckoutUrl, isValidPlanId } from "@/lib/constants";
 import { getStripePublishableKey } from "@/lib/stripe-client";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { getSubscriptionAccessForUser } from "@/lib/subscription";
@@ -9,16 +10,25 @@ import { getSubscriptionAccessForUser } from "@/lib/subscription";
 export default async function CheckoutPage({
   searchParams,
 }: {
-  searchParams: Promise<{ plan?: string; canceled?: string; preview?: string }>;
+  searchParams: Promise<{
+    plan?: string;
+    canceled?: string;
+    preview?: string;
+    paiement?: string;
+  }>;
 }) {
-  const { plan, canceled, preview } = await searchParams;
+  const { plan, canceled, preview, paiement } = await searchParams;
+  // Email links (?paiement=1) open straight on the payment form.
+  const focusPayment = paiement === "1";
   // Local design preview without an account: /checkout?preview=1 under `next dev` only.
   const devPreview = process.env.NODE_ENV === "development" && preview === "1";
-  const planId = plan ?? "annual";
+  const planId = plan ?? DEFAULT_PLAN_ID;
 
   if (!isValidPlanId(planId)) {
-    redirect("/checkout?plan=annual");
+    redirect(getCheckoutUrl(DEFAULT_PLAN_ID));
   }
+
+  let recoveryOffer = false;
 
   if (isSupabaseConfigured() && !devPreview) {
     const supabase = await createClient();
@@ -27,8 +37,12 @@ export default async function CheckoutPage({
     } = await supabase.auth.getUser();
 
     if (!user) {
+      // Email recipients already have an account: log them in, then come back here.
+      const next = focusPayment
+        ? `${getCheckoutUrl(planId)}&paiement=1`
+        : getCheckoutUrl(planId);
       redirect(
-        `/signup?plan=${planId}&next=${encodeURIComponent(getCheckoutUrl(planId))}`
+        `/${focusPayment ? "login" : "signup"}?plan=${planId}&next=${encodeURIComponent(next)}`
       );
     }
 
@@ -37,6 +51,8 @@ export default async function CheckoutPage({
     if (access.hasAccess) {
       redirect("/dashboard");
     }
+
+    recoveryOffer = await hasActiveRecoveryOffer(user.id).catch(() => false);
 
     if (user.email) {
       try {
@@ -54,6 +70,8 @@ export default async function CheckoutPage({
     <CheckoutView
       initialPlanId={planId}
       canceled={canceled === "true"}
+      recoveryOffer={recoveryOffer}
+      focusPayment={focusPayment}
       stripePublishableKey={getStripePublishableKey()}
     />
   );

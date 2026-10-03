@@ -1,18 +1,10 @@
-import { timingSafeEqual } from "node:crypto";
+import { isBuildCallbackAuthorized } from "@/lib/ios-adhoc/callback-auth";
 import { ensureBuildForPendingDevices } from "@/lib/ios-adhoc/service";
-import { completeBuild } from "@/lib/ios-adhoc/store";
-
-function authorized(request: Request) {
-  const secret = process.env.IOS_BUILD_CALLBACK_SECRET;
-  const header = request.headers.get("authorization") ?? "";
-  if (!secret) return false;
-  const expected = Buffer.from(`Bearer ${secret}`);
-  const received = Buffer.from(header);
-  return expected.length === received.length && timingSafeEqual(expected, received);
-}
+import { MAX_IPA_BYTES, storeIpa } from "@/lib/ios-adhoc/ipa-storage";
+import { completeBuild, getBuild } from "@/lib/ios-adhoc/store";
 
 export async function POST(request: Request) {
-  if (!authorized(request)) {
+  if (!isBuildCallbackAuthorized(request)) {
     return Response.json({ error: "Non autorisé." }, { status: 401 });
   }
 
@@ -25,11 +17,19 @@ export async function POST(request: Request) {
 
   if (body?.status === "succeeded") {
     const udids = Array.isArray(body.udids) ? body.udids.filter((u): u is string => typeof u === "string") : [];
-    const ipaBlobPath = typeof body.ipaBlobPath === "string" ? body.ipaBlobPath : "";
+    const ipa = typeof body.ipaBase64 === "string" ? Buffer.from(body.ipaBase64, "base64") : null;
     const bundleVersion = typeof body.bundleVersion === "string" ? body.bundleVersion : "";
-    if (!udids.length || !ipaBlobPath || !bundleVersion) {
+    if (!udids.length || !ipa?.length || !bundleVersion) {
       return Response.json({ error: "Champs manquants." }, { status: 400 });
     }
+    if (ipa.length > MAX_IPA_BYTES) {
+      return Response.json({ error: "IPA trop lourde." }, { status: 413 });
+    }
+    // Only a build still waiting for its result gets a file.
+    if ((await getBuild(buildId))?.status !== "queued") {
+      return Response.json({ error: "Build inconnu ou déjà terminé." }, { status: 409 });
+    }
+    const ipaBlobPath = await storeIpa(buildId, ipa);
     await completeBuild(buildId, { status: "succeeded", udids, ipaBlobPath, bundleVersion });
   } else if (body?.status === "failed") {
     await completeBuild(buildId, {

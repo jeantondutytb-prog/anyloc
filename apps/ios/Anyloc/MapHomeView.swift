@@ -2,7 +2,7 @@ import MapKit
 import SwiftUI
 
 /// Main screen: full-screen dark map with floating top bar, search and a bottom
-/// panel switching between "Téléporter", "Trajet" and "Explorer".
+/// panel switching between "Téléporter" and "Explorer" (the destinations).
 struct MapHomeView: View {
     enum Mode: Hashable { case teleport, route, explore }
 
@@ -87,11 +87,6 @@ struct MapHomeView: View {
                 onGoPlace: { place in
                     mode = .teleport
                     Task { await vm.teleport(to: SelectedPosition(name: place.name, coord: Coord(lat: place.lat, lng: place.lng))) }
-                },
-                onLaunchRoute: { route in
-                    mode = .route
-                    builder.load(route)
-                    runner.start(legs: route.legs, kmh: route.kmh, name: route.name)
                 },
                 onSpot: { spot in
                     mode = .teleport
@@ -313,7 +308,6 @@ struct MapHomeView: View {
 
             DarkSegmented(items: [
                 .init(value: Mode.teleport, label: "Téléporter", icon: "location.fill"),
-                .init(value: Mode.route, label: "Trajet", icon: "point.topleft.down.to.point.bottomright.curvepath"),
                 .init(value: Mode.explore, label: "Explorer", icon: "globe.europe.africa.fill"),
             ], selection: $mode)
 
