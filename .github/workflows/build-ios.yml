@@ -134,6 +134,17 @@ jobs:
           TAG="ios-v0.1.${{ github.run_number }}"
           gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "Anyloc iOS v0.1.${{ github.run_number }}" --generate-notes --latest=false
           gh release upload "$TAG" apps/ios/dist/Anyloc.ipa --clobber
+          # Source of the ad hoc re-sign workflow (the app customers install).
+          gh release upload ios-base apps/ios/dist/Anyloc.ipa --clobber
+
+      - name: Re-sign the new version for every iPhone
+        if: github.ref == 'refs/heads/main' && steps.team.outputs.has_team == 'true'
+        env:
+          ANYLOC_API_URL: ${{ secrets.ANYLOC_API_URL }}
+          IOS_BUILD_CALLBACK_SECRET: ${{ secrets.IOS_BUILD_CALLBACK_SECRET }}
+        run: |
+          curl -fsS -X POST "$ANYLOC_API_URL/api/ios/builds/refresh" \
+            -H "Authorization: Bearer $IOS_BUILD_CALLBACK_SECRET"
 
       - name: Upload IPA artifact
         if: steps.team.outputs.has_team == 'true'
