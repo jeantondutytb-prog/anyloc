@@ -92,9 +92,13 @@
         <div class="h-overlay" id="applying" hidden>
           <div class="h-dialog h-applying">
             <img src="./images/logo.png" alt="" class="h-applying-logo" id="applying-logo" />
-            <div class="h-dots"><i></i><i></i><i></i></div>
-            <h3>Application de la position…</h3>
-            <p>Mise à jour de la position sur ton iPhone. Reste connecté, ça ne prend qu'un instant.</p>
+            <div class="h-dots" id="applying-dots"><i></i><i></i><i></i></div>
+            <h3 id="applying-title">Application de la position…</h3>
+            <p id="applying-text">Ton iPhone change de position. Garde-le branché et déverrouillé.</p>
+            <div class="h-dialog-actions h-applying-actions" id="applying-actions" hidden>
+              <button type="button" class="h-btn h-btn-ghost" id="applying-close">Fermer</button>
+              <button type="button" class="h-btn h-btn-grad" id="applying-retry" hidden>Réessayer</button>
+            </div>
           </div>
         </div>
 
@@ -303,10 +307,10 @@
           <div class="guide-icon-wrap">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
           </div>
-          <h2 class="guide-title">C'est prêt !</h2>
-          <p class="guide-subtitle" id="guide-done-text">Choisis une ville sur la carte, ta position change tout de suite. Laisse Anyloc ouvert sur cet ordinateur : la position reste active tant que l'iPhone est branché ou sur le même Wi-Fi.</p>
+          <h2 class="guide-title">Dernière étape : essaie !</h2>
+          <p class="guide-subtitle" id="guide-done-text">Choisis une ville sur la carte et clique sur « Appliquer la position ». Anyloc te dit quand ton iPhone a bien changé de position.</p>
 
-          <button type="button" class="guide-btn-primary" id="guide-done-btn">Aller sur la carte</button>
+          <button type="button" class="guide-btn-primary" id="guide-done-btn">Choisir ma première ville</button>
         </div>
       </div>
     </div>

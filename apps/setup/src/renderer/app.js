@@ -236,8 +236,8 @@ async function showGuide() {
     ? ["plug", "devmode", "install", "nocable", "done"]
     : ["plug", "devmode", "done"];
   $("guide-done-text").textContent = guide.appEligible
-    ? "Change ta position depuis l'app Anyloc sur ton iPhone (LocalDevVPN connecté), ou depuis la carte sur cet ordinateur."
-    : "Choisis une ville sur la carte, ta position change tout de suite. Laisse Anyloc ouvert sur cet ordinateur : la position reste active tant que l'iPhone est branché ou sur le même Wi-Fi.";
+    ? "Choisis une ville sur la carte et clique sur « Appliquer la position ». Anyloc te dit quand ton iPhone a bien changé de position. Ensuite, tu pourras aussi la changer depuis l'app Anyloc sur ton iPhone."
+    : "Choisis une ville sur la carte et clique sur « Appliquer la position ». Anyloc te dit quand ton iPhone a bien changé de position.";
   renderGuideProgress();
   renderPlugButton();
 }
