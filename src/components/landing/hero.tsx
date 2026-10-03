@@ -10,6 +10,7 @@ import {
   CHECKOUT_CTA_LABEL,
   CHECKOUT_CTA_LABEL_SHORT,
   CHECKOUT_CTA_SUBLINE,
+  DEFAULT_PLAN_ID,
   getOnboardingUrl,
   SITE,
 } from "@/lib/constants";
@@ -49,7 +50,7 @@ export function Hero() {
 
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <div className="flex w-full flex-col items-center gap-2 sm:w-auto">
-              <OnboardingLink href={getOnboardingUrl("annual")} data-track="cta_clicked" data-track-location="hero" data-track-plan="annual">
+              <OnboardingLink href={getOnboardingUrl(DEFAULT_PLAN_ID)} data-track="cta_clicked" data-track-location="hero" data-track-plan={DEFAULT_PLAN_ID}>
                 <Button size="lg" className="w-full sm:w-auto">
                   {CHECKOUT_CTA_LABEL}
                   <ArrowRight className="h-4 w-4" />

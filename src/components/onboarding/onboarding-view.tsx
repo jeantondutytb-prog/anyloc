@@ -14,7 +14,7 @@ import {
   type CircleRevealOrigin,
 } from "@/components/ui/circle-reveal";
 import { Logo } from "@/components/ui/logo";
-import { getPostOnboardingSignupUrl, isValidPlanId } from "@/lib/constants";
+import { DEFAULT_PLAN_ID, getPostOnboardingSignupUrl, isValidPlanId } from "@/lib/constants";
 import {
   ONBOARDING_ACTIVATION_PENDING_KEY,
   ONBOARDING_DESTINATION_KEY,
@@ -69,7 +69,7 @@ function OnboardingViewContent() {
     if (isValidPlanId(plan)) {
       return plan!;
     }
-    return "annual";
+    return DEFAULT_PLAN_ID;
   }, [searchParams]);
   const signupUrl = getPostOnboardingSignupUrl(selectedPlanId);
 

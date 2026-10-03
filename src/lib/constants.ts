@@ -171,7 +171,7 @@ export const PLANS = [
     perDayLabel: "€/jour",
     billedNote: "Facturé 49,90 € une fois par an.",
     compare: "Tu gardes 69 € sur l'année",
-    badge: "App iPhone incluse",
+    badge: "-58 %",
     description: "Le meilleur deal si t'es un habitué.",
     savings: "Tu gardes 69 € sur l'année · -58 % vs mensuel",
     features: PLAN_VALUE_STACK,
@@ -182,6 +182,9 @@ export const PLANS = [
 ];
 
 export type Plan = (typeof PLANS)[number];
+
+/** Plan preselected across the funnel: almost every sale is the 9,90 € monthly plan. */
+export const DEFAULT_PLAN_ID = "monthly";
 
 export const PLAN_IDS = PLANS.map((plan) => plan.id);
 
@@ -209,7 +212,7 @@ export function getOnboardingTrialUrl(plan?: string) {
 }
 
 export function getPostOnboardingSignupUrl(plan?: string) {
-  const planId = isValidPlanId(plan) ? plan! : "annual";
+  const planId = isValidPlanId(plan) ? plan! : DEFAULT_PLAN_ID;
   const checkoutUrl = getCheckoutUrl(planId);
   return `/signup?plan=${planId}&next=${encodeURIComponent(checkoutUrl)}`;
 }
@@ -219,8 +222,8 @@ export function getOnboardingPaywallUrl(plan?: string) {
   return getOnboardingTrialUrl(plan);
 }
 
-export function getCheckoutUrl(plan: string = "annual") {
-  const planId = isValidPlanId(plan) ? plan : "annual";
+export function getCheckoutUrl(plan: string = DEFAULT_PLAN_ID) {
+  const planId = isValidPlanId(plan) ? plan : DEFAULT_PLAN_ID;
   return `/checkout?plan=${planId}`;
 }
 

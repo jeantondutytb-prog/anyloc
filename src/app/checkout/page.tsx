@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { CheckoutView } from "@/components/checkout/checkout-view";
 import { ensureStripeCustomerForUser } from "@/lib/billing";
-import { getCheckoutUrl, isValidPlanId } from "@/lib/constants";
+import { DEFAULT_PLAN_ID, getCheckoutUrl, isValidPlanId } from "@/lib/constants";
 import { getStripePublishableKey } from "@/lib/stripe-client";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { getSubscriptionAccessForUser } from "@/lib/subscription";
@@ -14,10 +14,10 @@ export default async function CheckoutPage({
   const { plan, canceled, preview } = await searchParams;
   // Local design preview without an account: /checkout?preview=1 under `next dev` only.
   const devPreview = process.env.NODE_ENV === "development" && preview === "1";
-  const planId = plan ?? "annual";
+  const planId = plan ?? DEFAULT_PLAN_ID;
 
   if (!isValidPlanId(planId)) {
-    redirect("/checkout?plan=annual");
+    redirect(getCheckoutUrl(DEFAULT_PLAN_ID));
   }
 
   if (isSupabaseConfigured() && !devPreview) {
