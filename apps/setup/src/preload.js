@@ -16,7 +16,14 @@ contextBridge.exposeInMainWorld("anylocSetup", {
     return () => ipcRenderer.removeListener("setup:tools-progress", listener);
   },
   checkUsb: (payload) => ipcRenderer.invoke("setup:check-usb", payload),
-  installAppleDriver: () => ipcRenderer.invoke("setup:install-apple-driver"),
+  trustDevice: (payload) => ipcRenderer.invoke("setup:trust-device", payload),
+  prepareWindows: () => ipcRenderer.invoke("setup:prepare-windows"),
+  onWindowsProgress: (callback) => {
+    const listener = (_event, progress) => callback(progress);
+    ipcRenderer.on("setup:windows-progress", listener);
+    return () => ipcRenderer.removeListener("setup:windows-progress", listener);
+  },
+  copyDiagnostic: () => ipcRenderer.invoke("setup:copy-diagnostic"),
   openExternal: (url) => ipcRenderer.invoke("setup:open-external", url),
   devModeStatus: (payload) => ipcRenderer.invoke("setup:devmode-status", payload),
   revealDevMode: (payload) => ipcRenderer.invoke("setup:reveal-devmode", payload),

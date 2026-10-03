@@ -100,9 +100,6 @@ async function applyPlatformHints() {
 
   const isWin = desktopPlatform === "win";
 
-  const usbHelpWin = $("guide-usb-help-win");
-  if (usbHelpWin) usbHelpWin.hidden = !isWin;
-
   const deviceLabel = $("profil-device");
   if (deviceLabel) deviceLabel.textContent = isWin ? "PC Windows" : "Mac";
 
@@ -174,6 +171,8 @@ const guide = {
   steps: ["plug", "devmode", "done"],
   current: "plug",
   udid: null,
+  trusted: false,
+  trusting: false,
   appEligible: false,
   eligibilityKnown: false,
   instance: 0, // bumps when the guide (re)opens
@@ -293,6 +292,7 @@ function finishGuide() {
 async function startPlugStep() {
   const run = guide.run;
   guide.udid = null;
+  guide.trusted = false;
   $("guide-plug-retry").hidden = true;
   renderPlugButton();
 
@@ -331,69 +331,148 @@ async function startPlugStep() {
 }
 
 async function checkPlug(run) {
+  if (guide.trusting) return;
   const result = await window.anylocSetup.checkUsb();
-  if (run !== guide.run || guide.current !== "plug") return;
+  if (run !== guide.run || guide.current !== "plug" || guide.trusting) return;
 
   if (result.connected) {
     clearInterval(guide.usbTimer);
     guide.udid = result.udid;
-    setStatus("plug", "ok", `${result.deviceName} détecté`, "");
-    renderDriverBox(null);
-    renderPlugButton();
-  } else {
-    renderDriverBox(result);
-    setStatus("plug", "wait", "Recherche de ton iPhone…", "Branche-le avec un câble USB, puis déverrouille-le.");
+    renderWindowsBox(null);
+    void trustPlugged(run, result.deviceName);
+    return;
+  }
+
+  renderWindowsBox(result.windowsStage);
+  setStatus("plug", "wait", "Recherche de ton iPhone…", plugHint(result.windowsStage));
+}
+
+function plugHint(stage) {
+  if (stage === "apple-missing" || stage === "service-stopped" || stage === "driver-missing") {
+    return "Clique sur le bouton ci-dessous, Anyloc s'occupe du reste.";
+  }
+  if (stage === "no-device") {
+    return "Ton ordinateur ne voit pas l'iPhone. Essaie un autre câble (certains ne font que charger) ou un autre port USB.";
+  }
+  return "Branche-le avec un câble USB, puis déverrouille-le.";
+}
+
+// The "Faire confiance" prompt, asked for right here rather than mid-way
+// through a later step.
+async function trustPlugged(run, deviceName) {
+  guide.trusting = true;
+  setStatus("plug", "wait", `${deviceName} détecté`, "Déverrouille-le et appuie sur « Faire confiance », puis entre ton code.");
+
+  try {
+    for (;;) {
+      const result = await window.anylocSetup.trustDevice({ udid: guide.udid });
+      if (run !== guide.run || guide.current !== "plug") return;
+
+      if (result.trusted) {
+        guide.trusted = true;
+        setStatus("plug", "ok", `${deviceName} connecté`, "");
+        renderPlugButton();
+        return;
+      }
+
+      if (result.reason === "error") {
+        // Unplugged meanwhile: go back to waiting for it.
+        guide.udid = null;
+        setStatus("plug", "wait", "Recherche de ton iPhone…", "Branche-le avec un câble USB, puis déverrouille-le.");
+        guide.usbTimer = setInterval(() => void checkPlug(run), 2500);
+        return;
+      }
+
+      const hints = {
+        locked: "Déverrouille ton iPhone : la question « Faire confiance » va s'afficher.",
+        denied: "Tu as refusé sur l'iPhone. Débranche-le, rebranche-le et appuie cette fois sur « Faire confiance ».",
+        pending: "Sur l'iPhone, appuie sur « Faire confiance » puis entre ton code.",
+      };
+      setStatus("plug", "wait", `${deviceName} détecté`, hints[result.reason] || hints.pending);
+      await new Promise((r) => setTimeout(r, 2000));
+      if (run !== guide.run) return;
+    }
+  } finally {
+    guide.trusting = false;
   }
 }
 
 function renderPlugButton() {
   const btn = $("guide-plug-next");
-  btn.disabled = !(guide.udid && guide.eligibilityKnown && guide.current === "plug");
-  btn.textContent = guide.udid && guide.appEligible ? "Installer l'app sur mon iPhone" : "Continuer";
+  const ready = Boolean(guide.udid && guide.trusted);
+  btn.disabled = !(ready && guide.eligibilityKnown && guide.current === "plug");
+  btn.textContent = ready && guide.appEligible ? "Installer l'app sur mon iPhone" : "Continuer";
 }
 
-const ITUNES_DOWNLOAD_URL = "https://www.apple.com/itunes/download/win64";
+// ── Windows: Apple's service and USB driver, installed in one click ──
 
-function openItunesDownload() {
-  void window.anylocSetup.openExternal(ITUNES_DOWNLOAD_URL);
+const WINDOWS_STAGES = {
+  "apple-missing": {
+    title: "Windows a besoin d'un composant Apple pour voir ton iPhone.",
+    text: "Anyloc le télécharge depuis apple.com et l'installe pour toi (2 à 3 minutes). Quand Windows demande l'autorisation, réponds « Oui ».",
+    button: "Préparer Windows",
+  },
+  "service-stopped": {
+    title: "Le service Apple de Windows est arrêté.",
+    text: "Clique pour le relancer. Quand Windows demande l'autorisation, réponds « Oui ».",
+    button: "Réparer",
+  },
+  "driver-missing": {
+    title: "Windows voit ton iPhone, mais seulement pour les photos.",
+    text: "Clique pour installer le pilote Apple. Quand Windows demande l'autorisation, réponds « Oui ».",
+    button: "Réparer",
+  },
+};
+
+let windowsRepairing = false;
+
+function renderWindowsBox(stage) {
+  if (windowsRepairing) return;
+  const box = $("guide-windows-box");
+  const info = WINDOWS_STAGES[stage];
+  box.hidden = !info;
+  if (!info) return;
+  $("guide-windows-title").textContent = info.title;
+  $("guide-windows-text").textContent = info.text;
+  $("guide-windows-btn").textContent = info.button;
 }
 
-let driverInstalling = false;
-let driverNote = null; // last install outcome, kept across polls
+async function prepareWindows() {
+  const btn = $("guide-windows-btn");
+  const wrap = $("guide-windows-progress");
+  const bar = $("guide-windows-progress-bar");
+  windowsRepairing = true;
+  btn.hidden = true;
+  wrap.hidden = false;
+  bar.style.width = "3%";
+  $("guide-windows-text").textContent = "Préparation…";
+  const cleanup = window.anylocSetup.onWindowsProgress((p) => {
+    if (p.pct) bar.style.width = `${p.pct}%`;
+    if (p.message) $("guide-windows-text").textContent = p.message;
+  });
 
-// Windows: the iPhone is plugged in but only has the generic photo driver.
-function renderDriverBox(result) {
-  const box = $("guide-driver-box");
-  if (!box || driverInstalling) return;
-  box.hidden = !result?.driverMissing;
-  if (box.hidden) return;
-
-  const canInstall = Boolean(result.driverInfAvailable);
-  $("guide-driver-install-btn").hidden = !canInstall;
-  $("guide-driver-itunes-btn").hidden = canInstall;
-  $("guide-driver-text").textContent = driverNote || (canInstall
-    ? "Clique ci-dessous et accepte la demande de Windows."
-    : "Installe iTunes depuis apple.com (pas le Microsoft Store), puis redémarre le PC.");
-}
-
-async function installAppleDriver() {
-  const btn = $("guide-driver-install-btn");
-  driverInstalling = true;
-  btn.disabled = true;
-  btn.textContent = "Installation…";
   try {
-    const result = await window.anylocSetup.installAppleDriver();
-    driverNote = result.message;
-    $("guide-driver-text").textContent = result.message;
-    if (result.needsItunes) {
-      btn.hidden = true;
-      $("guide-driver-itunes-btn").hidden = false;
+    const result = await window.anylocSetup.prepareWindows();
+    if (result.ok) {
+      $("guide-windows-box").hidden = true;
+      setStatus("plug", "wait", "Windows est prêt", "Débranche et rebranche ton iPhone, puis déverrouille-le.");
+    } else {
+      $("guide-windows-title").textContent = "Ça n'a pas marché.";
+      $("guide-windows-text").textContent = result.message;
+      btn.textContent = "Réessayer";
     }
   } finally {
-    btn.disabled = false;
-    btn.textContent = "Installer le pilote Apple";
-    driverInstalling = false;
+    cleanup();
+    wrap.hidden = true;
+    btn.hidden = false;
+    windowsRepairing = false;
   }
+}
+
+async function copyDiagnostic() {
+  const btn = $("guide-copy-diagnostic");
+  await window.anylocSetup.copyDiagnostic();
+  btn.textContent = "Diagnostic copié : colle-le dans le chat du support";
 }
 
 // ── Step: install the iPhone app ──
@@ -560,8 +639,8 @@ async function init() {
   });
 
   // Guide
-  $("guide-driver-itunes-btn")?.addEventListener("click", openItunesDownload);
-  $("guide-driver-install-btn")?.addEventListener("click", () => void installAppleDriver());
+  $("guide-windows-btn").addEventListener("click", () => void prepareWindows());
+  $("guide-copy-diagnostic").addEventListener("click", () => void copyDiagnostic());
   $("guide-skip-btn").addEventListener("click", finishGuide);
   $("guide-plug-next").addEventListener("click", nextStep);
   $("guide-plug-retry").addEventListener("click", () => goToStep("plug"));
