@@ -21,17 +21,20 @@ export function CheckoutView({
   canceled,
   stripePublishableKey,
   recoveryOffer,
+  focusPayment: initialFocusPayment,
 }: {
   initialPlanId: string;
   canceled?: boolean;
   stripePublishableKey: string;
   recoveryOffer?: boolean;
+  focusPayment?: boolean;
 }) {
   const router = useRouter();
   const [selectedPlanId, setSelectedPlanId] = useState(
     normalizeCheckoutPlan(initialPlanId)
   );
   const [destination, setDestination] = useState<OnboardingDestination | undefined>();
+  const [focusPayment, setFocusPayment] = useState(Boolean(initialFocusPayment));
 
   useEffect(() => {
     try {
@@ -77,6 +80,8 @@ export function CheckoutView({
           destination={destination}
           canceled={canceled}
           recoveryOffer={recoveryOffer}
+          focusPayment={focusPayment}
+          onShowAllPlans={() => setFocusPayment(false)}
         />
       </main>
 

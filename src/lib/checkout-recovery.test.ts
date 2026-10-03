@@ -52,11 +52,21 @@ describe("getDueRecoveryStep", () => {
 describe("isRecoveryOfferActive", () => {
   const offerExpiresAt = getRecoveryOfferExpiry(start);
 
-  it("opens with the second email and closes 96 h after the first checkout", () => {
+  it("ends at midnight Paris on the day 96 h after the first checkout", () => {
+    // 2026-10-03 10:00 UTC + 96 h = Wed 7 Oct 12:00 Paris → 23:59:59 Paris (21:59:59 UTC).
+    assert.equal(offerExpiresAt.toISOString(), "2026-10-07T21:59:59.000Z");
+    // Winter time: 2026-11-02 10:00 UTC + 96 h → Fri 6 Nov 23:59:59 Paris (22:59:59 UTC).
+    assert.equal(
+      getRecoveryOfferExpiry(new Date("2026-11-02T10:00:00Z")).toISOString(),
+      "2026-11-06T22:59:59.000Z"
+    );
+  });
+
+  it("opens with the second email and closes at the expiry", () => {
     assert.equal(isRecoveryOfferActive(state({ stepsSent: 1, offerExpiresAt }), at(25)), false);
     assert.equal(isRecoveryOfferActive(state({ stepsSent: 2, offerExpiresAt }), at(25)), true);
-    assert.equal(isRecoveryOfferActive(state({ stepsSent: 3, offerExpiresAt }), at(95)), true);
-    assert.equal(isRecoveryOfferActive(state({ stepsSent: 3, offerExpiresAt }), at(96)), false);
+    assert.equal(isRecoveryOfferActive(state({ stepsSent: 3, offerExpiresAt }), at(107)), true);
+    assert.equal(isRecoveryOfferActive(state({ stepsSent: 3, offerExpiresAt }), at(108)), false);
   });
 
   it("is off once the user paid", () => {
@@ -85,7 +95,7 @@ describe("buildRecoveryEmail", () => {
 
   it("keeps the chosen plan and gives no discount in the first email", () => {
     const email = buildRecoveryEmail({ ...base, step: 1, offerExpiresAt: null });
-    assert.match(email.text, /checkout\?plan=annual&utm_source=email/);
+    assert.match(email.text, /checkout\?plan=annual&paiement=1&utm_source=email/);
     assert.doesNotMatch(email.text, /4,95/);
     assert.match(email.html, /Ne plus recevoir ces emails/);
   });
@@ -98,6 +108,7 @@ describe("buildRecoveryEmail", () => {
     });
     assert.match(email.subject, /4,95/);
     assert.match(email.text, /checkout\?plan=monthly&.*utm_content=step2/);
-    assert.match(email.text, /valable jusqu'à/);
+    // 96 h after 2026-10-03 10:00 UTC, day only.
+    assert.match(email.text, /valable jusqu'à mercredi 7 octobre\./);
   });
 });

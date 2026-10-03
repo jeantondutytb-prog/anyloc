@@ -19,7 +19,7 @@ export const RECOVERY_STEPS = [
 
 export type RecoveryStep = (typeof RECOVERY_STEPS)[number]["step"];
 
-/** The -50 % stays valid one day after the last email. */
+/** The -50 % lasts until the end of the day one day after the last email. */
 export const RECOVERY_OFFER_WINDOW_MS = 96 * HOUR_MS;
 
 /** Past this, a stalled sequence is dropped rather than resumed. */
@@ -56,8 +56,44 @@ export function getDueRecoveryStep(state: RecoveryState, now: Date): RecoverySte
   return due;
 }
 
+const PARIS = "Europe/Paris";
+
+/** Minutes Paris is ahead of UTC at `date` (60 in winter, 120 in summer). */
+function getParisOffsetMinutes(date: Date) {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: PARIS,
+      hourCycle: "h23",
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+    })
+      .formatToParts(date)
+      .map((part) => [part.type, Number(part.value)])
+  );
+  const asUtc = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute);
+  return Math.round((asUtc - date.getTime()) / 60000);
+}
+
+/**
+ * End (23:59:59 Paris) of the day 96 h after the first checkout: emails only
+ * name the day, so the offer lasts that whole day.
+ */
 export function getRecoveryOfferExpiry(firstCheckoutAt: Date) {
-  return new Date(firstCheckoutAt.getTime() + RECOVERY_OFFER_WINDOW_MS);
+  const target = new Date(firstCheckoutAt.getTime() + RECOVERY_OFFER_WINDOW_MS);
+  const offset = getParisOffsetMinutes(target);
+  const parisWallClock = new Date(target.getTime() + offset * 60000);
+  const endOfDayWallClock = Date.UTC(
+    parisWallClock.getUTCFullYear(),
+    parisWallClock.getUTCMonth(),
+    parisWallClock.getUTCDate(),
+    23,
+    59,
+    59
+  );
+  return new Date(endOfDayWallClock - offset * 60000);
 }
 
 export function isRecoveryOfferActive(state: RecoveryState, now: Date) {
@@ -93,9 +129,9 @@ export function verifyUnsubscribeToken(userId: string, token: string) {
 function formatOfferDeadline(date: Date) {
   return new Intl.DateTimeFormat("fr-FR", {
     weekday: "long",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "Europe/Paris",
+    day: "numeric",
+    month: "long",
+    timeZone: PARIS,
   }).format(date);
 }
 
@@ -124,7 +160,7 @@ export function buildRecoveryEmail({
 }): RecoveryEmail {
   const checkoutPlan = step === 1 ? planId : RECOVERY_OFFER_PLAN_ID;
   const ctaUrl =
-    `${appUrl}/checkout?plan=${encodeURIComponent(checkoutPlan)}` +
+    `${appUrl}/checkout?plan=${encodeURIComponent(checkoutPlan)}&paiement=1` +
     `&utm_source=email&utm_medium=email&utm_campaign=checkout_recovery&utm_content=step${step}`;
   const deadline = offerExpiresAt ? formatOfferDeadline(offerExpiresAt) : null;
 
@@ -152,7 +188,7 @@ export function buildRecoveryEmail({
       subject: `Dernier jour pour ton mois à ${RECOVERY_OFFER_PRICE}`,
       paragraphs: [
         "Salut,",
-        `Petit rappel : ton premier mois à ${RECOVERY_OFFER_PRICE} au lieu de ${RECOVERY_FULL_PRICE} expire bientôt${deadline ? ` (${deadline})` : ""}.`,
+        `Petit rappel : ton premier mois à ${RECOVERY_OFFER_PRICE} au lieu de ${RECOVERY_FULL_PRICE} expire ${deadline ? `${deadline} à minuit` : "bientôt"}.`,
         "Après, ce sera le prix normal. Sans engagement, annulable en 1 clic.",
       ],
       cta: "Profiter de -50 %",

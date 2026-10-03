@@ -75,6 +75,8 @@ export function AnyLocCheckoutPanel({
   onBack,
   canceled,
   recoveryOffer,
+  focusPayment,
+  onShowAllPlans,
 }: {
   selectedPlanId: string;
   onPlanChange: (planId: string) => void;
@@ -85,9 +87,14 @@ export function AnyLocCheckoutPanel({
   canceled?: boolean;
   /** The recovery email offer is live: the monthly checkout carries the -50 % coupon. */
   recoveryOffer?: boolean;
+  /** Arrived from an email: only the selected plan and the payment form, no sales page. */
+  focusPayment?: boolean;
+  onShowAllPlans?: () => void;
 }) {
   const copy = CHECKOUT_COPY;
   const checkoutPlans = getCheckoutPlans();
+  const selectedPlan =
+    checkoutPlans.find((plan) => plan.id === selectedPlanId) ?? checkoutPlans[0];
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -207,6 +214,8 @@ export function AnyLocCheckoutPanel({
       canceled: Boolean(canceled),
       destination_city: destination?.city,
       embedded_in_onboarding: Boolean(onBack),
+      focus_payment: Boolean(focusPayment),
+      recovery_offer: Boolean(recoveryOffer),
     });
     // Once per mount: plan changes are tracked by checkout_plan_selected.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -242,6 +251,29 @@ export function AnyLocCheckoutPanel({
         </p>
       ) : null}
 
+      {focusPayment ? (
+        <div className="mx-auto max-w-2xl text-center">
+          <h1 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+            {copy.focusTitle}
+          </h1>
+          <p className="mt-3 text-sm text-zinc-600 sm:text-base">
+            {selectedPlan.name} · {selectedPlan.price}
+            {selectedPlan.period}
+            {recoveryOffer && selectedPlanId === RECOVERY_OFFER_PLAN_ID
+              ? ` · ${copy.focusOfferNote}`
+              : ""}
+          </p>
+          <button
+            type="button"
+            onClick={onShowAllPlans}
+            data-track="checkout_show_all_plans_clicked"
+            className="mt-2 text-sm text-zinc-500 underline transition hover:text-zinc-900"
+          >
+            {copy.focusShowAllPlans}
+          </button>
+        </div>
+      ) : (
+      <>
       <p className="text-center text-xs font-semibold text-pink-600">
         {copy.scarcity}
       </p>
@@ -369,6 +401,9 @@ export function AnyLocCheckoutPanel({
           );
         })}
       </div>
+
+      </>
+      )}
 
       <RefundPolicyNotice className="mt-8 text-center text-sm text-zinc-600" />
 

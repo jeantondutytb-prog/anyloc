@@ -10,9 +10,16 @@ import { getSubscriptionAccessForUser } from "@/lib/subscription";
 export default async function CheckoutPage({
   searchParams,
 }: {
-  searchParams: Promise<{ plan?: string; canceled?: string; preview?: string }>;
+  searchParams: Promise<{
+    plan?: string;
+    canceled?: string;
+    preview?: string;
+    paiement?: string;
+  }>;
 }) {
-  const { plan, canceled, preview } = await searchParams;
+  const { plan, canceled, preview, paiement } = await searchParams;
+  // Email links (?paiement=1) open straight on the payment form.
+  const focusPayment = paiement === "1";
   // Local design preview without an account: /checkout?preview=1 under `next dev` only.
   const devPreview = process.env.NODE_ENV === "development" && preview === "1";
   const planId = plan ?? DEFAULT_PLAN_ID;
@@ -30,8 +37,12 @@ export default async function CheckoutPage({
     } = await supabase.auth.getUser();
 
     if (!user) {
+      // Email recipients already have an account: log them in, then come back here.
+      const next = focusPayment
+        ? `${getCheckoutUrl(planId)}&paiement=1`
+        : getCheckoutUrl(planId);
       redirect(
-        `/signup?plan=${planId}&next=${encodeURIComponent(getCheckoutUrl(planId))}`
+        `/${focusPayment ? "login" : "signup"}?plan=${planId}&next=${encodeURIComponent(next)}`
       );
     }
 
@@ -60,6 +71,7 @@ export default async function CheckoutPage({
       initialPlanId={planId}
       canceled={canceled === "true"}
       recoveryOffer={recoveryOffer}
+      focusPayment={focusPayment}
       stripePublishableKey={getStripePublishableKey()}
     />
   );
