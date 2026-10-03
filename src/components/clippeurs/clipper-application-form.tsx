@@ -19,7 +19,11 @@ const STEP_COUNT = 3;
 const inputClassName =
   "w-full rounded-xl border border-zinc-200 bg-white px-4 py-3.5 text-base text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-pink-500/50 focus:ring-2 focus:ring-pink-500/20";
 
-export function ClipperApplicationForm() {
+export function ClipperApplicationForm({
+  utmCampaign,
+}: {
+  utmCampaign?: string;
+}) {
   const [state, formAction, pending] = useActionState(
     submitClipperApplication,
     initialState
@@ -50,6 +54,7 @@ export function ClipperApplicationForm() {
     formData.set("firstName", firstName);
     formData.set("instagram", instagram);
     formData.set("website", honeypot);
+    if (utmCampaign) formData.set("utmCampaign", utmCampaign);
     startTransition(() => formAction(formData));
   }
 

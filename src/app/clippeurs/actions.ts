@@ -46,6 +46,8 @@ export async function submitClipperApplication(
         first_name: application.firstName,
         instagram: application.instagram,
         videos_per_day: application.videosPerDay,
+        // Sans campagne dans le lien, on garde la source d'une candidature précédente.
+        ...(application.utmCampaign ? { utm_campaign: application.utmCampaign } : {}),
         updated_at: new Date().toISOString(),
       },
       { onConflict: "instagram" }
@@ -59,7 +61,10 @@ export async function submitClipperApplication(
   await capturePostHogEvent({
     distinctId: user?.id ?? crypto.randomUUID(),
     event: "clipper_application_submitted",
-    properties: { videos_per_day: application.videosPerDay },
+    properties: {
+      videos_per_day: application.videosPerDay,
+      utm_campaign: application.utmCampaign,
+    },
   });
 
   return { submitted: true };

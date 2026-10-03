@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   normalizeInstagramHandle,
+  normalizeUtmCampaign,
   parseClipperApplication,
 } from "./clipper-application";
 
@@ -32,14 +33,43 @@ describe("normalizeInstagramHandle", () => {
   });
 });
 
+describe("normalizeUtmCampaign", () => {
+  it("keeps a clean campaign name", () => {
+    assert.equal(normalizeUtmCampaign(" Clippeurs_Mail3 "), "clippeurs_mail3");
+  });
+
+  it("drops missing or suspicious values", () => {
+    assert.equal(normalizeUtmCampaign(undefined), null);
+    assert.equal(normalizeUtmCampaign(""), null);
+    assert.equal(normalizeUtmCampaign("<script>"), null);
+  });
+});
+
 describe("parseClipperApplication", () => {
+  it("keeps the utm campaign of the link", () => {
+    const result = parseClipperApplication(
+      form({
+        videosPerDay: "1",
+        firstName: "Léa",
+        instagram: "lea",
+        utmCampaign: "clippeurs_mail3",
+      })
+    );
+    assert.equal(result.ok && result.application.utmCampaign, "clippeurs_mail3");
+  });
+
   it("returns a normalized application", () => {
     const result = parseClipperApplication(
       form({ videosPerDay: "2-3", firstName: " Léa ", instagram: "@Lea.Clips" })
     );
     assert.deepEqual(result, {
       ok: true,
-      application: { firstName: "Léa", instagram: "lea.clips", videosPerDay: "2-3" },
+      application: {
+        firstName: "Léa",
+        instagram: "lea.clips",
+        videosPerDay: "2-3",
+        utmCampaign: null,
+      },
     });
   });
 

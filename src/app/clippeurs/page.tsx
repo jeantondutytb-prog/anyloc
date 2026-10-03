@@ -19,7 +19,14 @@ const PERKS = [
   { icon: Rocket, label: "Pas besoin d'abonnés" },
 ];
 
-export default function ClippeursPage() {
+export default async function ClippeursPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ utm_campaign?: string | string[] }>;
+}) {
+  const { utm_campaign } = await searchParams;
+  const utmCampaign = Array.isArray(utm_campaign) ? utm_campaign[0] : utm_campaign;
+
   return (
     <MarketingShell>
       <section className="py-10 sm:py-20">
@@ -37,7 +44,7 @@ export default function ClippeursPage() {
           </ul>
 
           <Card className="mt-6 p-5 sm:p-7">
-            <ClipperApplicationForm />
+            <ClipperApplicationForm utmCampaign={utmCampaign} />
           </Card>
 
           <p className="mt-4 text-center text-xs text-zinc-500">
