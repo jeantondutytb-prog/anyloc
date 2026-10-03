@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Check, Download, Loader2, Monitor } from "lucide-react";
@@ -19,9 +19,11 @@ import { formatSubscriptionStatusLabel } from "@/lib/account-billing-types";
 import { getPlanDisplayName } from "@/lib/constants";
 import { dashboardHref, getDashboardBasePath } from "@/lib/dashboard-paths";
 import {
+  detectMacArch,
   getClientDeviceSnapshot,
   SERVER_CLIENT_DEVICE,
   type DesktopOs,
+  type MacArch,
 } from "@/lib/platform";
 
 /** L'abonnement du client inclut-il l'app iPhone ? L'appareil décide ensuite quelle app on montre. */
@@ -65,6 +67,7 @@ function DesktopDownloadCard({
   hasAccess,
   desktopOs,
   onDesktopOsChange,
+  macArch,
   mac,
   macIntel,
   windows,
@@ -75,13 +78,17 @@ function DesktopDownloadCard({
   hasAccess: boolean;
   desktopOs: DesktopOs;
   onDesktopOsChange: (os: DesktopOs) => void;
+  macArch: MacArch;
   mac?: DownloadAssetInfo;
   macIntel?: DownloadAssetInfo;
   windows?: DownloadAssetInfo;
   windowsZip?: DownloadAssetInfo;
   onDownload: (platform: string) => void;
 }) {
-  const asset = desktopOs === "win" ? windows : mac;
+  const intelFirst = macArch === "intel" && Boolean(macIntel?.available);
+  const macPrimary = intelFirst ? macIntel : mac;
+  const macSecondary = intelFirst ? mac : macIntel;
+  const asset = desktopOs === "win" ? windows : macPrimary;
   const href = preview ? "#" : hasAccess ? asset?.downloadPath : undefined;
 
   return (
@@ -113,12 +120,12 @@ function DesktopDownloadCard({
         >
           {desktopOs === "mac" ? "J'ai un PC Windows" : "J'ai un Mac"}
         </button>
-        {desktopOs === "mac" && hasAccess && !preview && macIntel?.available ? (
+        {desktopOs === "mac" && hasAccess && !preview && macSecondary?.available ? (
           <p className="mt-2 text-xs text-zinc-500">
-            Mac avec processeur Intel ?{" "}
+            {intelFirst ? "Mac avec puce Apple (M1, M2…) ?" : "Mac avec processeur Intel ?"}{" "}
             <a
-              href={macIntel.downloadPath}
-              onClick={() => onDownload(macIntel.id)}
+              href={macSecondary.downloadPath}
+              onClick={() => onDownload(macSecondary.id)}
               className="font-medium text-pink-600 underline-offset-2 hover:underline"
             >
               Télécharger cette version
@@ -166,6 +173,17 @@ export function PaidDashboardView({
     () => SERVER_CLIENT_DEVICE
   );
   const [desktopOs, setDesktopOs] = useState<DesktopOs>(device.desktopOs);
+  const [macArch, setMacArch] = useState<MacArch>("unknown");
+  useEffect(() => {
+    if (device.isPhone || device.desktopOs !== "mac") return;
+    let active = true;
+    void detectMacArch().then((arch) => {
+      if (active) setMacArch(arch);
+    });
+    return () => {
+      active = false;
+    };
+  }, [device.isPhone, device.desktopOs]);
   const showIphoneInstall = track === "iphone" && device.isIos;
 
   const assets = preview ? PREVIEW_ASSETS : data?.assets ?? [];
@@ -218,6 +236,7 @@ export function PaidDashboardView({
         hasAccess={hasAccess}
         desktopOs={desktopOs}
         onDesktopOsChange={setDesktopOs}
+        macArch={macArch}
         mac={mac}
         macIntel={macIntel}
         windows={windows}
