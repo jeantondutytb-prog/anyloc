@@ -23,7 +23,10 @@ contextBridge.exposeInMainWorld("anylocSetup", {
       udid: "preview-udid",
     }),
   openExternal: () => Promise.resolve(),
-  installAppleDriver: () => Promise.resolve({ ok: true, message: "Pilote Apple installé." }),
+  trustDevice: () => wait(1200, { trusted: true }),
+  prepareWindows: () => wait(1500, { ok: true }),
+  onWindowsProgress: () => () => {},
+  copyDiagnostic: () => Promise.resolve({ ok: true }),
   // Simulates the customer enabling Developer Mode a few seconds in.
   revealDevMode: () => Promise.resolve({ ok: true, enabled: false }),
   getLocalDevVpnQr: () => ipcRenderer.invoke("setup:localdevvpn-qr"),

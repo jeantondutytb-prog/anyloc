@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, Tray, Menu, nativeImage, powerSaveBlocker } = require("electron");
+const { app, BrowserWindow, ipcMain, shell, clipboard, Tray, Menu, nativeImage, powerSaveBlocker } = require("electron");
 const { spawn: spawnChild } = require("node:child_process");
 const path = require("path");
 const {
@@ -14,6 +14,7 @@ const {
   ensureWifiPairing,
   pushPairingToApp,
   installIphoneApp,
+  trustDevice,
   resolvePythonExecutable,
   resolvePymobiledevice3Cli,
   missingToolsMessage,
@@ -22,7 +23,7 @@ const {
   getScriptsDir,
 } = require("./usb");
 const { ensurePymobiledevice3, isBundleReady, isBundleCurrent, removeLegacyEnv } = require("./python-setup");
-const { ITUNES_DOWNLOAD_URL, checkAppleDriver, installAppleDriver } = require("./windows-driver");
+const { diagnoseWindows, repairWindows } = require("./windows-driver");
 
 const SUPABASE_URL =
   process.env.ANYLOC_SUPABASE_URL || "https://gqkxnktprctdvpwvnqli.supabase.co";
@@ -872,23 +873,50 @@ function pairForApp(udid) {
   });
 }
 
+// Last USB check, for "Copier le diagnostic".
+let lastUsbCheck = null;
+
 ipcMain.handle("setup:check-usb", async (_event, payload) => {
   const device = await detectUsbDevice({
     installTools: payload?.installTools !== false,
   });
   if (device.connected) pairForWifi(device.udid);
   if (device.connected) pairForApp(device.udid);
-  // Windows sees the iPhone but usbmux can't: Apple's USB driver is missing.
-  const appleDriver = !device.connected && process.platform === "win32" ? await checkAppleDriver() : null;
+  // Windows needs Apple's service + USB driver before usbmux sees anything.
+  const windows = !device.connected && process.platform === "win32" ? await diagnoseWindows() : null;
+  lastUsbCheck = { at: new Date().toISOString(), ...device, windows };
   return {
     ...device,
     wifiPaired: hasWifiPairing(device.connected ? device.udid : null),
-    driverMissing: appleDriver?.status === "missing",
-    driverInfAvailable: Boolean(appleDriver?.infAvailable),
+    windowsStage: windows?.stage ?? null,
   };
 });
 
-ipcMain.handle("setup:install-apple-driver", async () => installAppleDriver());
+ipcMain.handle("setup:trust-device", async (_event, payload) => {
+  const result = await trustDevice({ udid: payload?.udid ?? null });
+  if (result.error) console.warn("[trust]", result.error);
+  lastUsbCheck = { ...lastUsbCheck, trust: result };
+  return result;
+});
+
+ipcMain.handle("setup:prepare-windows", async (event) => {
+  const result = await repairWindows((progress) => {
+    try { event.sender.send("setup:windows-progress", progress); } catch {}
+  });
+  lastUsbCheck = { ...lastUsbCheck, repair: { ok: result.ok, diagnosis: result.diagnosis } };
+  return result;
+});
+
+ipcMain.handle("setup:copy-diagnostic", () => {
+  const report = {
+    app: app.getVersion(),
+    os: `${process.platform} ${require("node:os").release()} ${process.arch}`,
+    toolsReady: isBundleReady(),
+    usb: lastUsbCheck,
+  };
+  clipboard.writeText(JSON.stringify(report, null, 2));
+  return { ok: true };
+});
 
 ipcMain.handle("setup:open-external", async (_event, url) => {
   const raw = String(url || "");
@@ -896,7 +924,6 @@ ipcMain.handle("setup:open-external", async (_event, url) => {
 
   const allowedExact = new Set([
     "https://www.python.org/downloads/windows/",
-    ITUNES_DOWNLOAD_URL,
   ]);
   if (allowedExact.has(raw)) {
     await shell.openExternal(raw);
