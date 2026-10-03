@@ -8,6 +8,7 @@ import {
   CircleReveal,
   type CircleRevealOrigin,
 } from "@/components/ui/circle-reveal";
+import { readOnboardingVariantCookie } from "@/lib/onboarding-experiment";
 
 // The onboarding map opens on Paris at zoom 12 (see onboarding-app-map.tsx).
 const START = { lat: 48.8566, lng: 2.3522, zoom: 12 };
@@ -91,10 +92,13 @@ export function OnboardingLink({
       x: event.clientX || rect.left + rect.width / 2,
       y: event.clientY || rect.top + rect.height / 2,
     };
-    // Mobile shows the app full screen (dark); desktop frames it on the page background.
-    const color = window.matchMedia("(min-width: 640px)").matches
-      ? "var(--background)"
-      : "#0A0A0C";
+    // Mobile shows the app full screen (dark); desktop frames it on the page
+    // background. The 2-step onboarding (A/B test) is light everywhere.
+    const color =
+      readOnboardingVariantCookie() === "two_step" ||
+      window.matchMedia("(min-width: 640px)").matches
+        ? "var(--background)"
+        : "#0A0A0C";
 
     setReveal({ origin, color });
     // Navigate once the circle mostly covers the page; the old page stays
