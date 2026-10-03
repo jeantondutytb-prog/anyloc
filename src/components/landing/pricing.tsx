@@ -9,7 +9,7 @@ import {
 } from "@/lib/constants";
 import { PaywallValueStack } from "@/components/pricing/paywall-value-stack";
 import { PlanPrice } from "@/components/pricing/plan-price";
-import { RefundGuaranteeNotice } from "@/components/pricing/refund-guarantee-notice";
+import { RefundPolicyNotice } from "@/components/pricing/refund-policy-notice";
 import { OnboardingLink } from "@/components/onboarding/onboarding-link";
 
 export function Pricing() {
@@ -61,6 +61,7 @@ export function Pricing() {
               <p className="mt-2 text-sm text-zinc-500">{plan.description}</p>
 
               <PaywallValueStack
+                mobileApp={plan.mobileApp}
                 className="mt-5 flex-1 border-t border-zinc-100 pt-5"
                 compact
                 showHeading
@@ -84,7 +85,7 @@ export function Pricing() {
           ))}
         </div>
 
-        <RefundGuaranteeNotice className="mt-8 text-center text-sm text-zinc-600" />
+        <RefundPolicyNotice className="mt-8 text-center text-sm text-zinc-600" />
       </div>
     </section>
   );

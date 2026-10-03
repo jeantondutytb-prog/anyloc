@@ -45,19 +45,17 @@ export const CHECKOUT_COPY = {
   ],
   selectTitle: "Choisis ta durée",
   selectSub: CHECKOUT_SELECT_SUBLINE,
-  guaranteeBadge: "Garantie 48 h",
   perksTitle: "Inclus dans ton accès",
   payTitle: "Active ton accès complet",
   paySub: "Paiement sécurisé — accès immédiat à toutes les fonctionnalités.",
   payOpening: "On prépare ton paiement…",
   updating: "Mise à jour du plan…",
   stickyTitle: "Accès complet",
-  stickySub: "Paiement sécurisé · Garantie 48 h",
+  stickySub: "Paiement sécurisé · Accès immédiat",
   stickyCta: "Payer maintenant ↓",
   trust: [
     "🔒 Paiement sécurisé",
     "· Annulation en 1 clic",
-    "· Garantie remboursement 48 h",
   ],
   reassure: [
     "Paiement 100% sécurisé",
@@ -67,14 +65,14 @@ export const CHECKOUT_COPY = {
   secureTitle: "Paiement 100% sécurisé",
   ssl: "SSL · chiffrement 256 bits · Stripe",
   consent:
-    "En validant, tu acceptes nos {cgv}. Gère ton abonnement depuis ton espace client.",
+    "En validant, tu acceptes nos {cgv}, tu demandes l'accès immédiat au service et tu renonces à ton droit de rétractation de 14 jours. Aucun remboursement une fois l'accès débloqué.",
   consentCgv: "conditions générales",
   faqTitle: "T'as des questions ? Normal.",
   faq: [
     {
       q: "Ma carte sera débitée tout de suite ?",
       a:
-        "Oui. Tu paies à la validation et tu as accès tout de suite. Tu peux annuler en 1 clic depuis ton espace — la résiliation coupe l'accès immédiatement. Garantie 48 h si le GPS ne fonctionne pas.",
+        "Oui. Tu paies à la validation et tu as accès tout de suite. Tu peux annuler en 1 clic depuis ton espace — la résiliation coupe l'accès immédiatement. L'accès étant immédiat, aucun remboursement n'est possible après paiement.",
     },
     {
       q: "Ça marche sur quelles apps ?",
@@ -89,7 +87,7 @@ export const CHECKOUT_COPY = {
     {
       q: "Ça passe sur iPhone et Android ?",
       a:
-        "Oui. Sur Android : 3 étapes sur le tel. Sur iPhone : un Mac ou un PC une seule fois (limite Apple), puis tu gères ta loc depuis l'iPhone — sans rebrancher l'ordi.",
+        "Oui. Sur Android : 3 étapes sur le tel, aucun ordinateur requis. Sur iPhone : un ordinateur (Mac ou PC) est obligatoire une fois pour l'installation (limite Apple), puis tu gères ta loc depuis l'iPhone — sans rebrancher l'ordi. Pas d'ordi ? Prends le plan seulement si tu peux en emprunter un.",
     },
   ],
   proofTitle: "Même pin sur Snap et sur Plans",

@@ -1,6 +1,6 @@
 import type { User } from "@supabase/supabase-js";
 import type Stripe from "stripe";
-import type { Plan } from "@/lib/constants";
+import { DEVICE_REQUIREMENT_NOTE, type Plan } from "@/lib/constants";
 import { ensureStripeCustomerForUser } from "@/lib/billing";
 import { getAppUrl, stripe } from "@/lib/stripe";
 
@@ -22,6 +22,14 @@ function withAnalyticsId(
     ...params,
     metadata: { ...params.metadata, posthog_distinct_id: analyticsId },
   };
+}
+
+/** Device requirement shown above the Stripe pay button. */
+function getDeviceRequirementParams(): Pick<
+  Stripe.Checkout.SessionCreateParams,
+  "custom_text"
+> {
+  return { custom_text: { submit: { message: DEVICE_REQUIREMENT_NOTE } } };
 }
 
 function getCheckoutReturnUrl() {
@@ -129,12 +137,15 @@ export async function createSubscriptionCheckoutSession({
 
   const returnUrl = getCheckoutReturnUrl();
 
-  const sharedParams = withAnalyticsId(
-    user?.id
-      ? await buildAuthenticatedCheckoutParams(plan, user)
-      : buildGuestCheckoutParams(plan),
-    analyticsId
-  );
+  const sharedParams = {
+    ...withAnalyticsId(
+      user?.id
+        ? await buildAuthenticatedCheckoutParams(plan, user)
+        : buildGuestCheckoutParams(plan),
+      analyticsId
+    ),
+    ...getDeviceRequirementParams(),
+  };
 
   if (uiMode === "embedded_page") {
     return stripe.checkout.sessions.create({

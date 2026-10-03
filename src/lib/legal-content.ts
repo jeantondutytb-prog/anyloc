@@ -19,7 +19,7 @@ export type LegalPageContent = {
   sections: LegalPageSection[];
 };
 
-const LAST_UPDATED = "10 septembre 2026";
+const LAST_UPDATED = "3 octobre 2026";
 
 export const LEGAL_PAGES: Record<string, LegalPageContent> = {
   "conditions-generales": {
@@ -40,6 +40,7 @@ export const LEGAL_PAGES: Record<string, LegalPageContent> = {
         title: "2. Description du service",
         paragraphs: [
           "Anyloc est un service numérique permettant de modifier la localisation GPS affichée par ton appareil sur les applications compatibles. L'accès au service nécessite la création d'un compte et, selon les fonctionnalités, un abonnement payant.",
+          "Prérequis matériel : sur iPhone, un ordinateur (Mac ou PC) est obligatoire une fois pour l'installation. Sur Android, aucun ordinateur n'est requis. Ce prérequis est indiqué sur chaque offre avant l'achat ; il t'appartient de le vérifier avant de payer.",
         ],
       },
       {
@@ -53,6 +54,7 @@ export const LEGAL_PAGES: Record<string, LegalPageContent> = {
         paragraphs: [
           "Les tarifs en vigueur sont affichés sur la page Tarification. Les paiements sont traités de manière sécurisée par Stripe. L'abonnement est renouvelé automatiquement à chaque échéance, sauf résiliation depuis ton espace client.",
           "En cas de résiliation, l'abonnement prend fin immédiatement et l'accès au service est coupé sans délai.",
+          "Droit de rétractation : l'accès au service est fourni immédiatement après le paiement. En validant le paiement, tu demandes l'exécution immédiate et renonces expressément à ton droit de rétractation de 14 jours (art. L221-28 13° du code de la consommation). Les sommes payées ne sont donc pas remboursables, dans les conditions de la politique de remboursement.",
         ],
       },
       {
@@ -256,60 +258,56 @@ export const LEGAL_PAGES: Record<string, LegalPageContent> = {
   "politique-de-remboursement": {
     title: "Politique de remboursement",
     description:
-      "Conditions de remboursement et garantie commerciale Anyloc.",
+      "Anyloc est un service numérique fourni immédiatement : les achats ne sont pas remboursables.",
     path: "/politique-de-remboursement",
     lastUpdated: LAST_UPDATED,
     sections: [
       {
-        title: "1. La garantie « pas de résultat en 48 h »",
+        title: "1. Pas de remboursement",
         paragraphs: [
-          "Anyloc s'engage à te rembourser l'intégralité de la somme payée si, après avoir suivi la méthode d'installation et testé le service pendant 48 heures, tu n'as pas réussi à modifier ta localisation GPS sur au moins une application compatible (Snapchat, Instagram, Tinder, jeu mobile, etc.).",
-          "Cette garantie est un engagement commercial volontaire. Elle s'ajoute à tes droits légaux, elle ne les remplace pas — voir le point 5.",
+          "Anyloc est un service numérique : ton accès est débloqué dès la validation du paiement. Les achats sont donc fermes et définitifs. Aucun remboursement, total ou partiel (y compris au prorata), n'est effectué une fois l'accès débloqué.",
         ],
       },
       {
-        title: "2. Conditions à remplir",
+        title: "2. Renonciation au droit de rétractation",
         paragraphs: [
-          "Les trois conditions suivantes sont cumulatives. Elles sont affichées sur la page de tarifs, avant l'achat.",
+          "En validant le paiement, tu acceptes les conditions générales, tu demandes l'accès immédiat au service et tu renonces expressément à ton droit de rétractation de 14 jours (art. L221-28 13° du code de la consommation).",
+          "Cette mention figure juste sous le formulaire de paiement, avant la validation.",
+        ],
+      },
+      {
+        title: "3. Vérifie la compatibilité avant d'acheter",
+        paragraphs: [
+          "Sur iPhone, un ordinateur (Mac ou PC) est obligatoire une fois pour l'installation. Sur Android, aucun ordinateur n'est requis. Ce prérequis est affiché sur chaque offre et dans le formulaire de paiement.",
+        ],
+      },
+      {
+        title: "4. Cas qui ne donnent pas lieu à remboursement",
+        list: [
+          "Absence d'ordinateur pour installer Anyloc sur iPhone.",
+          "Changement d'avis après l'achat, ou achat d'une solution similaire ailleurs.",
+          "Installation non réalisée ou guide d'installation non suivi.",
+          "Restriction propre à ton appareil ou à une application tierce, indépendante d'Anyloc.",
+          "Période en cours après une résiliation (pas de remboursement au prorata).",
+          "Renouvellement automatique non résilié avant sa date d'échéance.",
+        ],
+      },
+      {
+        title: "5. Ce qui reste remboursé",
+        paragraphs: [
+          "Les situations suivantes ne relèvent pas d'un changement d'avis et sont toujours régularisées :",
         ],
         list: [
-          "Installation complète : tu dois avoir suivi l'intégralité du guide d'installation correspondant à ton appareil (iOS ou Android), disponible dans ton espace client, et appliqué chaque étape requise.",
-          "Délai : la demande doit être faite dans les 48 heures suivant ton achat. Passé ce délai, la garantie ne s'applique plus.",
-          "Abonnement actif : tu ne dois pas avoir résilié ton abonnement avant d'avoir fait la demande. Une résiliation vaut renoncement à cette garantie.",
+          "Double prélèvement ou erreur de facturation de notre part.",
+          "Renouvellement débité alors que tu avais résilié avant l'échéance.",
+          "Défaut de conformité : si le service ne fonctionne pas comme décrit et que nous ne parvenons pas à le corriger, tu conserves les droits de la garantie légale de conformité des contenus et services numériques (art. L224-25-12 et suivants du code de la consommation).",
         ],
       },
       {
-        title: "3. Comment faire la demande",
+        title: "6. Un problème ? Écris-nous d'abord",
         paragraphs: [
-          "Envoie un message à support@anyloc.io depuis l'adresse email de ton compte, en précisant ton appareil (iOS / Android, modèle si possible), les applications testées et l'étape à laquelle tu es bloqué.",
-          "Notre équipe peut te demander des captures d'écran pour vérifier que l'installation a bien été suivie. Nous répondons sous 72 heures.",
-        ],
-      },
-      {
-        title: "4. Ce qui n'ouvre pas droit au remboursement",
-        paragraphs: [
-          "Les cas suivants n'ouvrent pas droit au remboursement au titre de la garantie commerciale :",
-        ],
-        list: [
-          "Une demande faite après le délai de 48 heures (hors droit de rétractation légal, voir point 5).",
-          "Un abonnement résilié avant la demande.",
-          "Une installation incomplète ou non conforme au guide (mode développeur non activé, VPN non configuré sur iOS, etc.).",
-          "Un blocage lié à une restriction de l'appareil ou de l'application tierce indépendant d'Anyloc.",
-          "Une simple insatisfaction après utilisation réussie du service (localisation modifiée et fonctionnelle).",
-        ],
-      },
-      {
-        title: "5. Ton droit de rétractation légal",
-        paragraphs: [
-          "Indépendamment de la garantie ci-dessus, le droit français t'accorde un délai de rétractation de 14 jours pour les achats à distance (art. L221-18 du code de la consommation).",
-          "Pour un contenu numérique fourni immédiatement, ce droit s'éteint uniquement si tu as expressément consenti à l'exécution immédiate et renoncé à ta rétractation. En l'absence d'un tel consentement, tu conserves ces 14 jours sans condition — les conditions du point 2 ne s'y appliquent pas.",
-          "Autrement dit : la garantie « 48 h » est un bonus commercial plus rapide mais conditionné ; le droit de rétractation reste ton filet de sécurité inconditionnel.",
-        ],
-      },
-      {
-        title: "6. Modalités de remboursement",
-        paragraphs: [
-          "Les paiements sont encaissés par Stripe. Le remboursement est effectué sur le moyen de paiement d'origine, sous 14 jours à compter de l'acceptation de la demande.",
+          "Si tu es bloqué, contacte support@anyloc.io depuis l'adresse email de ton compte, en précisant ton appareil et l'étape qui coince. Notre équipe t'aide à finaliser l'installation.",
+          "Lorsqu'un remboursement est dû (point 5), il est effectué par Stripe sur le moyen de paiement d'origine, sous 14 jours.",
         ],
       },
       {
@@ -343,7 +341,7 @@ export const LEGAL_PAGES: Record<string, LegalPageContent> = {
         list: [
           "Ton accès est coupé sur-le-champ, pas à la fin de la période payée.",
           "Tu perds l'accès aux fonctionnalités GPS, au dashboard et aux téléchargements.",
-          "Si tu envisages une demande de remboursement au titre de la garantie « 48 h », fais-la avant de résilier — une résiliation vaut renoncement à cette garantie.",
+          "La période en cours n'est pas remboursée, même partiellement.",
         ],
       },
       {
