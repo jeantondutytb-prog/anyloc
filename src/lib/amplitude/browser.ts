@@ -84,3 +84,20 @@ export function trackAmplitudeEvent(
     console.error("[amplitude] Failed to track event", error);
   }
 }
+
+export async function setAmplitudeUserProperties(properties: Record<string, string>) {
+  try {
+    await initAmplitudeBrowser();
+    if (!isAmplitudeBrowserReady()) {
+      return;
+    }
+
+    const userProperties = new Identify();
+    for (const [key, value] of Object.entries(properties)) {
+      userProperties.set(key, value);
+    }
+    identify(userProperties);
+  } catch (error) {
+    console.error("[amplitude] Failed to set user properties", error);
+  }
+}

@@ -57,3 +57,18 @@ export function getPostHogDistinctId(): string | undefined {
 
   return posthog.get_distinct_id();
 }
+
+/**
+ * Attaches properties to every later event of this browser and to its person,
+ * so server events (e.g. a purchase) can be broken down by them too.
+ */
+export function registerPostHogProperties(properties: Record<string, unknown>) {
+  initPostHogBrowser();
+
+  if (!isPostHogBrowserReady()) {
+    return;
+  }
+
+  posthog.register(properties);
+  posthog.setPersonProperties(properties);
+}
