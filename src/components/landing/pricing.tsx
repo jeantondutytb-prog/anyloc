@@ -36,12 +36,7 @@ export function Pricing() {
                   : ""
               }`}
             >
-              {plan.popular && (
-                <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  Le plus populaire
-                </Badge>
-              )}
-              {plan.badge && !plan.popular && (
+              {plan.badge && (
                 <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
                   {plan.badge}
                 </Badge>

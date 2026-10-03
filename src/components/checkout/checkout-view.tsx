@@ -6,14 +6,14 @@ import { useRouter } from "next/navigation";
 import { Footer } from "@/components/layout/footer";
 import { AnyLocCheckoutPanel } from "@/components/pricing/anyloc-checkout-panel";
 import { Logo } from "@/components/ui/logo";
-import { isValidPlanId } from "@/lib/constants";
+import { DEFAULT_PLAN_ID, isValidPlanId } from "@/lib/constants";
 import {
   ONBOARDING_DESTINATION_KEY,
   type OnboardingDestination,
 } from "@/lib/onboarding-destinations";
 
 function normalizeCheckoutPlan(planId: string) {
-  return isValidPlanId(planId) ? planId : "annual";
+  return isValidPlanId(planId) ? planId : DEFAULT_PLAN_ID;
 }
 
 export function CheckoutView({

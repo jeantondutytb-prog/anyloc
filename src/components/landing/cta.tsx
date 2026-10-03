@@ -5,6 +5,7 @@ import {
   CHECKOUT_CTA_LABEL,
   CHECKOUT_CTA_SUBLINE,
   CHECKOUT_MARKETING_LINE,
+  DEFAULT_PLAN_ID,
   getOnboardingUrl,
 } from "@/lib/constants";
 import { OnboardingLink } from "@/components/onboarding/onboarding-link";
@@ -20,7 +21,7 @@ export function Cta() {
           {CHECKOUT_MARKETING_LINE}
         </p>
         <div className="mt-8 flex flex-col items-center gap-4">
-          <OnboardingLink href={getOnboardingUrl("annual")} data-track="cta_clicked" data-track-location="final_cta" data-track-plan="annual">
+          <OnboardingLink href={getOnboardingUrl(DEFAULT_PLAN_ID)} data-track="cta_clicked" data-track-location="final_cta" data-track-plan={DEFAULT_PLAN_ID}>
             <Button size="lg">
               {CHECKOUT_CTA_LABEL}
               <ArrowRight className="h-4 w-4" />

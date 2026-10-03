@@ -44,6 +44,27 @@ async function parseJsonResponse(res: Response) {
   }
 }
 
+/** Backoff between attempts when the request never reaches the server. */
+const NETWORK_RETRY_DELAYS_MS = [800, 2000];
+
+/**
+ * fetch rejects with a TypeError when the network drops the request
+ * ("Load failed" on Safari iOS, "Failed to fetch" on Chrome): worth retrying.
+ */
+function isNetworkError(err: unknown) {
+  return err instanceof TypeError;
+}
+
+function wait(ms: number, signal: AbortSignal) {
+  return new Promise<void>((resolve) => {
+    const timer = setTimeout(resolve, ms);
+    signal.addEventListener("abort", () => {
+      clearTimeout(timer);
+      resolve();
+    });
+  });
+}
+
 export function AnyLocCheckoutPanel({
   selectedPlanId,
   onPlanChange,
@@ -93,14 +114,35 @@ export function AnyLocCheckoutPanel({
     setError(null);
     const startedAt = performance.now();
 
+    let attempt = 0;
+
     try {
-      const res = await fetch("/api/stripe/embedded-checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        // Lets the webhook tie a purchase made without an account to this visit.
-        body: JSON.stringify({ planId, analyticsId: getPostHogDistinctId() }),
-        signal: controller.signal,
-      });
+      let res: Response;
+      for (;;) {
+        try {
+          res = await fetch("/api/stripe/embedded-checkout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            // Lets the webhook tie a purchase made without an account to this visit.
+            body: JSON.stringify({ planId, analyticsId: getPostHogDistinctId() }),
+            signal: controller.signal,
+          });
+          break;
+        } catch (err) {
+          const delay = NETWORK_RETRY_DELAYS_MS[attempt];
+          if (controller.signal.aborted || !isNetworkError(err) || delay === undefined) {
+            throw err;
+          }
+          attempt += 1;
+          track("checkout_network_retry", {
+            plan: planId,
+            attempt,
+            error: err instanceof Error ? err.message : String(err),
+          });
+          await wait(delay, controller.signal);
+          if (controller.signal.aborted) return;
+        }
+      }
       const data = await parseJsonResponse(res);
 
       if (!res.ok || !data.clientSecret) {
@@ -113,13 +155,25 @@ export function AnyLocCheckoutPanel({
           plan: planId,
           load_ms: Math.round(performance.now() - startedAt),
           retry: !isInitial,
+          network_retries: attempt,
         });
       }
     } catch (err) {
       if (controller.signal.aborted) return;
-      const message = err instanceof Error ? err.message : copy.errGeneric;
+      const networkError = isNetworkError(err);
+      const message = networkError
+        ? copy.errNetwork
+        : err instanceof Error
+          ? err.message
+          : copy.errGeneric;
       setError(message);
-      track("checkout_error", { plan: planId, error: message });
+      track("checkout_error", {
+        plan: planId,
+        error: err instanceof Error ? err.message : String(err),
+        error_type: networkError ? "network" : "server",
+        network_retries: attempt,
+        online: navigator.onLine,
+      });
     } finally {
       if (requestRef.current === controller) {
         setLoading(false);
@@ -262,12 +316,7 @@ export function AnyLocCheckoutPanel({
                   selected && "ring-2 ring-pink-500"
                 )}
               >
-                {plan.popular ? (
-                  <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    Le plus populaire
-                  </Badge>
-                ) : null}
-                {plan.badge && !plan.popular ? (
+                {plan.badge ? (
                   <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
                     {plan.badge}
                   </Badge>

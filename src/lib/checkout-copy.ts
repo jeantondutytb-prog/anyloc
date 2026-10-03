@@ -102,6 +102,8 @@ export const CHECKOUT_COPY = {
   backCta: "Changer de destination",
   errGeneric: "Une erreur est survenue. Réessaie dans quelques instants.",
   errStart: "Impossible de démarrer le paiement.",
+  errNetwork:
+    "Le paiement n'a pas pu se charger : ta connexion a coupé. Vérifie ton réseau puis réessaie.",
 } as const;
 
 export function getCheckoutHeadline(city?: string) {
