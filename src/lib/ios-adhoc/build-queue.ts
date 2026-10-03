@@ -32,12 +32,17 @@ export type IosInstallState =
 const DEFAULT_FAILURE =
   "On n'a pas pu enregistrer ton iPhone. Réessaie, ou écris-nous sur le chat.";
 
+export const BUILD_FAILURE =
+  "La préparation de ton app n'a pas abouti. Réessaie dans 2 minutes ; si ça recommence, écris-nous sur le chat.";
+
 export function getIosInstallState(input: {
   device: IosDeviceRow | null;
   latestSucceededBuild: IosBuildRow | null;
+  /** Latest build of any status: a failure is reported right away. */
+  latestBuild?: IosBuildRow | null;
   now: number;
 }): IosInstallState {
-  const { device, latestSucceededBuild, now } = input;
+  const { device, latestSucceededBuild, latestBuild, now } = input;
 
   if (!device) {
     return { kind: "not_started" };
@@ -55,6 +60,14 @@ export function getIosInstallState(input: {
 
   if (device.udid && latestSucceededBuild?.udids.includes(device.udid)) {
     return { kind: "ready", buildId: latestSucceededBuild.id };
+  }
+
+  // Only a build started for this iPhone counts: an older failure is retried.
+  if (
+    latestBuild?.status === "failed" &&
+    Date.parse(latestBuild.created_at) >= Date.parse(device.created_at)
+  ) {
+    return { kind: "failed", message: BUILD_FAILURE };
   }
 
   return { kind: "preparing" };

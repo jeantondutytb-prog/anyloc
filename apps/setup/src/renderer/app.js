@@ -158,8 +158,9 @@ function logout() {
 }
 
 // ── Onboarding Guide ──
-// plug → install → devmode → nocable → done → carte (install et nocable :
-// formule 1 an seulement, les autres pilotent la position depuis l'ordinateur)
+// plug → devmode → install → nocable → done → carte (install et nocable :
+// formule 1 an seulement, les autres pilotent la position depuis l'ordinateur).
+// L'app est signée pour l'iPhone pendant l'étape devmode : l'attente ne se voit pas.
 
 const GUIDE_DONE_KEY = "anyloc.guideComplete";
 
@@ -171,6 +172,7 @@ const guide = {
   steps: ["plug", "devmode", "done"],
   current: "plug",
   udid: null,
+  registration: null, // iPhone registered for the signed app, started at plug
   trusted: false,
   trusting: false,
   appEligible: false,
@@ -216,6 +218,7 @@ async function showGuide() {
   void homeLeave();
   stopGuide();
   guide.udid = null;
+  guide.registration = null;
   guide.appEligible = false;
   guide.eligibilityKnown = false;
   guide.steps = ["plug", "devmode", "done"];
@@ -230,7 +233,7 @@ async function showGuide() {
   guide.appEligible = Boolean(status.ok && status.eligible);
   guide.eligibilityKnown = true;
   guide.steps = guide.appEligible
-    ? ["plug", "install", "devmode", "nocable", "done"]
+    ? ["plug", "devmode", "install", "nocable", "done"]
     : ["plug", "devmode", "done"];
   $("guide-done-text").textContent = guide.appEligible
     ? "Change ta position depuis l'app Anyloc sur ton iPhone (LocalDevVPN connecté), ou depuis la carte sur cet ordinateur."
@@ -401,7 +404,7 @@ function renderPlugButton() {
   const btn = $("guide-plug-next");
   const ready = Boolean(guide.udid && guide.trusted);
   btn.disabled = !(ready && guide.eligibilityKnown && guide.current === "plug");
-  btn.textContent = ready && guide.appEligible ? "Installer l'app sur mon iPhone" : "Continuer";
+  btn.textContent = "Continuer";
 }
 
 // ── Windows: Apple's service and USB driver, installed in one click ──
@@ -484,14 +487,26 @@ function installFailed(message) {
   $("guide-install-retry").hidden = false;
 }
 
+// Called when leaving the plug step: Apple signs the app while the customer
+// turns on developer mode.
+function startAppSigning() {
+  if (guide.appEligible && guide.udid && !guide.registration) {
+    guide.registration = window.anylocSetup.iphoneAppRegister({ udid: guide.udid });
+  }
+}
+
 async function startInstallStep() {
   const run = guide.run;
   $("guide-install-retry").hidden = true;
-  setStatus("install", "wait", "Enregistrement de ton iPhone…", "");
+  setStatus("install", "wait", "Préparation de ton app…", "");
 
-  const registered = await window.anylocSetup.iphoneAppRegister({ udid: guide.udid });
+  startAppSigning();
+  const registered = await guide.registration;
   if (run !== guide.run) return;
-  if (!registered.ok) return installFailed(registered.message);
+  if (!registered?.ok) {
+    guide.registration = null;
+    return installFailed(registered?.message || "Réessaie dans un instant.");
+  }
 
   const startedAt = Date.now();
   const waitForApp = async () => {
@@ -510,7 +525,7 @@ async function startInstallStep() {
       "install",
       "wait",
       "Préparation de ton app…",
-      "Apple signe l'app pour ton iPhone. Ça prend 3 à 5 minutes la première fois, laisse cette fenêtre ouverte."
+      "Apple signe l'app pour ton iPhone, c'est bientôt prêt. Laisse cette fenêtre ouverte."
     );
     guide.installTimer = setTimeout(() => void waitForApp(), 8000);
   };
@@ -642,9 +657,15 @@ async function init() {
   $("guide-windows-btn").addEventListener("click", () => void prepareWindows());
   $("guide-copy-diagnostic").addEventListener("click", () => void copyDiagnostic());
   $("guide-skip-btn").addEventListener("click", finishGuide);
-  $("guide-plug-next").addEventListener("click", nextStep);
+  $("guide-plug-next").addEventListener("click", () => {
+    startAppSigning();
+    nextStep();
+  });
   $("guide-plug-retry").addEventListener("click", () => goToStep("plug"));
-  $("guide-install-retry").addEventListener("click", () => goToStep("install"));
+  $("guide-install-retry").addEventListener("click", () => {
+    guide.registration = null;
+    goToStep("install");
+  });
   $("guide-devmode-retry").addEventListener("click", () => goToStep("devmode"));
   $("guide-nocable-next").addEventListener("click", nextStep);
   $("guide-nocable-skip").addEventListener("click", nextStep);
