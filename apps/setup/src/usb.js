@@ -522,9 +522,8 @@ async function detectUsbDevice() {
       connected: false,
       udid: null,
       deviceName: null,
-      message:
-        result.stderr.trim() ||
-        "Impossible de lister les appareils USB. Vérifie pymobiledevice3.",
+      message: humanizePmd3Error(result.stderr || result.stdout),
+      error: (result.stderr || result.stdout).trim().split("\n").slice(-3).join("\n"),
     };
   }
 
@@ -541,7 +540,8 @@ async function detectUsbDevice() {
       };
     }
 
-    const device = devices[0];
+    // Setup steps (app install, trust) need the cable: prefer the USB entry.
+    const device = devices.find((d) => d.ConnectionType === "USB") || devices[0];
     const udid = device.UniqueDeviceID || device.Identifier;
     const deviceName = device.DeviceName || `iPhone (${String(udid).slice(0, 8)}…)`;
 
@@ -1042,6 +1042,45 @@ async function installIphoneApp({ udid, ipaPath }) {
     : { ok: false, message: humanizePmd3Error(result.stderr || result.stdout) };
 }
 
+// Asks the iPhone to trust this computer (the "Faire confiance" prompt) and
+// waits up to `waitSeconds` for the customer. Resolves to
+// { trusted, reason: "pending" | "locked" | "denied" | "error" }.
+function trustDevice({ udid, waitSeconds = 45 }) {
+  return new Promise((resolve) => {
+    const python = resolvePythonExecutable();
+    if (!python) {
+      resolve({ trusted: false, reason: "error", error: missingToolsMessage() });
+      return;
+    }
+
+    const child = spawn(
+      python,
+      [path.join(getScriptsDir(), "trust_device.py"), "--wait", String(waitSeconds), ...udidArgs(udid)],
+      { cwd: getScriptsDir(), env: getSpawnEnv(), windowsHide: true }
+    );
+
+    let stdout = "";
+    let stderr = "";
+    const timer = setTimeout(() => {
+      try { child.kill(); } catch {}
+    }, (waitSeconds + 30) * 1000);
+    child.stdout.on("data", (chunk) => { stdout += chunk.toString(); });
+    child.stderr.on("data", (chunk) => { stderr += chunk.toString(); });
+    child.on("error", (error) => {
+      clearTimeout(timer);
+      resolve({ trusted: false, reason: "error", error: error.message });
+    });
+    child.on("close", () => {
+      clearTimeout(timer);
+      try {
+        resolve(JSON.parse(stdout.trim().split("\n").pop()));
+      } catch {
+        resolve({ trusted: false, reason: "error", error: stderr.trim().split("\n").slice(-3).join("\n") });
+      }
+    });
+  });
+}
+
 function clearCachedPaths() {
   cachedCli = null;
   cachedPython = null;
@@ -1082,6 +1121,7 @@ module.exports = {
   ensureWifiPairing,
   pushPairingToApp,
   installIphoneApp,
+  trustDevice,
   exportPairingFile,
   savePairingLocalCopy,
   resolvePythonExecutable,

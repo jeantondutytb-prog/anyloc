@@ -168,6 +168,9 @@ export async function getIosStatusForUser(userId: string, now: Date): Promise<Io
     await ensureBuildForPendingDevices(now);
   }
 
-  const latestSucceededBuild = await store.getLatestSucceededBuild();
-  return getIosInstallState({ device, latestSucceededBuild, now: now.getTime() });
+  const [latestSucceededBuild, latestBuild] = await Promise.all([
+    store.getLatestSucceededBuild(),
+    store.getLatestBuild(),
+  ]);
+  return getIosInstallState({ device, latestSucceededBuild, latestBuild, now: now.getTime() });
 }

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  BUILD_FAILURE,
   getIosInstallState,
   needsNewBuild,
   type IosBuildRow,
@@ -59,6 +60,22 @@ describe("getIosInstallState", () => {
     assert.deepEqual(getIosInstallState({ device: device(), latestSucceededBuild: build({ udids: ["OTHER"] }), now: NOW }), { kind: "preparing" });
     assert.deepEqual(getIosInstallState({ device: device(), latestSucceededBuild: build(), now: NOW }), { kind: "ready", buildId: "b1" });
   });
+
+  it("reports a build that failed for this iPhone right away", () => {
+    const failed = build({ id: "b2", status: "failed", udids: [], created_at: iso(30_000) });
+    assert.deepEqual(
+      getIosInstallState({ device: device(), latestSucceededBuild: null, latestBuild: failed, now: NOW }),
+      { kind: "failed", message: BUILD_FAILURE }
+    );
+  });
+
+  it("keeps preparing when the failed build predates the iPhone", () => {
+    const old = build({ id: "b2", status: "failed", udids: [], created_at: iso(120_000) });
+    assert.deepEqual(
+      getIosInstallState({ device: device(), latestSucceededBuild: null, latestBuild: old, now: NOW }),
+      { kind: "preparing" }
+    );
+  });
 });
 
 describe("needsNewBuild", () => {
@@ -78,10 +95,10 @@ describe("needsNewBuild", () => {
     assert.equal(needsNewBuild({ registeredUdids: ["U2"], latestBuild: stale, latestSucceededBuild: build(), now: NOW }), true);
   });
 
-  it("backs off 10 minutes after a failed build", () => {
-    const failed = build({ id: "b3", status: "failed", udids: [], created_at: iso(5 * 60_000) });
+  it("backs off 2 minutes after a failed build", () => {
+    const failed = build({ id: "b3", status: "failed", udids: [], created_at: iso(60_000) });
     assert.equal(needsNewBuild({ registeredUdids: ["U2"], latestBuild: failed, latestSucceededBuild: build(), now: NOW }), false);
-    const old = { ...failed, created_at: iso(11 * 60_000) };
+    const old = { ...failed, created_at: iso(3 * 60_000) };
     assert.equal(needsNewBuild({ registeredUdids: ["U2"], latestBuild: old, latestSucceededBuild: build(), now: NOW }), true);
   });
 });

@@ -195,10 +195,13 @@
             <div class="guide-progress-bar" id="guide-tools-progress-bar" style="width: 0%"></div>
           </div>
 
-          <div class="guide-tip-box guide-driver-box" id="guide-driver-box" hidden>
-            <p><strong>Il manque le pilote Apple.</strong> Windows voit ton iPhone, mais seulement pour les photos. <span id="guide-driver-text"></span></p>
-            <button type="button" class="guide-btn-secondary" id="guide-driver-install-btn" hidden>Installer le pilote Apple</button>
-            <button type="button" class="guide-btn-secondary" id="guide-driver-itunes-btn" hidden>Télécharger iTunes sur apple.com</button>
+          <!-- Windows : composants Apple manquants, réparés en un clic -->
+          <div class="guide-tip-box guide-driver-box" id="guide-windows-box" hidden>
+            <p><strong id="guide-windows-title"></strong> <span id="guide-windows-text"></span></p>
+            <div class="guide-progress" id="guide-windows-progress" hidden>
+              <div class="guide-progress-bar" id="guide-windows-progress-bar" style="width: 0%"></div>
+            </div>
+            <button type="button" class="guide-btn-secondary" id="guide-windows-btn">Préparer Windows</button>
           </div>
 
           <details class="guide-details" id="guide-usb-help">
@@ -207,8 +210,9 @@
               <li>Essaie un autre câble (certains ne font que charger)</li>
               <li>Déverrouille l'iPhone et appuie sur <strong>Faire confiance</strong></li>
               <li>Débranche et rebranche le câble</li>
-              <li id="guide-usb-help-win" hidden>Sur Windows : installe iTunes depuis apple.com (pas le Microsoft Store), puis redémarre le PC</li>
+              <li>Branche le câble directement sur l'ordinateur, sans hub USB</li>
             </ol>
+            <button type="button" class="guide-btn-skip" id="guide-copy-diagnostic">Copier le diagnostic pour le support</button>
           </details>
 
           <button class="guide-btn-primary" id="guide-plug-next" disabled>Continuer</button>
