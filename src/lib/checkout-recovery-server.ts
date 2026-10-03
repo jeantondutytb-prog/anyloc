@@ -145,6 +145,13 @@ async function sendRecoveryStep(row: RecoveryRow, step: RecoveryStep) {
   return true;
 }
 
+/**
+ * Waves, not bursts: Resend allows a few requests per second, and a fresh
+ * sending domain that blasts hundreds of emails at once lands in spam.
+ */
+const MAX_SENDS_PER_RUN = 150;
+const SEND_SPACING_MS = 600;
+
 export type RecoveryRunResult = {
   checked: number;
   sent: number;
@@ -172,6 +179,7 @@ export async function processCheckoutRecoveries(now = new Date()): Promise<Recov
   if (error) throw new Error(error.message);
 
   for (const row of data ?? []) {
+    if (result.sent >= MAX_SENDS_PER_RUN) break;
     const step = getDueRecoveryStep(toState(row), now);
     if (!step) continue;
     result.checked += 1;
@@ -188,7 +196,10 @@ export async function processCheckoutRecoveries(now = new Date()): Promise<Recov
     }
 
     try {
-      if (await sendRecoveryStep(row, step)) result.sent += 1;
+      if (await sendRecoveryStep(row, step)) {
+        result.sent += 1;
+        await new Promise((resolve) => setTimeout(resolve, SEND_SPACING_MS));
+      }
     } catch (err) {
       result.failed += 1;
       console.error("[checkout-recovery] send failed:", row.user_id, err);

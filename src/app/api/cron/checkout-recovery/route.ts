@@ -6,6 +6,8 @@ import {
 } from "@/lib/checkout-recovery-server";
 
 export const runtime = "nodejs";
+// Up to 150 spaced sends per run (~2 min).
+export const maxDuration = 300;
 
 function isAuthorized(request: Request) {
   const cronSecret = process.env.CRON_SECRET;
