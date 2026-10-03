@@ -54,7 +54,7 @@ export const LEGAL_PAGES: Record<string, LegalPageContent> = {
         paragraphs: [
           "Les tarifs en vigueur sont affichés sur la page Tarification. Les paiements sont traités de manière sécurisée par Stripe. L'abonnement est renouvelé automatiquement à chaque échéance, sauf résiliation depuis ton espace client.",
           "En cas de résiliation, l'abonnement prend fin immédiatement et l'accès au service est coupé sans délai.",
-          "Droit de rétractation : l'accès au service est fourni immédiatement après le paiement. Avant de payer, tu coches une case par laquelle tu demandes l'exécution immédiate et renonces expressément à ton droit de rétractation de 14 jours (art. L221-28 13° du code de la consommation). Les sommes payées ne sont donc pas remboursables, dans les conditions de la politique de remboursement.",
+          "Droit de rétractation : l'accès au service est fourni immédiatement après le paiement. En validant le paiement, tu demandes l'exécution immédiate et renonces expressément à ton droit de rétractation de 14 jours (art. L221-28 13° du code de la consommation). Les sommes payées ne sont donc pas remboursables, dans les conditions de la politique de remboursement.",
         ],
       },
       {
@@ -271,8 +271,8 @@ export const LEGAL_PAGES: Record<string, LegalPageContent> = {
       {
         title: "2. Renonciation au droit de rétractation",
         paragraphs: [
-          "Avant de payer, tu coches une case obligatoire par laquelle tu acceptes les conditions générales, tu demandes l'accès immédiat au service et tu renonces expressément à ton droit de rétractation de 14 jours (art. L221-28 13° du code de la consommation).",
-          "Cette acceptation est enregistrée avec ton paiement. Sans elle, le paiement ne peut pas être validé.",
+          "En validant le paiement, tu acceptes les conditions générales, tu demandes l'accès immédiat au service et tu renonces expressément à ton droit de rétractation de 14 jours (art. L221-28 13° du code de la consommation).",
+          "Cette mention figure juste sous le formulaire de paiement, avant la validation.",
         ],
       },
       {
