@@ -12,7 +12,7 @@ import { CheckoutProofCarousel } from "@/components/pricing/checkout-proof-carou
 import { CheckoutReviewsGrid } from "@/components/pricing/checkout-reviews-grid";
 import { PaywallValueStack } from "@/components/pricing/paywall-value-stack";
 import { PlanPrice } from "@/components/pricing/plan-price";
-import { RefundGuaranteeNotice } from "@/components/pricing/refund-guarantee-notice";
+import { RefundPolicyNotice } from "@/components/pricing/refund-policy-notice";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import {
@@ -287,6 +287,7 @@ export function AnyLocCheckoutPanel({
                 <p className="mt-2 text-sm text-zinc-500">{plan.description}</p>
 
                 <PaywallValueStack
+                  mobileApp={plan.mobileApp}
                   className="mt-5 flex-1 border-t border-zinc-100 pt-5"
                   compact
                   showHeading
@@ -308,7 +309,7 @@ export function AnyLocCheckoutPanel({
         })}
       </div>
 
-      <RefundGuaranteeNotice className="mt-8 text-center text-sm text-zinc-600" />
+      <RefundPolicyNotice className="mt-8 text-center text-sm text-zinc-600" />
 
       <div
         ref={paymentSectionRef}
@@ -333,7 +334,7 @@ export function AnyLocCheckoutPanel({
           </span>
           <span className="flex items-center gap-1.5">
             <ShieldCheck className="h-4 w-4 text-blue-500" />
-            Garantie 48 h
+            Paiement sécurisé
           </span>
         </div>
 

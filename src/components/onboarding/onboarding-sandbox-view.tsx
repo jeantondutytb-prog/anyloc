@@ -148,7 +148,8 @@ function OnboardingViewContent() {
   );
 }
 
-export function OnboardingView() {
+/** Variant "app_sandbox" of the onboarding A/B test: a working replica of the app. */
+export function OnboardingSandboxView() {
   return (
     <Suspense
       // Same backdrop as the reveal from the landing CTA, so nothing flashes.

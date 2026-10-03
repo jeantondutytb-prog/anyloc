@@ -33,8 +33,11 @@ final class OnDeviceLocationService: ObservableObject {
         return FileManager.default.fileExists(atPath: Self.pairingURL.path)
     }
 
-    private let session = DeviceSession()
+    /// Replaced when a call hangs: its thread stays stuck, so a fresh one takes over.
+    private var session = DeviceSession()
     private let keeper = BackgroundKeeper()
+    /// One connection attempt at a time (warm-up and a tap can overlap).
+    private var connecting: Task<Void, Never>?
 
     /// Where Anyloc Setup drops the pairing record (the only folder it can write).
     private static let droppedPairingURL: URL = FileManager.default
@@ -82,23 +85,23 @@ final class OnDeviceLocationService: ObservableObject {
         if !isConnected { await connect(promptForVPN: true) }
         guard isConnected else { throw DeviceError.message(failureMessage) }
         do {
-            try await session.setLocation(lat: lat, lng: lng)
+            try await sendLocation(lat: lat, lng: lng)
         } catch {
             // The tunnel dies when iOS suspends us; reconnect once and retry.
             log("Tunnel perdu, reconnexion")
-            await session.close()
-            phase = .idle
+            await reset()
             await connect(promptForVPN: true)
-            guard isConnected else { throw error }
-            try await session.setLocation(lat: lat, lng: lng)
+            guard isConnected else { throw DeviceError.message(failureMessage) }
+            try await sendLocation(lat: lat, lng: lng)
         }
         keeper.start()
         log(String(format: "Position → %.5f, %.5f", lat, lng))
     }
 
     func clearLocation() async {
-        try? await session.clearLocation()
-        await session.close()
+        let session = session
+        try? await deadline(5, "Effacement de la position") { try await session.clearLocation() }
+        await reset()
         keeper.stop()
         phase = .idle
         log("Position réelle rétablie")
@@ -109,39 +112,110 @@ final class OnDeviceLocationService: ObservableObject {
         return "Connexion impossible"
     }
 
+    private func sendLocation(lat: Double, lng: Double) async throws {
+        let session = session
+        try await deadline(8, "Envoi de la position") { try await session.setLocation(lat: lat, lng: lng) }
+    }
+
     private func connect(promptForVPN: Bool) async {
+        if let connecting {
+            await connecting.value
+            // A silent warm-up just failed: the user tapped, so try once more for real.
+            if isConnected || !promptForVPN { return }
+        }
+        let task = Task { await performConnect(promptForVPN: promptForVPN) }
+        connecting = task
+        await task.value
+        connecting = nil
+    }
+
+    private func performConnect(promptForVPN: Bool) async {
         Self.securePairingDrop()
         guard let pairing = try? Data(contentsOf: Self.pairingURL) else { return }
         phase = .working
+        let session = session
         do {
             do {
-                try await session.openLockdown(pairing: pairing)
+                try await deadline(8, "Connexion à LocalDevVPN") { try await session.openLockdown(pairing: pairing) }
             } catch {
+                log("Lockdown : \(error.localizedDescription)")
                 needsVPN = promptForVPN
-                throw DeviceError.message("Active LocalDevVPN puis réessaie.")
+                throw DeviceError.message("iPhone injoignable : ouvre LocalDevVPN, appuie sur Connect (Wi-Fi allumé), puis réessaie.")
             }
             needsVPN = false
 
-            if try await !session.isDeveloperImageMounted() {
+            let mounted = try await deadline(10, "Vérification de l'image développeur") {
+                try await session.isDeveloperImageMounted()
+            }
+            if !mounted {
                 log("Montage de l'image développeur")
                 let files = try await DeveloperImage.fetch { [weak self] msg in
                     Task { @MainActor in self?.log(msg) }
                 }
-                try await session.mountDeveloperImage(files)
+                try await deadline(60, "Montage de l'image développeur") { try await session.mountDeveloperImage(files) }
             }
 
-            try await session.openLocationSimulation()
+            try await deadline(15, "Ouverture de la simulation de position") { try await session.openLocationSimulation() }
             phase = .connected
             log("Prêt sans ordi")
         } catch {
-            await session.close()
+            await reset()
             phase = .failed(error.localizedDescription)
             log("Erreur : \(error.localizedDescription)")
         }
     }
 
+    /// Drops the tunnel. If the FFI thread is stuck in a call, closing would
+    /// queue behind it forever: abandon that session and start a fresh one.
+    private func reset() async {
+        let old = session
+        do {
+            try await deadline(3, "Fermeture") { await old.close() }
+        } catch {
+            log("Session bloquée, remplacée")
+            session = DeviceSession()
+        }
+        phase = .idle
+    }
+
+    /// Runs `body` but gives up after `seconds`: a call over a dead tunnel can
+    /// block forever, and the "Application de la position…" overlay waits on it.
+    private func deadline<T: Sendable>(
+        _ seconds: Double, _ step: String, _ body: @escaping @Sendable () async throws -> T
+    ) async throws -> T {
+        let once = ResumeOnce<T>()
+        return try await withCheckedThrowingContinuation { cont in
+            once.set(cont)
+            Task.detached {
+                do { once.resume(.success(try await body())) } catch { once.resume(.failure(error)) }
+            }
+            Task.detached {
+                try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+                once.resume(.failure(DeviceError.message("\(step) : l'iPhone ne répond pas. Vérifie que LocalDevVPN est connecté, puis réessaie.")))
+            }
+        }
+    }
+
     private func log(_ line: String) {
         print("[Anyloc/OnDevice] \(line)")
+    }
+}
+
+/// Resumes a continuation once, whichever of the call or its deadline ends first.
+private final class ResumeOnce<T>: @unchecked Sendable {
+    private let lock = NSLock()
+    private var cont: CheckedContinuation<T, Error>?
+
+    func set(_ cont: CheckedContinuation<T, Error>) {
+        lock.lock(); self.cont = cont; lock.unlock()
+    }
+
+    func resume(_ result: Result<T, Error>) {
+        lock.lock()
+        let cont = self.cont
+        self.cont = nil
+        lock.unlock()
+        cont?.resume(with: result)
     }
 }
 
@@ -201,6 +275,12 @@ private final class DeviceSession: @unchecked Sendable {
                 }
             }
             provider = newProvider
+
+            // The provider is lazy: connect once so an unreachable 10.7.0.1
+            // (LocalDevVPN off) fails here.
+            var lockdown: OpaquePointer?
+            try check(lockdownd_connect(provider, &lockdown), "LocalDevVPN injoignable")
+            lockdownd_client_free(lockdown)
         }
     }
 

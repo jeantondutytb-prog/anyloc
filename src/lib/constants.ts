@@ -5,7 +5,7 @@ export const CHECKOUT_CTA_LABEL = "Débloque ton accès";
 export const CHECKOUT_CTA_LABEL_SHORT = "Accès immédiat";
 
 export const CHECKOUT_CTA_SUBLINE =
-  "Accès immédiat · Annulation en 1 clic · Garantie 48 h";
+  "Accès immédiat · Annulation en 1 clic · Installation guidée";
 
 export const CHECKOUT_MARKETING_LINE =
   "Active Anyloc sur le plan de ton choix — Snap, Insta, Tinder et toutes tes apps.";
@@ -49,11 +49,14 @@ export const DESTINATIONS = [
 export const PLAN_VALUE_STACK = [
   "Changements de loc illimités sur toutes tes apps",
   "Snap, Insta, Tinder, Life360, Pokémon GO",
-  "iOS + Android + version web",
+  "Compatible iPhone et Android",
   "Trajets simulés crédibles sur la map",
   "Installation guidée pas à pas",
-  "Garantie 48 h si le GPS ne fonctionne pas",
 ];
+
+/** Prérequis matériel affiché sur chaque plan, avant l'achat. */
+export const DEVICE_REQUIREMENT_NOTE =
+  "iPhone : un ordinateur (Mac ou PC) est obligatoire une fois pour l'installation. Android : aucun ordinateur requis.";
 
 export const PAYWALL_TESTIMONIALS = [
   {
@@ -103,8 +106,8 @@ export const PAYWALL_TESTIMONIALS = [
   },
 ] as const;
 
-export const REFUND_GUARANTEE_SUMMARY =
-  "Garantie 48 h : installation complète + test du service. Demande sous 48 h après l'achat, abonnement actif. Voir la politique de remboursement.";
+export const REFUND_POLICY_SUMMARY =
+  "Accès immédiat : en payant, tu renonces à ton droit de rétractation. Aucun remboursement une fois l'accès débloqué.";
 
 export const CANCELLATION_WARNING =
   "La résiliation prend effet immédiatement. Tu perds l'accès au service, au dashboard et aux téléchargements dès confirmation. Aucun remboursement au prorata.";
@@ -124,6 +127,7 @@ export const LEGACY_PLAN_LABELS: Record<string, string> = {
 export const PLANS = [
   {
     id: "monthly",
+    mobileApp: false,
     name: "Mensuel",
     price: "9,90€",
     period: "/mois",
@@ -141,6 +145,7 @@ export const PLANS = [
   },
   {
     id: "6months",
+    mobileApp: false,
     name: "6 mois",
     price: "34,90€",
     period: "/6 mois",
@@ -158,6 +163,7 @@ export const PLANS = [
   },
   {
     id: "annual",
+    mobileApp: true,
     name: "Annuel",
     price: "49,90€",
     period: "/an",
