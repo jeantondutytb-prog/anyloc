@@ -438,6 +438,10 @@ const PMD3_ERROR_HINTS = [
     "Aucun iPhone détecté. Rebranche le câble USB et déverrouille l'iPhone.",
   ],
   [
+    /AnylocDdiFailed/,
+    "Anyloc n'a pas pu préparer ton iPhone. Vérifie que l'ordinateur a internet, garde l'iPhone branché et déverrouillé, puis réessaie.",
+  ],
+  [
     /DeveloperDiskImage|MounterError|AlreadyMounted|InvalidServiceError|personalized image/i,
     "L'iPhone n'a pas pu préparer les outils développeur. Débranche, redémarre l'iPhone, rebranche et réessaie (connexion internet requise).",
   ],
