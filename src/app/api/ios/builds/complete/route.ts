@@ -1,19 +1,10 @@
-import { timingSafeEqual } from "node:crypto";
+import { isBuildCallbackAuthorized } from "@/lib/ios-adhoc/callback-auth";
 import { ensureBuildForPendingDevices } from "@/lib/ios-adhoc/service";
 import { MAX_IPA_BYTES, storeIpa } from "@/lib/ios-adhoc/ipa-storage";
 import { completeBuild, getBuild } from "@/lib/ios-adhoc/store";
 
-function authorized(request: Request) {
-  const secret = process.env.IOS_BUILD_CALLBACK_SECRET;
-  const header = request.headers.get("authorization") ?? "";
-  if (!secret) return false;
-  const expected = Buffer.from(`Bearer ${secret}`);
-  const received = Buffer.from(header);
-  return expected.length === received.length && timingSafeEqual(expected, received);
-}
-
 export async function POST(request: Request) {
-  if (!authorized(request)) {
+  if (!isBuildCallbackAuthorized(request)) {
     return Response.json({ error: "Non autorisé." }, { status: 401 });
   }
 
