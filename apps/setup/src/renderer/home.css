@@ -21,6 +21,7 @@
   --h-accent-bg: rgba(236, 72, 153, 0.13);
   --h-accent-line: rgba(236, 72, 153, 0.42);
   --h-error: #f87171;
+  --h-ok: #4ade80;
 
   color-scheme: dark;
   flex-direction: row;
@@ -152,6 +153,13 @@
 .h-applying-logo { width: 64px; height: 64px; filter: drop-shadow(0 0 18px rgba(236,72,153,.6)); }
 .h-applying h3 { font-size: 17px; font-weight: 600; }
 .h-applying p { font-size: 12.5px; color: var(--h-muted); margin-top: 6px; line-height: 1.45; }
+.h-applying-actions { margin-top: 18px; }
+.h-applying-actions .h-btn { height: 44px; border-radius: 12px; font-size: 14px; margin-top: 0; }
+.h-apply { margin-top: 10px; padding: 10px 12px; border-radius: 12px; font-size: 13px; line-height: 1.45; border: 1px solid var(--h-line); color: var(--h-soft); }
+.h-apply.ok { color: var(--h-ok); border-color: rgba(74, 222, 128, .35); background: rgba(74, 222, 128, .08); }
+.h-apply.err { color: var(--h-error); border-color: rgba(248, 113, 113, .35); background: rgba(248, 113, 113, .08); }
+.h-apply.err b { color: var(--h-error); }
+.h-apply-dot { display: inline-block; width: 7px; height: 7px; margin-right: 8px; border-radius: 50%; background: var(--h-pink); animation: h-blink 1.2s infinite; }
 .h-dots { display: flex; gap: 6px; justify-content: center; margin: 10px 0 14px; }
 .h-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--h-pink); opacity: .35; animation: h-blink 1.2s infinite; }
 .h-dots i:nth-child(2) { animation-delay: .2s; } .h-dots i:nth-child(3) { animation-delay: .4s; }

@@ -6,6 +6,7 @@ const demoSession = {
 };
 
 let devModePolls = 0;
+let autoSyncListener = null;
 let appStatusPolls = 0;
 const wait = (ms, value) => new Promise((resolve) => setTimeout(() => resolve(value), ms));
 
@@ -52,7 +53,9 @@ contextBridge.exposeInMainWorld("anylocSetup", {
   startAutoSync: () => Promise.resolve(),
   stopAutoSync: () => Promise.resolve(),
   getAutoSyncStatus: () => Promise.resolve({ running: false }),
-  onAutoSyncStatus: () => {},
+  onAutoSyncStatus: (cb) => { autoSyncListener = cb; },
+  // Preview only: plays the desktop auto-sync reporting back to the map.
+  previewAutoSync: (status) => autoSyncListener?.(status),
   setSession: () => Promise.resolve(),
   onSession: () => () => {},
   // Simulates an annual account: the app is signed after two polls.

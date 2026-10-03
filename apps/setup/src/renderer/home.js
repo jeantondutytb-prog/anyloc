@@ -114,6 +114,8 @@
     usb: { connected: false, name: null, wifi: false },
     lastSyncAt: null,
     applying: false,
+    // What the iPhone confirmed for S.active: idle | sending | applied | error.
+    apply: { state: "idle", message: "", lat: null, lng: null },
     walk: { pos: null, speed: "walk", running: false, heading: 0, trail: [], keys: new Set(), stick: null, lastPush: 0 },
     route: { method: "search", points: [], legs: [], speed: "walk", customKmh: 8, computing: false, gpxName: null, savedId: null },
     runner: null, // { name, legs, speed, total, startedAt, dest }
@@ -464,26 +466,92 @@
   }
 
   // ── Teleport ──
+  // A location only counts as applied once the iPhone confirms it (auto-sync
+  // "applied"): saving it is not enough, and customers used to see "Position
+  // appliquée" while their iPhone never moved.
+
+  const APPLY_TIMEOUT_MS = 25000;
+  const FIRST_APPLY_KEY = "anyloc.firstApplyConfirmed";
+  let applyTimer = null;
+
+  function sameSpot(a, b) {
+    return Boolean(a && b) && a.lat === b.lat && a.lng === b.lng;
+  }
+
+  function setApplyState(state, loc, message = "") {
+    S.apply = { state, message, lat: loc?.lat ?? null, lng: loc?.lng ?? null };
+  }
+
+  function showApplyDialog(kind, message = "") {
+    const dialog = {
+      wait: ["Application de la position…", "Ton iPhone change de position. Garde-le branché et déverrouillé."],
+      applied: ["C'est bon, ta position a changé !", "Ouvre Snap pour vérifier. Laisse Anyloc ouvert sur cet ordinateur."],
+      error: ["Ta position n'a pas changé", message],
+    }[kind];
+    $("applying").hidden = false;
+    $("applying-title").textContent = dialog[0];
+    $("applying-text").textContent = dialog[1];
+    $("applying-dots").hidden = kind !== "wait";
+    $("applying-actions").hidden = kind === "wait";
+    $("applying-retry").hidden = kind !== "error";
+    $("applying-close").textContent = kind === "applied" ? "OK" : "Fermer";
+  }
+
+  function hideApplyDialog() {
+    $("applying").hidden = true;
+  }
+
+  function settleApply(state, loc, message = "") {
+    clearTimeout(applyTimer);
+    const waiting = S.applying;
+    S.applying = false;
+    setApplyState(state, loc, message);
+    if (state === "error") {
+      if (waiting || !$("applying").hidden) showApplyDialog("error", message);
+      else toast(message, "error");
+      return;
+    }
+    if (!waiting && $("applying").hidden) return;
+    let firstTime = true;
+    try { firstTime = !localStorage.getItem(FIRST_APPLY_KEY); localStorage.setItem(FIRST_APPLY_KEY, "1"); } catch {}
+    if (firstTime) {
+      showApplyDialog("applied");
+    } else {
+      hideApplyDialog();
+      toast(`Position appliquée sur ton iPhone : ${loc.name || coordsText(loc)}`);
+    }
+  }
 
   async function applySelected() {
     const p = S.selected;
     if (!p || S.applying) return;
     await stopMotion();
     S.applying = true;
-    $("applying").hidden = false;
-    const started = Date.now();
+    setApplyState("sending", p);
+    showApplyDialog("wait");
+    render();
     const ok = await upsertLocation({ name: p.name, lat: p.lat, lng: p.lng, isActive: true });
-    const wait = 1200 - (Date.now() - started);
-    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
-    $("applying").hidden = true;
-    S.applying = false;
-    if (ok) {
-      setActive(p);
-      toast(`Position appliquée : ${p.name}`);
-    } else {
+    if (!ok) {
+      settleApply("error", p, "Impossible d'envoyer la position. Vérifie la connexion internet de cet ordinateur, puis réessaie.");
       render();
-      toast("Impossible d'appliquer la position.", "error");
+      return;
     }
+    setActive(p);
+    clearTimeout(applyTimer);
+    applyTimer = setTimeout(() => {
+      if (S.apply.state !== "sending" || !sameSpot(S.apply, p)) return;
+      settleApply("error", p, "Ton iPhone n'a pas répondu. Vérifie qu'il est branché et déverrouillé, puis réessaie.");
+      render();
+    }, APPLY_TIMEOUT_MS);
+  }
+
+  function applyStatusHtml() {
+    const a = S.apply;
+    if (a.state === "idle" || !sameSpot(a, S.active)) return "";
+    if (a.state === "sending") return `<div class="h-apply sending"><span class="h-apply-dot"></span>Envoi à ton iPhone…</div>`;
+    if (a.state === "applied") return `<div class="h-apply ok">✓ Position appliquée sur ton iPhone</div>`;
+    return `<div class="h-apply err"><b>Position pas appliquée.</b> ${esc(a.message)}
+      <button class="h-link" data-action="apply" style="margin-top:6px">Réessayer</button></div>`;
   }
 
   async function teleportTo(p) {
@@ -499,6 +567,8 @@
     await stopMotion();
     const ok = await upsertLocation({ name: p.name, lat: p.lat, lng: p.lng, isActive: false });
     if (ok) {
+      clearTimeout(applyTimer);
+      setApplyState("idle", null);
       setActive(null);
       toast("Position réelle rétablie");
     } else {
@@ -972,9 +1042,17 @@
     return `<div class="h-card">
       <div class="h-cap">Appareil</div>
       <div class="h-dev-row"><span class="h-dev-dot ${connected || wifi ? "" : "off"}"></span>${status}<span style="color:#55555d">·</span><span class="name">${esc(detail)}</span></div>
-      <div class="h-dev-row">${I.crosshair}<span>GPS simulé : ${S.active || S.walk.running || S.runner ? "<b>actif</b>" : "inactif"}</span></div>
+      <div class="h-dev-row">${I.crosshair}<span>GPS simulé : ${gpsStateHtml()}</span></div>
       <div class="h-dev-row">${I.clock}<span id="h-sync">${formatSync(S.lastSyncAt)}</span></div>
     </div>`;
+  }
+
+  function gpsStateHtml() {
+    if (S.walk.running || S.runner) return "<b>actif</b>";
+    if (!S.active) return "inactif";
+    if (!sameSpot(S.apply, S.active) || S.apply.state === "applied") return "<b>actif</b>";
+    if (S.apply.state === "sending") return "envoi…";
+    return '<span class="off">pas appliqué</span>';
   }
 
   function renderDevice() {
@@ -994,7 +1072,7 @@
     const home = homePlace();
     const canHome = Boolean(home && (S.active || p));
     return `
-      <div class="h-block">${selectedCard(p, "Clique sur la carte ou cherche un lieu.")}</div>
+      <div class="h-block">${selectedCard(p, "Clique sur la carte ou cherche un lieu.")}${applyStatusHtml()}</div>
       <div class="h-block nb">
         <button class="h-btn h-btn-out" data-action="favorite" ${p ? "" : "disabled"} style="margin-top:0">${I.star}${isFav ? "Modifier le favori" : "Ajouter aux favoris"}</button>
         <button class="h-btn h-btn-ghost" data-action="drive-home" ${canHome ? "" : "disabled"} title="${home ? "" : "Définis ta maison en mode Marche"}">${I.home}Rentrer à la maison</button>
@@ -1304,8 +1382,21 @@
   }
 
   function onAutoSync(status) {
-    if (status.error) { toast(status.message, "error"); return; }
+    const synced = status.location;
+    if (status.error) {
+      if (synced?.is_active) settleApply("error", synced, status.message);
+      else toast(status.message, "error");
+      render();
+      return;
+    }
     if (!status.message) return;
+    if (synced?.is_active) {
+      if (status.applied) settleApply("applied", synced);
+      else if (!sameSpot(S.apply, synced) || S.apply.state !== "sending") setApplyState("sending", synced);
+    } else if (synced) {
+      clearTimeout(applyTimer);
+      setApplyState("idle", null);
+    }
     S.lastSyncAt = new Date();
     const loc = status.location;
     if (loc?.is_active) {
@@ -1331,6 +1422,8 @@
     listenersBound = true;
 
     document.querySelectorAll(".h-rail-btn").forEach((b) => b.addEventListener("click", () => onRail(b.dataset.rail)));
+    $("applying-close").addEventListener("click", hideApplyDialog);
+    $("applying-retry").addEventListener("click", () => { hideApplyDialog(); void applySelected(); });
 
     const panel = $("panel");
     panel.addEventListener("click", (e) => {

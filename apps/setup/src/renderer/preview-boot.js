@@ -19,6 +19,23 @@
 
   const origFetch = window.fetch.bind(window);
   window.fetch = function (url, opts) {
+    if (String(url).includes("location_settings") && opts?.method === "POST") {
+      // Like auto-sync: "sending" first, then the iPhone confirms. Set
+      // localStorage "anyloc.previewApply" to "error" or "silent" to see the
+      // other outcomes.
+      const row = JSON.parse(opts.body);
+      const location = { ...row };
+      let outcome = "applied";
+      try { outcome = localStorage.getItem("anyloc.previewApply") || "applied"; } catch {}
+      if (row.is_active && outcome !== "silent") {
+        const emit = (status) => window.anylocSetup.previewAutoSync?.({ active: true, location, ...status });
+        setTimeout(() => emit({ message: `GPS: ${row.name}`, error: false }), 600);
+        setTimeout(() => emit(outcome === "error"
+          ? { message: "L'iPhone est verrouillé. Déverrouille-le et réessaie.", error: true }
+          : { message: `GPS: ${row.name}`, error: false, applied: true }), 2200);
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve([row]) });
+    }
     if (String(url).includes("location_settings")) {
       return Promise.resolve({
         ok: true,
