@@ -1,4 +1,8 @@
 import { NextResponse } from "next/server";
+import {
+  enrollInCheckoutRecovery,
+  getRecoveryCouponForUser,
+} from "@/lib/checkout-recovery-server";
 import { PLANS } from "@/lib/constants";
 import { capturePostHogEvent, parsePostHogDistinctId } from "@/lib/posthog/server";
 import {
@@ -24,12 +28,19 @@ export async function POST(request: Request) {
     const user = await getAuthenticatedCheckoutUser();
     const analyticsId = parsePostHogDistinctId(body?.analyticsId);
 
+    const couponId = user ? await getRecoveryCouponForUser(user.id, plan.id) : null;
+
     const session = await createSubscriptionCheckoutSession({
       plan,
       user,
       analyticsId,
       uiMode: "embedded_page",
+      couponId,
     });
+
+    if (user) {
+      await enrollInCheckoutRecovery(user, plan.id);
+    }
 
     await capturePostHogEvent({
       distinctId: user?.id ?? analyticsId ?? session.id,
@@ -39,6 +50,7 @@ export async function POST(request: Request) {
         guest_checkout: !user,
         ui_mode: "embedded",
         checkout_variant: "direct",
+        recovery_offer: Boolean(couponId),
       },
     });
 

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { track } from "@/lib/analytics/track";
 import { getPostHogDistinctId } from "@/lib/posthog/browser";
-import { ShieldCheck, XCircle, Zap } from "lucide-react";
+import { ShieldCheck, Star, XCircle, Zap } from "lucide-react";
 import { AuthDivider } from "@/components/auth/auth-divider";
 import { GoogleAuthLink } from "@/components/auth/google-auth-link";
 import { StripeEmbeddedCheckout } from "@/components/checkout/stripe-embedded-checkout";
@@ -20,6 +20,7 @@ import {
   CHECKOUT_PLAN_IDS,
   getCheckoutHeadline,
 } from "@/lib/checkout-copy";
+import { RECOVERY_OFFER_PLAN_ID } from "@/lib/checkout-recovery-plan";
 import { PLANS } from "@/lib/constants";
 import type { OnboardingDestination } from "@/lib/onboarding-destinations";
 import { cn } from "@/lib/utils";
@@ -73,6 +74,7 @@ export function AnyLocCheckoutPanel({
   googleAuthRedirectTo,
   onBack,
   canceled,
+  recoveryOffer,
 }: {
   selectedPlanId: string;
   onPlanChange: (planId: string) => void;
@@ -81,6 +83,8 @@ export function AnyLocCheckoutPanel({
   googleAuthRedirectTo?: string;
   onBack?: () => void;
   canceled?: boolean;
+  /** The recovery email offer is live: the monthly checkout carries the -50 % coupon. */
+  recoveryOffer?: boolean;
 }) {
   const copy = CHECKOUT_COPY;
   const checkoutPlans = getCheckoutPlans();
@@ -229,6 +233,14 @@ export function AnyLocCheckoutPanel({
           {copy.canceled}
         </p>
       )}
+
+      {recoveryOffer ? (
+        <p className="mb-6 rounded-xl border border-pink-200 bg-pink-50 px-4 py-3 text-center text-sm font-semibold text-pink-700">
+          {selectedPlanId === RECOVERY_OFFER_PLAN_ID
+            ? copy.recoveryOfferApplied
+            : copy.recoveryOfferPickMonthly}
+        </p>
+      ) : null}
 
       <p className="text-center text-xs font-semibold text-pink-600">
         {copy.scarcity}
@@ -386,6 +398,25 @@ export function AnyLocCheckoutPanel({
             Paiement sécurisé
           </span>
         </div>
+
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm font-semibold text-zinc-900">
+          <span>{copy.socialProofUsers}</span>
+          <span aria-hidden className="text-zinc-300">·</span>
+          <span className="flex items-center gap-1">
+            <span className="flex gap-0.5" aria-hidden>
+              {[0, 1, 2, 3, 4].map((i) => (
+                <Star key={i} className="h-4 w-4 fill-emerald-500 text-emerald-500" />
+              ))}
+            </span>
+            {copy.socialProofRating}
+          </span>
+        </div>
+
+        {recoveryOffer && selectedPlanId === RECOVERY_OFFER_PLAN_ID ? (
+          <p className="mt-3 text-center text-sm font-semibold text-pink-600">
+            {copy.recoveryOfferApplied}
+          </p>
+        ) : null}
 
         {googleAuthRedirectTo ? (
           <div className="mt-6">

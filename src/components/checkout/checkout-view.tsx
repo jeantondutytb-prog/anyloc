@@ -20,10 +20,12 @@ export function CheckoutView({
   initialPlanId,
   canceled,
   stripePublishableKey,
+  recoveryOffer,
 }: {
   initialPlanId: string;
   canceled?: boolean;
   stripePublishableKey: string;
+  recoveryOffer?: boolean;
 }) {
   const router = useRouter();
   const [selectedPlanId, setSelectedPlanId] = useState(
@@ -74,6 +76,7 @@ export function CheckoutView({
           stripePublishableKey={stripePublishableKey}
           destination={destination}
           canceled={canceled}
+          recoveryOffer={recoveryOffer}
         />
       </main>
 

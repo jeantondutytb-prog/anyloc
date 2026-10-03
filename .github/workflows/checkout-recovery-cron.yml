@@ -1,0 +1,21 @@
+name: Checkout recovery cron
+
+# Hourly: recovery emails (1 h / 24 h / 72 h) and the "no sale in 4 h" alert.
+# Runs here rather than in vercel.json, whose crons are daily on the Hobby plan.
+on:
+  schedule:
+    - cron: "7 * * * *"
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Call /api/cron/checkout-recovery
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl --fail-with-body --silent --show-error --max-time 240 \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            https://www.anyloc.io/api/cron/checkout-recovery
