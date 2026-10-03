@@ -10,6 +10,7 @@ export type ClipperApplication = {
   firstName: string;
   instagram: string;
   videosPerDay: ClipperVideosPerDay;
+  utmCampaign: string | null;
 };
 
 export type ClipperApplicationResult =
@@ -17,6 +18,7 @@ export type ClipperApplicationResult =
   | { ok: false; error: string };
 
 const INSTAGRAM_HANDLE = /^[a-z0-9._]{1,30}$/;
+const UTM_CAMPAIGN = /^[a-z0-9_-]{1,64}$/;
 
 function text(formData: FormData, name: string) {
   const value = formData.get(name);
@@ -34,6 +36,12 @@ export function normalizeInstagramHandle(input: string) {
     .toLowerCase();
 
   return INSTAGRAM_HANDLE.test(handle) ? handle : null;
+}
+
+// Garde seulement un nom de campagne propre (ex. "clippeurs_mail3"), sinon null.
+export function normalizeUtmCampaign(input: string | null | undefined) {
+  const campaign = (input ?? "").trim().toLowerCase();
+  return UTM_CAMPAIGN.test(campaign) ? campaign : null;
 }
 
 export function parseClipperApplication(
@@ -57,6 +65,11 @@ export function parseClipperApplication(
 
   return {
     ok: true,
-    application: { firstName, instagram, videosPerDay: videosOption.value },
+    application: {
+      firstName,
+      instagram,
+      videosPerDay: videosOption.value,
+      utmCampaign: normalizeUtmCampaign(text(formData, "utmCampaign")),
+    },
   };
 }
