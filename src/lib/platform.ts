@@ -49,9 +49,3 @@ export function getClientDeviceSnapshot(): ClientDevice {
   clientDeviceCache ??= detectClientDevice();
   return clientDeviceCache;
 }
-
-export const IOS_INSTALL_CONSTRAINT =
-  "Sur iPhone : un Mac ou PC une seule fois pour installer l'app, puis tout se pilote depuis ton téléphone — comme Locaflex.";
-
-export const ANDROID_INSTALL_NOTE =
-  "Sur Android : télécharge l'APK sur ton tel, l'app te guide — pas d'ordinateur.";

@@ -110,9 +110,8 @@ export function CancelSubscriptionConfirmDialog({
           <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-900">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
             <p>
-              Aucun remboursement au prorata. Si tu envisages une demande de
-              remboursement au titre de la garantie 48 h, fais-la{" "}
-              <strong>avant</strong> de résilier.
+              Aucun remboursement, même au prorata : la période en cours est
+              perdue dès la résiliation.
             </p>
           </div>
         ) : null}

@@ -1,6 +1,6 @@
 import type { User } from "@supabase/supabase-js";
 import type Stripe from "stripe";
-import type { Plan } from "@/lib/constants";
+import { DEVICE_REQUIREMENT_NOTE, type Plan } from "@/lib/constants";
 import { ensureStripeCustomerForUser } from "@/lib/billing";
 import { getAppUrl, stripe } from "@/lib/stripe";
 
@@ -21,6 +21,28 @@ function withAnalyticsId(
   return {
     ...params,
     metadata: { ...params.metadata, posthog_distinct_id: analyticsId },
+  };
+}
+
+/**
+ * Mandatory checkbox in the Stripe form: the buyer asks for immediate access
+ * and waives the 14-day withdrawal right (art. L221-28 13° code de la consommation).
+ * Stripe records the acceptance on the session (`consent.terms_of_service`).
+ * Requires a Terms of Service URL in Stripe Dashboard → Settings → Public details.
+ */
+function getWithdrawalWaiverParams(): Pick<
+  Stripe.Checkout.SessionCreateParams,
+  "consent_collection" | "custom_text"
+> {
+  const appUrl = getAppUrl();
+  return {
+    consent_collection: { terms_of_service: "required" },
+    custom_text: {
+      terms_of_service_acceptance: {
+        message: `J'accepte les [conditions générales](${appUrl}/conditions-generales) et je demande l'accès immédiat au service. Je renonce expressément à mon droit de rétractation de 14 jours : aucun remboursement une fois l'accès débloqué ([politique de remboursement](${appUrl}/politique-de-remboursement)).`,
+      },
+      submit: { message: DEVICE_REQUIREMENT_NOTE },
+    },
   };
 }
 
@@ -129,12 +151,15 @@ export async function createSubscriptionCheckoutSession({
 
   const returnUrl = getCheckoutReturnUrl();
 
-  const sharedParams = withAnalyticsId(
-    user?.id
-      ? await buildAuthenticatedCheckoutParams(plan, user)
-      : buildGuestCheckoutParams(plan),
-    analyticsId
-  );
+  const sharedParams = {
+    ...withAnalyticsId(
+      user?.id
+        ? await buildAuthenticatedCheckoutParams(plan, user)
+        : buildGuestCheckoutParams(plan),
+      analyticsId
+    ),
+    ...getWithdrawalWaiverParams(),
+  };
 
   if (uiMode === "embedded_page") {
     return stripe.checkout.sessions.create({
