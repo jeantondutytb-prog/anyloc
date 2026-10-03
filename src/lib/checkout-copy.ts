@@ -102,6 +102,15 @@ export const CHECKOUT_COPY = {
   backCta: "Changer de destination",
   errGeneric: "Une erreur est survenue. Réessaie dans quelques instants.",
   errStart: "Impossible de démarrer le paiement.",
+  focusTitle: "Plus qu'une étape",
+  focusOfferNote: "1er mois à 4,95 €",
+  focusShowAllPlans: "Voir tous les plans",
+  socialProofUsers: "+10 000 utilisateurs",
+  socialProofRating: "4,6/5 sur Trustpilot",
+  recoveryOfferApplied:
+    "🎁 Ton offre est appliquée : ton 1er mois à 4,95 € au lieu de 9,90 €.",
+  recoveryOfferPickMonthly:
+    "🎁 Ton offre -50 % sur le 1er mois est valable sur le plan Mensuel.",
   errNetwork:
     "Le paiement n'a pas pu se charger : ta connexion a coupé. Vérifie ton réseau puis réessaie.",
 } as const;

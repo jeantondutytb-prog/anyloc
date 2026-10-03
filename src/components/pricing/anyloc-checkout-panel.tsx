@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { track } from "@/lib/analytics/track";
 import { getPostHogDistinctId } from "@/lib/posthog/browser";
-import { ShieldCheck, XCircle, Zap } from "lucide-react";
+import { ShieldCheck, Star, XCircle, Zap } from "lucide-react";
 import { AuthDivider } from "@/components/auth/auth-divider";
 import { GoogleAuthLink } from "@/components/auth/google-auth-link";
 import { StripeEmbeddedCheckout } from "@/components/checkout/stripe-embedded-checkout";
@@ -20,6 +20,7 @@ import {
   CHECKOUT_PLAN_IDS,
   getCheckoutHeadline,
 } from "@/lib/checkout-copy";
+import { RECOVERY_OFFER_PLAN_ID } from "@/lib/checkout-recovery-plan";
 import { PLANS } from "@/lib/constants";
 import type { OnboardingDestination } from "@/lib/onboarding-destinations";
 import { cn } from "@/lib/utils";
@@ -73,6 +74,9 @@ export function AnyLocCheckoutPanel({
   googleAuthRedirectTo,
   onBack,
   canceled,
+  recoveryOffer,
+  focusPayment,
+  onShowAllPlans,
 }: {
   selectedPlanId: string;
   onPlanChange: (planId: string) => void;
@@ -81,9 +85,16 @@ export function AnyLocCheckoutPanel({
   googleAuthRedirectTo?: string;
   onBack?: () => void;
   canceled?: boolean;
+  /** The recovery email offer is live: the monthly checkout carries the -50 % coupon. */
+  recoveryOffer?: boolean;
+  /** Arrived from an email: only the selected plan and the payment form, no sales page. */
+  focusPayment?: boolean;
+  onShowAllPlans?: () => void;
 }) {
   const copy = CHECKOUT_COPY;
   const checkoutPlans = getCheckoutPlans();
+  const selectedPlan =
+    checkoutPlans.find((plan) => plan.id === selectedPlanId) ?? checkoutPlans[0];
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -203,6 +214,8 @@ export function AnyLocCheckoutPanel({
       canceled: Boolean(canceled),
       destination_city: destination?.city,
       embedded_in_onboarding: Boolean(onBack),
+      focus_payment: Boolean(focusPayment),
+      recovery_offer: Boolean(recoveryOffer),
     });
     // Once per mount: plan changes are tracked by checkout_plan_selected.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -230,6 +243,37 @@ export function AnyLocCheckoutPanel({
         </p>
       )}
 
+      {recoveryOffer ? (
+        <p className="mb-6 rounded-xl border border-pink-200 bg-pink-50 px-4 py-3 text-center text-sm font-semibold text-pink-700">
+          {selectedPlanId === RECOVERY_OFFER_PLAN_ID
+            ? copy.recoveryOfferApplied
+            : copy.recoveryOfferPickMonthly}
+        </p>
+      ) : null}
+
+      {focusPayment ? (
+        <div className="mx-auto max-w-2xl text-center">
+          <h1 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+            {copy.focusTitle}
+          </h1>
+          <p className="mt-3 text-sm text-zinc-600 sm:text-base">
+            {selectedPlan.name} · {selectedPlan.price}
+            {selectedPlan.period}
+            {recoveryOffer && selectedPlanId === RECOVERY_OFFER_PLAN_ID
+              ? ` · ${copy.focusOfferNote}`
+              : ""}
+          </p>
+          <button
+            type="button"
+            onClick={onShowAllPlans}
+            data-track="checkout_show_all_plans_clicked"
+            className="mt-2 text-sm text-zinc-500 underline transition hover:text-zinc-900"
+          >
+            {copy.focusShowAllPlans}
+          </button>
+        </div>
+      ) : (
+      <>
       <p className="text-center text-xs font-semibold text-pink-600">
         {copy.scarcity}
       </p>
@@ -358,6 +402,9 @@ export function AnyLocCheckoutPanel({
         })}
       </div>
 
+      </>
+      )}
+
       <RefundPolicyNotice className="mt-8 text-center text-sm text-zinc-600" />
 
       <div
@@ -386,6 +433,25 @@ export function AnyLocCheckoutPanel({
             Paiement sécurisé
           </span>
         </div>
+
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm font-semibold text-zinc-900">
+          <span>{copy.socialProofUsers}</span>
+          <span aria-hidden className="text-zinc-300">·</span>
+          <span className="flex items-center gap-1">
+            <span className="flex gap-0.5" aria-hidden>
+              {[0, 1, 2, 3, 4].map((i) => (
+                <Star key={i} className="h-4 w-4 fill-emerald-500 text-emerald-500" />
+              ))}
+            </span>
+            {copy.socialProofRating}
+          </span>
+        </div>
+
+        {recoveryOffer && selectedPlanId === RECOVERY_OFFER_PLAN_ID ? (
+          <p className="mt-3 text-center text-sm font-semibold text-pink-600">
+            {copy.recoveryOfferApplied}
+          </p>
+        ) : null}
 
         {googleAuthRedirectTo ? (
           <div className="mt-6">

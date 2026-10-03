@@ -125,11 +125,14 @@ export async function createSubscriptionCheckoutSession({
   user,
   uiMode,
   analyticsId,
+  couponId,
 }: {
   plan: Plan;
   user?: User | null;
   uiMode: CheckoutMode;
   analyticsId?: string;
+  /** Stripe coupon applied up front (e.g. the recovery email offer). */
+  couponId?: string | null;
 }) {
   if (!stripe || !plan.stripePriceId) {
     throw new Error("Paiement non configuré pour ce plan");
@@ -145,6 +148,7 @@ export async function createSubscriptionCheckoutSession({
       analyticsId
     ),
     ...getDeviceRequirementParams(),
+    ...(couponId ? { discounts: [{ coupon: couponId }] } : {}),
   };
 
   if (uiMode === "embedded_page") {
