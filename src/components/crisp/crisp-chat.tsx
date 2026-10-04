@@ -1,4 +1,5 @@
 import Script from "next/script";
+import { CrispVisibility } from "@/components/crisp/crisp-visibility";
 
 const crispWebsiteId = process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID;
 
@@ -13,6 +14,7 @@ export function CrispChat() {
         {`window.$crisp=[];window.CRISP_WEBSITE_ID="${crispWebsiteId}";window.$crisp.push(["config","locale:force",["fr"]]);`}
       </Script>
       <Script src="https://client.crisp.chat/l.js" strategy="afterInteractive" />
+      <CrispVisibility />
     </>
   );
 }

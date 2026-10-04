@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Check, Lock, X } from "lucide-react";
 import { StripeEmbeddedCheckout } from "@/components/checkout/stripe-embedded-checkout";
+import { isCrispHiddenPath, setCrispBubbleHidden } from "@/components/crisp/crisp-visibility";
 import { track } from "@/lib/analytics/track";
 import { CHECKOUT_COPY } from "@/lib/checkout-copy";
 import { isNetworkError, requestCheckoutSession } from "@/lib/checkout-request";
@@ -74,6 +75,8 @@ export function CheckoutPaymentModal({
 
   useEffect(() => {
     closeRef.current?.focus();
+    // On mobile the Crisp bubble would sit on Stripe's pay button.
+    setCrispBubbleHidden(true);
     const { overflow } = document.body.style;
     document.body.style.overflow = "hidden";
     function handleKey(event: KeyboardEvent) {
@@ -81,6 +84,7 @@ export function CheckoutPaymentModal({
     }
     window.addEventListener("keydown", handleKey);
     return () => {
+      setCrispBubbleHidden(isCrispHiddenPath(window.location.pathname));
       document.body.style.overflow = overflow;
       window.removeEventListener("keydown", handleKey);
     };
