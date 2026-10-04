@@ -83,8 +83,8 @@ struct SettingsView: View {
                                     )
                                     planCard(
                                         name: "Annuel",
-                                        perDay: "≈ 0,14€",
-                                        billedPrice: "49,90€/an",
+                                        perDay: "≈ 0,13€",
+                                        billedPrice: "49,00€/an",
                                         ctaLabel: "Débloquer le meilleur prix",
                                         features: ["App iPhone sans ordi", "Support prioritaire", "3 profils web"],
                                         popular: true

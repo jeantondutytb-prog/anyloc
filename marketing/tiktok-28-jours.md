@@ -339,7 +339,7 @@ T'avais combien d'apps en "Toujours" ?
 **Description :**
 ```
 On me demande tout le temps le prix 💸
-Anyloc : 9,90 €/mois, ou 49,90 €/an (≈ 4 €/mois). Annulation en 1 clic.
+Anyloc : 9,90 €/mois, ou 49,00 €/an (≈ 4 €/mois). Annulation en 1 clic.
 👉 Tout est sur anyloc.io — lien en bio
 D'autres questions ? Je réponds à tout
 #fakegps #astuce #pourtoi
