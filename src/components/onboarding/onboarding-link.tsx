@@ -8,48 +8,23 @@ import {
   CircleReveal,
   type CircleRevealOrigin,
 } from "@/components/ui/circle-reveal";
-import { readOnboardingVariantCookie } from "@/lib/onboarding-experiment";
-
-// The onboarding map opens on Paris at zoom 12 (see onboarding-app-map.tsx).
-const START = { lat: 48.8566, lng: 2.3522, zoom: 12 };
-
-function startTiles() {
-  const n = 2 ** START.zoom;
-  const x = Math.floor(((START.lng + 180) / 360) * n);
-  const rad = (START.lat * Math.PI) / 180;
-  const y = Math.floor(((1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2) * n);
-  const tiles: [number, number][] = [];
-  for (let dx = -1; dx <= 1; dx++) {
-    for (let dy = -2; dy <= 2; dy++) {
-      tiles.push([x + dx, y + dy]);
-    }
-  }
-  return tiles;
-}
 
 let warmedUp = false;
 
-/** Loads the onboarding map code and first tiles so the app shows up ready. */
+/** Loads the onboarding map code ahead of the click, so step 2 shows up ready. */
 function warmUpOnboarding() {
   if (warmedUp || typeof window === "undefined") {
     return;
   }
   warmedUp = true;
-  void import("@/components/onboarding/onboarding-app-map");
-  for (const [x, y] of startTiles()) {
-    for (const layer of ["World_Dark_Gray_Base", "World_Dark_Gray_Reference"]) {
-      const img = new Image();
-      img.src = `https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/${layer}/MapServer/tile/${START.zoom}/${y}/${x}`;
-    }
-  }
+  void import("@/components/onboarding/onboarding-aha-map");
 }
 
 type Reveal = { origin: CircleRevealOrigin; color: string };
 
 /**
- * Link to the onboarding sandbox that covers the page with an expanding
- * circle (the app's dark background on mobile) before navigating, so the
- * dark app doesn't cut in abruptly after the light landing page.
+ * Link to the onboarding that covers the page with an expanding circle
+ * before navigating, so the onboarding doesn't cut in abruptly.
  */
 export function OnboardingLink({
   href,
@@ -92,15 +67,8 @@ export function OnboardingLink({
       x: event.clientX || rect.left + rect.width / 2,
       y: event.clientY || rect.top + rect.height / 2,
     };
-    // Mobile shows the app full screen (dark); desktop frames it on the page
-    // background. The 2-step onboarding (A/B test) is light everywhere.
-    const color =
-      readOnboardingVariantCookie() === "two_step" ||
-      window.matchMedia("(min-width: 640px)").matches
-        ? "var(--background)"
-        : "#0A0A0C";
-
-    setReveal({ origin, color });
+    // The onboarding is on the light page background.
+    setReveal({ origin, color: "var(--background)" });
     // Navigate once the circle mostly covers the page; the old page stays
     // mounted (and the overlay with it) until the onboarding page is ready.
     window.setTimeout(() => router.push(href), CIRCLE_REVEAL_MS * 0.75);
