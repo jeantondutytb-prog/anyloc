@@ -4,17 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  ArrowDown,
-  Bookmark,
-  Crosshair,
-  Globe,
-  Lock,
-  Navigation,
-  Route,
-  Search,
-  Settings,
-} from "lucide-react";
+import { ArrowDown, Check, Crosshair, Lock, Search } from "lucide-react";
 import { track } from "@/lib/analytics/track";
 import { distanceKm } from "@/lib/geo-distance";
 import type { OnboardingDestination } from "@/lib/onboarding-destinations";
@@ -22,7 +12,7 @@ import { cn } from "@/lib/utils";
 import type { VisitorLocation } from "@/lib/visitor-location";
 
 // Mirrors the iOS app's dark map screen (apps/ios/Anyloc/MapHomeView.swift):
-// floating top bar + search, gradient pin, "Téléporter" bottom sheet and the
+// floating top bar + search, gradient pin, bottom sheet and the
 // "Application de la position…" overlay. With the visitor's position (city
 // from their IP), it starts there and the pin flies to the destination.
 
@@ -196,7 +186,6 @@ export function OnboardingAhaMoment({
   onLockedClick,
   onTeleportStart,
   onDone,
-  onSetPositionClick,
 }: {
   destination: OnboardingDestination;
   /** Where the visitor is (IP city): the pin starts there, then flies. */
@@ -208,8 +197,6 @@ export function OnboardingAhaMoment({
   onTeleportStart?: () => void;
   /** The teleport animation is over: the position is "active". */
   onDone?: () => void;
-  /** "Définir cette position" once the teleport is done: leads to signup. */
-  onSetPositionClick?: () => void;
 }) {
   // No flight when "there" is basically "here" (same city).
   const distance = origin ? distanceKm(origin, destination) : 0;
@@ -255,9 +242,6 @@ export function OnboardingAhaMoment({
 
   return (
     <div className="relative mx-auto w-full max-w-sm">
-      <span className="absolute -top-3 left-1/2 z-[700] -translate-x-1/2 whitespace-nowrap rounded-full bg-zinc-900 px-3 py-1 text-[11px] font-semibold text-white shadow-lg ring-2 ring-white">
-        👀 Aperçu de l&apos;app
-      </span>
       <div className="relative h-[510px] w-full overflow-hidden rounded-[32px] bg-[#0A0A0C] shadow-2xl shadow-pink-500/20 ring-1 ring-black/10 sm:h-[540px]">
         <div className="absolute inset-0 z-0">
           <OnboardingAppMap
@@ -294,13 +278,9 @@ export function OnboardingAhaMoment({
             <span className="text-[17px] font-semibold text-[#F4F4F5]">
               Anyloc
             </span>
-            <span className="flex-1" />
-            <Bookmark
-              className="mx-2 h-[18px] w-[18px] text-[#F472B6]"
-              strokeWidth={2.4}
-            />
-            <Settings className="mx-2 h-[18px] w-[18px] text-[#C4C4CA]" />
           </div>
+          {/* The search only matters while the destination types itself in. */}
+          {waiting && (
           <div
             className={cn(
               floatingCard,
@@ -323,6 +303,7 @@ export function OnboardingAhaMoment({
               </span>
             )}
           </div>
+          )}
           <p className="pr-1 text-right text-[9px] text-white/35">
             © Esri · © OpenStreetMap
           </p>
@@ -372,26 +353,7 @@ export function OnboardingAhaMoment({
         >
           <div className="mx-auto mb-2.5 h-1 w-9 rounded-full bg-[#303038]" />
 
-          <div className="flex gap-1">
-            {[
-              { label: "Téléporter", Icon: Navigation, on: true },
-              { label: "Trajet", Icon: Route, on: false },
-              { label: "Explorer", Icon: Globe, on: false },
-            ].map(({ label, Icon, on }) => (
-              <div
-                key={label}
-                className={cn(
-                  "flex h-9 flex-1 items-center justify-center gap-1.5 rounded-[11px] text-[13px] font-medium",
-                  on ? "bg-pink-500/[0.13] text-[#F472B6]" : "text-[#C4C4CA]",
-                )}
-              >
-                <Icon className={cn("h-3.5 w-3.5", on && "fill-current")} />
-                {label}
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-3 flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5">
             <div className="min-w-0 flex-1">
               <AnimatePresence mode="wait" initial={false}>
                 <motion.p
@@ -435,16 +397,6 @@ export function OnboardingAhaMoment({
                 </p>
               )}
             </div>
-            {located && (
-              <div className="flex gap-2">
-                <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-pink-500/[0.13] text-[#F472B6]">
-                  <Bookmark className="h-[17px] w-[17px]" strokeWidth={2.4} />
-                </span>
-                <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-pink-500/[0.13] text-[#F472B6]">
-                  <Navigation className="h-[17px] w-[17px] fill-current" />
-                </span>
-              </div>
-            )}
           </div>
 
           <div className="mt-3 grid grid-cols-4 gap-1.5">
@@ -456,26 +408,23 @@ export function OnboardingAhaMoment({
                 <div
                   key={app}
                   className={cn(
-                    "rounded-[10px] border py-1.5 text-center transition-colors duration-300",
+                    "flex h-8 items-center justify-center gap-1 rounded-[10px] border text-[12px] font-semibold transition-colors duration-300",
                     synced
                       ? "border-pink-500/[0.42] bg-pink-500/[0.13] text-[#F472B6]"
-                      : "border-[#25252B] bg-[#16161A] text-[#C4C4CA]",
+                      : syncing
+                        ? "border-[#25252B] bg-[#16161A] text-[#C4C4CA]"
+                        : "border-[#25252B] bg-[#16161A] text-[#55555D]",
                   )}
                 >
-                  <p className="text-[12px] font-medium leading-tight">{app}</p>
-                  <p
-                    className={cn(
-                      "truncate px-1 text-[10px] leading-tight",
-                      synced ? "opacity-75" : "text-[#55555D]",
-                    )}
-                  >
-                    {synced ? destination.city : syncing ? "Synchro…" : "—"}
-                  </p>
+                  {synced && <Check className="h-3 w-3" strokeWidth={3} />}
+                  {app}
                 </div>
               );
             })}
           </div>
 
+          {/* Once done, "Valider ma position" under the phone takes over. */}
+          {!isDone && (
           <div className="relative">
           {phase === "ready" && (
             // Small arrow over the button: the next move is the visitor's.
@@ -492,9 +441,7 @@ export function OnboardingAhaMoment({
             type="button"
             onClick={(event) => {
               event.stopPropagation();
-              if (isDone) {
-                onSetPositionClick?.();
-              } else if (waiting) {
+              if (waiting) {
                 start();
                 onTeleportStart?.();
               }
@@ -516,6 +463,7 @@ export function OnboardingAhaMoment({
             Définir cette position
           </motion.button>
           </div>
+          )}
         </div>
 
         <AnimatePresence>

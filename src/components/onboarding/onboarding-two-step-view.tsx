@@ -265,10 +265,6 @@ function StepPreview({
           track("onboarding_teleport_clicked", { destination_city: destination.city })
         }
         onDone={() => setTeleported(true)}
-        onSetPositionClick={() => {
-          track("onboarding_preview_cta_click", { destination_city: destination.city });
-          onContinue();
-        }}
       />
 
       {teleported && (
