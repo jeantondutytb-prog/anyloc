@@ -111,7 +111,7 @@ export function CancelSubscriptionConfirmDialog({
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
             <p>
               Aucun remboursement, même au prorata : la période en cours est
-              perdue dès la résiliation.
+              perdue dès la résiliation. Résilier met aussi fin à la garantie 48 h.
             </p>
           </div>
         ) : null}

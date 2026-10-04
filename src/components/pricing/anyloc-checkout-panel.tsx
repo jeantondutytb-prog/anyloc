@@ -1,68 +1,67 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { track } from "@/lib/analytics/track";
-import { getPostHogDistinctId } from "@/lib/posthog/browser";
-import { ShieldCheck, Star, XCircle, Zap } from "lucide-react";
+import {
+  ChevronDown,
+  CircleCheck,
+  CreditCard,
+  Monitor,
+  ShieldCheck,
+  Smartphone,
+  Star,
+} from "lucide-react";
 import { AuthDivider } from "@/components/auth/auth-divider";
 import { GoogleAuthLink } from "@/components/auth/google-auth-link";
-import { StripeEmbeddedCheckout } from "@/components/checkout/stripe-embedded-checkout";
-import { CheckoutProofCarousel } from "@/components/pricing/checkout-proof-carousel";
-import { CheckoutReviewsGrid } from "@/components/pricing/checkout-reviews-grid";
-import { PaywallValueStack } from "@/components/pricing/paywall-value-stack";
-import { PlanPrice } from "@/components/pricing/plan-price";
-import { RefundPolicyNotice } from "@/components/pricing/refund-policy-notice";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+import { CheckoutPaymentModal } from "@/components/checkout/checkout-payment-modal";
 import {
   CHECKOUT_COPY,
   CHECKOUT_PLAN_IDS,
+  CHECKOUT_REVIEWS,
   getCheckoutHeadline,
 } from "@/lib/checkout-copy";
 import { RECOVERY_OFFER_PLAN_ID } from "@/lib/checkout-recovery-plan";
-import { PLANS } from "@/lib/constants";
+import { isNetworkError, requestCheckoutSession } from "@/lib/checkout-request";
+import { GUARANTEE, PLAN_VALUE_STACK, PLANS } from "@/lib/constants";
 import type { OnboardingDestination } from "@/lib/onboarding-destinations";
 import { cn } from "@/lib/utils";
+
+/** Apple logo outline (Simple Icons path, CC0): lucide's `Apple` is a fruit, not the brand. */
+function AppleLogo({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="-1.5 -1.5 27 27"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinejoin="round"
+      aria-hidden
+      // Outline like the lucide icons next to it; nudged up because the
+      // leaf makes the glyph sit low against the text.
+      className={cn("-translate-y-px", className)}
+    >
+      <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701" />
+    </svg>
+  );
+}
+
+function subscribeToNothing() {
+  return () => {};
+}
+
+/** Small line under the daily price: what is actually billed, and for how long. */
+const BILLING_PERIOD_LABELS: Record<string, string> = {
+  monthly: "1 mois",
+  "6months": "6 mois",
+  annual: "12 mois",
+};
 
 function getCheckoutPlans() {
   return CHECKOUT_PLAN_IDS.map((id) => {
     const plan = PLANS.find((entry) => entry.id === id)!;
     return plan;
-  });
-}
-
-async function parseJsonResponse(res: Response) {
-  const text = await res.text();
-  if (!text) {
-    throw new Error("Réponse serveur vide. Réessaie dans quelques instants.");
-  }
-
-  try {
-    return JSON.parse(text) as { clientSecret?: string; error?: string };
-  } catch {
-    throw new Error("Réponse serveur invalide. Réessaie dans quelques instants.");
-  }
-}
-
-/** Backoff between attempts when the request never reaches the server. */
-const NETWORK_RETRY_DELAYS_MS = [800, 2000];
-
-/**
- * fetch rejects with a TypeError when the network drops the request
- * ("Load failed" on Safari iOS, "Failed to fetch" on Chrome): worth retrying.
- */
-function isNetworkError(err: unknown) {
-  return err instanceof TypeError;
-}
-
-function wait(ms: number, signal: AbortSignal) {
-  return new Promise<void>((resolve) => {
-    const timer = setTimeout(resolve, ms);
-    signal.addEventListener("abort", () => {
-      clearTimeout(timer);
-      resolve();
-    });
   });
 }
 
@@ -87,7 +86,7 @@ export function AnyLocCheckoutPanel({
   canceled?: boolean;
   /** The recovery email offer is live: the monthly checkout carries the -50 % coupon. */
   recoveryOffer?: boolean;
-  /** Arrived from an email: only the selected plan and the payment form, no sales page. */
+  /** Arrived from an email: only the selected plan and the payment popup, no sales page. */
   focusPayment?: boolean;
   onShowAllPlans?: () => void;
 }) {
@@ -95,118 +94,84 @@ export function AnyLocCheckoutPanel({
   const checkoutPlans = getCheckoutPlans();
   const selectedPlan =
     checkoutPlans.find((plan) => plan.id === selectedPlanId) ?? checkoutPlans[0];
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const requestRef = useRef<AbortController | null>(null);
-  const paymentSectionRef = useRef<HTMLDivElement>(null);
-  const [paymentVisible, setPaymentVisible] = useState(false);
 
-  function scrollToPayment() {
-    requestAnimationFrame(() => {
-      paymentSectionRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    });
+  // Email links (?paiement=1) land straight on the payment popup.
+  const [modalOpen, setModalOpen] = useState(Boolean(focusPayment));
+  // The popup is portaled to <body>: only render it once in the browser.
+  const hydrated = useSyncExternalStore(subscribeToNothing, () => true, () => false);
+
+  function openPaymentModal(source: "main" | "resume") {
+    track("checkout_continue_clicked", { plan: selectedPlanId, source });
+    setError(null);
+    setModalOpen(true);
   }
 
-  async function startCheckout(planId: string, isInitial = false) {
+  const closePaymentModal = useCallback(() => {
+    track("checkout_modal_closed", { plan: selectedPlanId });
+    requestRef.current?.abort();
+    setRedirecting(false);
+    setModalOpen(false);
+  }, [selectedPlanId]);
+
+  /** Fallback from the popup: Stripe-hosted payment page for the selected plan. */
+  async function goToHostedPayment() {
+    if (redirecting) return;
     requestRef.current?.abort();
     const controller = new AbortController();
     requestRef.current = controller;
+    const planId = selectedPlanId;
 
-    if (isInitial) {
-      setLoading(true);
-    } else {
-      setUpdating(true);
-    }
+    setRedirecting(true);
     setError(null);
-    const startedAt = performance.now();
-
-    let attempt = 0;
+    track("checkout_hosted_fallback_clicked", { plan: planId });
 
     try {
-      let res: Response;
-      for (;;) {
-        try {
-          res = await fetch("/api/stripe/embedded-checkout", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            // Lets the webhook tie a purchase made without an account to this visit.
-            body: JSON.stringify({ planId, analyticsId: getPostHogDistinctId() }),
-            signal: controller.signal,
-          });
-          break;
-        } catch (err) {
-          const delay = NETWORK_RETRY_DELAYS_MS[attempt];
-          if (controller.signal.aborted || !isNetworkError(err) || delay === undefined) {
-            throw err;
-          }
-          attempt += 1;
-          track("checkout_network_retry", {
-            plan: planId,
-            attempt,
-            error: err instanceof Error ? err.message : String(err),
-          });
-          await wait(delay, controller.signal);
-          if (controller.signal.aborted) return;
-        }
-      }
-      const data = await parseJsonResponse(res);
-
-      if (!res.ok || !data.clientSecret) {
+      const data = await requestCheckoutSession("/api/checkout", planId, controller.signal);
+      if (!data.url) {
         throw new Error(data.error ?? copy.errStart);
       }
-
-      if (requestRef.current === controller) {
-        setClientSecret(data.clientSecret);
-        track("checkout_payment_form_ready", {
-          plan: planId,
-          load_ms: Math.round(performance.now() - startedAt),
-          retry: !isInitial,
-          network_retries: attempt,
-        });
-      }
+      track("checkout_redirected_to_stripe", { plan: planId, network_retries: data.networkRetries });
+      window.location.assign(data.url);
     } catch (err) {
       if (controller.signal.aborted) return;
       const networkError = isNetworkError(err);
-      const message = networkError
-        ? copy.errNetwork
-        : err instanceof Error
-          ? err.message
-          : copy.errGeneric;
-      setError(message);
+      setError(
+        networkError ? copy.errNetwork : err instanceof Error ? err.message : copy.errGeneric
+      );
+      setRedirecting(false);
       track("checkout_error", {
         plan: planId,
         error: err instanceof Error ? err.message : String(err),
         error_type: networkError ? "network" : "server",
-        network_retries: attempt,
+        checkout_variant: "hosted_fallback",
         online: navigator.onLine,
       });
-    } finally {
-      if (requestRef.current === controller) {
-        setLoading(false);
-        setUpdating(false);
-      }
     }
   }
 
   function selectPlan(planId: string) {
     track("checkout_plan_selected", { plan: planId, previous_plan: selectedPlanId });
+    setError(null);
     if (planId !== selectedPlanId) {
       onPlanChange(planId);
     }
-    scrollToPayment();
   }
 
   useEffect(() => {
-    setClientSecret(null);
-    setError(null);
-    void startCheckout(selectedPlanId, true);
-    return () => requestRef.current?.abort();
-  }, [selectedPlanId]);
+    // Back from Stripe with the browser button: the page comes out of the
+    // back/forward cache still "redirecting", so unlock the button.
+    function handlePageShow(event: PageTransitionEvent) {
+      if (event.persisted) setRedirecting(false);
+    }
+    window.addEventListener("pageshow", handlePageShow);
+    return () => {
+      window.removeEventListener("pageshow", handlePageShow);
+      requestRef.current?.abort();
+    };
+  }, []);
 
   useEffect(() => {
     track("checkout_viewed", {
@@ -221,42 +186,132 @@ export function AnyLocCheckoutPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    const el = paymentSectionRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setPaymentVisible(entry.isIntersecting),
-      { threshold: 0.1 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  const consentParts = copy.consent.split("{cgv}");
   const headline = getCheckoutHeadline(destination?.city);
 
+  function renderPlans(className?: string) {
+    return (
+    <div role="radiogroup" aria-label="Choisis ton plan" className={cn("space-y-2.5", className)}>
+      {checkoutPlans.map((plan) => {
+        const selected = plan.id === selectedPlanId;
+
+        return (
+          <button
+            key={plan.id}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            onClick={() => selectPlan(plan.id)}
+            className={cn(
+              "relative flex w-full items-center gap-3 rounded-2xl border bg-white px-4 py-3.5 text-left transition",
+              plan.popular && "mt-4",
+              selected
+                ? "border-pink-500 ring-2 ring-pink-500/30"
+                : "border-zinc-200 hover:border-zinc-300"
+            )}
+          >
+            {plan.popular ? (
+              <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-pink-500 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                {copy.popularBadge}
+              </span>
+            ) : null}
+            <span
+              className={cn(
+                "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2",
+                selected ? "border-pink-500" : "border-zinc-300"
+              )}
+            >
+              {selected && <span className="h-2.5 w-2.5 rounded-full bg-pink-500" />}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold text-zinc-900">{plan.name}</span>
+              <span
+                className={cn(
+                  "mt-0.5 flex items-center gap-1 text-xs",
+                  plan.mobileApp ? "font-semibold text-pink-600" : "text-zinc-500"
+                )}
+              >
+                {plan.mobileApp ? (
+                  <Smartphone className="h-3.5 w-3.5" />
+                ) : (
+                  <Monitor className="h-3.5 w-3.5" />
+                )}
+                {plan.mobileApp ? copy.planMobileApp : copy.planDesktopOnly}
+              </span>
+            </span>
+            <span className="shrink-0 text-right">
+              <span className="block whitespace-nowrap text-lg font-bold tabular-nums text-zinc-900">
+                {plan.perDay.replace("≈ ", "")} €
+                <span className="text-xs font-medium text-zinc-500">/jour</span>
+              </span>
+              <span className="block whitespace-nowrap text-xs tabular-nums text-zinc-500">
+                {plan.price.replace("€", " €")} / {BILLING_PERIOD_LABELS[plan.id]}
+              </span>
+            </span>
+          </button>
+        );
+      })}
+    </div>
+    );
+  }
+
+  function renderContinueButton(source: "main" | "resume") {
+    return (
+      <button
+        type="button"
+        onClick={() => openPaymentModal(source)}
+        className="btn-gradient flex h-12 w-full items-center justify-center gap-2 rounded-full text-[15px] font-bold text-white transition hover:opacity-90 disabled:opacity-70"
+      >
+        {copy.continueCta}
+      </button>
+    );
+  }
+
   return (
-    <div className={cn("anyloc-checkout mx-auto max-w-6xl px-4 sm:px-6", !paymentVisible && "pb-20")}>
+    <div className="anyloc-checkout mx-auto max-w-lg px-4 sm:px-6">
       {canceled && (
-        <p className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           {copy.canceled}
         </p>
       )}
 
       {recoveryOffer ? (
-        <p className="mb-6 rounded-xl border border-pink-200 bg-pink-50 px-4 py-3 text-center text-sm font-semibold text-pink-700">
+        <p className="mb-4 rounded-xl border border-pink-200 bg-pink-50 px-4 py-3 text-center text-sm font-semibold text-pink-700">
           {selectedPlanId === RECOVERY_OFFER_PLAN_ID
             ? copy.recoveryOfferApplied
             : copy.recoveryOfferPickMonthly}
         </p>
       ) : null}
 
+      <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2.5">
+        <ShieldCheck className="mt-px h-4 w-4 shrink-0 text-emerald-600" />
+        <div className="min-w-0 flex-1">
+          <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-sm font-bold leading-tight text-emerald-900">
+            {GUARANTEE.title}
+            <span className="rounded-full bg-emerald-600 px-1.5 py-px text-[10px] font-bold text-white">
+              {GUARANTEE.badge}
+            </span>
+          </p>
+          <p className="mt-1 text-[13.5px] leading-snug text-emerald-900/75">
+            {GUARANTEE.summary}{" "}
+            <Link
+              href="/politique-de-remboursement"
+              target="_blank"
+              rel="noreferrer"
+              data-track="checkout_guarantee_conditions_clicked"
+              className="whitespace-nowrap text-[9.5px] font-semibold text-emerald-700 underline"
+            >
+              {copy.guaranteeConditionsToggle}
+            </Link>
+          </p>
+        </div>
+      </div>
+
       {focusPayment ? (
-        <div className="mx-auto max-w-2xl text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">
             {copy.focusTitle}
           </h1>
-          <p className="mt-3 text-sm text-zinc-600 sm:text-base">
+          <p className="mt-2 text-sm text-zinc-600">
             {selectedPlan.name} · {selectedPlan.price}
             {selectedPlan.period}
             {recoveryOffer && selectedPlanId === RECOVERY_OFFER_PLAN_ID
@@ -267,273 +322,138 @@ export function AnyLocCheckoutPanel({
             type="button"
             onClick={onShowAllPlans}
             data-track="checkout_show_all_plans_clicked"
-            className="mt-2 text-sm text-zinc-500 underline transition hover:text-zinc-900"
+            className="mt-1 text-sm text-zinc-500 underline transition hover:text-zinc-900"
           >
             {copy.focusShowAllPlans}
           </button>
         </div>
       ) : (
-      <>
-      <p className="text-center text-xs font-semibold text-pink-600">
-        {copy.scarcity}
-      </p>
+        <>
+          <h1 className="text-center text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">
+            {headline.before} <span className="gradient-text">{headline.highlight}</span>
+          </h1>
 
-      <h1 className="mx-auto mt-4 max-w-3xl text-center text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
-        {headline.before}{" "}
-        <span className="gradient-text">{headline.highlight}</span>
-        {headline.after ? (
-          <>
-            <br />
-            {headline.after}
-          </>
-        ) : null}
-      </h1>
-
-      <p className="mx-auto mt-3 max-w-2xl text-center text-sm leading-relaxed text-zinc-600 sm:text-base">
-        {copy.subA}
-        <span className="font-semibold text-zinc-900">{copy.subHl}</span>
-        {copy.subB}
-      </p>
-
-      {destination ? (
-        <p className="mt-4 text-center text-sm font-semibold text-foreground">
-          {destination.emoji} {copy.destinationLabel} : {destination.city}
-        </p>
-      ) : null}
-
-      <div className="mt-8 sm:mt-10">
-        <h3 className="text-center text-2xl font-bold tracking-tight text-zinc-900">
-          {copy.proofTitle}
-        </h3>
-        <p className="mx-auto mt-2 max-w-md text-center text-sm text-zinc-600">
-          {copy.proofSub}
-        </p>
-        <div className="mt-6">
-          <CheckoutProofCarousel />
-        </div>
-      </div>
-
-      <div className="mx-auto mt-12 max-w-2xl text-center">
-        <h2 className="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">
-          {copy.valueTitle}
-        </h2>
-      </div>
-      <div className="mt-8 grid gap-4 sm:grid-cols-2">
-        {copy.included.map((item) => (
-          <Card
-            key={item.t}
-            className="p-5 transition-colors hover:border-pink-500/20"
-          >
-            <p className="text-sm font-semibold text-zinc-900">{item.t}</p>
-            <p className="mt-1 text-sm leading-relaxed text-zinc-500">{item.d}</p>
-          </Card>
-        ))}
-      </div>
-
-      <CheckoutReviewsGrid />
-
-      <div className="mx-auto mt-16 max-w-2xl text-center">
-        <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
-          {copy.selectTitle}
-        </h2>
-        <p className="mt-4 text-zinc-600">{copy.selectSub}</p>
-        <p className="mt-2 text-sm font-medium text-pink-600">{copy.scarcity}</p>
-      </div>
-
-      <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {checkoutPlans.map((plan) => {
-          const selected = plan.id === selectedPlanId;
-
-          return (
-            <button
-              key={plan.id}
-              type="button"
-              onClick={() => selectPlan(plan.id)}
-              className="w-full text-left"
-            >
-              <Card
-                className={cn(
-                  "relative flex h-full flex-col p-6 transition",
-                  plan.popular
-                    ? "border-pink-500/40 bg-gradient-to-b from-pink-500/10 to-violet-500/5 ring-1 ring-pink-500/25"
-                    : "",
-                  selected && "ring-2 ring-pink-500"
-                )}
-              >
-                {plan.badge ? (
-                  <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    {plan.badge}
-                  </Badge>
-                ) : null}
-
-                <h3 className="text-lg font-semibold text-zinc-900">{plan.name}</h3>
-                <p className="mt-1 text-xs font-medium text-zinc-500">
-                  Accès Anyloc complet
-                </p>
-                <PlanPrice plan={plan} size="landing" className="mt-4" />
-                {plan.savings ? (
-                  <p className="mt-1 text-sm text-pink-600">{plan.savings}</p>
-                ) : null}
-                {plan.compare && !plan.savings ? (
-                  <p className="mt-1 text-xs text-zinc-500">{plan.compare}</p>
-                ) : null}
-                <p className="mt-2 text-sm text-zinc-500">{plan.description}</p>
-
-                <PaywallValueStack
-                  mobileApp={plan.mobileApp}
-                  className="mt-5 flex-1 border-t border-zinc-100 pt-5"
-                  compact
-                  showHeading
-                />
-
-                <div
-                  className={cn(
-                    "mt-6 w-full rounded-xl px-3 py-2.5 text-center text-sm font-semibold transition",
-                    selected
-                      ? "bg-pink-500 text-white"
-                      : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-                  )}
-                >
-                  {selected ? "Plan sélectionné" : "Choisir ce plan"}
-                </div>
-              </Card>
-            </button>
-          );
-        })}
-      </div>
-
-      </>
+          {renderPlans("mt-5")}
+        </>
       )}
 
-      <RefundPolicyNotice className="mt-8 text-center text-sm text-zinc-600" />
-
-      <div
-        ref={paymentSectionRef}
-        id="checkout-payment"
-        className="mx-auto mt-12 max-w-2xl scroll-mt-28"
-      >
-        <h3 className="text-center text-lg font-semibold text-zinc-900">
-          {copy.payTitle}
-        </h3>
-        <p className="mt-2 text-center text-sm text-zinc-500">
-          {copy.paySub}
-        </p>
-
-        <div className="mt-4 flex flex-wrap items-center justify-center gap-4 text-sm text-zinc-600">
-          <span className="flex items-center gap-1.5">
-            <Zap className="h-4 w-4 text-green-600" />
-            Accès immédiat
-          </span>
-          <span className="flex items-center gap-1.5">
-            <XCircle className="h-4 w-4 text-pink-500" />
-            Annulation en 1 clic
-          </span>
-          <span className="flex items-center gap-1.5">
-            <ShieldCheck className="h-4 w-4 text-blue-500" />
-            Paiement sécurisé
-          </span>
-        </div>
-
-        <div className="mt-5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm font-semibold text-zinc-900">
-          <span>{copy.socialProofUsers}</span>
-          <span aria-hidden className="text-zinc-300">·</span>
-          <span className="flex items-center gap-1">
-            <span className="flex gap-0.5" aria-hidden>
-              {[0, 1, 2, 3, 4].map((i) => (
-                <Star key={i} className="h-4 w-4 fill-emerald-500 text-emerald-500" />
-              ))}
-            </span>
-            {copy.socialProofRating}
-          </span>
-        </div>
-
-        {recoveryOffer && selectedPlanId === RECOVERY_OFFER_PLAN_ID ? (
-          <p className="mt-3 text-center text-sm font-semibold text-pink-600">
-            {copy.recoveryOfferApplied}
-          </p>
-        ) : null}
-
+      <div id="checkout-payment" className="mt-4 scroll-mt-20">
         {googleAuthRedirectTo ? (
-          <div className="mt-6">
+          <div className="mb-4">
             <GoogleAuthLink redirectTo={googleAuthRedirectTo} />
             <AuthDivider />
           </div>
         ) : null}
+        {renderContinueButton("main")}
+      </div>
 
-        <div className="relative mt-6 min-h-[140px]">
-        {clientSecret ? (
-          <div className="animate-[fadeIn_.3s_ease]">
-            <StripeEmbeddedCheckout
-              key={clientSecret}
-              clientSecret={clientSecret}
-              publishableKey={stripePublishableKey}
-            />
-            {updating ? (
-              <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-white/70 text-sm font-semibold text-foreground backdrop-blur-[1px]">
-                {copy.updating}
-              </div>
-            ) : null}
-          </div>
-        ) : error ? (
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-center">
-            <p className="text-sm text-red-600">{error}</p>
-            <button
-              type="button"
-              onClick={() => void startCheckout(selectedPlanId)}
-              disabled={loading}
-              data-track="checkout_retry_clicked"
-              data-track-plan={selectedPlanId}
-              className="mt-3 rounded-full btn-gradient px-6 py-2.5 text-sm font-bold transition hover:opacity-90 disabled:opacity-60"
-            >
-              {copy.retryCta}
-            </button>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center gap-3 py-10 text-sm font-semibold text-muted-foreground">
-            <span className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-pink-500" />
-            {copy.payOpening}
-          </div>
-        )}
-        </div>
-
-        <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-center text-sm text-zinc-500">
-          {copy.trust.map((item) => (
-            <span key={item}>{item}</span>
-          ))}
-        </div>
-
-        <p className="mt-4 text-center text-xs leading-snug text-zinc-500">
-        {consentParts[0]}
-        <Link
-          href="/conditions-generales"
-          target="_blank"
-          rel="noreferrer"
-          className="underline hover:text-foreground"
-        >
-          {copy.consentCgv}
-        </Link>
-        {consentParts[1]}
+      <div className="mt-4 text-center">
+        <p className="flex items-center justify-center gap-1.5 text-xs font-medium text-emerald-600">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+          {copy.paymentProcessor}
         </p>
+        <ul className="mt-2 flex flex-wrap items-center justify-center gap-1.5 text-[11px] text-zinc-500">
+          {[
+            { label: "Stripe", Icon: ShieldCheck },
+            { label: "Carte bancaire", Icon: CreditCard },
+            { label: "Apple Pay", Icon: AppleLogo },
+          ].map(({ label, Icon }) => (
+            <li
+              key={label}
+              className="flex items-center gap-1 rounded-md border border-zinc-200 bg-white px-2 py-1"
+            >
+              <Icon className="h-3 w-3" />
+              {label}
+            </li>
+          ))}
+        </ul>
       </div>
 
-      <div className="mx-auto mt-12 max-w-3xl">
-        <h3 className="text-center text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">
-          {copy.faqTitle}
-        </h3>
-        <dl className="mt-8 space-y-3">
-          {copy.faq.map((item) => (
-            <div
-              key={item.q}
-              className="rounded-xl border border-zinc-200 bg-zinc-50 px-5 py-4"
-            >
-              <dt className="text-sm font-medium text-zinc-900">{item.q}</dt>
-              <dd className="mt-2 text-sm leading-relaxed text-zinc-600">
-                {item.a}
-              </dd>
-            </div>
-          ))}
-        </dl>
+      <h2 className="mt-10 text-base font-bold text-zinc-900">{copy.unlockTitle}</h2>
+      <ul className="mt-3 space-y-2">
+        {PLAN_VALUE_STACK.map((perk) => (
+          <li
+            key={perk}
+            className="flex items-center gap-2.5 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-medium text-zinc-900"
+          >
+            <CircleCheck className="h-4 w-4 shrink-0 text-emerald-600" />
+            {perk}
+          </li>
+        ))}
+      </ul>
+
+      <h2 className="mt-10 text-base font-bold text-zinc-900">{copy.faqTitle}</h2>
+      <div className="mt-3 space-y-2">
+        {copy.faq.map((item) => (
+          <details
+            key={item.q}
+            className="group rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm"
+          >
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-medium text-zinc-900 [&::-webkit-details-marker]:hidden">
+              {item.q}
+              <ChevronDown className="h-4 w-4 shrink-0 text-zinc-400 transition-transform group-open:rotate-180" />
+            </summary>
+            <p className="mt-2 leading-relaxed text-zinc-600">{item.a}</p>
+          </details>
+        ))}
       </div>
+
+      <h2 className="mt-10 text-base font-bold text-zinc-900">{copy.reviewsListTitle}</h2>
+      <ul className="mt-3 space-y-2">
+        {CHECKOUT_REVIEWS.slice(0, 3).map((review) => (
+          <li
+            key={review.name}
+            className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm"
+          >
+            {review.avatar ? (
+              <Image
+                src={review.avatar}
+                alt=""
+                width={40}
+                height={40}
+                className="h-10 w-10 shrink-0 rounded-full object-cover"
+              />
+            ) : (
+              <span
+                aria-hidden
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-pink-500 to-purple-500 text-sm font-bold text-white"
+              >
+                {review.name.charAt(0)}
+              </span>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-zinc-800">« {review.text} »</p>
+              <p className="mt-1 flex items-center gap-1.5 text-xs text-zinc-500">
+                {review.name} · {review.city}
+                <span className="flex" aria-hidden>
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <Star key={i} className="h-3 w-3 fill-amber-400 text-amber-400" />
+                  ))}
+                </span>
+              </p>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      {!focusPayment ? (
+        <div className="mt-10 border-t border-zinc-200 pt-8">
+          <h2 className="text-base font-bold text-zinc-900">{copy.resumeTitle}</h2>
+          {renderPlans("mt-3")}
+          <div className="mt-4">{renderContinueButton("resume")}</div>
+        </div>
+      ) : null}
+
+      {modalOpen && hydrated ? (
+        <CheckoutPaymentModal
+          plan={selectedPlan}
+          stripePublishableKey={stripePublishableKey}
+          hostedRedirecting={redirecting}
+          hostedError={error}
+          onHostedFallback={() => void goToHostedPayment()}
+          onClose={closePaymentModal}
+        />
+      ) : null}
 
       {onBack ? (
         <button
@@ -546,42 +466,6 @@ export function AnyLocCheckoutPanel({
         </button>
       ) : null}
 
-      {!paymentVisible && (
-        <div className="fixed inset-x-0 bottom-0 z-50 border-t border-zinc-200 bg-white/95 px-4 py-3 backdrop-blur-sm">
-          <div className="mx-auto flex max-w-2xl items-center justify-between gap-4">
-            <div className="hidden sm:block">
-              <p className="text-sm font-semibold text-zinc-900">
-                {copy.stickyTitle}
-              </p>
-              <p className="text-xs text-zinc-500">
-                {copy.stickySub}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={scrollToPayment}
-              data-track="checkout_sticky_cta_clicked"
-              data-track-plan={selectedPlanId}
-              className="btn-gradient w-full rounded-full px-8 py-3 text-sm font-bold text-white transition hover:opacity-90 sm:w-auto"
-            >
-              {copy.stickyCta}
-            </button>
-          </div>
-        </div>
-      )}
-
-      <style jsx global>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(6px);
-          }
-          to {
-            opacity: 1;
-            transform: none;
-          }
-        }
-      `}</style>
     </div>
   );
 }

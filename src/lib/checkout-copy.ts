@@ -1,78 +1,37 @@
-import {
-  CHECKOUT_CTA_SUBLINE,
-  CHECKOUT_SELECT_SUBLINE,
-  PAYWALL_TESTIMONIALS,
-  PLAN_IDS,
-  PLAN_VALUE_STACK,
-  SITE,
-} from "@/lib/constants";
+import { PAYWALL_TESTIMONIALS, PLAN_IDS, PLAN_VALUE_STACK } from "@/lib/constants";
 
 export const CHECKOUT_REVIEWS = PAYWALL_TESTIMONIALS.map((testimonial) => ({
   name: testimonial.author,
   stars: 5,
   text: testimonial.quote,
   city: testimonial.city,
+  /** Profile photo under /public, only with the reviewer's consent. */
+  avatar: "avatar" in testimonial ? (testimonial.avatar as string) : undefined,
 }));
 
 export const CHECKOUT_COPY = {
-  scarcity: CHECKOUT_CTA_SUBLINE,
-  h1a: "Fake ta loc",
-  h1b: "alors que t'es chez toi.",
-  subA: `${SITE.name} hack ton GPS — Snap, Insta, Tinder, jeux : un réglage et `,
-  subHl: "tout ton tel déménage",
-  subB: ". Pas de screen, pas de montage — le même signal que si t'étais sur place.",
-  valueTitle: "Un seul cheat code pour tout ton tel",
-  included: [
-    {
-      t: "Multi-apps native",
-      d:
-        "Fini les apps qui marchent que sur Snap. Un réglage, toutes les apps impactées.",
-    },
-    {
-      t: "Signal GPS réel",
-      d:
-        "Les autres solutions trichent en surface. Anyloc modifie le signal que ton tel envoie vraiment.",
-    },
-    {
-      t: "Opérationnel en quelques minutes",
-      d:
-        "Pas besoin d'être un crack en tech. On te guide de l'inscription à ta première loc.",
-    },
-    {
-      t: "Annule quand tu veux",
-      d: "Résiliation en 1 clic depuis ton espace — sans appel, sans formulaire.",
-    },
-  ],
-  selectTitle: "Choisis ta durée",
-  selectSub: CHECKOUT_SELECT_SUBLINE,
-  perksTitle: "Inclus dans ton accès",
-  payTitle: "Active ton accès complet",
-  paySub: "Paiement sécurisé — accès immédiat à toutes les fonctionnalités.",
+  guaranteeConditionsToggle: "Voir les conditions",
+  unlockTitle: "Ce que tu débloques",
+  faqTitle: "Les questions qu'on nous pose",
+  reviewsListTitle: "Ce qu'ils en disent",
+  resumeTitle: "Reprends là où tu en étais",
+  paymentProcessor: "Paiement sécurisé, encaissé par Stripe",
+  popularBadge: "Le plus choisi",
+  planMobileApp: "App mobile incluse",
+  planDesktopOnly: "Sur PC et Mac",
+  continueCta: "Continuer",
+  redirecting: "Redirection vers le paiement…",
+  modalTitle: "Paiement",
+  modalCancelAnytime: "Résiliable à tout moment, en 1 clic depuis ton espace.",
+  modalFallbackLead: "Le paiement ne s'affiche pas ?",
+  modalFallbackCta: "Payer sur la page sécurisée Stripe ↗",
   payOpening: "On prépare ton paiement…",
-  updating: "Mise à jour du plan…",
-  stickyTitle: "Accès complet",
-  stickySub: "Paiement sécurisé · Accès immédiat",
-  stickyCta: "Payer maintenant ↓",
-  trust: [
-    "🔒 Paiement sécurisé",
-    "· Annulation en 1 clic",
-  ],
-  reassure: [
-    "Paiement 100% sécurisé",
-    "Annulation en 1 clic, sans justificatif",
-    "Accès immédiat après validation",
-  ],
-  secureTitle: "Paiement 100% sécurisé",
-  ssl: "SSL · chiffrement 256 bits · Stripe",
-  consent:
-    "En validant, tu acceptes nos {cgv}, tu demandes l'accès immédiat au service et tu renonces à ton droit de rétractation de 14 jours. Aucun remboursement une fois l'accès débloqué.",
-  consentCgv: "conditions générales",
-  faqTitle: "T'as des questions ? Normal.",
+  retryCta: "Réessayer",
   faq: [
     {
       q: "Ma carte sera débitée tout de suite ?",
       a:
-        "Oui. Tu paies à la validation et tu as accès tout de suite. Tu peux annuler en 1 clic depuis ton espace — la résiliation coupe l'accès immédiatement. L'accès étant immédiat, aucun remboursement n'est possible après paiement.",
+        "Oui. Tu paies à la validation et tu as accès tout de suite. Tu peux annuler en 1 clic depuis ton espace — la résiliation coupe l'accès immédiatement. Si ta loc ne bouge pas, la garantie 48 h te rembourse ton 1er paiement (conditions juste au-dessus).",
     },
     {
       q: "Ça marche sur quelles apps ?",
@@ -90,23 +49,16 @@ export const CHECKOUT_COPY = {
         "Oui. Sur Android : 3 étapes sur le tel, aucun ordinateur requis. Sur iPhone : un ordinateur (Mac ou PC) est obligatoire une fois pour l'installation (limite Apple), puis tu gères ta loc depuis l'iPhone — sans rebrancher l'ordi. Pas d'ordi ? Prends le plan seulement si tu peux en emprunter un.",
     },
   ],
-  proofTitle: "Même pin sur Snap et sur Plans",
-  proofSub:
-    "La map sociale et le GPS système affichent le même point — c'est ça la différence avec un screenshot.",
   reviewsTitle: "Ils l'ont fait",
   reviewsVerified: "Abonné vérifié",
-  destinationLabel: "Ta prochaine loc",
   canceled:
     "Paiement annulé. Reprends quand tu veux — ton plan reste sélectionné.",
-  retryCta: "Réessayer le paiement",
   backCta: "Changer de destination",
   errGeneric: "Une erreur est survenue. Réessaie dans quelques instants.",
   errStart: "Impossible de démarrer le paiement.",
   focusTitle: "Plus qu'une étape",
   focusOfferNote: "1er mois à 4,95 €",
   focusShowAllPlans: "Voir tous les plans",
-  socialProofUsers: "+10 000 utilisateurs",
-  socialProofRating: "4,6/5 sur Trustpilot",
   recoveryOfferApplied:
     "🎁 Ton offre est appliquée : ton 1er mois à 4,95 € au lieu de 9,90 €.",
   recoveryOfferPickMonthly:
@@ -115,22 +67,13 @@ export const CHECKOUT_COPY = {
     "Le paiement n'a pas pu se charger : ta connexion a coupé. Vérifie ton réseau puis réessaie.",
 } as const;
 
+/** One short line above the plans; picks up the city teleported to in onboarding. */
 export function getCheckoutHeadline(city?: string) {
   if (city) {
-    return {
-      before: "Fake ta loc à",
-      highlight: city,
-      after: "alors que t'es chez toi.",
-      multiline: true,
-    };
+    return { before: "Garde ta loc à", highlight: city };
   }
 
-  return {
-    before: CHECKOUT_COPY.h1a,
-    highlight: CHECKOUT_COPY.h1b,
-    after: null,
-    multiline: true,
-  };
+  return { before: "Active", highlight: "Anyloc" };
 }
 
 export const CHECKOUT_PLAN_IDS = PLAN_IDS;

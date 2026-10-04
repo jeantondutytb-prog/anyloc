@@ -54,6 +54,10 @@ export const PLAN_VALUE_STACK = [
   "Installation guidée pas à pas",
 ];
 
+/** Consentement affiché par Stripe juste au-dessus du bouton de paiement. */
+export const CHECKOUT_PAY_CONSENT =
+  "En payant, tu acceptes nos conditions générales (anyloc.io/conditions-generales), tu demandes l'accès immédiat au service et tu renonces à ton droit de rétractation de 14 jours. Remboursement possible uniquement via la garantie 48 h, sous conditions.";
+
 /** Prérequis matériel affiché sur chaque plan, avant l'achat. */
 export const DEVICE_REQUIREMENT_NOTE =
   "iPhone : un ordinateur (Mac ou PC) est obligatoire une fois pour l'installation. Android : aucun ordinateur requis.";
@@ -63,16 +67,19 @@ export const PAYWALL_TESTIMONIALS = [
     quote: "Mes potes ont rien capté, le pin était nickel sur Snap.",
     author: "Lucas",
     city: "Lyon",
+    avatar: "/reviews/lucas.jpg",
   },
   {
     quote: "Install en 10 min sur Android, loc à Marbella direct.",
     author: "Inès",
     city: "Paris",
+    avatar: "/reviews/ines.jpg",
   },
   {
     quote: "J'ai pris l'annuel direct, zéro regret.",
     author: "Mehdi",
     city: "Marseille",
+    avatar: "/reviews/mehdi.jpg",
   },
   {
     quote: "Setup iPhone en 15 min, loc à Bali sur Snap direct.",
@@ -107,7 +114,41 @@ export const PAYWALL_TESTIMONIALS = [
 ] as const;
 
 export const REFUND_POLICY_SUMMARY =
-  "Accès immédiat : en payant, tu renonces à ton droit de rétractation. Aucun remboursement une fois l'accès débloqué.";
+  "Accès immédiat : en payant, tu renonces à ton droit de rétractation. Garantie 48 h : si ta loc ne bouge pas, on te rembourse, sous conditions.";
+
+/**
+ * Garantie « Ta loc bouge pas ? Remboursé. » — affichée sur le paywall avant
+ * l'achat et détaillée dans /politique-de-remboursement. Une seule source pour
+ * que les deux textes ne divergent jamais.
+ */
+export const GUARANTEE = {
+  badge: "Garantie 48 h",
+  title: "Ta loc bouge pas ? On te rembourse.",
+  summary:
+    "Ta position ne bouge pas malgré le support ? Ton 1er paiement est remboursé.",
+  conditions: [
+    {
+      t: "Demande sous 48 h",
+      d: "Tu fais la demande dans les 48 heures qui suivent ton premier paiement.",
+    },
+    {
+      t: "Installation terminée",
+      d: "Ton téléphone est connecté à ton compte Anyloc. On le vérifie de notre côté.",
+    },
+    {
+      t: "Vidéo d'écran sans coupure",
+      d: "Un enregistrement de l'écran de ton tel, en une seule prise : tu choisis une position dans Anyloc, tu l'actives, puis tu ouvres Plans (iPhone) ou Google Maps (Android), qui affiche toujours ta vraie position. L'heure doit être visible.",
+    },
+    {
+      t: "Dépannage suivi",
+      d: "Tu as écrit au support et testé les solutions proposées, sans résultat.",
+    },
+    {
+      t: "Abonnement actif",
+      d: "Tu n'as pas résilié avant ta demande : résilier vaut renoncement à la garantie.",
+    },
+  ],
+} as const;
 
 export const CANCELLATION_WARNING =
   "La résiliation prend effet immédiatement. Tu perds l'accès au service, au dashboard et aux téléchargements dès confirmation. Aucun remboursement au prorata.";
@@ -183,8 +224,11 @@ export const PLANS = [
 
 export type Plan = (typeof PLANS)[number];
 
-/** Plan preselected across the funnel: almost every sale is the 9,90 € monthly plan. */
-export const DEFAULT_PLAN_ID = "monthly";
+/**
+ * Plan preselected across the funnel (landing CTAs → onboarding → signup →
+ * checkout). Annual: the only plan with the mobile app, and the best value.
+ */
+export const DEFAULT_PLAN_ID = "annual";
 
 export const PLAN_IDS = PLANS.map((plan) => plan.id);
 

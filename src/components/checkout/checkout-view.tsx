@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Footer } from "@/components/layout/footer";
 import { AnyLocCheckoutPanel } from "@/components/pricing/anyloc-checkout-panel";
 import { Logo } from "@/components/ui/logo";
 import { DEFAULT_PLAN_ID, isValidPlanId } from "@/lib/constants";
@@ -11,6 +10,14 @@ import {
   ONBOARDING_DESTINATION_KEY,
   type OnboardingDestination,
 } from "@/lib/onboarding-destinations";
+
+// The paywall keeps only what a buyer may need: the legal pages and support.
+const CHECKOUT_FOOTER_LINKS = [
+  { label: "CGV", href: "/conditions-generales" },
+  { label: "Remboursement", href: "/politique-de-remboursement" },
+  { label: "Confidentialité", href: "/politique-de-confidentialite" },
+  { label: "Contact", href: "/contact" },
+];
 
 function normalizeCheckoutPlan(planId: string) {
   return isValidPlanId(planId) ? planId : DEFAULT_PLAN_ID;
@@ -72,7 +79,7 @@ export function CheckoutView({
       </div>
 
       {/* Same entrance as the signup card, so arriving from auth (or Google) eases in. */}
-      <main className="animate-auth-enter relative flex-1 py-10 sm:py-14">
+      <main className="animate-auth-enter relative flex-1 py-5 sm:py-10">
         <AnyLocCheckoutPanel
           selectedPlanId={selectedPlanId}
           onPlanChange={selectPlan}
@@ -85,7 +92,16 @@ export function CheckoutView({
         />
       </main>
 
-      <Footer />
+      <footer className="relative border-t border-zinc-200 px-4 py-5">
+        <nav className="mx-auto flex max-w-lg flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-zinc-500">
+          <span>© {new Date().getFullYear()} Anyloc</span>
+          {CHECKOUT_FOOTER_LINKS.map((link) => (
+            <Link key={link.href} href={link.href} className="transition hover:text-zinc-900">
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+      </footer>
     </div>
   );
 }

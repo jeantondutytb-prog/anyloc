@@ -3,8 +3,8 @@ import { CheckoutView } from "@/components/checkout/checkout-view";
 import { ensureStripeCustomerForUser } from "@/lib/billing";
 import { hasActiveRecoveryOffer } from "@/lib/checkout-recovery-server";
 import { DEFAULT_PLAN_ID, getCheckoutUrl, isValidPlanId } from "@/lib/constants";
-import { getStripePublishableKey } from "@/lib/stripe-client";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { getStripePublishableKey } from "@/lib/stripe-client";
 import { getSubscriptionAccessForUser } from "@/lib/subscription";
 
 export default async function CheckoutPage({
