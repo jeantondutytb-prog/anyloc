@@ -5,6 +5,7 @@ import Image from "next/image";
 import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  ArrowDown,
   Bookmark,
   Crosshair,
   Globe,
@@ -14,66 +15,92 @@ import {
   Search,
   Settings,
 } from "lucide-react";
+import { track } from "@/lib/analytics/track";
+import { distanceKm } from "@/lib/geo-distance";
 import type { OnboardingDestination } from "@/lib/onboarding-destinations";
 import { cn } from "@/lib/utils";
+import type { VisitorLocation } from "@/lib/visitor-location";
 
 // Mirrors the iOS app's dark map screen (apps/ios/Anyloc/MapHomeView.swift):
 // floating top bar + search, gradient pin, "Téléporter" bottom sheet and the
-// "Application de la position…" overlay.
+// "Application de la position…" overlay. With the visitor's position (city
+// from their IP), it starts there and the pin flies to the destination.
 
 const OnboardingAppMap = dynamic(
   () => import("@/components/onboarding/onboarding-aha-map"),
   { ssr: false, loading: () => <div className="h-full w-full bg-[#1b1b1f]" /> },
 );
 
-type Phase = "connect" | "lock" | "applying" | "sync" | "done";
+type Phase = "connect" | "ready" | "travel" | "lock" | "applying" | "sync" | "done";
 
 const APPS = ["Snap", "Insta", "Tinder", "Life360"];
 
 const CAPTIONS: Record<Phase, string> = {
   connect: "Connexion au GPS…",
+  ready: "Prêt",
+  travel: "Téléportation…",
   lock: "Position verrouillée",
   applying: "Position verrouillée",
   sync: "Synchro des apps…",
-  done: "Position active",
+  // Not "active": the visitor's real location hasn't moved yet.
+  done: "Prête à activer",
 };
 
 const TYPING_START = 300;
+/** With a flight, the visitor first sees their own city for a moment. */
+const HOME_HOLD_MS = 1400;
 const TYPING_SPEED = 70;
+/** The flight from the visitor's city to the destination. */
+const TRAVEL_MS = 2600;
 
-function useTimeline(destination: OnboardingDestination) {
+/**
+ * The destination types itself into the search, then everything waits on
+ * "Prêt" until the visitor taps "Définir cette position" (`start`): flight
+ * from their city (if any), lock, apps synced one by one, then "done".
+ */
+function useTimeline(destination: OnboardingDestination, withTravel: boolean) {
   const [phase, setPhase] = useState<Phase>("connect");
   const [typed, setTyped] = useState(0);
   const [syncedApps, setSyncedApps] = useState(0);
-  const [pressed, setPressed] = useState(false);
+  const timers = useRef<number[]>([]);
+
+  const at = (ms: number, fn: () => void) => {
+    timers.current.push(window.setTimeout(fn, ms));
+  };
 
   // Remounted via `key` when the destination changes, so state starts fresh.
   useEffect(() => {
-    const at = (ms: number, fn: () => void) => window.setTimeout(fn, ms);
     const chars = destination.city.length;
-    const lockAt = TYPING_START + chars * TYPING_SPEED + 350;
-
-    const timers = [
+    const typingStart = withTravel ? TYPING_START + HOME_HOLD_MS : TYPING_START;
+    const ids = [
       ...Array.from({ length: chars }, (_, i) =>
-        at(TYPING_START + (i + 1) * TYPING_SPEED, () => setTyped(i + 1)),
+        window.setTimeout(() => setTyped(i + 1), typingStart + (i + 1) * TYPING_SPEED),
       ),
-      at(lockAt, () => setPhase("lock")),
-      at(lockAt + 700, () => setPressed(true)),
-      at(lockAt + 850, () => {
-        setPressed(false);
-        setPhase("applying");
-      }),
-      at(lockAt + 2000, () => setPhase("sync")),
-      ...APPS.map((_, i) =>
-        at(lockAt + 2250 + i * 300, () => setSyncedApps(i + 1)),
+      window.setTimeout(
+        () => setPhase((current) => (current === "connect" ? "ready" : current)),
+        typingStart + chars * TYPING_SPEED + 350,
       ),
-      at(lockAt + 2250 + APPS.length * 300, () => setPhase("done")),
     ];
+    const pending = timers.current;
+    return () => {
+      ids.forEach(clearTimeout);
+      pending.forEach(clearTimeout);
+    };
+  }, [destination.city, withTravel]);
 
-    return () => timers.forEach(clearTimeout);
-  }, [destination.city]);
+  function start() {
+    if (phase !== "connect" && phase !== "ready") return;
+    setTyped(destination.city.length);
+    const lockAt = withTravel ? TRAVEL_MS : 0;
+    if (withTravel) setPhase("travel");
+    at(lockAt, () => setPhase("lock"));
+    at(lockAt + 500, () => setPhase("applying"));
+    at(lockAt + 1650, () => setPhase("sync"));
+    APPS.forEach((_, i) => at(lockAt + 1900 + i * 300, () => setSyncedApps(i + 1)));
+    at(lockAt + 1900 + APPS.length * 300, () => setPhase("done"));
+  }
 
-  return { phase, typed, syncedApps, pressed };
+  return { phase, typed, syncedApps, start };
 }
 
 /** Measures where the visible map area sits between the top UI and the sheet. */
@@ -164,18 +191,43 @@ const floatingCard =
 
 export function OnboardingAhaMoment({
   destination,
+  origin = null,
   onDestinationChange,
   onLockedClick,
+  onTeleportStart,
+  onDone,
   onSetPositionClick,
 }: {
   destination: OnboardingDestination;
+  /** Where the visitor is (IP city): the pin starts there, then flies. */
+  origin?: VisitorLocation | null;
   onDestinationChange: (lat: number, lng: number) => void;
   /** Called when a visitor taps the app UI, which stays locked until signup. */
   onLockedClick?: () => void;
-  /** "Définir cette position" is the one mock control that leads to signup. */
+  /** The visitor tapped "Définir cette position": the teleport starts. */
+  onTeleportStart?: () => void;
+  /** The teleport animation is over: the position is "active". */
+  onDone?: () => void;
+  /** "Définir cette position" once the teleport is done: leads to signup. */
   onSetPositionClick?: () => void;
 }) {
-  const { phase, typed, syncedApps, pressed } = useTimeline(destination);
+  // No flight when "there" is basically "here" (same city).
+  const distance = origin ? distanceKm(origin, destination) : 0;
+  const withTravel = Boolean(origin) && distance > 30;
+  const { phase, typed, syncedApps, start } = useTimeline(destination, withTravel);
+
+  useEffect(() => {
+    if (phase === "done") onDone?.();
+    // Only the phase change matters, not a new callback identity.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+
+  useEffect(() => {
+    if (phase === "travel") {
+      // Rounded: says how far, never where the visitor is.
+      track("onboarding_travel_played", { distance_km: Math.round(distance / 100) * 100 });
+    }
+  }, [phase, distance]);
   const [lockedToast, setLockedToast] = useState(0);
 
   useEffect(() => {
@@ -191,9 +243,15 @@ export function OnboardingAhaMoment({
     onLockedClick?.();
   };
   const { topRef, sheetRef, focusY } = useFocusY();
-  const located = phase !== "connect";
+  const waiting = phase === "connect" || phase === "ready";
+  const atHome = withTravel && waiting;
+  // The pin sits on the destination (it is "there") from the flight on, or
+  // right away when there is no flight.
+  const located = !atHome && phase !== "connect";
   const isDone = phase === "done";
-  const query = located ? "" : destination.city.slice(0, typed);
+  const query = phase === "connect" ? destination.city.slice(0, typed) : "";
+  const caption = atHome && phase === "connect" ? "Ta position actuelle" : CAPTIONS[phase];
+  const mapPoint = atHome && origin ? origin : destination;
 
   return (
     <div className="relative mx-auto w-full max-w-sm">
@@ -203,10 +261,12 @@ export function OnboardingAhaMoment({
       <div className="relative h-[510px] w-full overflow-hidden rounded-[32px] bg-[#0A0A0C] shadow-2xl shadow-pink-500/20 ring-1 ring-black/10 sm:h-[540px]">
         <div className="absolute inset-0 z-0">
           <OnboardingAppMap
-            lat={destination.lat}
-            lng={destination.lng}
-            zoom={located ? 14 : 11}
+            lat={mapPoint.lat}
+            lng={mapPoint.lng}
+            zoom={located || atHome ? 14 : 11}
             focusY={focusY}
+            flyDuration={(TRAVEL_MS - 300) / 1000}
+            trail={withTravel && origin && located ? { from: origin, to: destination } : null}
             onSelect={onDestinationChange}
           />
         </div>
@@ -268,9 +328,30 @@ export function OnboardingAhaMoment({
           </p>
         </div>
 
+        {/* Teleport done: the map blurs behind the pin, because it's only a
+            preview — the visitor's real location hasn't changed yet. */}
+        <AnimatePresence>
+          {isDone && (
+            <motion.div
+              className="pointer-events-none absolute inset-0 z-[440] bg-black/30 backdrop-blur-[3px]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+            >
+              <span
+                className="absolute left-1/2 flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-full bg-white px-3 py-1.5 text-[12px] font-semibold text-zinc-900 shadow-xl"
+                style={{ top: focusY + 22 }}
+              >
+                <Lock className="h-3.5 w-3.5 text-pink-500" />
+                Aperçu : ta loc n&apos;a pas encore changé
+              </span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Pin — drops in once the position is locked */}
         <AnimatePresence>
-          {located && (
+          {(located || atHome) && (
             <motion.div
               className="pointer-events-none absolute left-1/2 z-[450] -ml-7"
               style={{ top: focusY - 38 }}
@@ -314,23 +395,38 @@ export function OnboardingAhaMoment({
             <div className="min-w-0 flex-1">
               <AnimatePresence mode="wait" initial={false}>
                 <motion.p
-                  key={CAPTIONS[phase]}
+                  key={caption}
                   initial={{ opacity: 0, y: 3 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -3 }}
                   transition={{ duration: 0.18 }}
                   className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#F472B6]"
                 >
-                  {CAPTIONS[phase]}
+                  {caption}
                 </motion.p>
               </AnimatePresence>
-              {located ? (
+              {located || phase === "ready" ? (
                 <>
                   <p className="truncate text-[17px] font-semibold text-[#F4F4F5]">
                     {destination.emoji} {destination.city}
                   </p>
+                  {(isDone || phase === "ready") && withTravel && origin ? (
+                    <p className="truncate text-[12px] font-semibold text-[#F472B6]">
+                      à {Math.round(distance).toLocaleString("fr-FR")} km de {origin.city}
+                    </p>
+                  ) : (
+                    <p className="truncate font-mono text-[12px] text-[#8B8B94]">
+                      {destination.lat.toFixed(4)}, {destination.lng.toFixed(4)}
+                    </p>
+                  )}
+                </>
+              ) : atHome && origin ? (
+                <>
+                  <p className="truncate text-[17px] font-semibold text-[#F4F4F5]">
+                    📍 {origin.city}
+                  </p>
                   <p className="truncate font-mono text-[12px] text-[#8B8B94]">
-                    {destination.lat.toFixed(4)}, {destination.lng.toFixed(4)}
+                    {origin.lat.toFixed(2)}, {origin.lng.toFixed(2)}
                   </p>
                 </>
               ) : (
@@ -380,23 +476,46 @@ export function OnboardingAhaMoment({
             })}
           </div>
 
+          <div className="relative">
+          {phase === "ready" && (
+            // Small arrow over the button: the next move is the visitor's.
+            <motion.span
+              aria-hidden
+              className="pointer-events-none absolute -top-5 left-1/2 z-10 -ml-3 flex h-6 w-6 items-center justify-center rounded-full bg-pink-500 text-white shadow-lg shadow-pink-500/40"
+              animate={{ y: [0, 4, 0] }}
+              transition={{ duration: 0.9, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <ArrowDown className="h-3.5 w-3.5" strokeWidth={3} />
+            </motion.span>
+          )}
           <motion.button
             type="button"
             onClick={(event) => {
               event.stopPropagation();
-              onSetPositionClick?.();
+              if (isDone) {
+                onSetPositionClick?.();
+              } else if (waiting) {
+                start();
+                onTeleportStart?.();
+              }
             }}
-            animate={{ scale: pressed ? 0.96 : 1 }}
+            // Pulses while it waits for the visitor's tap.
+            animate={phase === "ready" ? { scale: [1, 1.04, 1] } : { scale: 1 }}
+            transition={
+              phase === "ready"
+                ? { duration: 1.2, repeat: Infinity, ease: "easeInOut" }
+                : { duration: 0.12 }
+            }
             whileTap={{ scale: 0.96 }}
-            transition={{ duration: 0.12 }}
             className={cn(
               "mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-[14px] bg-gradient-to-r from-pink-500 to-purple-500 text-[15px] font-semibold text-white shadow-[0_8px_14px_rgba(236,72,153,0.35)] transition-opacity",
-              !located && "opacity-45 shadow-none",
+              !waiting && !isDone && "opacity-60 shadow-none",
             )}
           >
             <Crosshair className="h-[17px] w-[17px]" strokeWidth={2.4} />
             Définir cette position
           </motion.button>
+          </div>
         </div>
 
         <AnimatePresence>

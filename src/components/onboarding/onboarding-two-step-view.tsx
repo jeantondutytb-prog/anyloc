@@ -1,35 +1,34 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { track } from "@/lib/analytics/track";
 import {
   ArrowRight,
   ChevronRight,
   Loader2,
-  Lock,
   Search,
-  Sparkles,
 } from "lucide-react";
 import type { GeocodeResult } from "@/lib/geocoding";
 import { OnboardingAhaMoment } from "@/components/onboarding/onboarding-aha-moment";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import {
-  CHECKOUT_CTA_LABEL,
   DEFAULT_PLAN_ID,
   getPostOnboardingSignupUrl,
   isValidPlanId,
 } from "@/lib/constants";
 import {
   mergeOnboardingSearchResults,
+  ONBOARDING_ACTIVATION_PENDING_KEY,
   ONBOARDING_DESTINATION_KEY,
   searchOnboardingDestinations,
   TRENDING_DESTINATIONS,
   type OnboardingDestination,
 } from "@/lib/onboarding-destinations";
 import { cn } from "@/lib/utils";
+import type { VisitorLocation } from "@/lib/visitor-location";
 
 const ONBOARDING_TOTAL_STEPS = 2;
 
@@ -164,17 +163,10 @@ function StepDestination({
   return (
     <div className="mx-auto w-full min-w-0 max-w-2xl">
       <div className="mb-8 text-center">
-        <p className="inline-flex items-center gap-1.5 text-sm font-medium text-pink-600">
-          <Sparkles className="h-4 w-4 shrink-0" />
-          Étape 1
-        </p>
-        <h1 className="mt-3 text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl lg:text-4xl">
+        <h1 className="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl lg:text-4xl">
           Où tu veux être{" "}
           <span className="gradient-text">maintenant</span> ?
         </h1>
-        <p className="mt-3 text-sm text-zinc-500 sm:text-base">
-          Choisis ta destination ou tape n&apos;importe quelle ville.
-        </p>
       </div>
 
       <div className="relative">
@@ -220,9 +212,6 @@ function StepDestination({
         </div>
       ) : (
         <div className="mt-10">
-          <p className="mb-4 text-center text-xs font-semibold uppercase tracking-wider text-pink-500">
-            Destinations Tendance
-          </p>
           <div className="grid min-w-0 gap-3 sm:grid-cols-2">
             {TRENDING_DESTINATIONS.map((destination) => (
               <DestinationCard
@@ -240,16 +229,17 @@ function StepDestination({
 
 function StepPreview({
   destination,
+  visitorLocation,
   onContinue,
-  onChangeDestination,
   onDestinationChange,
 }: {
   destination: OnboardingDestination;
+  visitorLocation: VisitorLocation | null;
   onContinue: () => void;
-  onChangeDestination: () => void;
   onDestinationChange: (lat: number, lng: number) => void;
 }) {
   const [nudge, setNudge] = useState(0);
+  const [teleported, setTeleported] = useState(false);
 
   function handleLockedClick() {
     setNudge((count) => count + 1);
@@ -263,50 +253,43 @@ function StepPreview({
           On téléporte ta loc à{" "}
           <span className="gradient-text">{destination.city}</span>
         </h1>
-        <p className="mt-2 hidden text-sm text-zinc-500 sm:block sm:text-base">
-          Même signal que si ton tel y était vraiment, sur Snap, Insta, Tinder
-          et toutes tes apps.
-        </p>
       </div>
 
       <OnboardingAhaMoment
         key={destination.id}
         destination={destination}
+        origin={visitorLocation}
         onDestinationChange={onDestinationChange}
         onLockedClick={handleLockedClick}
+        onTeleportStart={() =>
+          track("onboarding_teleport_clicked", { destination_city: destination.city })
+        }
+        onDone={() => setTeleported(true)}
         onSetPositionClick={() => {
           track("onboarding_preview_cta_click", { destination_city: destination.city });
           onContinue();
         }}
       />
 
-      <div className="mt-3 flex items-center justify-between gap-3 px-1 text-xs text-zinc-500 sm:text-sm">
-        <span>Touche la carte pour ajuster</span>
-        <button
-          type="button"
-          onClick={onChangeDestination}
-          className="font-medium text-pink-600 transition-colors hover:text-pink-700"
+      {teleported && (
+        <motion.div
+          key={nudge}
+          initial={{ opacity: 0, y: 8 }}
+          animate={
+            nudge
+              ? { opacity: 1, y: 0, scale: [1, 1.04, 1, 1.04, 1] }
+              : { opacity: 1, y: 0 }
+          }
+          transition={{ duration: 0.4 }}
+          className="mt-5"
         >
-          Changer de ville
-        </button>
-      </div>
+          <Button className="h-14 w-full text-base" onClick={onContinue}>
+            Valider ma position
+            <ArrowRight className="h-5 w-5" />
+          </Button>
+        </motion.div>
+      )}
 
-      <motion.div
-        key={nudge}
-        animate={nudge ? { scale: [1, 1.04, 1, 1.04, 1] } : undefined}
-        transition={{ duration: 0.6 }}
-        className="mt-5"
-      >
-        <Button className="h-14 w-full text-base" onClick={onContinue}>
-          {CHECKOUT_CTA_LABEL}
-          <ArrowRight className="h-5 w-5" />
-        </Button>
-      </motion.div>
-
-      <p className="mt-2.5 flex items-center justify-center gap-1.5 text-xs text-zinc-500">
-        <Lock className="h-3.5 w-3.5" />
-        Aperçu : l&apos;app se débloque après ton inscription.
-      </p>
     </div>
   );
 }
@@ -330,7 +313,11 @@ function readStoredDestination(): OnboardingDestination | null {
   }
 }
 
-function OnboardingViewContent() {
+function OnboardingViewContent({
+  visitorLocation,
+}: {
+  visitorLocation: VisitorLocation | null;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [step, setStep] = useState(1);
@@ -340,6 +327,7 @@ function OnboardingViewContent() {
     () => readStoredDestination() ?? TRENDING_DESTINATIONS[0]
   );
   const [leaving, setLeaving] = useState(false);
+  const reducedMotion = useReducedMotion();
   const selectedPlanId = useMemo(() => {
     const plan = searchParams.get("plan") ?? undefined;
     if (isValidPlanId(plan)) {
@@ -418,6 +406,10 @@ function OnboardingViewContent() {
       destination_city: destination.city,
       plan: selectedPlanId,
     });
+    // Signup then reminds "Ta position est prête · <ville>: crée ton compte pour l'activer".
+    try {
+      window.sessionStorage.setItem(ONBOARDING_ACTIVATION_PENDING_KEY, "1");
+    } catch {}
     // Fade the page out before navigating so signup doesn't cut in abruptly.
     setLeaving(true);
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -445,22 +437,31 @@ function OnboardingViewContent() {
         }
         transition={{ duration: LEAVE_DURATION_MS / 1000, ease: [0.4, 0, 0.2, 1] }}
       >
-        {step === 1 && (
-          <StepDestination
-            query={query}
-            onQueryChange={setQuery}
-            onSelect={selectDestination}
-          />
-        )}
-
-        {step === 2 && (
-          <StepPreview
-            destination={destination}
-            onContinue={continueToSignup}
-            onChangeDestination={() => setStep(1)}
-            onDestinationChange={updateDestinationCoords}
-          />
-        )}
+        {/* Step 1 slides out to the left, step 2 comes in from the right. */}
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={step}
+            initial={reducedMotion ? { opacity: 0 } : { opacity: 0, x: 32 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={reducedMotion ? { opacity: 0 } : { opacity: 0, x: -32 }}
+            transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
+          >
+            {step === 1 ? (
+              <StepDestination
+                query={query}
+                onQueryChange={setQuery}
+                onSelect={selectDestination}
+              />
+            ) : (
+              <StepPreview
+                destination={destination}
+                visitorLocation={visitorLocation}
+                onContinue={continueToSignup}
+                onDestinationChange={updateDestinationCoords}
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
       </motion.main>
 
       <AnimatePresence>
@@ -485,8 +486,13 @@ function OnboardingViewContent() {
   );
 }
 
-/** Variant "two_step" of the onboarding A/B test: destination, then preview. */
-export function OnboardingTwoStepView() {
+/** The onboarding: pick a destination, then watch the pin fly there from your city. */
+export function OnboardingTwoStepView({
+  visitorLocation = null,
+}: {
+  /** City from the visitor's IP: the step-2 pin starts there. */
+  visitorLocation?: VisitorLocation | null;
+}) {
   return (
     <Suspense
       fallback={
@@ -496,7 +502,7 @@ export function OnboardingTwoStepView() {
         </div>
       }
     >
-      <OnboardingViewContent />
+      <OnboardingViewContent visitorLocation={visitorLocation} />
     </Suspense>
   );
 }

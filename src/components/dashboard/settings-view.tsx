@@ -166,26 +166,23 @@ export function SettingsView({ embedded = false }: { embedded?: boolean } = {}) 
     setCancelPortalError(null);
 
     try {
-      const response = await fetch("/api/stripe/billing-portal", {
+      const response = await fetch("/api/subscription/cancel", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ flow: "subscription" }),
       });
 
       const payload = await response.json();
 
       if (!response.ok) {
-        throw new Error(payload.error ?? "Impossible d'ouvrir le portail.");
+        throw new Error(payload.error ?? "Impossible de résilier l'abonnement.");
       }
 
-      if (payload.url) {
-        window.location.href = payload.url;
-      }
-    } catch (portalError) {
+      window.location.reload();
+    } catch (cancelError) {
+      setShowCancelDialog(false);
       setCancelPortalError(
-        portalError instanceof Error
-          ? portalError.message
-          : "Impossible d'ouvrir le portail."
+        cancelError instanceof Error
+          ? cancelError.message
+          : "Impossible de résilier l'abonnement."
       );
       setCancelPortalLoading(false);
     }

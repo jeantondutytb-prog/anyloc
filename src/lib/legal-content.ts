@@ -1,3 +1,5 @@
+import { GUARANTEE } from "@/lib/constants";
+
 export type LegalPageField = {
   label: string;
   value?: string;
@@ -54,7 +56,7 @@ export const LEGAL_PAGES: Record<string, LegalPageContent> = {
         paragraphs: [
           "Les tarifs en vigueur sont affichés sur la page Tarification. Les paiements sont traités de manière sécurisée par Stripe. L'abonnement est renouvelé automatiquement à chaque échéance, sauf résiliation depuis ton espace client.",
           "En cas de résiliation, l'abonnement prend fin immédiatement et l'accès au service est coupé sans délai.",
-          "Droit de rétractation : l'accès au service est fourni immédiatement après le paiement. En validant le paiement, tu demandes l'exécution immédiate et renonces expressément à ton droit de rétractation de 14 jours (art. L221-28 13° du code de la consommation). Les sommes payées ne sont donc pas remboursables, dans les conditions de la politique de remboursement.",
+          "Droit de rétractation : l'accès au service est fourni immédiatement après le paiement. En validant le paiement, tu demandes l'exécution immédiate et renonces expressément à ton droit de rétractation de 14 jours (art. L221-28 13° du code de la consommation). Les sommes payées ne sont donc pas remboursables, hors garantie 48 h décrite dans la politique de remboursement.",
         ],
       },
       {
@@ -258,44 +260,57 @@ export const LEGAL_PAGES: Record<string, LegalPageContent> = {
   "politique-de-remboursement": {
     title: "Politique de remboursement",
     description:
-      "Anyloc est un service numérique fourni immédiatement : les achats ne sont pas remboursables.",
+      "Garantie 48 h : si ta position ne change pas malgré l'aide du support, Anyloc te rembourse ton premier paiement.",
     path: "/politique-de-remboursement",
-    lastUpdated: LAST_UPDATED,
+    lastUpdated: "4 octobre 2026",
     sections: [
       {
-        title: "1. Pas de remboursement",
+        title: "1. La garantie « Ta loc bouge pas ? On te rembourse. »",
         paragraphs: [
-          "Anyloc est un service numérique : ton accès est débloqué dès la validation du paiement. Les achats sont donc fermes et définitifs. Aucun remboursement, total ou partiel (y compris au prorata), n'est effectué une fois l'accès débloqué.",
+          "Anyloc s'engage à te rembourser l'intégralité de ton premier paiement si, une fois ton téléphone connecté à ton compte, sa position GPS ne change pas, que tu le prouves en vidéo et que notre support ne parvient pas à corriger le problème.",
+          "Cette garantie est un engagement commercial volontaire : c'est la voie de remboursement ouverte par Anyloc, l'accès étant fourni immédiatement (voir le point 5).",
         ],
       },
       {
-        title: "2. Renonciation au droit de rétractation",
+        title: "2. Conditions à remplir",
         paragraphs: [
-          "En validant le paiement, tu acceptes les conditions générales, tu demandes l'accès immédiat au service et tu renonces expressément à ton droit de rétractation de 14 jours (art. L221-28 13° du code de la consommation).",
-          "Cette mention figure juste sous le formulaire de paiement, avant la validation.",
+          "Les conditions suivantes sont cumulatives. Elles sont accessibles depuis la page de paiement, avant l'achat (lien « Voir les conditions » de la garantie).",
+        ],
+        list: GUARANTEE.conditions.map((condition) => `${condition.t} : ${condition.d}`),
+      },
+      {
+        title: "3. Comment faire la demande",
+        paragraphs: [
+          "Écris à support@anyloc.io depuis l'adresse email de ton compte, avec le modèle de ton téléphone et la vidéo d'écran décrite au point 2 (en pièce jointe ou en lien). Le support essaie d'abord de régler le problème avec toi.",
+          "Nous vérifions de notre côté que ton appareil est bien connecté à ton compte et à quel moment ta position a été modifiée. Nous répondons sous 72 heures.",
         ],
       },
       {
-        title: "3. Vérifie la compatibilité avant d'acheter",
-        paragraphs: [
-          "Sur iPhone, un ordinateur (Mac ou PC) est obligatoire une fois pour l'installation. Sur Android, aucun ordinateur n'est requis. Ce prérequis est affiché sur chaque offre et dans le formulaire de paiement.",
-        ],
-      },
-      {
-        title: "4. Cas qui ne donnent pas lieu à remboursement",
+        title: "4. Ce qui n'ouvre pas droit au remboursement",
         list: [
-          "Absence d'ordinateur pour installer Anyloc sur iPhone.",
-          "Changement d'avis après l'achat, ou achat d'une solution similaire ailleurs.",
-          "Installation non réalisée ou guide d'installation non suivi.",
-          "Restriction propre à ton appareil ou à une application tierce, indépendante d'Anyloc.",
-          "Période en cours après une résiliation (pas de remboursement au prorata).",
-          "Renouvellement automatique non résilié avant sa date d'échéance.",
+          "Une demande faite plus de 48 heures après le premier paiement.",
+          "Un abonnement résilié avant la demande.",
+          "Un téléphone jamais connecté à ton compte (installation non terminée), y compris faute d'ordinateur pour installer Anyloc sur iPhone.",
+          "Une demande sans vidéo d'écran, ou avec une vidéo coupée, montée, ou où l'heure n'est pas visible.",
+          "Une demande faite sans avoir testé les solutions proposées par le support.",
+          "Une demande alors que les données de ton compte montrent que la position a bien été appliquée sur ton appareil.",
+          "Un changement d'avis, ou l'achat d'une solution similaire ailleurs.",
+          "Une restriction propre à une application tierce alors que la position du téléphone a bien changé (visible dans Plans ou Google Maps).",
+          "Les échéances de renouvellement : la garantie porte uniquement sur ton premier paiement. Tu pouvais résilier à tout moment avant l'échéance, et le service est resté disponible pendant toute la période payée.",
         ],
       },
       {
-        title: "5. Ce qui reste remboursé",
+        title: "5. Rétractation : pourquoi les 14 jours ne s'appliquent pas",
         paragraphs: [
-          "Les situations suivantes ne relèvent pas d'un changement d'avis et sont toujours régularisées :",
+          "Anyloc est un service numérique fourni immédiatement : dès le paiement validé, l'accès au service, au dashboard et aux téléchargements est ouvert, sans attente ni livraison.",
+          "Le code de la consommation prévoit expressément cette exception (art. L221-28, 13°). En validant ton paiement, tu demandes cette exécution immédiate et tu renonces expressément à ton droit de rétractation de 14 jours. Cette mention figure dans le formulaire de paiement, juste au-dessus du bouton de paiement.",
+          "C'est la garantie 48 h du point 1 qui te protège : elle est plus rapide, et c'est notre engagement propre.",
+        ],
+      },
+      {
+        title: "6. Ce qui reste toujours remboursé",
+        paragraphs: [
+          "Indépendamment de la garantie, les situations suivantes sont toujours régularisées :",
         ],
         list: [
           "Double prélèvement ou erreur de facturation de notre part.",
@@ -304,17 +319,16 @@ export const LEGAL_PAGES: Record<string, LegalPageContent> = {
         ],
       },
       {
-        title: "6. Un problème ? Écris-nous d'abord",
+        title: "7. Modalités de remboursement",
         paragraphs: [
-          "Si tu es bloqué, contacte support@anyloc.io depuis l'adresse email de ton compte, en précisant ton appareil et l'étape qui coince. Notre équipe t'aide à finaliser l'installation.",
-          "Lorsqu'un remboursement est dû (point 5), il est effectué par Stripe sur le moyen de paiement d'origine, sous 14 jours.",
+          "Le remboursement est effectué par Stripe sur le moyen de paiement d'origine, sous 14 jours à compter de l'acceptation de la demande. Un remboursement au titre de la garantie met fin à l'abonnement et à l'accès au service.",
         ],
       },
       {
-        title: "7. Résiliation de l'abonnement",
+        title: "8. Résiliation de l'abonnement",
         paragraphs: [
           "Ton abonnement se renouvelle automatiquement au prix indiqué avant l'achat. Tu peux le résilier à tout moment depuis ton espace client (Paramètres → Résilier mon abonnement), sans frais.",
-          "Attention : la résiliation prend effet immédiatement. Tu perds l'accès au service, au dashboard et aux téléchargements dès confirmation. Aucun remboursement au prorata n'est effectué pour la période en cours.",
+          "Attention : la résiliation prend effet immédiatement. Tu perds l'accès au service, au dashboard et aux téléchargements dès confirmation. Aucun remboursement au prorata n'est effectué pour la période en cours, et résilier met fin à la garantie 48 h.",
         ],
       },
     ],

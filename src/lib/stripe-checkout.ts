@@ -1,6 +1,6 @@
 import type { User } from "@supabase/supabase-js";
 import type Stripe from "stripe";
-import { DEVICE_REQUIREMENT_NOTE, type Plan } from "@/lib/constants";
+import { CHECKOUT_PAY_CONSENT, DEVICE_REQUIREMENT_NOTE, type Plan } from "@/lib/constants";
 import { ensureStripeCustomerForUser } from "@/lib/billing";
 import { getAppUrl, stripe } from "@/lib/stripe";
 
@@ -24,12 +24,16 @@ function withAnalyticsId(
   };
 }
 
-/** Device requirement shown above the Stripe pay button. */
+/** Device requirement and immediate-access consent, shown above the Stripe pay button. */
 function getDeviceRequirementParams(): Pick<
   Stripe.Checkout.SessionCreateParams,
   "custom_text"
 > {
-  return { custom_text: { submit: { message: DEVICE_REQUIREMENT_NOTE } } };
+  return {
+    custom_text: {
+      submit: { message: `${DEVICE_REQUIREMENT_NOTE}\n\n${CHECKOUT_PAY_CONSENT}` },
+    },
+  };
 }
 
 function getCheckoutReturnUrl() {

@@ -180,6 +180,33 @@ export async function createBillingPortalSession({
   return session.url;
 }
 
+export async function cancelActiveSubscriptionForUser(userId: string) {
+  if (!stripe || !isSupabaseAdminConfigured()) {
+    throw new Error("La gestion de facturation n'est pas configurée.");
+  }
+
+  const profile = await getProfileForUser(userId);
+
+  if (!profile?.stripe_subscription_id) {
+    throw new Error("Aucun abonnement actif à résilier.");
+  }
+
+  await stripe.subscriptions.cancel(profile.stripe_subscription_id);
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("profiles")
+    .update({
+      subscription_status: "canceled",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", userId);
+
+  if (error) {
+    throw new Error(`Failed to mark profile canceled: ${error.message}`);
+  }
+}
+
 export async function cancelStripeSubscriptionForUser(userId: string) {
   if (!stripe || !isSupabaseAdminConfigured()) {
     return;

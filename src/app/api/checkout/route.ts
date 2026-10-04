@@ -1,4 +1,8 @@
 import { NextResponse } from "next/server";
+import {
+  enrollInCheckoutRecovery,
+  getRecoveryCouponForUser,
+} from "@/lib/checkout-recovery-server";
 import { PLANS } from "@/lib/constants";
 import { capturePostHogEvent, parsePostHogDistinctId } from "@/lib/posthog/server";
 import {
@@ -25,16 +29,20 @@ export async function POST(request: Request) {
     const user = await getAuthenticatedCheckoutUser();
     const analyticsId = parsePostHogDistinctId(body?.analyticsId);
 
+    const couponId = user ? await getRecoveryCouponForUser(user.id, plan.id) : null;
+
+    // The paywall's "Continuer" button: Stripe-hosted payment page.
     const session = await createSubscriptionCheckoutSession({
       plan,
       user,
       analyticsId,
       uiMode: "hosted_page",
+      couponId,
     });
 
-    const referer = request.headers.get("referer");
-    const userAgent = request.headers.get("user-agent");
-    console.warn("[checkout] legacy hosted-page endpoint hit", { referer, userAgent });
+    if (user) {
+      await enrollInCheckoutRecovery(user, plan.id);
+    }
 
     await capturePostHogEvent({
       distinctId: user?.id ?? analyticsId ?? session.id,
@@ -42,9 +50,9 @@ export async function POST(request: Request) {
       properties: {
         plan: plan.id,
         guest_checkout: !user,
-        checkout_variant: "legacy_hosted",
-        referer,
-        user_agent: userAgent,
+        ui_mode: "hosted",
+        checkout_variant: "direct",
+        recovery_offer: Boolean(couponId),
       },
     });
 
