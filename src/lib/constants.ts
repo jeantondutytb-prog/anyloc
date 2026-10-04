@@ -64,13 +64,13 @@ export const DEVICE_REQUIREMENT_NOTE =
 
 export const PAYWALL_TESTIMONIALS = [
   {
-    quote: "Mes potes ont rien capté, le pin était nickel sur Snap.",
+    quote: "Mes potes ont rien capté, c'est incroyable.",
     author: "Lucas",
     city: "Lyon",
     avatar: "/reviews/lucas.jpg",
   },
   {
-    quote: "Install en 10 min sur Android, loc à Marbella direct.",
+    quote: "Installé en 10 min sur Android, j'ai mis ma loc à Marbella direct.",
     author: "Inès",
     city: "Paris",
     avatar: "/reviews/ines.jpg",
