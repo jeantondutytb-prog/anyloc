@@ -242,7 +242,8 @@ export function OnboardingAhaMoment({
 
   return (
     <div className="relative mx-auto w-full max-w-sm">
-      <div className="relative h-[510px] w-full overflow-hidden rounded-[32px] bg-[#0A0A0C] shadow-2xl shadow-pink-500/20 ring-1 ring-black/10 sm:h-[540px]">
+      {/* Fits the screen below the title, so "Définir cette position" stays visible on a phone. */}
+      <div className="relative h-[clamp(400px,calc(100dvh-200px),510px)] w-full overflow-hidden rounded-[32px] bg-[#0A0A0C] shadow-2xl shadow-pink-500/20 ring-1 ring-black/10 sm:h-[540px]">
         <div className="absolute inset-0 z-0">
           <OnboardingAppMap
             lat={mapPoint.lat}

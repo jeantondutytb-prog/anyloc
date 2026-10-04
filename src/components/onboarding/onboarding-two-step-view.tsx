@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { track } from "@/lib/analytics/track";
@@ -240,6 +240,17 @@ function StepPreview({
 }) {
   const [nudge, setNudge] = useState(0);
   const [teleported, setTeleported] = useState(false);
+  const validateRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!teleported) return;
+    // On a phone the button lands below the fold: bring it into view.
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    validateRef.current?.scrollIntoView({
+      behavior: reduced ? "auto" : "smooth",
+      block: "nearest",
+    });
+  }, [teleported]);
 
   function handleLockedClick() {
     setNudge((count) => count + 1);
@@ -269,6 +280,7 @@ function StepPreview({
 
       {teleported && (
         <motion.div
+          ref={validateRef}
           key={nudge}
           initial={{ opacity: 0, y: 8 }}
           animate={
@@ -277,7 +289,7 @@ function StepPreview({
               : { opacity: 1, y: 0 }
           }
           transition={{ duration: 0.4 }}
-          className="mt-5"
+          className="mt-5 scroll-mb-6"
         >
           <Button className="h-14 w-full text-base" onClick={onContinue}>
             Valider ma position
