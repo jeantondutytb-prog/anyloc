@@ -144,6 +144,7 @@ final class OnDeviceLocationService: ObservableObject {
             }
             needsVPN = false
 
+            try await deadline(15, "Ouverture du tunnel") { try await session.openTunnel() }
             let mounted = try await deadline(10, "Vérification de l'image développeur") {
                 try await session.isDeveloperImageMounted()
             }
@@ -239,12 +240,10 @@ private final class DeviceSession: @unchecked Sendable {
     static let loopbackIP = "10.7.0.1"
 
     private let thread = FFIThread()
-    /// Raw pairing record. The provider consumes the parsed handle it is given,
-    /// so anything else that needs one (lockdown session) parses its own copy.
-    private var pairingData: Data?
     private var provider: OpaquePointer?
     private var adapter: OpaquePointer?
     private var handshake: OpaquePointer?
+    private var rsdPort: UInt16 = 0
     private var remoteServer: OpaquePointer?
     private var locationSim: OpaquePointer?
 
@@ -259,7 +258,6 @@ private final class DeviceSession: @unchecked Sendable {
         try await thread.call { [self] in
             closeAll()
             let pairingFile = try parsePairing(data)
-            pairingData = data
 
             var addr = sockaddr_in()
             addr.sin_family = sa_family_t(AF_INET)
@@ -282,10 +280,38 @@ private final class DeviceSession: @unchecked Sendable {
         }
     }
 
+    /// Opens the CoreDeviceProxy tunnel and its RSD handshake. Works before the
+    /// developer image is mounted, so the image is checked and mounted through
+    /// it: the lockdown image mounter's TLS socket gets dropped over LocalDevVPN.
+    func openTunnel() async throws {
+        try await thread.call { [self] in
+            var proxy: OpaquePointer?
+            try check(core_device_proxy_connect(provider, &proxy), "CoreDeviceProxy (mode développeur activé ?)")
+            if let err = core_device_proxy_get_server_rsd_port(proxy, &rsdPort) {
+                core_device_proxy_free(proxy)
+                try check(err, "Port RSD")
+            }
+            // Consumes `proxy`.
+            try check(core_device_proxy_create_tcp_adapter(proxy, &adapter), "Tunnel")
+            try refreshHandshake()
+        }
+    }
+
+    /// The handshake lists the services the iPhone offers at that moment; the
+    /// DVT ones only appear once the developer image is mounted.
+    private func refreshHandshake() throws {
+        if let handshake { rsd_handshake_free(handshake) }
+        handshake = nil
+        var stream: OpaquePointer?
+        try check(adapter_connect(adapter, rsdPort, &stream), "Connexion RSD")
+        // Consumes `stream`.
+        try check(rsd_handshake_new(stream, &handshake), "Handshake RSD")
+    }
+
     func isDeveloperImageMounted() async throws -> Bool {
         try await thread.call { [self] in
             var mounter: OpaquePointer?
-            try check(image_mounter_connect(provider, &mounter), "Image mounter")
+            try check(image_mounter_connect_rsd(adapter, handshake, &mounter), "Image mounter")
             defer { image_mounter_free(mounter) }
             var sig: UnsafeMutablePointer<UInt8>?
             var len: UInt = 0
@@ -301,12 +327,8 @@ private final class DeviceSession: @unchecked Sendable {
     func mountDeveloperImage(_ files: DeveloperImage.Files) async throws {
         try await thread.call { [self] in
             var lockdown: OpaquePointer?
-            try check(lockdownd_connect(provider, &lockdown), "Lockdown")
+            try check(lockdownd_connect_rsd(adapter, handshake, &lockdown), "Lockdown")
             defer { lockdownd_client_free(lockdown) }
-            guard let pairingData else { throw DeviceError.message("Pairing manquant") }
-            let pairing = try parsePairing(pairingData)
-            defer { idevice_pairing_file_free(pairing) }
-            try check(lockdownd_start_session(lockdown, pairing), "Session lockdown")
             var value: plist_t?
             try check(lockdownd_get_value(lockdown, "UniqueChipID", nil, &value), "UniqueChipID")
             var ecid: UInt64 = 0
@@ -314,13 +336,13 @@ private final class DeviceSession: @unchecked Sendable {
             plist_free(value)
 
             var mounter: OpaquePointer?
-            try check(image_mounter_connect(provider, &mounter), "Image mounter")
+            try check(image_mounter_connect_rsd(adapter, handshake, &mounter), "Image mounter")
             defer { image_mounter_free(mounter) }
             try files.image.withUnsafeBytes { img in
                 try files.trustCache.withUnsafeBytes { tc in
                     try files.buildManifest.withUnsafeBytes { bm in
-                        try check(image_mounter_mount_personalized(
-                            mounter, provider,
+                        try check(image_mounter_mount_personalized_rsd(
+                            mounter, adapter, handshake,
                             img.bindMemory(to: UInt8.self).baseAddress, img.count,
                             tc.bindMemory(to: UInt8.self).baseAddress, tc.count,
                             bm.bindMemory(to: UInt8.self).baseAddress, bm.count,
@@ -329,24 +351,12 @@ private final class DeviceSession: @unchecked Sendable {
                     }
                 }
             }
+            try refreshHandshake()
         }
     }
 
     func openLocationSimulation() async throws {
         try await thread.call { [self] in
-            var proxy: OpaquePointer?
-            try check(core_device_proxy_connect(provider, &proxy), "CoreDeviceProxy (mode développeur activé ?)")
-            var rsdPort: UInt16 = 0
-            if let err = core_device_proxy_get_server_rsd_port(proxy, &rsdPort) {
-                core_device_proxy_free(proxy)
-                try check(err, "Port RSD")
-            }
-            // Consumes `proxy`.
-            try check(core_device_proxy_create_tcp_adapter(proxy, &adapter), "Tunnel")
-            var stream: OpaquePointer?
-            try check(adapter_connect(adapter, rsdPort, &stream), "Connexion RSD")
-            // Consumes `stream`.
-            try check(rsd_handshake_new(stream, &handshake), "Handshake RSD")
             try check(remote_server_connect_rsd(adapter, handshake, &remoteServer), "Remote server")
             try check(location_simulation_new(remoteServer, &locationSim), "LocationSimulation")
         }
@@ -378,7 +388,7 @@ private final class DeviceSession: @unchecked Sendable {
         // The provider owns the pairing handle it was created with and frees it.
         if let provider { idevice_provider_free(provider) }
         locationSim = nil; remoteServer = nil; handshake = nil
-        adapter = nil; provider = nil; pairingData = nil
+        adapter = nil; provider = nil; rsdPort = 0
     }
 
     private func parsePairing(_ data: Data) throws -> OpaquePointer? {
