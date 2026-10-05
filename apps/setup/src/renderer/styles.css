@@ -376,6 +376,8 @@ html {
   line-height: 1.5;
 }
 .guide-tip-box svg { flex-shrink: 0; margin-top: 1px; }
+.guide-tip-box p { margin: 0; }
+.guide-tip-box strong { color: var(--text); }
 .guide-driver-box { flex-direction: column; align-items: stretch; }
 .guide-driver-box p { margin: 0; }
 

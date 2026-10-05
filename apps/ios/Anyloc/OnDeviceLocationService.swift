@@ -239,7 +239,9 @@ private final class DeviceSession: @unchecked Sendable {
     static let loopbackIP = "10.7.0.1"
 
     private let thread = FFIThread()
-    private var pairing: OpaquePointer?
+    /// Raw pairing record. The provider consumes the parsed handle it is given,
+    /// so anything else that needs one (lockdown session) parses its own copy.
+    private var pairingData: Data?
     private var provider: OpaquePointer?
     private var adapter: OpaquePointer?
     private var handshake: OpaquePointer?
@@ -256,12 +258,8 @@ private final class DeviceSession: @unchecked Sendable {
     func openLockdown(pairing data: Data) async throws {
         try await thread.call { [self] in
             closeAll()
-            var pairingFile: OpaquePointer?
-            try data.withUnsafeBytes { raw in
-                try check(idevice_pairing_file_from_bytes(raw.bindMemory(to: UInt8.self).baseAddress, UInt(raw.count), &pairingFile),
-                          "Pairing invalide")
-            }
-            pairing = pairingFile
+            let pairingFile = try parsePairing(data)
+            pairingData = data
 
             var addr = sockaddr_in()
             addr.sin_family = sa_family_t(AF_INET)
@@ -305,6 +303,9 @@ private final class DeviceSession: @unchecked Sendable {
             var lockdown: OpaquePointer?
             try check(lockdownd_connect(provider, &lockdown), "Lockdown")
             defer { lockdownd_client_free(lockdown) }
+            guard let pairingData else { throw DeviceError.message("Pairing manquant") }
+            let pairing = try parsePairing(pairingData)
+            defer { idevice_pairing_file_free(pairing) }
             try check(lockdownd_start_session(lockdown, pairing), "Session lockdown")
             var value: plist_t?
             try check(lockdownd_get_value(lockdown, "UniqueChipID", nil, &value), "UniqueChipID")
@@ -374,10 +375,19 @@ private final class DeviceSession: @unchecked Sendable {
         if let remoteServer { remote_server_free(remoteServer) }
         if let handshake { rsd_handshake_free(handshake) }
         if let adapter { adapter_free(adapter) }
+        // The provider owns the pairing handle it was created with and frees it.
         if let provider { idevice_provider_free(provider) }
-        if let pairing { idevice_pairing_file_free(pairing) }
         locationSim = nil; remoteServer = nil; handshake = nil
-        adapter = nil; provider = nil; pairing = nil
+        adapter = nil; provider = nil; pairingData = nil
+    }
+
+    private func parsePairing(_ data: Data) throws -> OpaquePointer? {
+        var pairingFile: OpaquePointer?
+        try data.withUnsafeBytes { raw in
+            try check(idevice_pairing_file_from_bytes(raw.bindMemory(to: UInt8.self).baseAddress, UInt(raw.count), &pairingFile),
+                      "Pairing invalide")
+        }
+        return pairingFile
     }
 
     private func check(_ err: UnsafeMutablePointer<IdeviceFfiError>?, _ context: String) throws {
