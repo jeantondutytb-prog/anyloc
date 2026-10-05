@@ -10,11 +10,12 @@ import { Button } from "@/components/ui/button";
 import {
   CLIPPER_VIDEOS_PER_DAY,
   normalizeInstagramHandle,
+  normalizePhone,
 } from "@/lib/clipper-application";
 import { cn } from "@/lib/utils";
 
 const initialState: ClipperApplicationState = {};
-const STEP_COUNT = 3;
+const STEP_COUNT = 4;
 
 const inputClassName =
   "w-full rounded-xl border border-zinc-200 bg-white px-4 py-3.5 text-base text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-pink-500/50 focus:ring-2 focus:ring-pink-500/20";
@@ -32,6 +33,7 @@ export function ClipperApplicationForm({
   const [videosPerDay, setVideosPerDay] = useState("");
   const [firstName, setFirstName] = useState("");
   const [instagram, setInstagram] = useState("");
+  const [phone, setPhone] = useState("");
   const [honeypot, setHoneypot] = useState("");
 
   if (state.submitted) {
@@ -42,7 +44,23 @@ export function ClipperApplicationForm({
           C&apos;est noté{firstName ? `, ${firstName}` : ""} !
         </h2>
         <p className="mt-2 text-sm text-zinc-600">
-          On regarde ton profil et on t&apos;écrit sur Instagram très vite.
+          {phone.trim() ? (
+            "On regarde ton profil et on t’écrit sur WhatsApp très vite."
+          ) : (
+            <>
+              On regarde ton profil et on t&apos;écrit sur Insta très vite, depuis le
+              compte{" "}
+              <a
+                href="https://www.instagram.com/jean.tdt/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-pink-600 hover:underline"
+              >
+                @jean.tdt
+              </a>
+              .
+            </>
+          )}
         </p>
       </div>
     );
@@ -53,12 +71,15 @@ export function ClipperApplicationForm({
     formData.set("videosPerDay", videosPerDay);
     formData.set("firstName", firstName);
     formData.set("instagram", instagram);
+    formData.set("phone", phone);
     formData.set("website", honeypot);
     if (utmCampaign) formData.set("utmCampaign", utmCampaign);
     startTransition(() => formAction(formData));
   }
 
   const instagramIsValid = normalizeInstagramHandle(instagram) !== null;
+  // Facultatif : on peut envoyer sans numéro.
+  const phoneIsValid = !phone.trim() || normalizePhone(phone) !== null;
 
   return (
     <form
@@ -67,6 +88,8 @@ export function ClipperApplicationForm({
         if (step === 1 && firstName.trim()) {
           setStep(2);
         } else if (step === 2 && instagramIsValid) {
+          setStep(3);
+        } else if (step === 3 && phoneIsValid) {
           submit();
         }
       }}
@@ -164,6 +187,32 @@ export function ClipperApplicationForm({
             />
           </div>
 
+          <Button type="submit" size="lg" className="mt-4 w-full" disabled={!instagramIsValid}>
+            Continuer
+          </Button>
+        </div>
+      ) : null}
+
+      {step === 3 ? (
+        <div className="mt-6">
+          <label htmlFor="phone" className="text-xl font-semibold text-zinc-900">
+            Ton numéro, pour qu&apos;on te réponde plus vite
+          </label>
+          <p className="mt-1.5 text-sm text-zinc-500">
+            On t&apos;écrit sur WhatsApp ou par SMS. Facultatif.
+          </p>
+          <input
+            id="phone"
+            type="tel"
+            inputMode="tel"
+            autoFocus
+            autoComplete="tel"
+            value={phone}
+            onChange={(event) => setPhone(event.target.value)}
+            placeholder="06 12 34 56 78"
+            className={cn(inputClassName, "mt-5")}
+          />
+
           {state.error ? (
             <p role="alert" className="mt-3 text-sm text-red-600">
               {state.error}
@@ -174,7 +223,7 @@ export function ClipperApplicationForm({
             type="submit"
             size="lg"
             className="mt-4 w-full"
-            disabled={!instagramIsValid || pending}
+            disabled={!phoneIsValid || pending}
           >
             {pending ? (
               <>

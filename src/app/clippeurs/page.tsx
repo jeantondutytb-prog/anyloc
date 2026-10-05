@@ -48,7 +48,7 @@ export default async function ClippeursPage({
           </Card>
 
           <p className="mt-4 text-center text-xs text-zinc-500">
-            3 questions · 20 secondes
+            4 questions · 30 secondes
           </p>
         </div>
       </section>

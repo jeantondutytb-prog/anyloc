@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   normalizeInstagramHandle,
+  normalizePhone,
   normalizeUtmCampaign,
   parseClipperApplication,
 } from "./clipper-application";
@@ -45,7 +46,45 @@ describe("normalizeUtmCampaign", () => {
   });
 });
 
+describe("normalizePhone", () => {
+  it("reads French numbers typed the local way", () => {
+    assert.equal(normalizePhone("06 12 34 56 78"), "+33612345678");
+    assert.equal(normalizePhone("07.12.34.56.78"), "+33712345678");
+    assert.equal(normalizePhone("0033612345678"), "+33612345678");
+  });
+
+  it("keeps international numbers", () => {
+    assert.equal(normalizePhone("+32 470 12 34 56"), "+32470123456");
+  });
+
+  it("rejects things that aren't phone numbers", () => {
+    assert.equal(normalizePhone("123"), null);
+    assert.equal(normalizePhone("pas de numéro"), null);
+  });
+});
+
 describe("parseClipperApplication", () => {
+  it("treats the phone as optional", () => {
+    const result = parseClipperApplication(
+      form({ videosPerDay: "1", firstName: "Léa", instagram: "lea" })
+    );
+    assert.equal(result.ok && result.application.phone, null);
+  });
+
+  it("normalizes the phone", () => {
+    const result = parseClipperApplication(
+      form({ videosPerDay: "1", firstName: "Léa", instagram: "lea", phone: "06 12 34 56 78" })
+    );
+    assert.equal(result.ok && result.application.phone, "+33612345678");
+  });
+
+  it("rejects a malformed phone", () => {
+    const result = parseClipperApplication(
+      form({ videosPerDay: "1", firstName: "Léa", instagram: "lea", phone: "123" })
+    );
+    assert.equal(result.ok, false);
+  });
+
   it("keeps the utm campaign of the link", () => {
     const result = parseClipperApplication(
       form({
@@ -68,6 +107,7 @@ describe("parseClipperApplication", () => {
         firstName: "Léa",
         instagram: "lea.clips",
         videosPerDay: "2-3",
+        phone: null,
         utmCampaign: null,
       },
     });

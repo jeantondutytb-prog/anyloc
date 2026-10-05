@@ -46,6 +46,8 @@ export async function submitClipperApplication(
         first_name: application.firstName,
         instagram: application.instagram,
         videos_per_day: application.videosPerDay,
+        // Un numéro laissé vide n'efface pas celui d'une candidature précédente.
+        ...(application.phone ? { phone: application.phone } : {}),
         // Sans campagne dans le lien, on garde la source d'une candidature précédente.
         ...(application.utmCampaign ? { utm_campaign: application.utmCampaign } : {}),
         updated_at: new Date().toISOString(),
@@ -63,6 +65,7 @@ export async function submitClipperApplication(
     event: "clipper_application_submitted",
     properties: {
       videos_per_day: application.videosPerDay,
+      phone_provided: Boolean(application.phone),
       utm_campaign: application.utmCampaign,
     },
   });
