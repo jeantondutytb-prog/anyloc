@@ -5,10 +5,11 @@ import IDevice
 
 /// Drives the iPhone's own location simulation without a computer.
 ///
-/// LocalDevVPN loops 10.7.0.1 back to the iPhone, so with a lockdown pairing
-/// record the app can talk to its own developer services exactly like Anyloc
-/// Setup does over USB/Wi-Fi: lockdown → CoreDeviceProxy tunnel → RSD →
-/// DVT LocationSimulation. The simulated location only lasts while that DVT
+/// LocalDevVPN loops 10.7.0.1 back to the iPhone, so with a RemotePairing
+/// record the app can talk to its own developer services: RemotePairing
+/// tunnel (port 49152) → RSD → DVT LocationSimulation. iOS 26.4+ drops the
+/// older lockdown TLS sessions over LocalDevVPN ("Broken pipe"), so lockdown
+/// pairing records are not used here. The simulated location only lasts while that DVT
 /// connection is open, so the session is kept alive (see BackgroundKeeper).
 @MainActor
 final class OnDeviceLocationService: ObservableObject {
@@ -38,18 +39,21 @@ final class OnDeviceLocationService: ObservableObject {
     private let keeper = BackgroundKeeper()
     /// One connection attempt at a time (warm-up and a tap can overlap).
     private var connecting: Task<Void, Never>?
+    /// The fake position currently held, re-sent whenever the tunnel drops.
+    private var applied: (lat: Double, lng: Double)?
+    private var heartbeat: Task<Void, Never>?
 
-    /// Where Anyloc Setup drops the pairing record (the only folder it can write).
+    /// Where Anyloc Setup drops the RemotePairing record (the only folder it can write).
     private static let droppedPairingURL: URL = FileManager.default
         .urls(for: .documentDirectory, in: .userDomainMask)[0]
-        .appendingPathComponent("AnylocPairing.plist")
+        .appendingPathComponent("AnylocRemotePairing.plist")
 
     /// The pairing record grants developer access to this iPhone: keep it out of
     /// Documents (backed up to iCloud, visible over USB file sharing) and
     /// encrypted while the phone is locked before first unlock.
     static let pairingURL: URL = FileManager.default
         .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        .appendingPathComponent("AnylocPairing.plist")
+        .appendingPathComponent("AnylocRemotePairing.plist")
 
     /// Moves a freshly dropped record to its protected location.
     private static func securePairingDrop() {
@@ -62,22 +66,43 @@ final class OnDeviceLocationService: ObservableObject {
                 try fileManager.removeItem(at: pairingURL)
             }
             try fileManager.moveItem(at: droppedPairingURL, to: pairingURL)
-            try fileManager.setAttributes(
-                [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication],
-                ofItemAtPath: pairingURL.path)
-            var url = pairingURL
-            var values = URLResourceValues()
-            values.isExcludedFromBackup = true
-            try url.setResourceValues(values)
+            try protectPairing()
         } catch {
             // Leave the drop where it is: it is retried on the next check.
+        }
+    }
+
+    private static func protectPairing() throws {
+        try FileManager.default.setAttributes(
+            [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication],
+            ofItemAtPath: pairingURL.path)
+        var url = pairingURL
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        try url.setResourceValues(values)
+    }
+
+    /// The tunnel call may rewrite the record (a fresh pair-setup): keep the new one.
+    private static func savePairing(_ data: Data) {
+        do {
+            try data.write(to: pairingURL, options: .atomic)
+            try protectPairing()
+        } catch {
+            print("[Anyloc/OnDevice] Sauvegarde du pairing impossible : \(error.localizedDescription)")
         }
     }
 
     /// Opens the tunnel ahead of time (app launch / back to foreground) so the
     /// first "Définir cette position" is instant. Silent: no VPN prompt here.
     func warmUp() async {
-        guard hasPairing, phase != .working, !isConnected else { return }
+        guard hasPairing else { return }
+        log("App au premier plan")
+        if applied != nil {
+            // Back from another app: the tunnel may have died while we were away.
+            await reapply(reason: "Retour dans l'app")
+            return
+        }
+        guard phase != .working, !isConnected else { return }
         await connect(promptForVPN: false)
     }
 
@@ -94,11 +119,50 @@ final class OnDeviceLocationService: ObservableObject {
             guard isConnected else { throw DeviceError.message(failureMessage) }
             try await sendLocation(lat: lat, lng: lng)
         }
+        applied = (lat, lng)
         keeper.start()
+        startHeartbeat()
         log(String(format: "Position → %.5f, %.5f", lat, lng))
     }
 
+    /// While a position is held, re-send it every few seconds. The simulated
+    /// location vanishes as soon as the DVT connection closes, so this both keeps
+    /// the connection busy and rebuilds it (and the position) when it dropped
+    /// while the user was in another app.
+    private func startHeartbeat() {
+        heartbeat?.cancel()
+        heartbeat = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 15_000_000_000)
+                guard !Task.isCancelled, let self else { return }
+                await self.reapply(reason: "Renvoi périodique")
+            }
+        }
+    }
+
+    private func reapply(reason: String?) async {
+        guard let applied, phase != .working else { return }
+        if let reason { log(reason) }
+        if isConnected, (try? await sendLocation(lat: applied.lat, lng: applied.lng)) != nil { return }
+        log("Position perdue, reconnexion")
+        await reset()
+        await connect(promptForVPN: false)
+        guard isConnected, self.applied != nil else {
+            log("Reconnexion impossible : \(failureMessage)")
+            return
+        }
+        do {
+            try await sendLocation(lat: applied.lat, lng: applied.lng)
+            log("Position rétablie")
+        } catch {
+            log("Renvoi impossible : \(error.localizedDescription)")
+        }
+    }
+
     func clearLocation() async {
+        applied = nil
+        heartbeat?.cancel()
+        heartbeat = nil
         let session = session
         try? await deadline(5, "Effacement de la position") { try await session.clearLocation() }
         await reset()
@@ -135,16 +199,7 @@ final class OnDeviceLocationService: ObservableObject {
         phase = .working
         let session = session
         do {
-            do {
-                try await deadline(8, "Connexion à LocalDevVPN") { try await session.openLockdown(pairing: pairing) }
-            } catch {
-                log("Lockdown : \(error.localizedDescription)")
-                needsVPN = promptForVPN
-                throw DeviceError.message("iPhone injoignable : ouvre LocalDevVPN, appuie sur Connect (Wi-Fi allumé), puis réessaie.")
-            }
-            needsVPN = false
-
-            try await deadline(15, "Ouverture du tunnel") { try await session.openTunnel() }
+            try await openTunnel(pairing: pairing, promptForVPN: promptForVPN)
             let mounted = try await deadline(10, "Vérification de l'image développeur") {
                 try await session.isDeveloperImageMounted()
             }
@@ -154,6 +209,8 @@ final class OnDeviceLocationService: ObservableObject {
                     Task { @MainActor in self?.log(msg) }
                 }
                 try await deadline(60, "Montage de l'image développeur") { try await session.mountDeveloperImage(files) }
+                // The DVT services only show up in a fresh RSD handshake.
+                try await openTunnel(pairing: Self.storedPairing() ?? pairing, promptForVPN: promptForVPN)
             }
 
             try await deadline(15, "Ouverture de la simulation de position") { try await session.openLocationSimulation() }
@@ -164,6 +221,34 @@ final class OnDeviceLocationService: ObservableObject {
             phase = .failed(error.localizedDescription)
             log("Erreur : \(error.localizedDescription)")
         }
+    }
+
+    private static func storedPairing() -> Data? {
+        try? Data(contentsOf: pairingURL)
+    }
+
+    private func openTunnel(pairing: Data, promptForVPN: Bool) async throws {
+        let session = session
+        let updated: Data
+        do {
+            updated = try await deadline(20, "Connexion à LocalDevVPN") { try await session.openTunnel(pairing: pairing) }
+        } catch {
+            log("Tunnel : \(error.localizedDescription)")
+            // Nothing answers on 10.7.0.1: LocalDevVPN is off (or Wi-Fi is off).
+            guard Self.isUnreachable(error) else { throw error }
+            needsVPN = promptForVPN
+            throw DeviceError.message("iPhone injoignable : ouvre LocalDevVPN, appuie sur Connect (Wi-Fi allumé), puis réessaie.")
+        }
+        needsVPN = false
+        if updated != pairing { Self.savePairing(updated) }
+    }
+
+    private static func isUnreachable(_ error: Error) -> Bool {
+        if case DeviceError.ffi(let message, _) = error {
+            return message.contains("connect:")
+        }
+        // The deadline fired: 10.7.0.1 never answered.
+        return true
     }
 
     /// Drops the tunnel. If the FFI thread is stuck in a call, closing would
@@ -198,7 +283,28 @@ final class OnDeviceLocationService: ObservableObject {
     }
 
     private func log(_ line: String) {
-        print("[Anyloc/OnDevice] \(line)")
+        Self.trace(line)
+    }
+
+    /// Also kept in Library/Caches/anyloc-trace.txt: the console is gone once iOS
+    /// suspends the app, which is exactly the moment worth seeing.
+    nonisolated static func trace(_ line: String) {
+        let stamped = "\(ISO8601DateFormatter().string(from: Date())) \(line)"
+        print("[Anyloc/OnDevice] \(stamped)")
+        let url = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("anyloc-trace.txt")
+        guard let data = (stamped + "\n").data(using: .utf8) else { return }
+        // Keep it small: start over past ~200 KB.
+        if let size = (try? FileManager.default.attributesOfItem(atPath: url.path))?[.size] as? Int, size > 200_000 {
+            try? FileManager.default.removeItem(at: url)
+        }
+        if let handle = try? FileHandle(forWritingTo: url) {
+            handle.seekToEndOfFile()
+            handle.write(data)
+            try? handle.close()
+        } else {
+            try? data.write(to: url)
+        }
     }
 }
 
@@ -239,11 +345,12 @@ enum DeviceError: LocalizedError {
 private final class DeviceSession: @unchecked Sendable {
     static let loopbackIP = "10.7.0.1"
 
+    /// RemotePairing service, reached through LocalDevVPN's loopback.
+    static let remotePairingPort: UInt16 = 49152
+
     private let thread = FFIThread()
-    private var provider: OpaquePointer?
     private var adapter: OpaquePointer?
     private var handshake: OpaquePointer?
-    private var rsdPort: UInt16 = 0
     private var remoteServer: OpaquePointer?
     private var locationSim: OpaquePointer?
 
@@ -254,58 +361,39 @@ private final class DeviceSession: @unchecked Sendable {
         }
     }
 
-    func openLockdown(pairing data: Data) async throws {
+    /// Opens the RemotePairing tunnel and its RSD handshake (pair-verify with
+    /// the record Anyloc Setup made over USB). Works before the developer image
+    /// is mounted, so the image is checked and mounted through it. Returns the
+    /// record as the library left it, in case a pair-setup rewrote it.
+    func openTunnel(pairing data: Data) async throws -> Data {
         try await thread.call { [self] in
             closeAll()
-            let pairingFile = try parsePairing(data)
+            var pairingFile: OpaquePointer?
+            try data.withUnsafeBytes { raw in
+                try check(rp_pairing_file_from_bytes(raw.bindMemory(to: UInt8.self).baseAddress, UInt(raw.count), &pairingFile),
+                          "Pairing invalide (rebranche l'iPhone à Anyloc sur l'ordinateur)")
+            }
+            defer { rp_pairing_file_free(pairingFile) }
 
             var addr = sockaddr_in()
             addr.sin_family = sa_family_t(AF_INET)
-            addr.sin_port = in_port_t(UInt16(LOCKDOWN_PORT).bigEndian)
+            addr.sin_port = in_port_t(Self.remotePairingPort.bigEndian)
             inet_pton(AF_INET, Self.loopbackIP, &addr.sin_addr)
-            var newProvider: OpaquePointer?
             try withUnsafePointer(to: &addr) { ptr in
                 try ptr.withMemoryRebound(to: sockaddr.self, capacity: 1) { sa in
-                    try check(idevice_tcp_provider_new(sa, pairingFile, "Anyloc", &newProvider),
-                              "LocalDevVPN injoignable — active-le et vérifie que le Wi-Fi est allumé")
+                    try check(tunnel_create_rppairing(
+                        sa, socklen_t(MemoryLayout<sockaddr_in>.stride), "Anyloc", pairingFile,
+                        nil, nil, &adapter, &handshake
+                    ), "Tunnel RemotePairing")
                 }
             }
-            provider = newProvider
 
-            // The provider is lazy: connect once so an unreachable 10.7.0.1
-            // (LocalDevVPN off) fails here.
-            var lockdown: OpaquePointer?
-            try check(lockdownd_connect(provider, &lockdown), "LocalDevVPN injoignable")
-            lockdownd_client_free(lockdown)
+            var bytes: UnsafeMutablePointer<UInt8>?
+            var len: UInt = 0
+            try check(rp_pairing_file_to_bytes(pairingFile, &bytes, &len), "Pairing")
+            defer { idevice_data_free(bytes, len) }
+            return bytes.map { Data(bytes: $0, count: Int(len)) } ?? data
         }
-    }
-
-    /// Opens the CoreDeviceProxy tunnel and its RSD handshake. Works before the
-    /// developer image is mounted, so the image is checked and mounted through
-    /// it: the lockdown image mounter's TLS socket gets dropped over LocalDevVPN.
-    func openTunnel() async throws {
-        try await thread.call { [self] in
-            var proxy: OpaquePointer?
-            try check(core_device_proxy_connect(provider, &proxy), "CoreDeviceProxy (mode développeur activé ?)")
-            if let err = core_device_proxy_get_server_rsd_port(proxy, &rsdPort) {
-                core_device_proxy_free(proxy)
-                try check(err, "Port RSD")
-            }
-            // Consumes `proxy`.
-            try check(core_device_proxy_create_tcp_adapter(proxy, &adapter), "Tunnel")
-            try refreshHandshake()
-        }
-    }
-
-    /// The handshake lists the services the iPhone offers at that moment; the
-    /// DVT ones only appear once the developer image is mounted.
-    private func refreshHandshake() throws {
-        if let handshake { rsd_handshake_free(handshake) }
-        handshake = nil
-        var stream: OpaquePointer?
-        try check(adapter_connect(adapter, rsdPort, &stream), "Connexion RSD")
-        // Consumes `stream`.
-        try check(rsd_handshake_new(stream, &handshake), "Handshake RSD")
     }
 
     func isDeveloperImageMounted() async throws -> Bool {
@@ -351,7 +439,6 @@ private final class DeviceSession: @unchecked Sendable {
                     }
                 }
             }
-            try refreshHandshake()
         }
     }
 
@@ -385,19 +472,7 @@ private final class DeviceSession: @unchecked Sendable {
         if let remoteServer { remote_server_free(remoteServer) }
         if let handshake { rsd_handshake_free(handshake) }
         if let adapter { adapter_free(adapter) }
-        // The provider owns the pairing handle it was created with and frees it.
-        if let provider { idevice_provider_free(provider) }
-        locationSim = nil; remoteServer = nil; handshake = nil
-        adapter = nil; provider = nil; rsdPort = 0
-    }
-
-    private func parsePairing(_ data: Data) throws -> OpaquePointer? {
-        var pairingFile: OpaquePointer?
-        try data.withUnsafeBytes { raw in
-            try check(idevice_pairing_file_from_bytes(raw.bindMemory(to: UInt8.self).baseAddress, UInt(raw.count), &pairingFile),
-                      "Pairing invalide")
-        }
-        return pairingFile
+        locationSim = nil; remoteServer = nil; handshake = nil; adapter = nil
     }
 
     private func check(_ err: UnsafeMutablePointer<IdeviceFfiError>?, _ context: String) throws {
@@ -518,14 +593,33 @@ private final class BackgroundKeeper {
 
     func start() {
         guard activity == nil else { return }
+        // Without location access iOS suspends the app in the background and the
+        // fake position drops with it.
+        OnDeviceLocationService.trace("Autorisation localisation : \(manager.authorizationStatus.rawValue) (0 = jamais demandée, 2 = refusée, 3 = toujours, 4 = pendant l'utilisation)")
         manager.requestWhenInUseAuthorization()
         activity = CLBackgroundActivitySession()
         updates = Task {
             do {
-                for try await _ in CLLocationUpdate.liveUpdates(.otherNavigation) {
+                var count = 0
+                for try await update in CLLocationUpdate.liveUpdates(.otherNavigation) {
                     if Task.isCancelled { break }
+                    count += 1
+                    if count <= 3 || count % 20 == 0 {
+                        var flags: [String] = []
+                        if #available(iOS 18.0, *) {
+                            if update.authorizationDenied { flags.append("autorisation refusée") }
+                            if update.authorizationDeniedGlobally { flags.append("localisation coupée") }
+                            if update.authorizationRequestInProgress { flags.append("demande en cours") }
+                            if update.insufficientlyInUse { flags.append("pas assez d'usage") }
+                            if update.serviceSessionRequired { flags.append("session requise") }
+                        }
+                        OnDeviceLocationService.trace("Mise à jour localisation #\(count) \(flags.joined(separator: ", "))")
+                    }
                 }
-            } catch {}
+                OnDeviceLocationService.trace("Mises à jour localisation terminées")
+            } catch {
+                OnDeviceLocationService.trace("Session arrière-plan arrêtée : \(error.localizedDescription)")
+            }
         }
     }
 
