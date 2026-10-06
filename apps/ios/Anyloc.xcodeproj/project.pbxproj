@@ -235,7 +235,7 @@
 					"\"Vendor\"",
 				);
 				INFOPLIST_FILE = Anyloc/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Anyloc;
+				INFOPLIST_KEY_CFBundleDisplayName = anyloc.io;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -322,7 +322,7 @@
 					"\"Vendor\"",
 				);
 				INFOPLIST_FILE = Anyloc/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Anyloc;
+				INFOPLIST_KEY_CFBundleDisplayName = anyloc.io;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

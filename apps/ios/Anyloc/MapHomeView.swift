@@ -41,22 +41,25 @@ struct MapHomeView: View {
             VStack(spacing: 10) {
                 topBar
                 if showsSearch { search }
+                if let banner = vm.banner {
+                    TeleportBanner(banner: banner)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
                 Spacer()
             }
             .padding(.horizontal, 14)
             .padding(.top, 6)
-
-            if vm.isApplying {
-                ApplyingOverlay().transition(.opacity)
-            }
         }
+        // The keyboard slides over the panel instead of pushing the whole screen up.
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .onGeometryChange(for: CGFloat.self, of: { $0.safeAreaInsets.bottom }) { bottomInset = $0 }
-        .animation(.easeInOut(duration: 0.2), value: vm.isApplying)
+        .animation(.spring(duration: 0.4), value: vm.banner)
         .animation(.easeInOut(duration: 0.2), value: mode)
         .preferredColorScheme(.dark)
         .task { await vm.loadCurrentLocation() }
         .task { await onDevice.warmUp() }
         .onChange(of: scenePhase) { _, phase in
+            if phase == .background { OnDeviceLocationService.trace("App en arrière-plan") }
             if phase == .active { Task { await onDevice.warmUp() } }
         }
         .alert("Active LocalDevVPN", isPresented: $onDevice.needsVPN) {
@@ -111,8 +114,10 @@ struct MapHomeView: View {
     private var map: some View {
         MapReader { proxy in
             Map(position: $vm.camera) {
-                if mode == .teleport, let p = vm.selected {
-                    Annotation("", coordinate: p.coord.cl, anchor: .bottom) { GradientPin() }
+                if let flight = vm.flight {
+                    flightContent(flight)
+                } else if mode == .teleport, let p = vm.selected {
+                    Annotation("", coordinate: p.coord.cl, anchor: .bottom) { DroppingPin() }
                 }
                 if mode == .route {
                     routeContent
@@ -123,15 +128,35 @@ struct MapHomeView: View {
             }
             .mapStyle(.standard(elevation: .realistic, emphasis: .muted, pointsOfInterest: .excludingAll))
             .mapControls {}
+            .onMapCameraChange(frequency: .onEnd) { vm.lastCamera = $0.camera }
             // Keep the pin / route framed in the part of the map not covered by the floating UI.
             .safeAreaPadding(.top, showsSearch ? 138 : 74)
             .safeAreaPadding(.bottom, max(mapBottom + bottomInset - sheetTop, 0) + 4)
-            .onTapGesture { point in
-                guard let c = proxy.convert(point, from: .local) else { return }
+            // Global space: `.local` is offset by the safe-area padding above, so the
+            // pin used to land a few centimetres below the finger.
+            .onTapGesture(coordinateSpace: .global) { point in
+                guard let c = proxy.convert(point, from: .global) else { return }
                 searchFocused = false
                 handleTap(Coord(c))
             }
         }
+    }
+
+    @MapContentBuilder
+    private func flightContent(_ flight: TeleportFlight) -> some MapContent {
+        MapPolyline(coordinates: flight.path)
+            .stroke(.white.opacity(0.18), style: StrokeStyle(lineWidth: 2, lineCap: .round, dash: [4, 6]))
+        let trail = flight.trail
+        if trail.count > 1 {
+            MapPolyline(coordinates: trail)
+                .stroke(Theme.accentEnd.opacity(0.35), style: StrokeStyle(lineWidth: 10, lineCap: .round, lineJoin: .round))
+            MapPolyline(coordinates: trail)
+                .stroke(Theme.accentStart, style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
+        }
+        Annotation("", coordinate: flight.path[0]) {
+            Circle().fill(.white.opacity(0.6)).frame(width: 9, height: 9)
+        }
+        Annotation("", coordinate: flight.current) { RunnerDot() }
     }
 
     @MapContentBuilder
@@ -167,6 +192,7 @@ struct MapHomeView: View {
     }
 
     private func handleTap(_ c: Coord) {
+        guard !vm.isApplying else { return }
         switch mode {
         case .teleport, .explore:
             mode = .teleport
@@ -206,27 +232,29 @@ struct MapHomeView: View {
     // MARK: - Top bar + search
 
     private var topBar: some View {
-        HStack(spacing: 10) {
-            Image("Logo").resizable().frame(width: 30, height: 30)
-            Text("Anyloc")
-                .font(.system(size: 21, weight: .semibold))
-                .foregroundColor(Theme.Dark.text)
-            Spacer()
+        // Buttons on either side so the wordmark sits dead centre for screen recordings.
+        HStack(spacing: 0) {
             Button { showSaved = true } label: {
                 Image(systemName: "bookmark")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(Theme.Dark.accent)
-                    .frame(width: 40, height: 40)
+                    .frame(width: 44, height: 44)
             }
+            Spacer()
+            // Same wordmark as the website header: Helvetica Neue bold, tight tracking.
+            (Text("Anyloc").foregroundColor(Theme.Dark.text)
+                + Text(".io").foregroundColor(Theme.Dark.accent))
+                .font(.custom("HelveticaNeue-Bold", size: 21))
+                .tracking(-0.42)
+            Spacer()
             Button { showSettings = true } label: {
                 Image(systemName: "gearshape.fill")
                     .font(.system(size: 18))
                     .foregroundColor(Theme.Dark.textSoft)
-                    .frame(width: 40, height: 40)
+                    .frame(width: 44, height: 44)
             }
         }
-        .padding(.leading, 16)
-        .padding(.trailing, 8)
+        .padding(.horizontal, 8)
         .frame(height: 58)
         .floatingCard()
     }
@@ -362,24 +390,32 @@ struct MapHomeView: View {
 
             Rectangle().fill(Theme.Dark.line).frame(height: 1).padding(.vertical, 14)
 
-            GradientCTA(title: "Définir cette position", icon: "scope",
-                        isDisabled: vm.selected == nil || (network.isOffline && !onDevice.hasPairing)) {
-                runner.stop()
-                Task { await vm.teleport() }
-            }
-
-            if vm.isActive {
-                Button {
+            if isSelectedActive, let since = vm.activeSince {
+                ActiveLocationBar(since: since) {
                     runner.stop()
                     Task { await vm.stop() }
-                } label: {
-                    Text("Revenir à ma vraie position")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Theme.Dark.muted)
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 12)
                 }
-                .buttonStyle(.plain)
+            } else {
+                GradientCTA(title: "Définir cette position", icon: "scope",
+                            isLoading: vm.isApplying,
+                            isDisabled: vm.selected == nil || (network.isOffline && !onDevice.hasPairing)) {
+                    runner.stop()
+                    Task { await vm.teleport() }
+                }
+
+                if vm.isActive {
+                    Button {
+                        runner.stop()
+                        Task { await vm.stop() }
+                    } label: {
+                        Text("Revenir à ma vraie position")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(Theme.Dark.muted)
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 12)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
 
             if let status = vm.status {
@@ -450,9 +486,12 @@ struct MapHomeView: View {
         }
     }
 
+    private var isSelectedActive: Bool {
+        vm.activeCoord != nil && vm.activeCoord == vm.selected?.coord
+    }
+
     private var statusText: String {
-        if let active = vm.activeCoord, active == vm.selected?.coord { return "Position active" }
-        return readyLabel
+        isSelectedActive ? "Position active" : readyLabel
     }
 
     private var readyLabel: String {
@@ -521,8 +560,20 @@ final class MapHomeViewModel: ObservableObject {
         span: MKCoordinateSpan(latitudeDelta: 0.2, longitudeDelta: 0.2)
     ))
     @Published private(set) var selected: SelectedPosition?
-    @Published private(set) var activeCoord: Coord?
+    @Published private(set) var activeCoord: Coord? {
+        didSet { if activeCoord != oldValue { activeSince = activeCoord == nil ? nil : Date() } }
+    }
+    /// When the current fake position was applied, for the elapsed timer.
+    @Published private(set) var activeSince: Date? {
+        didSet { UserDefaults.standard.set(activeSince, forKey: Self.activeSinceKey) }
+    }
+    private static let activeSinceKey = "anyloc.activeSince"
     @Published private(set) var isApplying = false
+    /// Set while the teleport animation plays: a dot flies from the old position to the new one.
+    @Published private(set) var flight: TeleportFlight?
+    @Published private(set) var banner: TeleportBanner.State?
+    /// Where the map was last left, so the flight can take off from the current view.
+    var lastCamera: MapCamera?
     @Published private(set) var status: Status?
     @Published var searchQuery = ""
     @Published private(set) var results: [NominatimResult] = []
@@ -536,8 +587,10 @@ final class MapHomeViewModel: ObservableObject {
     func loadCurrentLocation() async {
         guard let loc = try? await api.fetchLocation(), loc.isActive else { return }
         let c = Coord(lat: loc.lat, lng: loc.lng)
+        let since = UserDefaults.standard.object(forKey: Self.activeSinceKey) as? Date
         selected = SelectedPosition(name: loc.name, coord: c)
         activeCoord = c
+        if let since { activeSince = since }
         focus(c)
     }
 
@@ -553,8 +606,8 @@ final class MapHomeViewModel: ObservableObject {
         }
     }
 
-    func focus(_ c: Coord, distance: Double = 1600) {
-        withAnimation(.easeInOut(duration: 0.5)) {
+    func focus(_ c: Coord, distance: Double = 1600, duration: Double = 0.5) {
+        withAnimation(.easeInOut(duration: duration)) {
             camera = .camera(MapCamera(centerCoordinate: c.cl, distance: distance, heading: 0, pitch: 50))
         }
     }
@@ -566,28 +619,131 @@ final class MapHomeViewModel: ObservableObject {
     }
 
     func teleport() async {
-        guard let p = selected else { return }
+        guard let p = selected, !isApplying else { return }
         isApplying = true
-        let started = Date()
-        do {
-            let onDevice = OnDeviceLocationService.shared
-            if onDevice.hasPairing {
-                // No computer: the iPhone moves itself. The sync only keeps the
-                // dashboard up to date, so it may fail (e.g. Wi-Fi with no internet).
-                try await onDevice.setLocation(lat: p.coord.lat, lng: p.coord.lng)
-                try? await api.upsertLocation(name: p.name, lat: p.coord.lat, lng: p.coord.lng, isActive: true)
-            } else {
-                try await api.upsertLocation(name: p.name, lat: p.coord.lat, lng: p.coord.lng, isActive: true)
-            }
+        let apply = Task { try await self.apply(p) }
+
+        banner = .flying(p.name)
+        if let origin = flightOrigin(to: p.coord) {
+            await fly(from: origin, to: p.coord)
+        }
+        let result = await apply.result
+        let flew = flight != nil
+        flight = nil
+
+        switch result {
+        case .success:
             activeCoord = p.coord
-            show("Position définie : \(p.name)", isError: false)
-        } catch {
+            if !flew { focus(p.coord) }
+            banner = .arrived(p.name)
+            isApplying = false
+            try? await Task.sleep(nanoseconds: 2_400_000_000)
+            if banner == .arrived(p.name) { banner = nil }
+        case .failure(let error):
+            focus(p.coord)
+            banner = nil
+            isApplying = false
             show(error.localizedDescription, isError: true)
         }
-        // Keep the overlay up long enough to read, like the desktop app.
-        let elapsed = Date().timeIntervalSince(started)
-        if elapsed < 0.9 { try? await Task.sleep(nanoseconds: UInt64((0.9 - elapsed) * 1_000_000_000)) }
-        isApplying = false
+    }
+
+    private func apply(_ p: SelectedPosition) async throws {
+        let onDevice = OnDeviceLocationService.shared
+        if onDevice.hasPairing {
+            // No computer: the iPhone moves itself. The sync only keeps the
+            // dashboard up to date, so it may fail (e.g. Wi-Fi with no internet).
+            try await onDevice.setLocation(lat: p.coord.lat, lng: p.coord.lng)
+            try? await api.upsertLocation(name: p.name, lat: p.coord.lat, lng: p.coord.lng, isActive: true)
+        } else {
+            try await api.upsertLocation(name: p.name, lat: p.coord.lat, lng: p.coord.lng, isActive: true)
+        }
+    }
+
+    /// Where the phone currently is: the fake position if one is on, else the last fix iOS has.
+    private func flightOrigin(to dest: Coord) -> Coord? {
+        guard !UIAccessibility.isReduceMotionEnabled else { return nil }
+        let origin = activeCoord ?? CLLocationManager().location.map { Coord($0.coordinate) }
+        guard let origin, origin.distance(to: dest) > 300 else { return nil }
+        return origin
+    }
+
+    /// One continuous camera move, like a plane: climb from the current view, follow
+    /// the dot along the great circle (high enough to see the globe on long trips),
+    /// then descend slowly onto the destination. Altitude is interpolated in log
+    /// space so the zoom feels even, and the descent waits for the destination's
+    /// map tiles so the landing isn't a blank, half-drawn map.
+    private func fly(from origin: Coord, to dest: Coord) async {
+        let meters = origin.distance(to: dest)
+        let start = lastCamera ?? MapCamera(centerCoordinate: dest.cl, distance: 1600, heading: 0, pitch: 50)
+        let startCenter = Coord(start.centerCoordinate)
+        let landing = (distance: 1600.0, pitch: 50.0)
+        // Peak altitude grows with the trip; ~6 000 km away shows the whole globe.
+        let peak = min(max(meters * 1.6, 5000), 22_000_000)
+        let duration = 3.4 + min(3, log10(meters / 1000 + 1) * 0.8)
+
+        var tilesReady = false
+        let prefetch = Task { await Self.prefetchTiles(at: dest, distance: landing.distance, pitch: landing.pitch) }
+        Task { await prefetch.value; tilesReady = true }
+
+        func ease(_ x: Double) -> Double {
+            let x = min(max(x, 0), 1)
+            return x < 0.5 ? 4 * x * x * x : 1 - pow(-2 * x + 2, 3) / 2
+        }
+        func logLerp(_ a: Double, _ b: Double, _ k: Double) -> Double { exp(log(a) + (log(b) - log(a)) * k) }
+
+        let descentStart = 0.55, maxHold = 2.5
+        var elapsed = 0.0, held = 0.0, last = Date()
+        flight = TeleportFlight(origin: origin, dest: dest)
+        while true {
+            let now = Date(), dt = now.timeIntervalSince(last)
+            last = now
+            // Hover at cruise altitude until the destination is drawn (bounded).
+            if elapsed / duration >= descentStart, !tilesReady, held < maxHold {
+                held += dt
+            } else {
+                elapsed += dt
+            }
+            let t = min(elapsed / duration, 1)
+
+            let travel = ease((t - 0.08) / 0.5)
+            flight?.progress = travel
+
+            let altitude: Double, pitch: Double
+            if t < 0.35 {
+                let k = ease(t / 0.35)
+                altitude = logLerp(start.distance, peak, k)
+                pitch = start.pitch * (1 - k)
+            } else if t < descentStart {
+                altitude = peak
+                pitch = 0
+            } else {
+                let k = ease((t - descentStart) / (1 - descentStart))
+                altitude = logLerp(peak, landing.distance, k)
+                pitch = landing.pitch * k * k
+            }
+
+            // Ease the view from where it was onto the dot while climbing, then track it.
+            let follow = min(1, travel / 0.3)
+            let blend = follow * follow * (3 - 2 * follow)
+            let dot = flight?.current ?? dest.cl
+            let center = TeleportFlight.greatCircle(startCenter, Coord(dot), blend)
+
+            camera = .camera(MapCamera(centerCoordinate: center, distance: altitude,
+                                       heading: start.heading * (1 - min(1, t / 0.35)), pitch: pitch))
+            if t >= 1 { break }
+            try? await Task.sleep(nanoseconds: 16_000_000)
+        }
+        prefetch.cancel()
+    }
+
+    /// Rendering a snapshot of the landing view pulls its tiles into MapKit's cache.
+    private static func prefetchTiles(at c: Coord, distance: Double, pitch: Double) async {
+        let options = MKMapSnapshotter.Options()
+        options.camera = MKMapCamera(lookingAtCenter: c.cl, fromDistance: distance, pitch: pitch, heading: 0)
+        options.size = UIScreen.main.bounds.size
+        options.preferredConfiguration = MKStandardMapConfiguration(elevationStyle: .realistic, emphasisStyle: .muted)
+        options.traitCollection = UITraitCollection(userInterfaceStyle: .dark)
+        _ = try? await MKMapSnapshotter(options: options).start()
     }
 
     func stop() async {

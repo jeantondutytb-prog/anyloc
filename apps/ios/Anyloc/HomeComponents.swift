@@ -1,3 +1,4 @@
+import MapKit
 import Network
 import SwiftUI
 
@@ -192,50 +193,90 @@ extension View {
 
 // MARK: - Applying overlay
 
-struct ApplyingOverlay: View {
-    @State private var phase = 0
+/// Path of the teleport animation, sampled along the great circle so long
+/// trips arc on the map like a flight.
+struct TeleportFlight: Equatable {
+    let path: [CLLocationCoordinate2D]
+    var progress: Double = 0
+
+    init(origin: Coord, dest: Coord, samples: Int = 120) {
+        path = (0...samples).map { Self.greatCircle(origin, dest, Double($0) / Double(samples)) }
+    }
+
+    var current: CLLocationCoordinate2D {
+        let x = progress * Double(path.count - 1)
+        let i = min(Int(x), path.count - 2), f = x - Double(i)
+        let a = path[i], b = path[i + 1]
+        return CLLocationCoordinate2D(latitude: a.latitude + (b.latitude - a.latitude) * f,
+                                      longitude: a.longitude + (b.longitude - a.longitude) * f)
+    }
+
+    var trail: [CLLocationCoordinate2D] {
+        Array(path.prefix(Int(progress * Double(path.count - 1)) + 1)) + [current]
+    }
+
+    static func == (l: Self, r: Self) -> Bool {
+        l.progress == r.progress && l.path.count == r.path.count
+            && l.path.first?.latitude == r.path.first?.latitude && l.path.last?.latitude == r.path.last?.latitude
+    }
+
+    static func greatCircle(_ a: Coord, _ b: Coord, _ t: Double) -> CLLocationCoordinate2D {
+        func vec(_ c: Coord) -> (Double, Double, Double) {
+            let la = c.lat * .pi / 180, lo = c.lng * .pi / 180
+            return (cos(la) * cos(lo), cos(la) * sin(lo), sin(la))
+        }
+        let p = vec(a), q = vec(b)
+        let d = acos(max(-1, min(1, p.0 * q.0 + p.1 * q.1 + p.2 * q.2)))
+        guard d > 1e-9 else { return a.cl }
+        let s1 = sin((1 - t) * d) / sin(d), s2 = sin(t * d) / sin(d)
+        let x = s1 * p.0 + s2 * q.0, y = s1 * p.1 + s2 * q.1, z = s1 * p.2 + s2 * q.2
+        return CLLocationCoordinate2D(latitude: atan2(z, sqrt(x * x + y * y)) * 180 / .pi,
+                                      longitude: atan2(y, x) * 180 / .pi)
+    }
+}
+
+/// Pill under the search bar narrating the teleport: "on the way", then "arrived".
+struct TeleportBanner: View {
+    enum State: Equatable {
+        case flying(String)
+        case arrived(String)
+    }
+
+    let banner: State
 
     var body: some View {
-        ZStack {
-            Color.black.opacity(0.5).ignoresSafeArea()
-            VStack(spacing: 0) {
-                Image("Logo")
-                    .resizable()
-                    .frame(width: 64, height: 64)
-                    .shadow(color: Theme.accentStart.opacity(0.6), radius: 16)
-                HStack(spacing: 6) {
-                    ForEach(0..<3) { i in
-                        Circle()
-                            .fill(Theme.accentStart)
-                            .frame(width: 6, height: 6)
-                            .opacity(phase == i ? 1 : 0.35)
-                    }
-                }
-                .padding(.top, 10)
-                .padding(.bottom, 14)
-                Text("Application de la position…")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(Theme.Dark.text)
-                Text("Mise à jour de la position sur ton iPhone. Reste connecté, ça ne prend qu'un instant.")
-                    .font(.system(size: 12.5))
-                    .foregroundColor(Theme.Dark.muted)
-                    .multilineTextAlignment(.center)
-                    .padding(.top, 6)
-            }
-            .padding(.horizontal, 22)
-            .padding(.top, 28)
-            .padding(.bottom, 24)
-            .frame(width: 260)
-            .background(RoundedRectangle(cornerRadius: 22).fill(Theme.Dark.sheet))
-            .overlay(RoundedRectangle(cornerRadius: 22).stroke(Theme.Dark.line, lineWidth: 1))
-            .shadow(color: .black.opacity(0.55), radius: 30, y: 20)
-        }
-        .task {
-            while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 300_000_000)
-                phase = (phase + 1) % 3
+        HStack(spacing: 10) {
+            switch banner {
+            case .flying(let name):
+                ProgressView().tint(Theme.Dark.accent).controlSize(.small)
+                Text("Téléportation vers \(name)…")
+            case .arrived(let name):
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 18))
+                    .foregroundStyle(Theme.accentGradient)
+                Text("Téléporté à \(name)")
             }
         }
+        .font(.system(size: 15, weight: .semibold))
+        .foregroundColor(Theme.Dark.text)
+        .lineLimit(1)
+        .padding(.horizontal, 16)
+        .frame(height: 44)
+        .background(Capsule().fill(Theme.Dark.float))
+        .overlay(Capsule().stroke(Theme.Dark.accentLine, lineWidth: 1))
+        .shadow(color: Theme.accentStart.opacity(0.35), radius: 14, y: 6)
+    }
+}
+
+/// The destination pin, dropping in with a bounce when it appears.
+struct DroppingPin: View {
+    @SwiftUI.State private var landed = false
+
+    var body: some View {
+        GradientPin()
+            .offset(y: landed ? 0 : -36)
+            .opacity(landed ? 1 : 0)
+            .onAppear { withAnimation(.spring(response: 0.45, dampingFraction: 0.55)) { landed = true } }
     }
 }
 
@@ -335,4 +376,56 @@ final class NetworkMonitor: ObservableObject {
     deinit { monitor.cancel() }
 
     var isOffline: Bool { label == "Hors ligne" }
+}
+
+/// Replaces the "set location" button while the fake position is live:
+/// elapsed time since it was applied, plus a stop button.
+struct ActiveLocationBar: View {
+    let since: Date
+    let onStop: () -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            HStack(spacing: 12) {
+                Image(systemName: "location.fill")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(Theme.Dark.accent)
+                    .frame(width: 40, height: 40)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(Theme.Dark.accentBg))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Position simulée")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(Theme.Dark.muted)
+                    TimelineView(.periodic(from: since, by: 1)) { ctx in
+                        Text(Self.elapsed(from: since, to: ctx.date))
+                            .font(.system(size: 20, weight: .semibold, design: .monospaced))
+                            .foregroundColor(Theme.Dark.accent)
+                    }
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 10)
+            .frame(height: 64)
+            .background(RoundedRectangle(cornerRadius: 16).fill(Theme.Dark.panel))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.Dark.line, lineWidth: 1))
+
+            Button(action: onStop) {
+                VStack(spacing: 4) {
+                    Image(systemName: "stop.fill").font(.system(size: 16, weight: .semibold))
+                    Text("Stop").font(.system(size: 13, weight: .semibold))
+                }
+                .foregroundColor(Theme.error)
+                .frame(width: 78, height: 64)
+                .background(RoundedRectangle(cornerRadius: 16).fill(Theme.error.opacity(0.12)))
+                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.error.opacity(0.4), lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private static func elapsed(from start: Date, to now: Date) -> String {
+        let s = max(0, Int(now.timeIntervalSince(start)))
+        let (h, m, sec) = (s / 3600, s / 60 % 60, s % 60)
+        return h > 0 ? String(format: "%d:%02d:%02d", h, m, sec) : String(format: "%02d:%02d", m, sec)
+    }
 }
