@@ -132,10 +132,13 @@ final class OnDeviceLocationService: ObservableObject {
     private func startHeartbeat() {
         heartbeat?.cancel()
         heartbeat = Task { [weak self] in
+            var tick = 0
             while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 15_000_000_000)
+                // Short beat: if the tunnel drops, the real position only shows for a few seconds.
+                try? await Task.sleep(nanoseconds: 4_000_000_000)
                 guard !Task.isCancelled, let self else { return }
-                await self.reapply(reason: "Renvoi périodique")
+                tick += 1
+                await self.reapply(reason: tick % 15 == 0 ? "Renvoi périodique #\(tick)" : nil)
             }
         }
     }
@@ -583,50 +586,66 @@ enum DeveloperImage {
 // MARK: - Background keep-alive
 
 /// The simulated location is dropped as soon as the DVT connection closes,
-/// which happens when iOS suspends the app. A background location session
-/// keeps the process (and so the tunnel) alive. Part of what this prototype tests.
+/// which happens when iOS suspends the app. Continuous location updates keep
+/// the process (and so the tunnel) running in the background.
+///
+/// `CLLocationUpdate.liveUpdates` was not enough: it pauses itself once the
+/// phone is stationary, iOS then suspends the app and only wakes it every
+/// ~40 s, so the real position showed through in between. A classic
+/// CLLocationManager with automatic pausing off never stops.
 @MainActor
-private final class BackgroundKeeper {
+private final class BackgroundKeeper: NSObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
     private var activity: CLBackgroundActivitySession?
-    private var updates: Task<Void, Never>?
+    private var running = false
+    private var count = 0
+
+    override init() {
+        super.init()
+        manager.delegate = self
+        manager.desiredAccuracy = kCLLocationAccuracyBest
+        manager.distanceFilter = kCLDistanceFilterNone
+        manager.activityType = .otherNavigation
+        manager.pausesLocationUpdatesAutomatically = false
+        manager.showsBackgroundLocationIndicator = true
+    }
 
     func start() {
-        guard activity == nil else { return }
-        // Without location access iOS suspends the app in the background and the
-        // fake position drops with it.
+        guard !running else { return }
+        running = true
         OnDeviceLocationService.trace("Autorisation localisation : \(manager.authorizationStatus.rawValue) (0 = jamais demandée, 2 = refusée, 3 = toujours, 4 = pendant l'utilisation)")
         manager.requestWhenInUseAuthorization()
+        // Must start while the app is in the foreground (it is: a tap set the position).
         activity = CLBackgroundActivitySession()
-        updates = Task {
-            do {
-                var count = 0
-                for try await update in CLLocationUpdate.liveUpdates(.otherNavigation) {
-                    if Task.isCancelled { break }
-                    count += 1
-                    if count <= 3 || count % 20 == 0 {
-                        var flags: [String] = []
-                        if #available(iOS 18.0, *) {
-                            if update.authorizationDenied { flags.append("autorisation refusée") }
-                            if update.authorizationDeniedGlobally { flags.append("localisation coupée") }
-                            if update.authorizationRequestInProgress { flags.append("demande en cours") }
-                            if update.insufficientlyInUse { flags.append("pas assez d'usage") }
-                            if update.serviceSessionRequired { flags.append("session requise") }
-                        }
-                        OnDeviceLocationService.trace("Mise à jour localisation #\(count) \(flags.joined(separator: ", "))")
-                    }
-                }
-                OnDeviceLocationService.trace("Mises à jour localisation terminées")
-            } catch {
-                OnDeviceLocationService.trace("Session arrière-plan arrêtée : \(error.localizedDescription)")
-            }
-        }
+        manager.allowsBackgroundLocationUpdates = true
+        manager.startUpdatingLocation()
     }
 
     func stop() {
-        updates?.cancel()
-        updates = nil
+        guard running else { return }
+        running = false
+        manager.stopUpdatingLocation()
+        manager.allowsBackgroundLocationUpdates = false
         activity?.invalidate()
         activity = nil
+    }
+
+    nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        Task { @MainActor in
+            count += 1
+            if count <= 2 || count % 200 == 0 { OnDeviceLocationService.trace("Mise à jour localisation #\(count)") }
+        }
+    }
+
+    nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        OnDeviceLocationService.trace("Localisation en erreur : \(error.localizedDescription)")
+    }
+
+    nonisolated func locationManagerDidPauseLocationUpdates(_ manager: CLLocationManager) {
+        OnDeviceLocationService.trace("iOS a mis la localisation en pause")
+    }
+
+    nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        OnDeviceLocationService.trace("Autorisation localisation changée : \(manager.authorizationStatus.rawValue)")
     }
 }
