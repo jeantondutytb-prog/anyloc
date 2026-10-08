@@ -55,9 +55,29 @@ final class OnDeviceLocationService: ObservableObject {
         .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         .appendingPathComponent("AnylocRemotePairing.plist")
 
+    /// Migrates pairing files saved under the old name ``AnylocPairing.plist``.
+    private static func migrateLegacyPairing() {
+        let fileManager = FileManager.default
+        let legacyNames = ["AnylocPairing.plist"]
+        let directories: [(URL, URL)] = [
+            (droppedPairingURL.deletingLastPathComponent(), droppedPairingURL),
+            (pairingURL.deletingLastPathComponent(), pairingURL),
+        ]
+        for (dir, correctURL) in directories {
+            guard !fileManager.fileExists(atPath: correctURL.path) else { continue }
+            for name in legacyNames {
+                let legacy = dir.appendingPathComponent(name)
+                guard fileManager.fileExists(atPath: legacy.path) else { continue }
+                try? fileManager.moveItem(at: legacy, to: correctURL)
+                break
+            }
+        }
+    }
+
     /// Moves a freshly dropped record to its protected location.
     private static func securePairingDrop() {
         let fileManager = FileManager.default
+        migrateLegacyPairing()
         guard fileManager.fileExists(atPath: droppedPairingURL.path) else { return }
         do {
             try fileManager.createDirectory(

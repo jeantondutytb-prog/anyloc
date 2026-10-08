@@ -159,7 +159,7 @@ final class SignatureRenewalService: ObservableObject {
         }
 
         let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
-        guard let fileURL = directory?.appendingPathComponent("AnylocPairing.plist") else {
+        guard let fileURL = directory?.appendingPathComponent("AnylocRemotePairing.plist") else {
             return false
         }
 

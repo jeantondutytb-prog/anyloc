@@ -773,8 +773,10 @@ function resolvePairingSourcePath(udid, stdout) {
   if (udid) {
     const home = process.env.HOME || "";
     const candidates = [
-      path.join(home, ".pymobiledevice3", "pair_records", `${udid}.plist`),
+      path.join(home, ".pymobiledevice3", `remote_${udid}.plist`),
       path.join(home, ".pymobiledevice3", "remote_pair_records", `${udid}.plist`),
+      path.join(home, ".pymobiledevice3", "pair_records", `${udid}.plist`),
+      path.join(home, ".pymobiledevice3", `${udid}.plist`),
     ];
 
     for (const candidate of candidates) {
@@ -836,7 +838,12 @@ async function exportPairingFile({ udid, token, apiBaseUrl }) {
   }
 
   try {
-    const pairingBase64 = fs.readFileSync(sourcePath).toString("base64");
+    let pairingBase64;
+    if (hasWifiPairing(resolvedUdid)) {
+      pairingBase64 = Buffer.from(appRemotePairingPlist(resolvedUdid)).toString("base64");
+    } else {
+      pairingBase64 = fs.readFileSync(sourcePath).toString("base64");
+    }
     const baseUrl = normalizeApiBaseUrl(apiBaseUrl);
     const response = await fetch(`${baseUrl}/api/device/pairing`, {
       method: "PUT",
@@ -1000,36 +1007,86 @@ async function ensureWifiPairing({ udid }) {
   return { ok: true };
 }
 
-// Drops the lockdown pair record straight into the Anyloc iPhone app's
+// pymobiledevice3 names this host to the iPhone with uuid3(DNS, hostname) when
+// it creates the RemotePairing record, and does not store it in the record.
+function remotePairingHostId() {
+  const ns = Buffer.from("6ba7b8109dad11d180b400c04fd430c8", "hex");
+  const hash = require("node:crypto")
+    .createHash("md5")
+    .update(Buffer.concat([ns, Buffer.from(os.hostname(), "utf8")]))
+    .digest();
+  hash[6] = (hash[6] & 0x0f) | 0x30;
+  hash[8] = (hash[8] & 0x3f) | 0x80;
+  const hex = hash.toString("hex");
+  return [hex.slice(0, 8), hex.slice(8, 12), hex.slice(12, 16), hex.slice(16, 20), hex.slice(20)]
+    .join("-")
+    .toUpperCase();
+}
+
+// Rewrites pymobiledevice3's RemotePairing record (remote_<udid>.plist) in the
+// format the iPhone app's idevice library reads: same Ed25519 keys, plus the
+// host identifier the iPhone knows this pairing under.
+function appRemotePairingPlist(udid) {
+  const xml = fs.readFileSync(remotePairRecordPath(udid), "utf8");
+  const dataFor = (key) => {
+    const match = xml.match(new RegExp(`<key>${key}</key>\\s*<data>([^<]*)</data>`));
+    return match ? match[1].replace(/\s+/g, "") : null;
+  };
+  const publicKey = dataFor("public_key");
+  const privateKey = dataFor("private_key");
+  if (!publicKey || !privateKey) {
+    throw new Error("Pairing Wi-Fi incomplet. Rebranche l'iPhone et réessaie.");
+  }
+  const hostId = xml.match(/<key>host_identifier<\/key>\s*<string>([^<]*)<\/string>/)?.[1] || remotePairingHostId();
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">',
+    '<plist version="1.0">',
+    "<dict>",
+    `\t<key>identifier</key>\n\t<string>${hostId}</string>`,
+    `\t<key>private_key</key>\n\t<data>${privateKey}</data>`,
+    `\t<key>public_key</key>\n\t<data>${publicKey}</data>`,
+    "</dict>",
+    "</plist>",
+    "",
+  ].join("\n");
+}
+
+// Drops a RemotePairing record straight into the Anyloc iPhone app's
 // Documents, so the app can drive its own location through LocalDevVPN with no
-// computer. Goes over USB only (never through our server): the record grants
-// full developer access to the iPhone. Fails quietly until the app is installed.
+// computer. iOS 26.4+ drops lockdown TLS sessions over LocalDevVPN, so the app
+// opens a RemotePairing tunnel instead of using the lockdown pair record. Goes
+// over USB only (never through our server): the record grants full developer
+// access to the iPhone. Fails quietly until the app is installed.
 async function pushPairingToApp({ udid }) {
   if (!udid) {
     return { ok: false, message: "UDID manquant." };
   }
 
-  // Without this (Xcode's "Connect via network"), lockdown drops every
+  // Without this (Xcode's "Connect via network"), the iPhone ignores every
   // network session, LocalDevVPN included.
   const wifi = await runCli(["lockdown", "wifi-connections", "--state", "on", "--udid", udid], 20000);
   if (!wifi.ok) {
     return { ok: false, message: humanizePmd3Error(wifi.stderr || wifi.stdout) };
   }
 
-  const tmp = path.join(os.tmpdir(), `anyloc-pair-${udid}.plist`);
-  try {
-    const saved = await runCli(["lockdown", "save-pair-record", tmp, "--udid", udid], 20000);
-    if (!saved.ok || !fs.existsSync(tmp)) {
-      return { ok: false, message: humanizePmd3Error(saved.stderr || saved.stdout) };
-    }
+  const paired = await ensureWifiPairing({ udid });
+  if (!paired.ok) {
+    return paired;
+  }
 
+  const tmp = path.join(os.tmpdir(), `anyloc-rppair-${udid}.plist`);
+  try {
+    fs.writeFileSync(tmp, appRemotePairingPlist(udid), { mode: 0o600 });
     const pushed = await runCli(
-      ["apps", "push", "io.anyloc.app", tmp, "/Documents/AnylocPairing.plist", "--udid", udid],
+      ["apps", "push", "io.anyloc.app", tmp, "/Documents/AnylocRemotePairing.plist", "--udid", udid],
       20000
     );
     return pushed.ok
       ? { ok: true }
       : { ok: false, message: humanizePmd3Error(pushed.stderr || pushed.stdout) };
+  } catch (error) {
+    return { ok: false, message: error.message };
   } finally {
     fs.rmSync(tmp, { force: true });
   }
