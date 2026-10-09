@@ -191,12 +191,14 @@ final class OnDeviceLocationService: ObservableObject {
         log("Position perdue, reconnexion")
         await reset()
         await connect(promptForVPN: false)
-        guard isConnected, self.applied != nil else {
+        // Re-read: a new teleport may have landed during the reconnection, and
+        // sending the old point now would override it until the next beat.
+        guard isConnected, let current = self.applied else {
             log("Reconnexion impossible : \(failureMessage)")
             return
         }
         do {
-            try await sendLocation(lat: applied.lat, lng: applied.lng)
+            try await sendLocation(lat: current.lat, lng: current.lng)
             log("Position rétablie")
         } catch {
             log("Renvoi impossible : \(error.localizedDescription)")
