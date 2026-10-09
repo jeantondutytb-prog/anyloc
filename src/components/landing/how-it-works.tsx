@@ -1,56 +1,41 @@
-import { CreditCard, Download, MapPin } from "lucide-react";
-
 const steps = [
   {
-    icon: CreditCard,
     title: "Tu t'abonnes",
-    description:
-      "Paiement sécurisé. Ton accès est actif dès que c'est validé.",
+    description: "Paiement sécurisé, accès actif dès que c'est validé.",
   },
   {
-    icon: Download,
     title: "Tu installes l'app",
     description:
-      "Android : APK sur le tel. iPhone : ordi une fois, puis l'app reste sur ton iPhone.",
+      "Android : l'APK sur ton tel. iPhone : un passage sur l'ordi la première fois, puis l'app reste sur ton iPhone.",
   },
   {
-    icon: MapPin,
-    title: "Tu poses ta pin",
+    title: "Tu poses ton pin",
     description:
-      "Ouvre l'app, choisis une ville sur la carte, appuie sur Démarrer. C'est tout.",
+      "Choisis une ville sur la carte et appuie sur « Définir cette position ».",
   },
 ];
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" data-track-section="how_it_works" className="border-y border-zinc-200 bg-pink-50/50 py-24 sm:py-32">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
-            Opérationnel en 3 étapes
-          </h2>
-          <p className="mt-4 text-zinc-600">
-            Comme Locaflex ou Wiped : paie, installe, change de ville — depuis
-            ton téléphone.
-          </p>
-        </div>
+    <section id="how-it-works" data-track-section="how_it_works" className="border-y border-zinc-200 bg-white py-20 sm:py-24">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6">
+        <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+          Prêt en 3 étapes
+        </h2>
 
-        <div className="mt-16 grid gap-8 md:grid-cols-3">
+        <ol className="mt-10 grid gap-8 md:grid-cols-3 md:gap-10">
           {steps.map((step, i) => (
-            <div key={step.title} className="relative text-center">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-pink-500/20 bg-pink-500/10">
-                <step.icon className="h-6 w-6 text-pink-600" />
-              </div>
-              <span className="mt-4 inline-block text-xs font-medium text-pink-600">
-                {i + 1} / 3
-              </span>
-              <h3 className="mt-2 text-lg font-semibold text-zinc-900">
+            <li key={step.title}>
+              <span className="text-sm font-semibold text-pink-600">{i + 1}</span>
+              <h3 className="mt-1 text-lg font-semibold text-zinc-900">
                 {step.title}
               </h3>
-              <p className="mt-2 text-sm text-zinc-500">{step.description}</p>
-            </div>
+              <p className="mt-1.5 text-sm leading-relaxed text-zinc-600">
+                {step.description}
+              </p>
+            </li>
           ))}
-        </div>
+        </ol>
       </div>
     </section>
   );

@@ -3,7 +3,6 @@ import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   CHECKOUT_CTA_LABEL,
-  CHECKOUT_CTA_SUBLINE,
   CHECKOUT_MARKETING_LINE,
   DEFAULT_PLAN_ID,
   getOnboardingUrl,
@@ -14,8 +13,8 @@ export function Cta() {
   return (
     <section data-track-section="final_cta" className="py-24 sm:py-32">
       <div className="mx-auto max-w-4xl px-4 text-center sm:px-6">
-        <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
-          Prêt à changer de life ?
+        <h2 className="text-balance text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+          Ta prochaine ville est à un tap.
         </h2>
         <p className="mt-4 text-zinc-600">
           {CHECKOUT_MARKETING_LINE}
@@ -27,7 +26,6 @@ export function Cta() {
               <ArrowRight className="h-4 w-4" />
             </Button>
           </OnboardingLink>
-          <p className="text-sm text-zinc-500">{CHECKOUT_CTA_SUBLINE}</p>
           <p className="text-sm text-zinc-500">
             Déjà client ?{" "}
             <Link

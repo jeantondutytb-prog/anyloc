@@ -1,21 +1,24 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
+import { ClipperBanner } from "@/components/layout/clipper-banner";
 import { CHECKOUT_CTA_LABEL_SHORT, DEFAULT_PLAN_ID, getOnboardingUrl } from "@/lib/constants";
 import { OnboardingLink } from "@/components/onboarding/onboarding-link";
 
 export function Header() {
   return (
+    // Fixed: pages offset their content by --header-height (banner + navbar).
     <header className="fixed top-0 z-50 w-full border-b border-zinc-200 bg-logo-background">
+      <ClipperBanner />
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <Logo />
 
         <nav className="hidden items-center gap-8 md:flex">
           <Link
-            href="/#features"
+            href="/#app"
             className="text-sm text-zinc-600 transition-colors hover:text-zinc-900"
           >
-            Fonctionnalités
+            L&apos;app
           </Link>
           <Link
             href="/pricing"

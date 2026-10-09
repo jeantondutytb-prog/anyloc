@@ -2,6 +2,8 @@
 
 
 :root {
+  /* Fixed header: clipper banner (36px) + navbar (64px). */
+  --header-height: 100px;
   --background: #fff9fb;
   --logo-background: #f8f8f8;
   --foreground: #18181b;
