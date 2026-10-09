@@ -9,7 +9,7 @@ const steps = [
       "Android : l'APK sur ton tel. iPhone : un passage sur l'ordi la première fois, puis l'app reste sur ton iPhone.",
   },
   {
-    title: "Tu poses ton pin",
+    title: "Tu choisis ta ville",
     description:
       "Choisis une ville sur la carte et appuie sur « Définir cette position ».",
   },
@@ -17,20 +17,20 @@ const steps = [
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" data-track-section="how_it_works" className="border-y border-zinc-200 bg-white py-20 sm:py-24">
+    <section id="how-it-works" data-track-section="how_it_works" className="bg-night py-20 sm:py-24">
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
-        <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+        <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
           Prêt en 3 étapes
         </h2>
 
         <ol className="mt-10 grid gap-8 md:grid-cols-3 md:gap-10">
           {steps.map((step, i) => (
             <li key={step.title}>
-              <span className="text-sm font-semibold text-pink-600">{i + 1}</span>
-              <h3 className="mt-1 text-lg font-semibold text-zinc-900">
+              <span className="text-sm font-semibold text-pink-400">{i + 1}</span>
+              <h3 className="mt-1 text-lg font-semibold text-white">
                 {step.title}
               </h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-zinc-600">
+              <p className="mt-1.5 text-sm leading-relaxed text-zinc-400">
                 {step.description}
               </p>
             </li>

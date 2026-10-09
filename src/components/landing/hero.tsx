@@ -14,7 +14,7 @@ import { OnboardingLink } from "@/components/onboarding/onboarding-link";
 
 export function Hero() {
   return (
-    <section data-track-section="hero" className="pt-[calc(var(--header-height)+3rem)] pb-16 sm:pt-[calc(var(--header-height)+5rem)] sm:pb-24">
+    <section data-track-section="hero" className="flow-root bg-night pt-[calc(var(--header-height)+3rem)] sm:pt-[calc(var(--header-height)+5rem)]">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -22,16 +22,16 @@ export function Hero() {
           transition={{ duration: 0.6 }}
           className="mx-auto max-w-3xl text-center"
         >
-          <h1 className="text-4xl font-bold tracking-tight text-zinc-900 sm:text-6xl sm:leading-[1.1]">
+          <h1 className="text-4xl font-bold tracking-tight text-white sm:text-6xl sm:leading-[1.1]">
             Fake ta loc à{" "}
-            <span className="text-pink-600">
+            <span className="text-pink-400">
               Marbella
             </span>
             <br />
             alors que t&apos;es posé chez toi.
           </h1>
 
-          <p className="mt-6 text-lg text-zinc-600 sm:text-xl">
+          <p className="mt-6 text-lg text-zinc-300 sm:text-xl">
             Snap, Insta, Tinder, jeux : un réglage et tout ton tel déménage.
           </p>
 
@@ -42,18 +42,18 @@ export function Hero() {
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </OnboardingLink>
-            <p className="text-center text-xs text-zinc-500 sm:text-sm">
+            <p className="text-center text-xs text-zinc-400 sm:text-sm">
               iPhone &amp; Android · Annulation en 1 clic
             </p>
           </div>
 
-          <p className="mt-4 text-sm text-zinc-500">
+          <p className="mt-4 text-sm text-zinc-400">
             Déjà client ?{" "}
             <Link
               href="/login"
               data-track="login_link_clicked"
               data-track-location="hero"
-              className="font-medium text-pink-600 transition-colors hover:text-pink-700 hover:underline"
+              className="font-medium text-pink-300 transition-colors hover:text-pink-200 hover:underline"
             >
               Connexion
             </Link>
@@ -64,9 +64,9 @@ export function Hero() {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="relative mx-auto mt-16 max-w-4xl"
+          className="relative z-10 mx-auto -mb-24 mt-12 max-w-4xl sm:-mb-40 sm:mt-16"
         >
-          <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white p-1 shadow-xl shadow-zinc-900/5">
+          <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-1 shadow-2xl shadow-black/40">
             <VslPlayer />
           </div>
         </motion.div>
