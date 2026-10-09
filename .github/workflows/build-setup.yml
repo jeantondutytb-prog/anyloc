@@ -141,7 +141,7 @@ jobs:
           fi
 
       - name: Upload DMG artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: anyloc-setup-mac
           path: |
@@ -206,7 +206,7 @@ jobs:
           fi
 
       - name: Upload EXE artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: anyloc-setup-win
           path: |
