@@ -124,19 +124,27 @@ final class AuthService: ObservableObject {
         UserDefaults.standard.removeObject(forKey: "anyloc.session")
     }
 
+    /// Only signs out when Supabase actually rejects the session: no network
+    /// (airplane mode, Wi-Fi without internet) or a server hiccup keeps it.
     func verifySession() async {
         guard let s = session else { return }
         do {
             let user = try await fetchUser(accessToken: s.accessToken)
             session = SupabaseSession(accessToken: s.accessToken, refreshToken: s.refreshToken, user: user)
+            return
+        } catch AuthError.sessionRejected {
+            // Access token expired: refresh below.
         } catch {
-            // Try refresh
-            if let refreshed = try? await refreshToken(s.refreshToken) {
-                session = refreshed
-                saveSession()
-            } else {
-                logout()
-            }
+            return
+        }
+
+        do {
+            session = try await refreshToken(s.refreshToken)
+            saveSession()
+        } catch AuthError.sessionRejected {
+            logout()
+        } catch {
+            // Offline: keep the session and try again next time.
         }
     }
 
@@ -148,7 +156,7 @@ final class AuthService: ObservableObject {
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
-            throw AuthError.loginFailed("Session expirée.")
+            throw Self.isRejection(response) ? AuthError.sessionRejected : AuthError.loginFailed("Session expirée.")
         }
 
         let decoded = try JSONDecoder().decode(UserResponse.self, from: data)
@@ -165,12 +173,19 @@ final class AuthService: ObservableObject {
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
-            throw AuthError.loginFailed("Refresh échoué.")
+            throw Self.isRejection(response) ? AuthError.sessionRejected : AuthError.loginFailed("Refresh échoué.")
         }
 
         let decoded = try JSONDecoder().decode(TokenResponse.self, from: data)
         let user = SupabaseUser(id: decoded.user.id, email: decoded.user.email)
         return SupabaseSession(accessToken: decoded.access_token, refreshToken: decoded.refresh_token, user: user)
+    }
+
+    /// 400/401/403: Supabase refused the token (expired, revoked, user deleted).
+    /// Anything else (5xx, captive portal…) says nothing about the session.
+    private static func isRejection(_ response: URLResponse) -> Bool {
+        guard let code = (response as? HTTPURLResponse)?.statusCode else { return false }
+        return code == 400 || code == 401 || code == 403
     }
 
     private func saveSession() {
@@ -191,11 +206,13 @@ final class AuthService: ObservableObject {
 
 enum AuthError: LocalizedError {
     case loginFailed(String)
+    case sessionRejected
     case cancelled
 
     var errorDescription: String? {
         switch self {
         case .loginFailed(let msg): return msg
+        case .sessionRejected: return "Session expirée. Reconnecte-toi."
         case .cancelled: return "Connexion annulée."
         }
     }

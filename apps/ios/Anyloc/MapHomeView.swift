@@ -70,6 +70,10 @@ struct MapHomeView: View {
         } message: {
             Text("Ouvre LocalDevVPN, appuie sur Connect, puis reviens dans Anyloc.")
         }
+        .onChange(of: runner.isRunning) { _, running in
+            // The phone stays on the route's last point: show it as the active position.
+            if !running, let pos = runner.position { vm.markRouteEnded(at: pos, name: runner.name) }
+        }
         .onChange(of: builder.legs) { _, _ in fitRoute() }
         .onChange(of: sheetTop) { old, new in
             // Re-frame once the panel settles to a new height (points added, mode switched…).
@@ -766,6 +770,11 @@ final class MapHomeViewModel: ObservableObject {
     func markRouteStarted() {
         // The runner now drives the location; the teleport target is no longer the active one.
         activeCoord = nil
+    }
+
+    func markRouteEnded(at c: Coord, name: String) {
+        selected = SelectedPosition(name: name, coord: c)
+        activeCoord = c
     }
 
     func search() {

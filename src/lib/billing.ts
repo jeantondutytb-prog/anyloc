@@ -2,6 +2,7 @@ import type Stripe from "stripe";
 import { ensureUserForEmail } from "@/lib/guest-account";
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 import { stripe } from "@/lib/stripe";
+import { isStaleSubscriptionEvent } from "@/lib/subscription-sync";
 import { getTrialProfilePatchFromSubscription } from "@/lib/trial-billing";
 
 export type ProfileRow = {
@@ -184,6 +185,28 @@ async function resolveExistingAuthUserId(
   return data.user.id;
 }
 
+async function isStaleForProfile(
+  admin: ReturnType<typeof createAdminClient>,
+  column: "id" | "stripe_customer_id",
+  value: string,
+  subscription: Stripe.Subscription
+) {
+  const { data } = await admin
+    .from("profiles")
+    .select("stripe_subscription_id, subscription_status")
+    .eq(column, value)
+    .maybeSingle();
+
+  if (!isStaleSubscriptionEvent(data, subscription)) {
+    return false;
+  }
+
+  console.warn(
+    `[billing] Ignoring ${subscription.status} subscription ${subscription.id}: profile is on ${data?.stripe_subscription_id} (${data?.subscription_status}).`
+  );
+  return true;
+}
+
 export async function syncProfileFromSubscription(
   subscription: Stripe.Subscription
 ) {
@@ -224,6 +247,10 @@ export async function syncProfileFromSubscription(
   }
 
   if (userId) {
+    if (await isStaleForProfile(admin, "id", userId, subscription)) {
+      return;
+    }
+
     const trialPatch = getTrialProfilePatchFromSubscription(subscription);
     const { error } = await admin.from("profiles").upsert(
       {
@@ -244,6 +271,10 @@ export async function syncProfileFromSubscription(
 
   if (!customerId) {
     console.warn("[billing] Subscription missing customer id.");
+    return;
+  }
+
+  if (await isStaleForProfile(admin, "stripe_customer_id", customerId, subscription)) {
     return;
   }
 

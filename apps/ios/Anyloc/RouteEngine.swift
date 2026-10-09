@@ -204,7 +204,7 @@ final class RouteRunner: ObservableObject {
                 progress = elapsed / total
                 remaining = total - elapsed
                 do {
-                    try await api.upsertLocation(name: name, lat: pos.lat, lng: pos.lng, isActive: true)
+                    try await push(pos, name: name)
                     lastError = nil
                 } catch {
                     lastError = error.localizedDescription
@@ -220,6 +220,19 @@ final class RouteRunner: ObservableObject {
         task?.cancel()
         task = nil
         isRunning = false
+    }
+
+    /// Same path as a teleport: with a pairing the iPhone moves itself, and the
+    /// sync only keeps the dashboard up to date (it holds the last sent point,
+    /// so without this the route never reached the phone).
+    private func push(_ pos: Coord, name: String) async throws {
+        let onDevice = OnDeviceLocationService.shared
+        if onDevice.hasPairing {
+            try await onDevice.setLocation(lat: pos.lat, lng: pos.lng)
+            try? await api.upsertLocation(name: name, lat: pos.lat, lng: pos.lng, isActive: true)
+        } else {
+            try await api.upsertLocation(name: name, lat: pos.lat, lng: pos.lng, isActive: true)
+        }
     }
 
     private static func position(at time: TimeInterval, legs: [RouteLeg], speed: Double) -> Coord {
