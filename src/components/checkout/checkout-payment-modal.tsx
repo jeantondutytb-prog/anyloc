@@ -19,6 +19,8 @@ import { GUARANTEE, type Plan } from "@/lib/constants";
  */
 export function CheckoutPaymentModal({
   plan,
+  downgradePlan,
+  onDowngrade,
   stripePublishableKey,
   hostedRedirecting,
   hostedError,
@@ -26,6 +28,9 @@ export function CheckoutPaymentModal({
   onClose,
 }: {
   plan: Plan;
+  /** Cheaper plan offered when the card is declined on this one. */
+  downgradePlan?: Plan;
+  onDowngrade?: () => void;
   stripePublishableKey: string;
   /** The hosted-page fallback is loading. */
   hostedRedirecting: boolean;
@@ -37,6 +42,7 @@ export function CheckoutPaymentModal({
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [paymentFailed, setPaymentFailed] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -90,6 +96,14 @@ export function CheckoutPaymentModal({
     };
   }, [onClose]);
 
+  function handleSubmitFailed() {
+    track("checkout_payment_failed", { plan: plan.id });
+    if (downgradePlan && !paymentFailed) {
+      track("checkout_downgrade_offer_shown", { plan: plan.id, offer_plan: downgradePlan.id });
+    }
+    setPaymentFailed(true);
+  }
+
   function retry() {
     setError(null);
     setAttempt((count) => count + 1);
@@ -140,11 +154,33 @@ export function CheckoutPaymentModal({
           </div>
           <p className="mt-2 text-xs text-zinc-500">{copy.modalCancelAnytime}</p>
 
+          {paymentFailed && downgradePlan && onDowngrade ? (
+            <div className="mt-3 rounded-2xl border border-pink-200 bg-pink-50 p-3">
+              <p className="text-sm font-bold text-zinc-900">
+                {copy.downgradeTitle(plan.price.replace("€", " €"))}
+              </p>
+              <p className="mt-0.5 text-xs text-zinc-600">
+                {copy.downgradeLead(downgradePlan.price.replace("€", " €"))}
+                {plan.mobileApp && !downgradePlan.mobileApp ? ` ${copy.downgradeNoMobileApp}` : null}
+              </p>
+              <button
+                type="button"
+                onClick={onDowngrade}
+                data-track="checkout_downgrade_clicked"
+                data-track-plan={plan.id}
+                className="btn-gradient mt-2 w-full rounded-full px-4 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
+              >
+                {copy.downgradeCta(downgradePlan.price.replace("€", " €"))}
+              </button>
+            </div>
+          ) : null}
+
           <div className={error ? "mt-3" : "mt-3 min-h-[320px]"}>
             {clientSecret ? (
               <StripeEmbeddedCheckout
                 clientSecret={clientSecret}
                 publishableKey={stripePublishableKey}
+                onSubmitFailed={handleSubmitFailed}
               />
             ) : error ? (
               <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-center">

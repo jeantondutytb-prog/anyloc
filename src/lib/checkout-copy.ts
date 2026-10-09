@@ -27,6 +27,11 @@ export const CHECKOUT_COPY = {
   modalFallbackCta: "Payer sur la page sécurisée Stripe ↗",
   payOpening: "On prépare ton paiement…",
   retryCta: "Réessayer",
+  downgradeTitle: (price: string) => `Paiement de ${price} refusé ?`,
+  downgradeLead: (price: string) =>
+    `Ta banque a peut-être bloqué le montant. Commence avec le Mensuel à ${price}, sans engagement.`,
+  downgradeNoMobileApp: "L'app iPhone reste réservée à l'Annuel.",
+  downgradeCta: (price: string) => `Passer au Mensuel à ${price}`,
   faq: [
     {
       q: "Ma carte sera débitée tout de suite ?",
