@@ -15,6 +15,7 @@ export function useDashboardOnboarding() {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is only readable after hydration
     setState(readOnboardingState());
     setHydrated(true);
   }, []);

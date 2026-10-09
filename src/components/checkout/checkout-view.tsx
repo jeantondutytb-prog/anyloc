@@ -47,6 +47,7 @@ export function CheckoutView({
     try {
       const stored = window.sessionStorage.getItem(ONBOARDING_DESTINATION_KEY);
       if (stored) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- sessionStorage is only readable after hydration
         setDestination(JSON.parse(stored) as OnboardingDestination);
       }
     } catch {

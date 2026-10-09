@@ -68,6 +68,7 @@ export function useLocationSync({
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- load once on mount
     void loadLocation();
   }, [loadLocation]);
 

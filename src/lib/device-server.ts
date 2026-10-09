@@ -3,12 +3,10 @@ import {
   DEFAULT_LOCATION,
   mapLocationRow,
   resolveLocation,
-  toLocationResponse,
 } from "@/lib/location";
 import { hashDeviceToken, type DeviceTokenRow } from "@/lib/device";
 import { buildSubscriptionAccessResponse } from "@/lib/subscription-access-api";
 import { getSubscriptionAccessForUser, isActiveSubscriptionStatus } from "@/lib/subscription";
-import type { SubscriptionInactivePayload } from "@/lib/subscription-inactive";
 
 export async function getDeviceByToken(token: string) {
   if (!isSupabaseAdminConfigured()) {

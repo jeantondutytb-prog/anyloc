@@ -1,6 +1,6 @@
 import type Stripe from "stripe";
 import { PLANS, isValidPlanId } from "@/lib/constants";
-import { ensureUserForEmail } from "@/lib/guest-account";
+import { ensureUserForEmail, normalizeEmail } from "@/lib/guest-account";
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 import { stripe } from "@/lib/stripe";
 import {
@@ -249,7 +249,7 @@ export async function syncProfileFromTrialSetupSession(
   const { error } = await admin.from("profiles").upsert(
     {
       id: userId,
-      email,
+      email: email ? normalizeEmail(email) : null,
       stripe_customer_id: customerId,
       trial_payment_method_id: paymentMethodId,
       ...getTrialProfilePatchFromSubscription(subscription),
