@@ -58,6 +58,8 @@ const BILLING_PERIOD_LABELS: Record<string, string> = {
   annual: "12 mois",
 };
 
+const DOWNGRADE_PLAN_ID = "monthly";
+
 function getCheckoutPlans() {
   return CHECKOUT_PLAN_IDS.map((id) => {
     const plan = PLANS.find((entry) => entry.id === id)!;
@@ -94,6 +96,11 @@ export function AnyLocCheckoutPanel({
   const checkoutPlans = getCheckoutPlans();
   const selectedPlan =
     checkoutPlans.find((plan) => plan.id === selectedPlanId) ?? checkoutPlans[0];
+  // Card declined on a pricier plan: offer the monthly one in the popup.
+  const downgradePlan =
+    selectedPlan.id !== DOWNGRADE_PLAN_ID
+      ? checkoutPlans.find((plan) => plan.id === DOWNGRADE_PLAN_ID)
+      : undefined;
   const [redirecting, setRedirecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const requestRef = useRef<AbortController | null>(null);
@@ -446,7 +453,11 @@ export function AnyLocCheckoutPanel({
 
       {modalOpen && hydrated ? (
         <CheckoutPaymentModal
+          // A new plan needs a new Stripe session: remount the popup.
+          key={selectedPlan.id}
           plan={selectedPlan}
+          downgradePlan={downgradePlan}
+          onDowngrade={downgradePlan ? () => onPlanChange(downgradePlan.id) : undefined}
           stripePublishableKey={stripePublishableKey}
           hostedRedirecting={redirecting}
           hostedError={error}
