@@ -152,9 +152,17 @@ final class SignatureRenewalService: ObservableObject {
         monitor.start(queue: DispatchQueue(label: "anyloc.network"))
     }
 
+    /// The server copy only fills in a missing record. It must never replace the
+    /// local one: it can be stale (the tunnel rewrites the local record) or an
+    /// old lockdown record uploaded by earlier Anyloc Setup versions, which the
+    /// RemotePairing tunnel can't read ("Pairing invalide").
     @discardableResult
     private func savePairingLocally(base64: String) -> Bool {
-        guard let data = Data(base64Encoded: base64) else {
+        if OnDeviceLocationService.shared.hasPairing {
+            return true
+        }
+
+        guard let data = Data(base64Encoded: base64), OnDeviceLocationService.isRemotePairingRecord(data) else {
             return false
         }
 

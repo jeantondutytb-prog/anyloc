@@ -74,10 +74,31 @@ final class OnDeviceLocationService: ObservableObject {
         }
     }
 
+    /// RemotePairing records (what idevice reads and writes) carry an Ed25519
+    /// key pair and a host identifier. Lockdown records (HostCertificate,
+    /// HostPrivateKey…), pushed or uploaded by older Anyloc Setup versions,
+    /// can't open the tunnel and only fail with "Pairing invalide".
+    static func isRemotePairingRecord(_ data: Data) -> Bool {
+        guard let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any] else {
+            return false
+        }
+        return plist["private_key"] is Data && plist["public_key"] is Data && plist["identifier"] is String
+    }
+
+    /// Deletes a record the tunnel can't use, so the app falls back to the
+    /// computer sync (and a fresh USB drop or server copy can take its place).
+    private static func discardIfUnusable(_ url: URL) {
+        guard let data = try? Data(contentsOf: url), !isRemotePairingRecord(data) else { return }
+        try? FileManager.default.removeItem(at: url)
+        trace("Pairing illisible ignoré (\(url.lastPathComponent))")
+    }
+
     /// Moves a freshly dropped record to its protected location.
     private static func securePairingDrop() {
         let fileManager = FileManager.default
         migrateLegacyPairing()
+        discardIfUnusable(droppedPairingURL)
+        discardIfUnusable(pairingURL)
         guard fileManager.fileExists(atPath: droppedPairingURL.path) else { return }
         do {
             try fileManager.createDirectory(
