@@ -2,7 +2,6 @@
 
 import { redirect } from "next/navigation";
 import { resolvePostAuthRedirect } from "@/lib/auth-redirect";
-import { ensureStripeCustomerForUser } from "@/lib/billing";
 import { getCheckoutUrl } from "@/lib/constants";
 import {
   capturePostHogEvent,
@@ -50,14 +49,6 @@ function getRedirectTo(formData: FormData) {
   return sanitizeRedirectPath(redirectTo, getCheckoutUrl());
 }
 
-async function linkStripeCustomer(userId: string, email: string) {
-  try {
-    await ensureStripeCustomerForUser({ userId, email });
-  } catch (error) {
-    console.error("[auth] Failed to create Stripe customer:", error);
-  }
-}
-
 export async function login(
   _prevState: AuthState,
   formData: FormData
@@ -84,10 +75,6 @@ export async function login(
   }
 
   if (data.user) {
-    if (data.user.email) {
-      await linkStripeCustomer(data.user.id, data.user.email);
-    }
-
     await identifyPostHogUser({
       distinctId: data.user.id,
       properties: { email: data.user.email },
@@ -144,10 +131,6 @@ export async function signup(
   }
 
   if (data.user) {
-    if (data.user.email) {
-      await linkStripeCustomer(data.user.id, data.user.email);
-    }
-
     await identifyPostHogUser({
       distinctId: data.user.id,
       properties: { email: data.user.email },
