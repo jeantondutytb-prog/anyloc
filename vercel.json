@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/process-trials",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/tiktok-views",
+      "schedule": "30 21 * * *"
     }
   ]
 }
