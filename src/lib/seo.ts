@@ -16,12 +16,11 @@ export const SEO_KEYWORDS = [
   "Instagram localisation",
 ];
 
+// Only pages that render for visitors: /setup/* and /web redirect to the
+// dashboard, so search engines would just follow a redirect.
 export const PUBLIC_ROUTES = [
   { path: "/", changeFrequency: "weekly" as const, priority: 1 },
   { path: "/pricing", changeFrequency: "monthly" as const, priority: 0.9 },
-  { path: "/setup/ios", changeFrequency: "monthly" as const, priority: 0.7 },
-  { path: "/setup/android", changeFrequency: "monthly" as const, priority: 0.7 },
-  { path: "/web", changeFrequency: "monthly" as const, priority: 0.8 },
   { path: "/communaute", changeFrequency: "monthly" as const, priority: 0.6 },
   { path: "/contact", changeFrequency: "monthly" as const, priority: 0.6 },
   { path: "/affiliation", changeFrequency: "monthly" as const, priority: 0.6 },
