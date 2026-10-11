@@ -5,7 +5,7 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="pt-16">{children}</main>
+      <main className="pt-[var(--header-height)]">{children}</main>
       <Footer />
     </div>
   );

@@ -2,6 +2,8 @@
 
 
 :root {
+  /* Fixed header: clipper banner (36px) + navbar (64px). */
+  --header-height: 100px;
   --background: #fff9fb;
   --logo-background: #f8f8f8;
   --foreground: #18181b;
@@ -14,10 +16,13 @@
   --brand-violet: #a855f7;
   --brand-glow: #e879f9;
   --brand-orange: #fb923c;
+  /* The app's night map: dark bands on the landing reuse it. */
+  --night: #17121f;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-night: var(--night);
   --color-logo-background: var(--logo-background);
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);

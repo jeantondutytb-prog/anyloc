@@ -2,9 +2,7 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { HomeJsonLd } from "@/components/seo/json-ld";
 import { Hero } from "@/components/landing/hero";
-import { DestinationsMarquee } from "@/components/landing/destinations-marquee";
-import { Features } from "@/components/landing/features";
-import { Comparison } from "@/components/landing/comparison";
+import { AppShowcase } from "@/components/landing/app-showcase";
 import { HowItWorks } from "@/components/landing/how-it-works";
 import { Pricing } from "@/components/landing/pricing";
 import { Faq } from "@/components/landing/faq";
@@ -17,9 +15,7 @@ export default function Home() {
       <Header />
       <main>
         <Hero />
-        <DestinationsMarquee />
-        <Features />
-        <Comparison />
+        <AppShowcase />
         <HowItWorks />
         <Pricing />
         <Faq />
