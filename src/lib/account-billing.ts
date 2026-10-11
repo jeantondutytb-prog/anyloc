@@ -117,6 +117,7 @@ export async function getAccountBillingDetails({
 
   let paymentMethod: AccountPaymentMethod | null = null;
   let invoices: AccountInvoice[] = [];
+  let cancelsAt: string | null = null;
 
   if (stripe && customerId) {
     try {
@@ -126,6 +127,13 @@ export async function getAccountBillingDetails({
         limit: 10,
       });
       invoices = invoiceList.data.map(mapInvoice);
+
+      if (profile?.stripe_subscription_id && !isAdmin && !isClipper) {
+        const subscription = await stripe.subscriptions.retrieve(
+          profile.stripe_subscription_id
+        );
+        cancelsAt = getScheduledCancellationDate(subscription);
+      }
     } catch (error) {
       await logError("account-billing/load", error, { userId });
     }
@@ -143,6 +151,7 @@ export async function getAccountBillingDetails({
     paymentMethod,
     invoices,
     canManageBilling: Boolean(stripe && customerId),
+    cancelsAt,
   };
 }
 
@@ -203,31 +212,70 @@ export async function createBillingPortalSession({
   return session.url;
 }
 
-export async function cancelActiveSubscriptionForUser(userId: string) {
-  if (!stripe || !isSupabaseAdminConfigured()) {
+function getScheduledCancellationDate(subscription: Stripe.Subscription) {
+  if (subscription.status === "canceled") {
+    return null;
+  }
+
+  const cancelAt =
+    subscription.cancel_at ??
+    (subscription.cancel_at_period_end
+      ? subscription.items.data[0]?.current_period_end ?? null
+      : null);
+
+  return cancelAt ? new Date(cancelAt * 1000).toISOString() : null;
+}
+
+async function getSubscriptionForUser(userId: string, missingMessage: string) {
+  if (!stripe) {
     throw new Error("La gestion de facturation n'est pas configurée.");
   }
 
   const profile = await getProfileForUser(userId);
 
   if (!profile?.stripe_subscription_id) {
-    throw new Error("Aucun abonnement actif à résilier.");
+    throw new Error(missingMessage);
   }
 
-  await stripe.subscriptions.cancel(profile.stripe_subscription_id);
+  return { client: stripe, subscriptionId: profile.stripe_subscription_id };
+}
 
-  const admin = createAdminClient();
-  const { error } = await admin
-    .from("profiles")
-    .update({
-      subscription_status: "canceled",
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", userId);
+/**
+ * Stops renewal but keeps access until the end of the period already paid.
+ * The profile flips to canceled when Stripe sends customer.subscription.deleted.
+ */
+export async function cancelActiveSubscriptionForUser(userId: string) {
+  const { client, subscriptionId } = await getSubscriptionForUser(
+    userId,
+    "Aucun abonnement actif à résilier."
+  );
 
-  if (error) {
-    throw new Error(`Failed to mark profile canceled: ${error.message}`);
+  const subscription = await client.subscriptions.update(subscriptionId, {
+    cancel_at_period_end: true,
+  });
+
+  return getScheduledCancellationDate(subscription);
+}
+
+/** Undoes a scheduled cancellation while the paid period is still running. */
+export async function resumeSubscriptionForUser(userId: string) {
+  const { client, subscriptionId } = await getSubscriptionForUser(
+    userId,
+    "Aucun abonnement à réactiver."
+  );
+
+  const subscription = await client.subscriptions.retrieve(subscriptionId);
+
+  if (subscription.status === "canceled") {
+    throw new Error(
+      "Ton abonnement est déjà terminé. Réabonne-toi depuis la page Tarification."
+    );
   }
+
+  await client.subscriptions.update(subscriptionId, {
+    cancel_at_period_end: false,
+    ...(subscription.cancel_at ? { cancel_at: "" as const } : {}),
+  });
 }
 
 export async function cancelStripeSubscriptionForUser(userId: string) {

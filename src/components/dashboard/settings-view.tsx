@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   ArrowDown,
   ArrowUp,
+  CalendarClock,
   CreditCard,
   ExternalLink,
   FileText,
@@ -150,6 +151,8 @@ export function SettingsView({ embedded = false }: { embedded?: boolean } = {}) 
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancelPortalLoading, setCancelPortalLoading] = useState(false);
   const [cancelPortalError, setCancelPortalError] = useState<string | null>(null);
+  const [resumeLoading, setResumeLoading] = useState(false);
+  const [resumeError, setResumeError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordState, passwordAction, passwordPending] = useActionState(
@@ -188,6 +191,32 @@ export function SettingsView({ embedded = false }: { embedded?: boolean } = {}) 
           : "Impossible de résilier l'abonnement."
       );
       setCancelPortalLoading(false);
+    }
+  }
+
+  async function resumeSubscription() {
+    setResumeLoading(true);
+    setResumeError(null);
+
+    try {
+      const response = await fetch("/api/subscription/resume", {
+        method: "POST",
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Impossible de réactiver l'abonnement.");
+      }
+
+      window.location.reload();
+    } catch (resumeFailure) {
+      setResumeError(
+        resumeFailure instanceof Error
+          ? resumeFailure.message
+          : "Impossible de réactiver l'abonnement."
+      );
+      setResumeLoading(false);
     }
   }
 
@@ -461,7 +490,50 @@ export function SettingsView({ embedded = false }: { embedded?: boolean } = {}) 
           {data?.hasActiveSubscription &&
           data?.canManageBilling &&
           !data?.isAdmin &&
-          !data?.isClipper ? (
+          !data?.isClipper &&
+          data?.cancelsAt ? (
+            <Card className="border-amber-200 p-5">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/10">
+                  <CalendarClock className="h-5 w-5 text-amber-600" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-zinc-900">Résiliation programmée</p>
+                  <p className="mt-1 text-sm text-zinc-500">
+                    Ton abonnement ne sera pas renouvelé. Tu gardes l&apos;accès
+                    jusqu&apos;au{" "}
+                    <span className="font-medium text-zinc-900">
+                      {new Date(data.cancelsAt).toLocaleDateString("fr-FR", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </span>
+                    , puis il prendra fin automatiquement.
+                  </p>
+
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="mt-4"
+                    disabled={resumeLoading}
+                    data-track="cancel_subscription_resumed"
+                    onClick={() => void resumeSubscription()}
+                  >
+                    {resumeLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    Annuler la résiliation
+                  </Button>
+
+                  {resumeError ? (
+                    <p className="mt-2 text-xs text-red-600">{resumeError}</p>
+                  ) : null}
+                </div>
+              </div>
+            </Card>
+          ) : data?.hasActiveSubscription &&
+            data?.canManageBilling &&
+            !data?.isAdmin &&
+            !data?.isClipper ? (
             <Card className="border-amber-200 p-5">
               <div className="flex items-start gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/10">

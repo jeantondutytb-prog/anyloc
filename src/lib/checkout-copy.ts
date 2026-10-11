@@ -36,7 +36,7 @@ export const CHECKOUT_COPY = {
     {
       q: "Ma carte sera débitée tout de suite ?",
       a:
-        "Oui. Tu paies à la validation et tu as accès tout de suite. Tu peux annuler en 1 clic depuis ton espace — la résiliation coupe l'accès immédiatement. Si ta loc ne bouge pas, la garantie 48 h te rembourse ton 1er paiement (conditions juste au-dessus).",
+        "Oui. Tu paies à la validation et tu as accès tout de suite. Tu peux annuler en 1 clic depuis ton espace — tu gardes l'accès jusqu'à la fin de la période payée. Si ta loc ne bouge pas, la garantie 48 h te rembourse ton 1er paiement (conditions juste au-dessus).",
     },
     {
       q: "Ça marche sur quelles apps ?",
