@@ -3,6 +3,7 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var auth = AuthService.shared
     @ObservedObject private var renewal = SignatureRenewalService.shared
+    @ObservedObject private var subscription = SubscriptionService.shared
     @State private var showRenewal = false
     @State private var journalURL: URL?
 
@@ -54,7 +55,7 @@ struct SettingsView: View {
                                         Text("Plan actuel")
                                             .font(.caption)
                                             .foregroundColor(Theme.textDim)
-                                        Text("Gratuit")
+                                        Text(currentPlanName)
                                             .font(.subheadline.bold())
                                             .foregroundColor(Theme.text)
                                     }
@@ -62,37 +63,39 @@ struct SettingsView: View {
                                 }
                                 .padding(12)
 
-                                Divider().background(Theme.border)
+                                // Upgrade plans, only for accounts without a paid plan.
+                                if subscription.planId == nil || subscription.isTrial {
+                                    Divider().background(Theme.border)
 
-                                // Upgrade plans
-                                VStack(spacing: 8) {
-                                    planCard(
-                                        name: "Mensuel",
-                                        perDay: "0,33€",
-                                        billedPrice: "9,90€/mois",
-                                        ctaLabel: "Commencer maintenant",
-                                        features: ["Changements illimités", "iOS + Android", "Support mail"],
-                                        popular: false
-                                    )
-                                    planCard(
-                                        name: "6 mois",
-                                        perDay: "≈ 0,19€",
-                                        billedPrice: "34,90€/6 mois",
-                                        ctaLabel: "Économiser 40%",
-                                        features: ["Tout le Mensuel", "Trajets simulés", "Support mail"],
-                                        popular: false
-                                    )
-                                    planCard(
-                                        name: "Annuel",
-                                        perDay: "≈ 0,13€",
-                                        billedPrice: "49,00€/an",
-                                        ctaLabel: "Débloquer le meilleur prix",
-                                        features: ["App iPhone sans ordi", "Support prioritaire", "3 profils web"],
-                                        popular: true
-                                    )
+                                    VStack(spacing: 8) {
+                                        planCard(
+                                            name: "Mensuel",
+                                            perDay: "0,33€",
+                                            billedPrice: "9,90€/mois",
+                                            ctaLabel: "Commencer maintenant",
+                                            features: ["Changements illimités", "iOS + Android", "Support mail"],
+                                            popular: false
+                                        )
+                                        planCard(
+                                            name: "6 mois",
+                                            perDay: "≈ 0,19€",
+                                            billedPrice: "34,90€/6 mois",
+                                            ctaLabel: "Économiser 40%",
+                                            features: ["Tout le Mensuel", "Trajets simulés", "Support mail"],
+                                            popular: false
+                                        )
+                                        planCard(
+                                            name: "Annuel",
+                                            perDay: "≈ 0,13€",
+                                            billedPrice: "49,00€/an",
+                                            ctaLabel: "Débloquer le meilleur prix",
+                                            features: ["App iPhone sans ordi", "Support prioritaire", "3 profils web"],
+                                            popular: true
+                                        )
+                                    }
+                                    .padding(.horizontal, 12)
+                                    .padding(.bottom, 12)
                                 }
-                                .padding(.horizontal, 12)
-                                .padding(.bottom, 12)
                             }
                         }
 
@@ -244,6 +247,20 @@ struct SettingsView: View {
             }
             .cardBackground(cornerRadius: 12)
         }
+    }
+
+    private var currentPlanName: String {
+        let name: String
+        switch subscription.planId {
+        case "monthly": name = "Mensuel"
+        case "6months": name = "6 mois"
+        case "annual": name = "Annuel"
+        case "admin": name = "Admin"
+        case "clipper": name = "Clippeur"
+        case nil: name = "Aucun abonnement"
+        default: name = "Actif"
+        }
+        return subscription.isTrial ? "\(name) (essai)" : name
     }
 
     private func infoRow(label: String, value: String) -> some View {
