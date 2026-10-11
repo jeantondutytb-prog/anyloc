@@ -1,6 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { resolvePostAuthRedirect } from "@/lib/auth-redirect";
-import { ensureStripeCustomerForUser } from "@/lib/billing";
 import { logError } from "@/lib/log-error";
 import { clearOAuthNextCookie, getRequestOrigin, readOAuthNext } from "@/lib/oauth";
 import { sanitizeRedirectPath } from "@/lib/safe-redirect";
@@ -36,17 +35,6 @@ export async function GET(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
     userId = user?.id;
-
-    if (user?.email) {
-      try {
-        await ensureStripeCustomerForUser({
-          userId: user.id,
-          email: user.email,
-        });
-      } catch (linkError) {
-        await logError("auth/callback", linkError, { userId, step: "stripe_customer" });
-      }
-    }
 
     const destination = user
       ? await resolvePostAuthRedirect(user.id, user.email, requestedNext)
