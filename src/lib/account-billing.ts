@@ -1,4 +1,8 @@
 import type Stripe from "stripe";
+import {
+  CANCEL_ENDING_EMAIL_SENT_KEY,
+  CANCEL_SCHEDULED_KEY,
+} from "@/lib/cancel-ending-email";
 import { getPlanDisplayName } from "@/lib/constants";
 import { logError } from "@/lib/log-error";
 import type {
@@ -252,6 +256,7 @@ export async function cancelActiveSubscriptionForUser(userId: string) {
 
   const subscription = await client.subscriptions.update(subscriptionId, {
     cancel_at_period_end: true,
+    metadata: { [CANCEL_SCHEDULED_KEY]: "true" },
   });
 
   return getScheduledCancellationDate(subscription);
@@ -275,6 +280,8 @@ export async function resumeSubscriptionForUser(userId: string) {
   await client.subscriptions.update(subscriptionId, {
     cancel_at_period_end: false,
     ...(subscription.cancel_at ? { cancel_at: "" as const } : {}),
+    // Clears the reminder flags so a later cancellation gets its own email.
+    metadata: { [CANCEL_SCHEDULED_KEY]: "", [CANCEL_ENDING_EMAIL_SENT_KEY]: "" },
   });
 }
 
