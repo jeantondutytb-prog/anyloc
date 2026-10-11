@@ -43,12 +43,11 @@ export function CheckoutView({
   const [destination, setDestination] = useState<OnboardingDestination | undefined>();
   const [focusPayment, setFocusPayment] = useState(Boolean(initialFocusPayment));
 
-  // sessionStorage only exists in the browser: read it after hydration.
   useEffect(() => {
     try {
       const stored = window.sessionStorage.getItem(ONBOARDING_DESTINATION_KEY);
       if (stored) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- sessionStorage is only readable after hydration
         setDestination(JSON.parse(stored) as OnboardingDestination);
       }
     } catch {
