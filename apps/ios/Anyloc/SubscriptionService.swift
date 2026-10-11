@@ -37,6 +37,10 @@ final class SubscriptionService: ObservableObject {
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+                let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+                if status != 401 {
+                    AppErrorReporter.report("subscription/refresh", message: "HTTP \(status)", context: ["http_status": status])
+                }
                 return
             }
 
@@ -46,7 +50,7 @@ final class SubscriptionService: ObservableObject {
             hasCheckedOnce = true
         } catch {
             hasCheckedOnce = true
-            print("[Anyloc] Subscription refresh failed:", error.localizedDescription)
+            AppErrorReporter.report("subscription/refresh", error)
         }
     }
 }

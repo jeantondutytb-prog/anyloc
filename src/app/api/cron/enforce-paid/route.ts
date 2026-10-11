@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logError } from "@/lib/log-error";
 import { enforcePaidSubscriptions } from "@/lib/trial-billing";
 
 export const runtime = "nodejs";
@@ -23,7 +24,7 @@ export async function GET(request: Request) {
     const result = await enforcePaidSubscriptions();
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
-    console.error("[cron/enforce-paid]", error);
+    await logError("cron/enforce-paid", error);
     return NextResponse.json(
       { error: "Failed to enforce paid subscriptions." },
       { status: 500 }

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { logError } from "@/lib/log-error";
 import {
   DEFAULT_LOCATION,
   mapLocationRow,
@@ -30,7 +31,7 @@ export async function GET() {
     .maybeSingle();
 
   if (dbError) {
-    console.error("[location] Read failed:", dbError);
+    await logError("location/read", dbError, { userId: user.id });
     return Response.json(
       { error: "Impossible de charger ta position." },
       { status: 500 }
@@ -96,7 +97,7 @@ export async function PUT(request: Request) {
     const result = await upsertLocationForUser(user.id, payload);
     return Response.json(result);
   } catch (saveError) {
-    console.error("[location] Save failed:", saveError);
+    await logError("location/save", saveError, { userId: user.id });
     return Response.json(
       { error: "Impossible d'enregistrer ta position." },
       { status: 500 }

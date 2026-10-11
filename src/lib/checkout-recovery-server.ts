@@ -1,4 +1,5 @@
 import type { User } from "@supabase/supabase-js";
+import { logError } from "@/lib/log-error";
 import {
   buildRecoveryEmail,
   getDueRecoveryStep,
@@ -52,7 +53,7 @@ export async function enrollInCheckoutRecovery(user: User, planId: string) {
     );
 
   if (error) {
-    console.error("[checkout-recovery] enroll failed:", error.message);
+    await logError("checkout-recovery/enroll", error, { userId: user.id, plan_id: planId });
   }
 }
 
@@ -202,7 +203,7 @@ export async function processCheckoutRecoveries(now = new Date()): Promise<Recov
       }
     } catch (err) {
       result.failed += 1;
-      console.error("[checkout-recovery] send failed:", row.user_id, err);
+      await logError("checkout-recovery/send", err, { userId: row.user_id, step });
     }
   }
 

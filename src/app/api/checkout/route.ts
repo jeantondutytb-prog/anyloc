@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logError } from "@/lib/log-error";
 import {
   enrollInCheckoutRecovery,
   getRecoveryCouponForUser,
@@ -12,9 +13,12 @@ import {
 import { CHECKOUT_INTENT_COOKIE } from "@/lib/checkout-intent-cookie";
 
 export async function POST(request: Request) {
+  let userId: string | undefined;
+  let planId: unknown;
+
   try {
     const body = await request.json().catch(() => null);
-    const planId = body?.planId;
+    planId = body?.planId;
 
     if (typeof planId !== "string") {
       return NextResponse.json({ error: "Plan invalide" }, { status: 400 });
@@ -27,6 +31,7 @@ export async function POST(request: Request) {
     }
 
     const user = await getAuthenticatedCheckoutUser();
+    userId = user?.id;
     const analyticsId = parsePostHogDistinctId(body?.analyticsId);
 
     const couponId = user ? await getRecoveryCouponForUser(user.id, plan.id) : null;
@@ -77,7 +82,7 @@ export async function POST(request: Request) {
 
     return response;
   } catch (error) {
-    console.error("[checkout]", error);
+    await logError("checkout", error, { userId, plan_id: planId });
 
     const message =
       error instanceof Error

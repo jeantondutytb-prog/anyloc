@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { resolvePostAuthRedirect } from "@/lib/auth-redirect";
 import { ensureStripeCustomerForUser } from "@/lib/billing";
 import { getCheckoutUrl } from "@/lib/constants";
+import { logError } from "@/lib/log-error";
 import {
   capturePostHogEvent,
   identifyPostHogUser,
@@ -54,7 +55,7 @@ async function linkStripeCustomer(userId: string, email: string) {
   try {
     await ensureStripeCustomerForUser({ userId, email });
   } catch (error) {
-    console.error("[auth] Failed to create Stripe customer:", error);
+    await logError("auth/stripe-customer", error, { userId });
   }
 }
 

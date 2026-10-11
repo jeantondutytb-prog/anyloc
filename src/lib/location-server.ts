@@ -63,8 +63,9 @@ export async function upsertLocationForUser(
     .single();
 
   if (error || !data) {
-    console.error("[location] Save failed:", error);
-    throw new Error("Impossible d'enregistrer ta position.");
+    throw new Error("Impossible d'enregistrer ta position.", {
+      cause: error ?? "upsert returned no row",
+    });
   }
 
   return toLocationResponse(mapLocationRow(data));

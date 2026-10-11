@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logError } from "@/lib/log-error";
 import { verifyCheckoutSessionForUser } from "@/lib/stripe-session";
 import { requireAuthenticatedUser } from "@/lib/subscription";
 
@@ -32,7 +33,7 @@ export async function GET(request: Request) {
       planId: result.planId,
     });
   } catch (verifyError) {
-    console.error("[stripe/verify-session]", verifyError);
+    await logError("stripe/verify-session", verifyError, { userId: user.id });
     return NextResponse.json(
       { error: "Impossible de vérifier la session de paiement." },
       { status: 500 }

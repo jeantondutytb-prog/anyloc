@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { verifyUnsubscribeToken } from "@/lib/checkout-recovery";
 import { unsubscribeFromCheckoutRecovery } from "@/lib/checkout-recovery-server";
+import { logError } from "@/lib/log-error";
+import { parsePostHogDistinctId } from "@/lib/posthog/server";
 
 export const runtime = "nodejs";
 
@@ -15,6 +17,11 @@ async function unsubscribe(request: Request) {
 
   await unsubscribeFromCheckoutRecovery(userId);
   return userId;
+}
+
+/** Only reached after the token was checked, so the id is the real account. */
+function getRequestUserId(request: Request) {
+  return parsePostHogDistinctId(new URL(request.url).searchParams.get("u"));
 }
 
 function page(message: string, status = 200) {
@@ -33,7 +40,7 @@ export async function GET(request: Request) {
       ? page("C'est noté, tu ne recevras plus ces emails.")
       : page("Lien de désinscription invalide.", 400);
   } catch (error) {
-    console.error("[email/unsubscribe]", error);
+    await logError("email/unsubscribe", error, { userId: getRequestUserId(request) });
     return page("Une erreur est survenue, réessaie plus tard.", 500);
   }
 }
@@ -44,7 +51,7 @@ export async function POST(request: Request) {
     const userId = await unsubscribe(request);
     return new NextResponse(null, { status: userId ? 200 : 400 });
   } catch (error) {
-    console.error("[email/unsubscribe]", error);
+    await logError("email/unsubscribe", error, { userId: getRequestUserId(request) });
     return new NextResponse(null, { status: 500 });
   }
 }

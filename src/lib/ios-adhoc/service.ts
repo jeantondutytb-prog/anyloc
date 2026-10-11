@@ -1,4 +1,5 @@
 import { timingSafeEqual } from "node:crypto";
+import { logError } from "@/lib/log-error";
 import { ascCredentialsFromEnv, createAscClient } from "./app-store-connect";
 import { getIosInstallState, needsNewBuild, type IosInstallState } from "./build-queue";
 import {
@@ -61,7 +62,10 @@ export async function completeIosEnrollment(
     const asc = createAscClient(ascCredentialsFromEnv());
     ascDeviceId = await asc.registerDevice(attrs.udid, `Anyloc ${device.user_id.slice(0, 8)}`);
   } catch (error) {
-    console.error("[ios-adhoc] ASC registerDevice failed:", error);
+    await logError("ios-adhoc/register-device", error, {
+      userId: device.user_id,
+      enrollment_id: enrollmentId,
+    });
     await store.markDeviceFailed(enrollmentId, "Apple n'a pas accepté l'enregistrement de ton iPhone. Réessaie dans quelques minutes.");
     return { ok: false };
   }
@@ -161,7 +165,7 @@ export async function queueBuild(now: Date) {
   try {
     await dispatchResignWorkflow(buildId);
   } catch (error) {
-    console.error("[ios-adhoc] dispatch failed:", error);
+    await logError("ios-adhoc/dispatch", error, { build_id: buildId });
     await store.completeBuild(buildId, { status: "failed", error: "Déclenchement GitHub impossible." });
   }
 }

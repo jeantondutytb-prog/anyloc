@@ -24,6 +24,7 @@ const {
 } = require("./usb");
 const { ensurePymobiledevice3, isBundleReady, isBundleCurrent, removeLegacyEnv } = require("./python-setup");
 const { diagnoseWindows, repairWindows } = require("./windows-driver");
+const { configureErrorReporter, reportError, getRecentErrors } = require("./error-reporter");
 
 const SUPABASE_URL =
   process.env.ANYLOC_SUPABASE_URL || "https://gqkxnktprctdvpwvnqli.supabase.co";
@@ -149,6 +150,7 @@ function applySpoofOnce(loc, reported) {
   if (!child) {
     if (!reported.error) {
       reported.error = true;
+      reportError("spoof/missing-tools", missingToolsMessage());
       sendSyncStatus(missingToolsMessage(), true, loc);
     }
     return false;
@@ -250,7 +252,13 @@ function startAutoSync(session) {
           },
         }
       );
-      if (!res.ok) return;
+      if (!res.ok) {
+        // 401: the token expired, keepSessionFresh renews it.
+        if (res.status !== 401) {
+          reportError("autosync/fetch", `HTTP ${res.status}`, { http_status: res.status });
+        }
+        return;
+      }
       const rows = await res.json();
       if (!rows.length) return;
 
@@ -277,11 +285,11 @@ function startAutoSync(session) {
 
       // New location — start re-apply loop
       const name = loc.name || `${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`;
-      console.log(`[AutoSync] GPS → ${name} (${loc.lat}, ${loc.lng})`);
       sendSyncStatus(`GPS: ${name}`, false, loc);
       startReapplyLoop(loc);
     } catch (err) {
-      console.error("[AutoSync] Error:", err.message);
+      // "fetch failed": no network on the user's side, nothing we could fix.
+      if (err?.message !== "fetch failed") reportError("autosync", err);
     }
   }, 1000);
 }
@@ -404,7 +412,7 @@ function upgradeToolsIfOutdated() {
   console.log("[Tools] Updating pymobiledevice3...");
   toolsUpgrade = ensurePymobiledevice3()
     .then((result) => {
-      console.log(result.ok ? "[Tools] Up to date" : `[Tools] Update failed: ${result.message}`);
+      if (!result.ok) reportError("tools/update", result.message);
       if (result.ok) require("./usb").clearCachedPaths();
       return result;
     })
@@ -839,6 +847,7 @@ ipcMain.handle("setup:ensure-tools", async (event) => {
     try { event.sender.send("setup:tools-progress", progress); } catch {}
   });
   if (result.ok) clearCachedPaths();
+  else reportError("tools/install", result.message);
   return result;
 });
 
@@ -897,7 +906,7 @@ ipcMain.handle("setup:check-usb", async (_event, payload) => {
 
 ipcMain.handle("setup:trust-device", async (_event, payload) => {
   const result = await trustDevice({ udid: payload?.udid ?? null });
-  if (result.error) console.warn("[trust]", result.error);
+  if (result.error) reportError("usb/trust", result.error);
   lastUsbCheck = { ...lastUsbCheck, trust: result };
   return result;
 });
@@ -915,7 +924,9 @@ ipcMain.handle("setup:copy-diagnostic", () => {
     app: app.getVersion(),
     os: `${process.platform} ${require("node:os").release()} ${process.arch}`,
     toolsReady: isBundleReady(),
+    account: currentSession?.user?.id ?? "non connecté",
     usb: lastUsbCheck,
+    recentErrors: getRecentErrors(),
   };
   clipboard.writeText(JSON.stringify(report, null, 2));
   return { ok: true };
@@ -1202,6 +1213,12 @@ app.on("before-quit", () => {
 });
 
 app.whenReady().then(() => {
+  configureErrorReporter({
+    apiBaseUrl: ANYLOC_API,
+    appVersion: app.getVersion(),
+    getAccessToken: () => currentSession?.access_token ?? null,
+  });
+
   if (process.defaultApp || process.argv.length >= 2) {
     const setupUrl = process.argv.find((entry) =>
       entry.startsWith("anyloc-setup://")
