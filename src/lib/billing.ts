@@ -1,5 +1,5 @@
 import type Stripe from "stripe";
-import { ensureUserForEmail } from "@/lib/guest-account";
+import { ensureUserForEmail, normalizeEmail } from "@/lib/guest-account";
 import { logError } from "@/lib/log-error";
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 import { stripe } from "@/lib/stripe";
@@ -154,7 +154,7 @@ export async function syncProfileFromCheckoutSession(
   const { error } = await admin.from("profiles").upsert(
     {
       id: userId,
-      email: session.customer_details?.email ?? session.customer_email ?? null,
+      email: email ? normalizeEmail(email) : null,
       stripe_customer_id: customerId ?? null,
       stripe_subscription_id: subscriptionId ?? null,
       subscription_status: subscriptionStatus,

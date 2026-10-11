@@ -1,16 +1,18 @@
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 
-function normalizeEmail(email: string) {
+export function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
+/** Fallback when no profile row has the email: walks every auth user. */
 async function findAuthUserIdByEmail(email: string) {
   const admin = createAdminClient();
+  const perPage = 1000;
 
-  for (let page = 1; page <= 10; page += 1) {
+  for (let page = 1; ; page += 1) {
     const { data, error } = await admin.auth.admin.listUsers({
       page,
-      perPage: 200,
+      perPage,
     });
 
     if (error) {
@@ -25,12 +27,17 @@ async function findAuthUserIdByEmail(email: string) {
       return found.id;
     }
 
-    if (data.users.length < 200) {
+    if (data.users.length < perPage) {
       break;
     }
   }
 
   throw new Error("Compte introuvable pour cet email.");
+}
+
+/** Escapes LIKE wildcards so `ilike` is an exact, case-insensitive match. */
+export function escapeLikePattern(value: string) {
+  return value.replace(/[\\%_]/g, (char) => `\\${char}`);
 }
 
 export async function ensureUserForEmail(email: string) {
@@ -44,7 +51,9 @@ export async function ensureUserForEmail(email: string) {
   const { data: existingProfile } = await admin
     .from("profiles")
     .select("id")
-    .eq("email", normalizedEmail)
+    // Older rows kept the email as typed in Stripe (with capitals).
+    .ilike("email", escapeLikePattern(normalizedEmail))
+    .limit(1)
     .maybeSingle();
 
   if (existingProfile?.id) {

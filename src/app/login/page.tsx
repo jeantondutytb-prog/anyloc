@@ -1,4 +1,5 @@
 import { AuthShell } from "@/components/auth/auth-shell";
+import { EmailLinkSession } from "@/components/auth/email-link-session";
 import { OnboardingActivationNotice } from "@/components/auth/onboarding-activation-notice";
 import { LoginForm } from "@/components/auth/login-form";
 import { DEFAULT_PLAN_ID, isValidPlanId } from "@/lib/constants";
@@ -47,6 +48,7 @@ export default async function LoginPage({
           email pour accéder à ton compte.
         </div>
       ) : null}
+      <EmailLinkSession redirectTo={redirectTo} />
       <LoginForm plan={planId} redirectTo={redirectTo} />
     </AuthShell>
   );

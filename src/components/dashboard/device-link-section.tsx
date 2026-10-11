@@ -64,6 +64,7 @@ export function DeviceLinkSection() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- load once on mount
     void loadDevices();
   }, [loadDevices]);
 

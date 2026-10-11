@@ -11,8 +11,6 @@ export function PaywallCheckoutPanel({
   googleAuthRedirectTo,
   onBack,
   canceled,
-  checkoutTitle: _checkoutTitle,
-  checkoutSubtitle: _checkoutSubtitle,
 }: {
   selectedPlanId: string;
   onPlanChange: (planId: string) => void;
@@ -21,8 +19,6 @@ export function PaywallCheckoutPanel({
   googleAuthRedirectTo?: string;
   onBack?: () => void;
   canceled?: boolean;
-  checkoutTitle?: string;
-  checkoutSubtitle?: string;
 }) {
   return (
     <AnyLocCheckoutPanel
