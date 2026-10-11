@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
 import { cancelActiveSubscriptionForUser } from "@/lib/account-billing";
+import { rejectCrossSiteMutation } from "@/lib/csrf";
 import { requireAuthenticatedUser } from "@/lib/subscription";
 
-export async function POST() {
+export async function POST(request: Request) {
+  const crossSiteResponse = rejectCrossSiteMutation(request);
+  if (crossSiteResponse) {
+    return crossSiteResponse;
+  }
+
   const { user, error } = await requireAuthenticatedUser();
 
   if (!user) {
@@ -10,8 +16,8 @@ export async function POST() {
   }
 
   try {
-    await cancelActiveSubscriptionForUser(user.id);
-    return NextResponse.json({ ok: true });
+    const cancelsAt = await cancelActiveSubscriptionForUser(user.id);
+    return NextResponse.json({ ok: true, cancelsAt });
   } catch (cancelError) {
     const message =
       cancelError instanceof Error

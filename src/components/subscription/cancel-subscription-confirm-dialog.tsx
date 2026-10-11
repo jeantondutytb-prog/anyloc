@@ -53,15 +53,17 @@ export function CancelSubscriptionConfirmDialog({
         </h2>
 
         <p className="mt-3 text-sm leading-relaxed text-zinc-600 sm:text-base">
-          La résiliation prend effet immédiatement. Tu ne pourras plus changer ta
+          Ton abonnement ne sera plus renouvelé. Tu gardes l&apos;accès jusqu&apos;à
+          la fin de la période déjà payée, puis tu ne pourras plus changer ta
           position GPS, ni accéder au dashboard, aux guides et aux téléchargements.
         </p>
 
         <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-900">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
           <p>
-            Aucun remboursement, même au prorata : la période en cours est
-            perdue dès la résiliation. Résilier met aussi fin à la garantie 48 h.
+            Pas de remboursement au prorata de la période en cours. Résilier met
+            aussi fin à la garantie 48 h : si tu comptes la demander, fais-le
+            avant.
           </p>
         </div>
 
