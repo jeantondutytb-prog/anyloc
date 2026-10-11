@@ -4,6 +4,7 @@ const os = require("node:os");
 const path = require("node:path");
 
 const pythonSetup = require("./python-setup");
+const { reportError } = require("./error-reporter");
 
 let cachedCli = null;
 let cachedPython = null;
@@ -473,7 +474,7 @@ function humanizePmd3Error(raw) {
   }
 
   // Raw Python errors mean nothing to customers: log them, show a next step.
-  if (text) console.warn("[pmd3]", text.split("\n").slice(-5).join("\n"));
+  if (text) reportError("pmd3/unknown", text.split("\n").slice(-5).join("\n"));
   return "L'iPhone n'a pas répondu comme prévu. Débranche-le, rebranche-le, déverrouille-le et réessaie.";
 }
 

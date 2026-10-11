@@ -3,6 +3,7 @@ import { syncProfileFromCheckoutSession } from "@/lib/billing";
 import { syncProfileFromTrialSetupSession } from "@/lib/trial-billing";
 import { CHECKOUT_INTENT_COOKIE } from "@/lib/checkout-intent-cookie";
 import { sendMagicLinkEmail } from "@/lib/guest-account";
+import { logError } from "@/lib/log-error";
 import { getAppUrl, stripe } from "@/lib/stripe";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
@@ -77,7 +78,7 @@ export async function GET(request: Request) {
     });
     return response;
   } catch (error) {
-    console.error("[auth/checkout-complete]", error);
+    await logError("auth/checkout-complete", error, { stripe_session_id: sessionId });
     return NextResponse.redirect(new URL("/login?error=checkout-complete", origin));
   }
 }

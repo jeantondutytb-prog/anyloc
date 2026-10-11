@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { logError } from "@/lib/log-error";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -22,7 +23,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
     .eq("user_id", user.id);
 
   if (error) {
-    console.error("[device] Delete failed:", error);
+    await logError("device/delete", error, { userId: user.id, device_id: id });
     return Response.json(
       { error: "Impossible de supprimer cet appareil." },
       { status: 500 }

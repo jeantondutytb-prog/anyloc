@@ -1,5 +1,6 @@
 import type Stripe from "stripe";
 import { ensureUserForEmail } from "@/lib/guest-account";
+import { logError } from "@/lib/log-error";
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 import { stripe } from "@/lib/stripe";
 import { isStaleSubscriptionEvent } from "@/lib/subscription-sync";
@@ -37,7 +38,6 @@ export async function ensureStripeCustomerForUser({
   email: string;
 }) {
   if (!stripe) {
-    console.warn("[billing] Stripe not configured, skipping customer creation.");
     return null;
   }
 
@@ -85,7 +85,9 @@ export async function syncProfileFromCheckoutSession(
   session: Stripe.Checkout.Session
 ): Promise<string | null> {
   if (!isSupabaseAdminConfigured()) {
-    console.warn("[billing] Supabase admin not configured, skipping profile sync.");
+    await logError("billing", "Supabase admin not configured, checkout not synced", {
+      stripe_session_id: session.id,
+    });
     return null;
   }
 
@@ -113,7 +115,9 @@ export async function syncProfileFromCheckoutSession(
   }
 
   if (!userId) {
-    console.warn("[billing] Checkout session missing Supabase user id and email.");
+    await logError("billing", "Paid checkout session has no user id nor email", {
+      stripe_session_id: session.id,
+    });
     return null;
   }
 
@@ -211,7 +215,9 @@ export async function syncProfileFromSubscription(
   subscription: Stripe.Subscription
 ) {
   if (!isSupabaseAdminConfigured()) {
-    console.warn("[billing] Supabase admin not configured, skipping profile sync.");
+    await logError("billing", "Supabase admin not configured, subscription not synced", {
+      stripe_subscription_id: subscription.id,
+    });
     return;
   }
 
@@ -225,9 +231,11 @@ export async function syncProfileFromSubscription(
   let userId = await resolveExistingAuthUserId(admin, metadataUserId);
 
   if (metadataUserId && !userId) {
-    console.warn(
-      `[billing] Skipping subscription ${subscription.id}: supabase user ${metadataUserId} no longer exists.`
-    );
+    await logError("billing", "Subscription belongs to a deleted account", {
+      userId: metadataUserId,
+      stripe_subscription_id: subscription.id,
+      subscription_status: subscription.status,
+    });
     return;
   }
 
@@ -270,7 +278,9 @@ export async function syncProfileFromSubscription(
   }
 
   if (!customerId) {
-    console.warn("[billing] Subscription missing customer id.");
+    await logError("billing", "Subscription has no customer id", {
+      stripe_subscription_id: subscription.id,
+    });
     return;
   }
 

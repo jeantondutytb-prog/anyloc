@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { logError } from "@/lib/log-error";
 import {
   generateDeviceToken,
   hashDeviceToken,
@@ -21,7 +22,7 @@ export async function GET() {
     .order("created_at", { ascending: false });
 
   if (dbError) {
-    console.error("[device] List failed:", dbError);
+    await logError("device/list", dbError, { userId: user.id });
     return Response.json(
       { error: "Impossible de charger tes appareils." },
       { status: 500 }
@@ -79,7 +80,7 @@ export async function POST(request: Request) {
     .single();
 
   if (dbError || !data) {
-    console.error("[device] Register failed:", dbError);
+    await logError("device/register", dbError ?? "insert returned no row", { userId: user.id });
     return Response.json(
       { error: "Impossible de créer le token appareil." },
       { status: 500 }

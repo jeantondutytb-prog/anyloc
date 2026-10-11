@@ -9,6 +9,7 @@ import {
   searchNominatimPlaces,
 } from "@/lib/nominatim-geocoding";
 import { searchPhotonPlaces } from "@/lib/photon-geocoding";
+import { logError } from "@/lib/log-error";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -56,7 +57,7 @@ export async function GET(request: Request) {
     const photonResults = await searchPhotonPlaces(photonQuery);
     return Response.json({ results: photonResults, source: "photon-fallback" });
   } catch (error) {
-    console.error("[geocode] Search failed:", error);
+    await logError("geocode", error);
     return Response.json(
       { error: "Impossible de rechercher cette ville." },
       { status: 500 }

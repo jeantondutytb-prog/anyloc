@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logError } from "@/lib/log-error";
 import { processDueTrialCharges } from "@/lib/trial-billing";
 
 export const runtime = "nodejs";
@@ -23,7 +24,7 @@ export async function GET(request: Request) {
     const result = await processDueTrialCharges();
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
-    console.error("[cron/process-trials]", error);
+    await logError("cron/process-trials", error);
     return NextResponse.json({ error: "Trial processing failed." }, { status: 500 });
   }
 }

@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { resolvePostAuthRedirect } from "@/lib/auth-redirect";
+import { logError } from "@/lib/log-error";
 import { clearOAuthNextCookie, getRequestOrigin, readOAuthNext } from "@/lib/oauth";
 import { sanitizeRedirectPath } from "@/lib/safe-redirect";
 import {
@@ -18,19 +19,22 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(oauthError);
   }
 
+  let userId: string | undefined;
+
   try {
     const collector = createCookieCollector();
     const supabase = createRouteHandlerClient(request, collector);
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (error) {
-      console.error("[auth/callback] Failed to exchange OAuth code:", error.message);
+      await logError("auth/callback", error, { step: "exchange_code" });
       return NextResponse.redirect(oauthError);
     }
 
     const {
       data: { user },
     } = await supabase.auth.getUser();
+    userId = user?.id;
 
     const destination = user
       ? await resolvePostAuthRedirect(user.id, user.email, requestedNext)
@@ -41,7 +45,7 @@ export async function GET(request: NextRequest) {
     clearOAuthNextCookie(response, request);
     return response;
   } catch (error) {
-    console.error("[auth/callback] Unexpected OAuth callback error:", error);
+    await logError("auth/callback", error, { userId, step: "unexpected" });
     return NextResponse.redirect(oauthError);
   }
 }

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { logError } from "@/lib/log-error";
 import { detectUserPlatform } from "@/lib/platform";
 import {
   generateDeviceToken,
@@ -56,7 +57,7 @@ export async function POST(request: Request) {
   });
 
   if (dbError) {
-    console.error("[web-spoof/token] Register failed:", dbError);
+    await logError("web-spoof/token", dbError, { userId: user.id });
     return Response.json(
       { error: "Impossible de préparer le raccourci GPS." },
       { status: 500 }

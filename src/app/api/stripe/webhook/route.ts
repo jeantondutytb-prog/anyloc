@@ -11,10 +11,10 @@ import {
 import {
   aliasPostHogUser,
   capturePostHogEvent,
-  capturePostHogException,
   parsePostHogDistinctId,
 } from "@/lib/posthog/server";
 import { stripe } from "@/lib/stripe";
+import { logError } from "@/lib/log-error";
 import {
   hasProcessedStripeEvent,
   markStripeEventProcessed,
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
   if (!webhookSecret) {
-    console.error("[stripe-webhook] STRIPE_WEBHOOK_SECRET is missing.");
+    await logError("stripe-webhook", "STRIPE_WEBHOOK_SECRET is missing.");
     return NextResponse.json(
       { error: "Webhook secret is not configured." },
       { status: 503 }
@@ -114,7 +114,7 @@ export async function POST(request: Request) {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Invalid webhook signature.";
-    console.error("[stripe-webhook]", message);
+    await logError("stripe-webhook", error, { step: "signature" });
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
@@ -168,14 +168,19 @@ export async function POST(request: Request) {
 
     await markStripeEventProcessed(event.id, event.type);
   } catch (error) {
-    console.error(`[stripe-webhook] ${event.type}`, error);
-    await capturePostHogException({
-      distinctId: `stripe:${event.id}`,
-      error,
-      properties: {
-        source: "stripe-webhook",
-        event_type: event.type,
-      },
+    const object = event.data.object as {
+      id?: string;
+      customer?: string | { id: string } | null;
+      client_reference_id?: string | null;
+      metadata?: Record<string, string> | null;
+    };
+    await logError("stripe-webhook", error, {
+      userId: object.metadata?.supabase_user_id ?? object.client_reference_id,
+      event_type: event.type,
+      event_id: event.id,
+      stripe_object_id: object.id,
+      stripe_customer_id:
+        typeof object.customer === "string" ? object.customer : object.customer?.id,
     });
     return NextResponse.json(
       { error: "Webhook handler failed." },

@@ -28,6 +28,7 @@
 		CA375C1BC5C61B29CA3EE1A7 /* RouteEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF3B1206BA4C1076D0962AD4 /* RouteEngine.swift */; };
 		CBB78CFBDC5BC9F210BF7855 /* HomeComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F4298EC273B3763B172CE59 /* HomeComponents.swift */; };
 		E23233C1FF33AA1DE83054E7 /* SubscriptionExpiredView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 365E5A6D651D16F05F577CFD /* SubscriptionExpiredView.swift */; };
+		EB52FA75D5EC780D57D74EDF /* AppErrorReporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BDE6FFAB6B97A3CF28BA63E /* AppErrorReporter.swift */; };
 		FB53196D1FD8C12D97F6C1B1 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4146D4F32E55E6241EFCD269 /* LoginView.swift */; };
 /* End PBXBuildFile section */
 
@@ -41,6 +42,7 @@
 		4146D4F32E55E6241EFCD269 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		47122D6E07120D2D13CDEF9C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		49C09F6CE9C14B8F309D4E68 /* SubscriptionModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionModels.swift; sourceTree = "<group>"; };
+		4BDE6FFAB6B97A3CF28BA63E /* AppErrorReporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppErrorReporter.swift; sourceTree = "<group>"; };
 		4CD54BEF9C6AFE0282EC9304 /* AnylocApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnylocApp.swift; sourceTree = "<group>"; };
 		4D02DE99BB015A0A818066AA /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		4F9D1B701173CFAE257511FF /* OnDeviceLocationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnDeviceLocationService.swift; sourceTree = "<group>"; };
@@ -93,6 +95,7 @@
 			children = (
 				7598C2810AD188339EA97811 /* Anyloc.entitlements */,
 				4CD54BEF9C6AFE0282EC9304 /* AnylocApp.swift */,
+				4BDE6FFAB6B97A3CF28BA63E /* AppErrorReporter.swift */,
 				792FF94A6595BED9D0CEF713 /* Assets.xcassets */,
 				228EED6CEDDB6F70DDC0D1CA /* AuthService.swift */,
 				3F4298EC273B3763B172CE59 /* HomeComponents.swift */,
@@ -198,6 +201,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				9955F27D99BD04DCEF1598BA /* AnylocApp.swift in Sources */,
+				EB52FA75D5EC780D57D74EDF /* AppErrorReporter.swift in Sources */,
 				5A681B81212BC8DB20F3BB25 /* AuthService.swift in Sources */,
 				CBB78CFBDC5BC9F210BF7855 /* HomeComponents.swift in Sources */,
 				1C0714F378382D8379766405 /* LocationAPI.swift in Sources */,

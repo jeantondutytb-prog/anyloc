@@ -1,5 +1,6 @@
 import type Stripe from "stripe";
 import { getPlanDisplayName } from "@/lib/constants";
+import { logError } from "@/lib/log-error";
 import type {
   AccountBillingDetails,
   AccountInvoice,
@@ -117,7 +118,7 @@ export async function getAccountBillingDetails({
       });
       invoices = invoiceList.data.map(mapInvoice);
     } catch (error) {
-      console.error("[account-billing] Failed to load Stripe data:", error);
+      await logError("account-billing/load", error, { userId });
     }
   }
 
@@ -221,6 +222,9 @@ export async function cancelStripeSubscriptionForUser(userId: string) {
   try {
     await stripe.subscriptions.cancel(profile.stripe_subscription_id);
   } catch (error) {
-    console.error("[account-billing] Failed to cancel subscription:", error);
+    await logError("account-billing/cancel", error, {
+      userId,
+      stripe_subscription_id: profile.stripe_subscription_id,
+    });
   }
 }

@@ -1,5 +1,6 @@
 import { corsPreflightResponse, jsonWithCors } from "@/lib/cors";
 import { extractBearerToken } from "@/lib/device";
+import { logError } from "@/lib/log-error";
 import {
   getDeviceContext,
   getLocationPayloadForUser,
@@ -113,7 +114,11 @@ export async function PUT(request: Request) {
       ...result,
     });
   } catch (saveError) {
-    console.error("[device/location] Save failed:", saveError);
+    await logError("device/location/save", saveError, {
+      userId: device.user_id,
+      device_id: device.id,
+      platform: device.platform,
+    });
     return Response.json(
       { error: "Impossible d'enregistrer ta position." },
       { status: 500 }

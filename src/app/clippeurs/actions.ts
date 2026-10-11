@@ -1,6 +1,7 @@
 "use server";
 
 import { parseClipperApplication } from "@/lib/clipper-application";
+import { logError } from "@/lib/log-error";
 import { capturePostHogEvent } from "@/lib/posthog/server";
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
@@ -56,7 +57,7 @@ export async function submitClipperApplication(
     );
 
   if (error) {
-    console.error("clipper application insert failed", error);
+    await logError("clippeurs/apply", error, { userId: user?.id });
     return { error: "Impossible d'enregistrer ta candidature. Réessaie dans un instant." };
   }
 

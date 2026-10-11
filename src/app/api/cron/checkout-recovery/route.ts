@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logError } from "@/lib/log-error";
 import {
   checkNoSaleAlert,
   forceRecoveryStep,
@@ -48,7 +49,7 @@ export async function GET(request: Request) {
     ]);
     return NextResponse.json({ ok: true, recoveries, noSaleAlert });
   } catch (error) {
-    console.error("[cron/checkout-recovery]", error);
+    await logError("cron/checkout-recovery", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Checkout recovery failed." },
       { status: 500 }
