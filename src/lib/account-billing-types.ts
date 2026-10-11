@@ -44,3 +44,9 @@ export function formatSubscriptionStatusLabel(status: string | null) {
 
   return STATUS_LABELS[status] ?? status;
 }
+
+export type BillingPortalFlow =
+  | "default"
+  | "subscription"
+  | "payment_method"
+  | "past_due_card";

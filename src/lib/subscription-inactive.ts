@@ -16,6 +16,12 @@ export type SubscriptionInactiveDetails = {
   ctaLabel: string;
   checkoutUrl: string;
   previousPlanName: string | null;
+  /**
+   * Renewal failed and Stripe is still retrying (past_due): the fix is a new
+   * card on the existing subscription, not a new checkout, which would leave
+   * the old one to be charged again by a later retry.
+   */
+  updatePaymentMethod: boolean;
 };
 
 export type SubscriptionInactivePayload = SubscriptionInactiveDetails & {
@@ -86,6 +92,16 @@ const REASON_COPY: Record<
   },
 };
 
+const PAST_DUE_COPY: Pick<
+  SubscriptionInactiveDetails,
+  "title" | "description" | "ctaLabel"
+> = {
+  title: "Paiement refusé",
+  description:
+    "Ton dernier prélèvement n'a pas abouti. Mets à jour ta carte pour retrouver ton accès tout de suite : ton abonnement reprend là où il en était.",
+  ctaLabel: "Mettre à jour ma carte",
+};
+
 export function getSubscriptionInactiveReason(
   profile: ProfileInactiveFields
 ): SubscriptionInactiveReason {
@@ -133,12 +149,17 @@ export function getSubscriptionInactiveDetails(
   const checkoutPlanId = isValidPlanId(profile.plan_id ?? undefined)
     ? profile.plan_id!
     : "annual";
+  const updatePaymentMethod = profile.subscription_status === "past_due";
 
   return {
     reason,
     ...copy,
-    checkoutUrl: getCheckoutUrl(checkoutPlanId),
+    ...(updatePaymentMethod ? PAST_DUE_COPY : {}),
+    checkoutUrl: updatePaymentMethod
+      ? SUBSCRIPTION_EXPIRED_PATH
+      : getCheckoutUrl(checkoutPlanId),
     previousPlanName: getPlanDisplayName(profile.plan_id ?? null),
+    updatePaymentMethod,
   };
 }
 
