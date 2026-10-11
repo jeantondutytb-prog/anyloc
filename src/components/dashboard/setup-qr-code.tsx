@@ -42,6 +42,8 @@ export function SetupQrCode({ value, label }: SetupQrCodeProps) {
 
   return (
     <div className="flex flex-col items-center gap-2">
+      {/* A generated data: URL, nothing for next/image to optimize. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={dataUrl}
         alt="QR code de configuration Anyloc"

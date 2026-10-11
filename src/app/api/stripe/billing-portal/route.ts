@@ -4,6 +4,7 @@ import {
   type BillingPortalFlow,
 } from "@/lib/account-billing";
 import { requireAuthenticatedUser } from "@/lib/subscription";
+import { publicErrorMessage } from "@/lib/errors";
 
 export async function POST(request: Request) {
   const { user, error } = await requireAuthenticatedUser();
@@ -36,10 +37,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ url });
   } catch (portalError) {
-    const message =
-      portalError instanceof Error
-        ? portalError.message
-        : "Impossible d'ouvrir le portail de facturation.";
+    console.error("[billing-portal]", portalError);
+    const message = publicErrorMessage(portalError, "Impossible d'ouvrir le portail de facturation.");
 
     return NextResponse.json({ error: message }, { status: 400 });
   }
