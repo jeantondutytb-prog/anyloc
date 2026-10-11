@@ -44,14 +44,16 @@ final class LocationAPI {
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-        print("[Anyloc] Upsert user_id=\(session.user.id) lat=\(lat) lng=\(lng) name=\(name)")
-
         let (data, response) = try await URLSession.shared.data(for: request)
         let code = (response as? HTTPURLResponse)?.statusCode ?? 0
         let responseBody = String(data: data, encoding: .utf8) ?? ""
-        print("[Anyloc] Response \(code): \(responseBody)")
 
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            AppErrorReporter.report(
+                "location/upsert",
+                message: "HTTP \(code): \(responseBody.prefix(500))",
+                context: ["http_status": code]
+            )
             throw LocationError.serverError("HTTP \(code): \(responseBody)")
         }
     }

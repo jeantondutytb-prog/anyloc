@@ -10,6 +10,7 @@ const net = require("node:net");
 const os = require("node:os");
 const path = require("node:path");
 const { execFile } = require("node:child_process");
+const { reportError } = require("./error-reporter");
 
 // Official installer, downloaded from Apple at repair time (never bundled).
 const ITUNES_SETUP_URL = "https://www.apple.com/itunes/download/win64";
@@ -210,7 +211,7 @@ async function repairWindows(onProgress) {
       try {
         msi = await fetchMobileDeviceSupport(workDir, onProgress);
       } catch (error) {
-        console.warn("[windows-apple]", error.message);
+        reportError("windows/download", error);
         return { ok: false, message: REPAIR_FAILED };
       }
     }
@@ -236,7 +237,9 @@ async function repairWindows(onProgress) {
 
     const after = await diagnoseWindows({ force: true });
     if (after.stage === "apple-missing" || after.stage === "service-stopped") {
-      console.warn("[windows-apple] repair exit", result.code, result.stderr.slice(-300));
+      reportError("windows/repair", `exit ${result.code}: ${result.stderr.slice(-300)}`, {
+        stage: after.stage,
+      });
       return { ok: false, message: REPAIR_FAILED, diagnosis: after };
     }
     onProgress?.({ pct: 100, message: "Windows est prêt." });

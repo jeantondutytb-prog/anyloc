@@ -4,6 +4,7 @@ struct SettingsView: View {
     @ObservedObject var auth = AuthService.shared
     @ObservedObject private var renewal = SignatureRenewalService.shared
     @State private var showRenewal = false
+    @State private var journalURL: URL?
 
     var body: some View {
         ZStack {
@@ -150,9 +151,26 @@ struct SettingsView: View {
                         // App
                         settingsSection("Application") {
                             VStack(spacing: 0) {
-                                infoRow(label: "Version", value: "0.1.0")
+                                infoRow(label: "Version", value: AppErrorReporter.appVersion)
                                 Divider().background(Theme.border)
                                 infoRow(label: "Appareil", value: "iPhone")
+                                Divider().background(Theme.border)
+                                Button {
+                                    journalURL = AppErrorReporter.makeJournalFile()
+                                } label: {
+                                    HStack(spacing: 10) {
+                                        Image(systemName: "doc.text.magnifyingglass")
+                                            .foregroundColor(Theme.textMuted)
+                                        Text("Envoyer le journal au support")
+                                            .font(.subheadline)
+                                            .foregroundColor(Theme.text)
+                                        Spacer()
+                                        Image(systemName: "square.and.arrow.up")
+                                            .font(.caption)
+                                            .foregroundColor(Theme.textDim)
+                                    }
+                                    .padding(12)
+                                }
                             }
                         }
 
@@ -183,6 +201,14 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showRenewal) {
             RenewalView()
+        }
+        .sheet(isPresented: Binding(
+            get: { journalURL != nil },
+            set: { if !$0 { journalURL = nil } }
+        )) {
+            if let journalURL {
+                ShareSheet(items: [journalURL])
+            }
         }
         .task {
             await renewal.refreshPairingStatus()

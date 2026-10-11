@@ -1,4 +1,5 @@
 import { extractBearerToken } from "@/lib/device";
+import { logError } from "@/lib/log-error";
 import { getDeviceContext, touchDeviceLastSeen } from "@/lib/device-server";
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 
@@ -118,7 +119,10 @@ export async function PUT(request: Request) {
     .eq("id", device.id);
 
   if (updateError) {
-    console.error("[device/pairing] Save failed:", updateError);
+    await logError("device/pairing/save", updateError, {
+      userId: device.user_id,
+      device_id: device.id,
+    });
     return Response.json(
       { error: "Impossible d'enregistrer le pairing." },
       { status: 500 }
@@ -167,7 +171,10 @@ export async function DELETE(request: Request) {
     .eq("id", device.id);
 
   if (updateError) {
-    console.error("[device/pairing] Delete failed:", updateError);
+    await logError("device/pairing/delete", updateError, {
+      userId: device.user_id,
+      device_id: device.id,
+    });
     return Response.json(
       { error: "Impossible de supprimer le pairing." },
       { status: 500 }

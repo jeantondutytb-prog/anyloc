@@ -1,4 +1,5 @@
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
+import { logError } from "@/lib/log-error";
 import { requireActiveSubscription } from "@/lib/subscription";
 
 export async function GET() {
@@ -28,7 +29,7 @@ export async function GET() {
     .maybeSingle();
 
   if (dbError) {
-    console.error("[device/pairing/me] Load failed:", dbError);
+    await logError("device/pairing/me", dbError, { userId: user.id });
     return Response.json(
       { error: "Impossible de charger le pairing." },
       { status: 500 }

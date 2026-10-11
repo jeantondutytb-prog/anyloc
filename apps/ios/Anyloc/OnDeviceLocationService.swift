@@ -129,7 +129,7 @@ final class OnDeviceLocationService: ObservableObject {
             try data.write(to: pairingURL, options: .atomic)
             try protectPairing()
         } catch {
-            print("[Anyloc/OnDevice] Sauvegarde du pairing impossible : \(error.localizedDescription)")
+            AppErrorReporter.report("ondevice/pairing-save", error)
         }
     }
 
@@ -192,14 +192,14 @@ final class OnDeviceLocationService: ObservableObject {
         await reset()
         await connect(promptForVPN: false)
         guard isConnected, self.applied != nil else {
-            log("Reconnexion impossible : \(failureMessage)")
+            AppErrorReporter.report("ondevice/reconnect", message: failureMessage)
             return
         }
         do {
             try await sendLocation(lat: applied.lat, lng: applied.lng)
             log("Position rétablie")
         } catch {
-            log("Renvoi impossible : \(error.localizedDescription)")
+            AppErrorReporter.report("ondevice/resend", error)
         }
     }
 
@@ -263,7 +263,7 @@ final class OnDeviceLocationService: ObservableObject {
         } catch {
             await reset()
             phase = .failed(error.localizedDescription)
-            log("Erreur : \(error.localizedDescription)")
+            AppErrorReporter.report("ondevice/connect", error, context: ["prompt_vpn": promptForVPN])
         }
     }
 
@@ -302,7 +302,7 @@ final class OnDeviceLocationService: ObservableObject {
         do {
             try await deadline(3, "Fermeture") { await old.close() }
         } catch {
-            log("Session bloquée, remplacée")
+            AppErrorReporter.report("ondevice/session-stuck", message: "Session bloquée, remplacée")
             session = DeviceSession()
         }
         phase = .idle
@@ -330,13 +330,19 @@ final class OnDeviceLocationService: ObservableObject {
         Self.trace(line)
     }
 
+    nonisolated static let traceURL = FileManager.default
+        .urls(for: .cachesDirectory, in: .userDomainMask)[0]
+        .appendingPathComponent("anyloc-trace.txt")
+
     /// Also kept in Library/Caches/anyloc-trace.txt: the console is gone once iOS
-    /// suspends the app, which is exactly the moment worth seeing.
+    /// suspends the app, which is exactly the moment worth seeing. The user can
+    /// send it from the settings (« Envoyer le journal »).
     nonisolated static func trace(_ line: String) {
         let stamped = "\(ISO8601DateFormatter().string(from: Date())) \(line)"
+        #if DEBUG
         print("[Anyloc/OnDevice] \(stamped)")
-        let url = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("anyloc-trace.txt")
+        #endif
+        let url = traceURL
         guard let data = (stamped + "\n").data(using: .utf8) else { return }
         // Keep it small: start over past ~200 KB.
         if let size = (try? FileManager.default.attributesOfItem(atPath: url.path))?[.size] as? Int, size > 200_000 {

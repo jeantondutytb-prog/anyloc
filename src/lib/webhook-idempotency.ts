@@ -1,4 +1,5 @@
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
+import { logError } from "@/lib/log-error";
 
 export async function hasProcessedStripeEvent(eventId: string) {
   if (!isSupabaseAdminConfigured()) {
@@ -13,7 +14,7 @@ export async function hasProcessedStripeEvent(eventId: string) {
     .maybeSingle();
 
   if (error) {
-    console.error("[stripe-webhook] Failed to read event idempotency:", error);
+    await logError("stripe-webhook/idempotency", error, { event_id: eventId, step: "read" });
     return false;
   }
 
@@ -39,6 +40,6 @@ export async function markStripeEventProcessed(
   );
 
   if (error) {
-    console.error("[stripe-webhook] Failed to store event idempotency:", error);
+    await logError("stripe-webhook/idempotency", error, { event_id: eventId, step: "store" });
   }
 }

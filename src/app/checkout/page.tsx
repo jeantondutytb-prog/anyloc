@@ -3,6 +3,7 @@ import { CheckoutView } from "@/components/checkout/checkout-view";
 import { ensureStripeCustomerForUser } from "@/lib/billing";
 import { hasActiveRecoveryOffer } from "@/lib/checkout-recovery-server";
 import { DEFAULT_PLAN_ID, getCheckoutUrl, isValidPlanId } from "@/lib/constants";
+import { logError } from "@/lib/log-error";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { getStripePublishableKey } from "@/lib/stripe-client";
 import { getSubscriptionAccessForUser } from "@/lib/subscription";
@@ -61,7 +62,7 @@ export default async function CheckoutPage({
           email: user.email,
         });
       } catch (error) {
-        console.error("[checkout] Failed to create Stripe customer:", error);
+        await logError("checkout/stripe-customer", error, { userId: user.id });
       }
     }
   }

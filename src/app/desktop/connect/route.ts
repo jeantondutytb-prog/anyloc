@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logError } from "@/lib/log-error";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
@@ -34,7 +35,9 @@ export async function GET(request: Request) {
   });
 
   if (error || !data.properties?.hashed_token) {
-    console.error("[desktop/connect] generateLink failed:", error);
+    await logError("desktop/connect", error ?? "generateLink returned no hashed_token", {
+      userId: user.id,
+    });
     return new Response(
       page("Anyloc", `<h1>Connexion impossible</h1><p>Réessaie dans un instant, ou connecte-toi directement dans l'app avec ton email.</p>`),
       { status: 500, headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } }

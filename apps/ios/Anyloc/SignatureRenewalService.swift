@@ -71,6 +71,10 @@ final class SignatureRenewalService: ObservableObject {
             let (data, response) = try await URLSession.shared.data(for: request)
             guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
                 hasPairingOnServer = false
+                let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+                if status >= 500 {
+                    AppErrorReporter.report("pairing/status", message: "HTTP \(status)", context: ["http_status": status])
+                }
                 return
             }
 
@@ -81,7 +85,7 @@ final class SignatureRenewalService: ObservableObject {
                 pairingSavedLocally = savePairingLocally(base64: pairing)
             }
         } catch {
-            print("[Anyloc] Pairing status failed:", error.localizedDescription)
+            AppErrorReporter.report("pairing/status", error)
         }
     }
 
@@ -175,7 +179,7 @@ final class SignatureRenewalService: ObservableObject {
             try data.write(to: fileURL, options: .atomic)
             return true
         } catch {
-            print("[Anyloc] Pairing save failed:", error.localizedDescription)
+            AppErrorReporter.report("pairing/save-local", error)
             return false
         }
     }

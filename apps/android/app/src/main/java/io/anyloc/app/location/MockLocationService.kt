@@ -22,6 +22,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import io.anyloc.app.R
 import io.anyloc.app.SubscriptionInactiveActivity
+import io.anyloc.app.AppErrorReporter
 import io.anyloc.app.api.AnylocApi
 import io.anyloc.app.api.SubscriptionInactiveDetails
 import kotlinx.coroutines.CoroutineScope
@@ -44,6 +45,7 @@ class MockLocationService : Service() {
 
         if (!hasRequiredPermissions()) {
             Log.w(TAG, "Missing runtime permissions for foreground mock location service")
+            AppErrorReporter.report(this, apiBaseUrl, token, "mock/permissions", "Missing location permissions")
             stopSelf()
             return START_NOT_STICKY
         }
@@ -57,6 +59,7 @@ class MockLocationService : Service() {
             )
         } catch (error: Exception) {
             Log.e(TAG, "Unable to start foreground service", error)
+            AppErrorReporter.report(this, apiBaseUrl, token, "mock/foreground", error)
             stopSelf()
             return START_NOT_STICKY
         }
@@ -65,6 +68,7 @@ class MockLocationService : Service() {
 
         if (!MockLocationHelper.isMockLocationAllowed(this)) {
             Log.w(TAG, "Anyloc is not selected as mock location app")
+            AppErrorReporter.report(this, apiBaseUrl, token, "mock/not-selected", "Anyloc is not the mock location app")
             stopSelf()
             return START_NOT_STICKY
         }
@@ -76,7 +80,11 @@ class MockLocationService : Service() {
             val api = AnylocApi(apiBaseUrl, token)
 
             while (isActive) {
-                val result = runCatching { api.fetchLocation() }.getOrNull()
+                val result = runCatching { api.fetchLocation() }
+                    .onFailure { error ->
+                        AppErrorReporter.report(this@MockLocationService, apiBaseUrl, token, "mock/poll", error)
+                    }
+                    .getOrNull()
 
                 when {
                     result?.subscriptionInactive == true -> {
@@ -283,6 +291,7 @@ class MockLocationService : Service() {
                 true
             } catch (error: Exception) {
                 Log.e(TAG, "Failed to start mock location service", error)
+                AppErrorReporter.report(context, apiBaseUrl, deviceToken, "mock/start", error)
                 false
             }
         }

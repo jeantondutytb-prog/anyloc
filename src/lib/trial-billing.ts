@@ -1,6 +1,7 @@
 import type Stripe from "stripe";
 import { PLANS, isValidPlanId } from "@/lib/constants";
 import { ensureUserForEmail } from "@/lib/guest-account";
+import { logError } from "@/lib/log-error";
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 import { stripe } from "@/lib/stripe";
 import {
@@ -168,7 +169,9 @@ export async function syncProfileFromTrialSetupSession(
   session: Stripe.Checkout.Session
 ): Promise<string | null> {
   if (!isSupabaseAdminConfigured() || !stripe) {
-    console.warn("[trial-billing] Missing Stripe or Supabase admin config.");
+    await logError("trial-billing", "Stripe or Supabase admin not configured, trial not synced", {
+      stripe_session_id: session.id,
+    });
     return null;
   }
 
@@ -198,7 +201,9 @@ export async function syncProfileFromTrialSetupSession(
   }
 
   if (!userId) {
-    console.warn("[trial-billing] Setup session missing Supabase user id and email.");
+    await logError("trial-billing", "Trial setup session has no user id nor email", {
+      stripe_session_id: session.id,
+    });
     return null;
   }
 
@@ -362,26 +367,28 @@ export async function chargeSubscriptionInvoiceImmediately(
     return { attempted: false, paid: false, reason: "not_subscription" as const };
   }
 
+  const invoiceContext = {
+    stripe_invoice_id: invoice.id,
+    stripe_subscription_id: subscriptionId,
+    stripe_customer_id:
+      typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id,
+    billing_reason: invoice.billing_reason,
+  };
+
   try {
     const paidInvoice = await stripe.invoices.pay(invoice.id);
 
     if (paidInvoice.status === "paid") {
-      console.info(
-        `[trial-billing] Charged invoice ${invoice.id} immediately (subscription ${subscriptionId}, reason=${invoice.billing_reason}).`
-      );
       return { attempted: true, paid: true, reason: "paid" as const };
     }
 
-    console.warn(
-      `[trial-billing] Immediate pay left invoice ${invoice.id} in status=${paidInvoice.status}.`
-    );
+    await logError("trial-billing", `Immediate pay left invoice in status=${paidInvoice.status}`, {
+      ...invoiceContext,
+    });
     return { attempted: true, paid: false, reason: "not_paid" as const };
   } catch (error) {
     // Card declines / missing PM still surface via subscription.updated → past_due.
-    console.error(
-      `[trial-billing] Immediate invoice pay failed for ${invoice.id}`,
-      error
-    );
+    await logError("trial-billing/charge", error, invoiceContext);
     return { attempted: true, paid: false, reason: "pay_failed" as const };
   }
 }
@@ -450,7 +457,7 @@ export async function processDueTrialCharges() {
       processed += 1;
     } catch (chargeError) {
       failed += 1;
-      console.error(`[trial-billing] Legacy trial sync failed for ${profile.id}`, chargeError);
+      await logError("trial-billing/legacy", chargeError, { userId: profile.id });
 
       await admin
         .from("profiles")
@@ -547,7 +554,9 @@ async function listAllOpenInvoices() {
   return invoices;
 }
 
-const KEEP_OPEN_INVOICE_SUB_STATUSES = new Set(["active", "trialing"]);
+// past_due invoices are being retried by Stripe Smart Retries (dunning emails
+// included); voiding them would end the recovery early.
+const KEEP_OPEN_INVOICE_SUB_STATUSES = new Set(["active", "trialing", "past_due"]);
 
 async function voidOrphanOpenInvoices() {
   if (!stripe) {
@@ -593,7 +602,7 @@ async function voidOrphanOpenInvoices() {
       const message =
         error instanceof Error ? error.message : "Failed to void invoice.";
       errors.push({ invoiceId: invoice.id, error: message });
-      console.error(`[trial-billing] Failed to void invoice ${invoice.id}`, error);
+      await logError("trial-billing/void-invoice", error, { stripe_invoice_id: invoice.id });
     }
   }
 
@@ -601,9 +610,11 @@ async function voidOrphanOpenInvoices() {
 }
 
 /**
- * Cancels unpaid / past_due / incomplete subscriptions and voids leftover
- * open invoices. Does not refund, cancel, or otherwise change active paid
- * subscriptions (including duplicate paid ones).
+ * Cancels unpaid / incomplete subscriptions and voids leftover open invoices.
+ * Leaves past_due alone: Stripe Smart Retries and dunning emails handle them,
+ * and Stripe cancels the subscription itself once all retries fail.
+ * Does not refund, cancel, or otherwise change active paid subscriptions
+ * (including duplicate paid ones).
  */
 export async function enforcePaidSubscriptions() {
   if (!stripe) {
@@ -613,7 +624,7 @@ export async function enforcePaidSubscriptions() {
   const canceled: string[] = [];
   const errors: Array<{ subscriptionId?: string; invoiceId?: string; error: string }> = [];
 
-  for (const status of ["past_due", "unpaid", "incomplete"] as const) {
+  for (const status of ["unpaid", "incomplete"] as const) {
     const unpaid = await listAllSubscriptionsByStatus(status);
 
     for (const subscription of unpaid) {
@@ -632,10 +643,10 @@ export async function enforcePaidSubscriptions() {
         const message =
           error instanceof Error ? error.message : "Failed to cancel unpaid.";
         errors.push({ subscriptionId: subscription.id, error: message });
-        console.error(
-          `[trial-billing] Failed to enforce unpaid ${subscription.id}`,
-          error
-        );
+        await logError("trial-billing/enforce-unpaid", error, {
+          userId: subscription.metadata?.supabase_user_id,
+          stripe_subscription_id: subscription.id,
+        });
       }
     }
   }
