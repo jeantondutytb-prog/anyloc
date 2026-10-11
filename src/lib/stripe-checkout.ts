@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 import { CHECKOUT_PAY_CONSENT, DEVICE_REQUIREMENT_NOTE, type Plan } from "@/lib/constants";
 import { ensureStripeCustomerForUser } from "@/lib/billing";
 import { getAppUrl, stripe } from "@/lib/stripe";
+import { UserFacingError } from "@/lib/errors";
 
 type CheckoutMode = "embedded_page" | "hosted_page";
 
@@ -56,7 +57,7 @@ export async function createSubscriptionCheckoutSession({
   couponId?: string | null;
 }) {
   if (!stripe || !plan.stripePriceId) {
-    throw new Error("Paiement non configuré pour ce plan");
+    throw new UserFacingError("Paiement non configuré pour ce plan");
   }
 
   const returnUrl = getCheckoutReturnUrl();
@@ -93,7 +94,7 @@ async function buildAuthenticatedCheckoutParams(
   user: User
 ): Promise<Stripe.Checkout.SessionCreateParams> {
   if (!user.email) {
-    throw new Error("Ton compte n'a pas d'email associé.");
+    throw new UserFacingError("Ton compte n'a pas d'email associé.");
   }
 
   const customerId = await ensureStripeCustomerForUser({

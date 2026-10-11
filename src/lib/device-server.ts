@@ -3,12 +3,34 @@ import {
   DEFAULT_LOCATION,
   mapLocationRow,
   resolveLocation,
-  toLocationResponse,
 } from "@/lib/location";
 import { hashDeviceToken, type DeviceTokenRow } from "@/lib/device";
 import { buildSubscriptionAccessResponse } from "@/lib/subscription-access-api";
 import { getSubscriptionAccessForUser, isActiveSubscriptionStatus } from "@/lib/subscription";
-import type { SubscriptionInactivePayload } from "@/lib/subscription-inactive";
+
+/** Caps linked devices so one subscription can't be shared across a group. */
+export const MAX_DEVICES_PER_USER = 10;
+
+export const DEVICE_LIMIT_ERROR = `Tu as atteint la limite de ${MAX_DEVICES_PER_USER} appareils. Supprime un ancien appareil dans Paramètres pour en ajouter un.`;
+
+export async function hasReachedDeviceLimit(userId: string) {
+  if (!isSupabaseAdminConfigured()) {
+    return false;
+  }
+
+  const admin = createAdminClient();
+  const { count, error } = await admin
+    .from("device_tokens")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId);
+
+  if (error) {
+    console.error("[device] Count failed:", error);
+    return false;
+  }
+
+  return (count ?? 0) >= MAX_DEVICES_PER_USER;
+}
 
 export async function getDeviceByToken(token: string) {
   if (!isSupabaseAdminConfigured()) {

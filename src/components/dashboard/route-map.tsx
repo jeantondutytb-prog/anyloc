@@ -20,7 +20,9 @@ export default function RouteMap({
   const markersRef = useRef<L.LayerGroup | null>(null);
   const onAddRef = useRef(onAddWaypoint);
 
-  onAddRef.current = onAddWaypoint;
+  useEffect(() => {
+    onAddRef.current = onAddWaypoint;
+  });
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) {

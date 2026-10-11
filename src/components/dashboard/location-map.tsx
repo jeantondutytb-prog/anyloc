@@ -42,7 +42,9 @@ export default function LocationMap({
   const onSelectRef = useRef(onSelect);
   const hasCenteredRef = useRef(false);
 
-  onSelectRef.current = onSelect;
+  useEffect(() => {
+    onSelectRef.current = onSelect;
+  });
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) {
@@ -114,6 +116,8 @@ export default function LocationMap({
       outerCircleRef.current = null;
       innerCircleRef.current = null;
     };
+    // The Leaflet map is created once; later effects move it to the selection.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

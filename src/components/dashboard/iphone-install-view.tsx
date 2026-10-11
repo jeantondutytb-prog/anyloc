@@ -157,6 +157,8 @@ export function IphoneInstallView({ embedded = false }: { embedded?: boolean } =
               </ol>
               <Button
                 data-track="iphone_install_enroll_clicked"
+                // A real page load: the route answers with the profile file Safari installs.
+                // eslint-disable-next-line @next/next/no-location-assign-relative-destination
                 onClick={() => { window.location.href = "/api/ios/enroll"; }}
               >
                 Préparer mon iPhone
@@ -201,6 +203,8 @@ export function IphoneInstallView({ embedded = false }: { embedded?: boolean } =
               <Button
                 data-track="iphone_install_enroll_clicked"
                 data-track-retry="true"
+                // A real page load: the route answers with the profile file Safari installs.
+                // eslint-disable-next-line @next/next/no-location-assign-relative-destination
                 onClick={() => { window.location.href = "/api/ios/enroll"; }}
               >
                 Réessayer
