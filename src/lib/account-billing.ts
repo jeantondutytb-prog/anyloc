@@ -2,14 +2,23 @@ import type Stripe from "stripe";
 import { getPlanDisplayName } from "@/lib/constants";
 import { logError } from "@/lib/log-error";
 import type {
+  BillingPortalFlow,
   AccountBillingDetails,
   AccountInvoice,
   AccountPaymentMethod,
 } from "@/lib/account-billing-types";
-import { getProfileStripeCustomerId, type ProfileRow } from "@/lib/billing";
+import {
+  getProfileStripeCustomerId,
+  syncProfileFromSubscription,
+  type ProfileRow,
+} from "@/lib/billing";
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 import { getAppUrl, stripe } from "@/lib/stripe";
 import { isActiveSubscriptionStatus } from "@/lib/subscription";
+
+export type { BillingPortalFlow };
+
+export const SETTLE_PAST_DUE_PATH = "/api/stripe/settle-past-due";
 
 export function getPlanLabel(planId: string | null) {
   if (!planId) {
@@ -142,7 +151,7 @@ export async function createBillingPortalSession({
   flow = "default",
 }: {
   userId: string;
-  flow?: "default" | "subscription" | "payment_method";
+  flow?: BillingPortalFlow;
 }) {
   if (!stripe) {
     throw new Error("La gestion de facturation n'est pas configurée.");
@@ -174,6 +183,19 @@ export async function createBillingPortalSession({
   if (flow === "payment_method") {
     sessionParams.flow_data = {
       type: "payment_method_update",
+    };
+  }
+
+  // Renewal failed: after the new card is saved, come back to settle the
+  // overdue invoice with it instead of waiting for the next Smart Retry.
+  if (flow === "past_due_card") {
+    sessionParams.return_url = `${getAppUrl()}/dashboard/expired`;
+    sessionParams.flow_data = {
+      type: "payment_method_update",
+      after_completion: {
+        type: "redirect",
+        redirect: { return_url: `${getAppUrl()}${SETTLE_PAST_DUE_PATH}` },
+      },
     };
   }
 
@@ -227,4 +249,75 @@ export async function cancelStripeSubscriptionForUser(userId: string) {
       stripe_subscription_id: profile.stripe_subscription_id,
     });
   }
+}
+
+/**
+ * Called when a past_due customer comes back from the portal with a new card.
+ * The subscription keeps its own default card (set by Checkout), which would
+ * override the customer's new one, so point it at the new card and pay the
+ * overdue invoice right away. Returns whether the subscription is paid up.
+ */
+export async function settlePastDueSubscriptionForUser(userId: string) {
+  if (!stripe) {
+    throw new Error("La gestion de facturation n'est pas configurée.");
+  }
+
+  const profile = await getProfileForUser(userId);
+
+  if (!profile?.stripe_subscription_id || !profile.stripe_customer_id) {
+    return { settled: false as const };
+  }
+
+  const subscription = await stripe.subscriptions.retrieve(
+    profile.stripe_subscription_id
+  );
+
+  if (subscription.status !== "past_due") {
+    return { settled: isActiveSubscriptionStatus(subscription.status) };
+  }
+
+  const customer = await stripe.customers.retrieve(profile.stripe_customer_id);
+  const newCard =
+    !customer.deleted && customer.invoice_settings?.default_payment_method
+      ? customer.invoice_settings.default_payment_method
+      : null;
+  const newCardId = typeof newCard === "string" ? newCard : newCard?.id;
+
+  if (!newCardId) {
+    return { settled: false as const };
+  }
+
+  await stripe.subscriptions.update(subscription.id, {
+    default_payment_method: newCardId,
+  });
+
+  const latestInvoiceId =
+    typeof subscription.latest_invoice === "string"
+      ? subscription.latest_invoice
+      : subscription.latest_invoice?.id;
+
+  if (latestInvoiceId) {
+    try {
+      const invoice = await stripe.invoices.retrieve(latestInvoiceId);
+
+      if (invoice.status === "open") {
+        await stripe.invoices.pay(latestInvoiceId, {
+          payment_method: newCardId,
+        });
+      }
+    } catch (error) {
+      // A decline on the new card leaves the subscription past_due; Smart
+      // Retries will keep trying it.
+      await logError("account-billing/settle-past-due", error, {
+        userId,
+        stripe_subscription_id: subscription.id,
+        stripe_invoice_id: latestInvoiceId,
+      });
+    }
+  }
+
+  const refreshed = await stripe.subscriptions.retrieve(subscription.id);
+  await syncProfileFromSubscription(refreshed);
+
+  return { settled: isActiveSubscriptionStatus(refreshed.status) };
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AlertTriangle, CreditCard, LogOut, Sparkles } from "lucide-react";
 import { signOut } from "@/app/auth/actions";
+import { BillingPortalButton } from "@/components/dashboard/settings-view";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Logo } from "@/components/ui/logo";
@@ -20,8 +21,10 @@ function ReasonIcon({ reason }: { reason: SubscriptionInactiveDetails["reason"] 
 
 export function SubscriptionExpiredView({
   details,
+  cardDeclined = false,
 }: {
   details: SubscriptionInactiveDetails;
+  cardDeclined?: boolean;
 }) {
   return (
     <div className="min-h-screen bg-background">
@@ -60,18 +63,36 @@ export function SubscriptionExpiredView({
             </p>
           ) : null}
 
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <Link href={details.checkoutUrl} className="sm:flex-1">
-              <Button className="w-full">{details.ctaLabel}</Button>
-            </Link>
-            <Link href="/pricing" className="sm:flex-1">
-              <Button variant="secondary" className="w-full">
-                Comparer les offres
-              </Button>
-            </Link>
-          </div>
+          {cardDeclined && details.updatePaymentMethod ? (
+            <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              Le paiement avec ta nouvelle carte n&apos;est pas passé. Essaie une autre
+              carte, ou réessaie dans quelques minutes.
+            </p>
+          ) : null}
 
-          {details.reason === "payment_failed" ? (
+          {details.updatePaymentMethod ? (
+            <BillingPortalButton
+              flow="past_due_card"
+              variant="default"
+              size="default"
+              className="mt-6 [&>button]:w-full"
+            >
+              {details.ctaLabel}
+            </BillingPortalButton>
+          ) : (
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <Link href={details.checkoutUrl} className="sm:flex-1">
+                <Button className="w-full">{details.ctaLabel}</Button>
+              </Link>
+              <Link href="/pricing" className="sm:flex-1">
+                <Button variant="secondary" className="w-full">
+                  Comparer les offres
+                </Button>
+              </Link>
+            </div>
+          )}
+
+          {details.reason === "payment_failed" && !details.updatePaymentMethod ? (
             <p className="mt-4 text-sm text-zinc-500">
               Tu peux aussi mettre à jour ta carte depuis le checkout Stripe, ou nous
               écrire sur{" "}

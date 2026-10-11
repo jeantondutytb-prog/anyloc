@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { createBillingPortalSession } from "@/lib/account-billing";
+import {
+  createBillingPortalSession,
+  type BillingPortalFlow,
+} from "@/lib/account-billing";
 import { requireAuthenticatedUser } from "@/lib/subscription";
 
 export async function POST(request: Request) {
@@ -9,13 +12,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error }, { status: 401 });
   }
 
-  let flow: "default" | "subscription" | "payment_method" = "default";
+  let flow: BillingPortalFlow = "default";
 
   try {
     const body = await request.json();
     if (
       body?.flow === "subscription" ||
       body?.flow === "payment_method" ||
+      body?.flow === "past_due_card" ||
       body?.flow === "default"
     ) {
       flow = body.flow;

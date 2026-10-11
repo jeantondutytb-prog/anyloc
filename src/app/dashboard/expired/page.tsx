@@ -10,7 +10,11 @@ import { getSubscriptionInactiveDetails } from "@/lib/subscription-inactive";
 
 export const metadata = noIndexMetadata;
 
-export default async function SubscriptionExpiredPage() {
+export default async function SubscriptionExpiredPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ card?: string }>;
+}) {
   const user = await getAuthenticatedUser();
 
   if (!user) {
@@ -36,5 +40,9 @@ export default async function SubscriptionExpiredPage() {
 
   const details = getSubscriptionInactiveDetails(profile ?? {});
 
-  return <SubscriptionExpiredView details={details} />;
+  const { card } = await searchParams;
+
+  return (
+    <SubscriptionExpiredView details={details} cardDeclined={card === "declined"} />
+  );
 }

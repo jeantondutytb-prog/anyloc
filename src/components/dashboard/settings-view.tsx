@@ -27,7 +27,10 @@ import {
   type SettingsActionState,
 } from "@/app/dashboard/(protected)/settings/actions";
 import { CancelSubscriptionConfirmDialog } from "@/components/subscription/cancel-subscription-confirm-dialog";
-import { formatSubscriptionStatusLabel } from "@/lib/account-billing-types";
+import {
+  formatSubscriptionStatusLabel,
+  type BillingPortalFlow,
+} from "@/lib/account-billing-types";
 import { MIN_PASSWORD_LENGTH } from "@/lib/password-policy";
 import { cn } from "@/lib/utils";
 
@@ -75,14 +78,14 @@ function SettingsSection({
   );
 }
 
-function BillingPortalButton({
+export function BillingPortalButton({
   flow = "default",
   children,
   variant = "secondary",
   size = "sm",
   className,
 }: {
-  flow?: "default" | "subscription" | "payment_method";
+  flow?: BillingPortalFlow;
   children: React.ReactNode;
   variant?: "default" | "secondary" | "ghost" | "outline";
   size?: "default" | "sm" | "lg";
