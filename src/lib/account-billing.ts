@@ -19,6 +19,7 @@ import {
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 import { getAppUrl, stripe } from "@/lib/stripe";
 import { isActiveSubscriptionStatus } from "@/lib/subscription";
+import { UserFacingError } from "@/lib/errors";
 
 export type { BillingPortalFlow };
 
@@ -167,13 +168,13 @@ export async function createBillingPortalSession({
   flow?: BillingPortalFlow;
 }) {
   if (!stripe) {
-    throw new Error("La gestion de facturation n'est pas configurée.");
+    throw new UserFacingError("La gestion de facturation n'est pas configurée.");
   }
 
   const customerId = await getProfileStripeCustomerId(userId);
 
   if (!customerId) {
-    throw new Error("Aucun client Stripe associé à ce compte.");
+    throw new UserFacingError("Aucun client Stripe associé à ce compte.");
   }
 
   const profile = await getProfileForUser(userId);

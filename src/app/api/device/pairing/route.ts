@@ -2,6 +2,7 @@ import { extractBearerToken } from "@/lib/device";
 import { logError } from "@/lib/log-error";
 import { getDeviceContext, touchDeviceLastSeen } from "@/lib/device-server";
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
+import { decryptPairing, encryptPairing } from "@/lib/pairing-crypto";
 
 const MAX_PAIRING_DATA_BYTES = 64 * 1024;
 
@@ -58,7 +59,7 @@ export async function GET(request: Request) {
 
   return Response.json({
     ok: true,
-    pairing: device.pairing_data ?? null,
+    pairing: decryptPairing(device.pairing_data),
   });
 }
 
@@ -115,7 +116,7 @@ export async function PUT(request: Request) {
   const admin = createAdminClient();
   const { error: updateError } = await admin
     .from("device_tokens")
-    .update({ pairing_data: pairing })
+    .update({ pairing_data: encryptPairing(pairing) })
     .eq("id", device.id);
 
   if (updateError) {

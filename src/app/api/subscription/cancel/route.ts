@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cancelActiveSubscriptionForUser } from "@/lib/account-billing";
 import { rejectCrossSiteMutation } from "@/lib/csrf";
 import { requireAuthenticatedUser } from "@/lib/subscription";
+import { publicErrorMessage } from "@/lib/errors";
 
 export async function POST(request: Request) {
   const crossSiteResponse = rejectCrossSiteMutation(request);
@@ -19,10 +20,8 @@ export async function POST(request: Request) {
     const cancelsAt = await cancelActiveSubscriptionForUser(user.id);
     return NextResponse.json({ ok: true, cancelsAt });
   } catch (cancelError) {
-    const message =
-      cancelError instanceof Error
-        ? cancelError.message
-        : "Impossible de résilier l'abonnement.";
+    console.error("[trial/cancel]", cancelError);
+    const message = publicErrorMessage(cancelError, "Impossible de résilier l'abonnement.");
 
     return NextResponse.json({ error: message }, { status: 400 });
   }

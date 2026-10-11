@@ -116,6 +116,8 @@ export default function LocationMap({
       outerCircleRef.current = null;
       innerCircleRef.current = null;
     };
+    // The Leaflet map is created once; later effects move it to the selection.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

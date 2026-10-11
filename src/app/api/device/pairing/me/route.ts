@@ -1,6 +1,7 @@
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 import { logError } from "@/lib/log-error";
 import { requireActiveSubscription } from "@/lib/subscription";
+import { decryptPairing } from "@/lib/pairing-crypto";
 
 export async function GET() {
   const { user, error } = await requireActiveSubscription();
@@ -39,7 +40,7 @@ export async function GET() {
   return Response.json({
     ok: true,
     hasPairing: Boolean(data?.pairing_data),
-    pairing: data?.pairing_data ?? null,
+    pairing: decryptPairing(data?.pairing_data ?? null),
     device: data
       ? {
           id: data.id,

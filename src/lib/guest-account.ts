@@ -9,6 +9,7 @@ async function findAuthUserIdByEmail(email: string) {
   const admin = createAdminClient();
   const perPage = 1000;
 
+  // Walk every page: stopping early would miss accounts once the base grows.
   for (let page = 1; ; page += 1) {
     const { data, error } = await admin.auth.admin.listUsers({
       page,
@@ -106,4 +107,30 @@ export async function sendMagicLinkEmail(email: string, redirectTo: string) {
   if (error) {
     throw new Error(error.message);
   }
+}
+
+/**
+ * Records that this checkout session already triggered its magic link.
+ * Returns false when it did, so replaying the return URL can't spam the inbox.
+ */
+export async function redeemCheckoutSession(sessionId: string) {
+  if (!isSupabaseAdminConfigured()) {
+    return true;
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("checkout_session_redemptions")
+    .insert({ session_id: sessionId });
+
+  if (!error) {
+    return true;
+  }
+
+  if (error.code === "23505") {
+    return false;
+  }
+
+  console.error("[checkout] Failed to record redemption:", error);
+  return true;
 }
