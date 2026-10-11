@@ -6,6 +6,8 @@ final class SubscriptionService: ObservableObject {
 
     @Published private(set) var hasAccess = true
     @Published private(set) var inactiveDetails: SubscriptionInactiveDetails?
+    @Published private(set) var planId: String?
+    @Published private(set) var isTrial = false
     @Published private(set) var isLoading = false
     @Published private(set) var hasCheckedOnce = false
 
@@ -16,6 +18,8 @@ final class SubscriptionService: ObservableObject {
     func reset() {
         hasAccess = true
         inactiveDetails = nil
+        planId = nil
+        isTrial = false
         isLoading = false
         hasCheckedOnce = false
     }
@@ -47,6 +51,8 @@ final class SubscriptionService: ObservableObject {
             let decoded = try JSONDecoder().decode(SubscriptionAccessResponse.self, from: data)
             hasAccess = decoded.hasAccess
             inactiveDetails = decoded.hasAccess ? nil : (decoded.inactive ?? .fallback)
+            planId = decoded.hasAccess ? decoded.planId : nil
+            isTrial = decoded.hasAccess && decoded.isTrial
             hasCheckedOnce = true
         } catch {
             hasCheckedOnce = true
