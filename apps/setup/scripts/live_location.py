@@ -105,9 +105,14 @@ async def location_simulation(udid: Optional[str]):
 async def ensure_developer_image(provider) -> bool:
     """Mount the Developer Disk Image if needed; True when it was mounted now."""
     personalized = Version(provider.product_version) >= Version("17.0")
-    mounter = (PersonalizedImageMounter if personalized else DeveloperDiskImageMounter)(provider)
-    if await mounter.is_image_mounted(mounter.IMAGE_TYPE):
-        return False
+    # The iPhone serves one image-mounter client at a time: this one must be
+    # closed before auto_mount opens its own, or that one waits forever and the
+    # iPhone stays at its real position after every reboot.
+    async with (PersonalizedImageMounter if personalized else DeveloperDiskImageMounter)(
+        provider
+    ) as mounter:
+        if await mounter.is_image_mounted(mounter.IMAGE_TYPE):
+            return False
     try:
         # Downloads the image once (cached in ~/.pymobiledevice3), then Apple
         # signs it for this iPhone: needs internet the first time.
