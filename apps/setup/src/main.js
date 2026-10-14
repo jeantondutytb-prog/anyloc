@@ -143,6 +143,7 @@ function spawnSpoofChild() {
     if (child.killed || !target || target.child !== child || target.applied || target.reported.error) return;
     target.reported.error = true;
     target.reported.applied = false;
+    reportError("spoof/apply", stderr.trim().slice(-2000) || "live_location.py exited without applying");
     sendSyncStatus(humanizePmd3Error(stderr), true, target.loc);
   });
 
