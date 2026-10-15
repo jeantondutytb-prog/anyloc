@@ -7,7 +7,10 @@ import { Check, Download, Loader2, Monitor } from "lucide-react";
 import { DashboardAppHeader } from "@/components/dashboard/dashboard-app-header";
 import { IphoneInstallView } from "@/components/dashboard/iphone-install-view";
 import { SetupPasswordForm } from "@/components/dashboard/setup-password-form";
-import { WrongDeviceNotice } from "@/components/dashboard/setup-open-help";
+import {
+  MacOpenHelp,
+  WrongDeviceNotice,
+} from "@/components/dashboard/setup-open-help";
 import { WindowsOpenHelp } from "@/components/dashboard/windows-open-help";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -136,7 +139,14 @@ function DesktopDownloadCard({
           <div className="mt-4 text-left">
             <WindowsOpenHelp compact zipDownloadPath={windowsZip?.downloadPath} />
           </div>
-        ) : null}
+        ) : (
+          <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-4 text-left">
+            <p className="font-semibold text-zinc-900">
+              Après le téléchargement, ouvre le fichier comme ça
+            </p>
+            <MacOpenHelp />
+          </div>
+        )}
         {hasAccess && !preview ? (
           <div className="mt-6 border-t border-zinc-100 pt-5">
             <p className="text-sm text-zinc-600">
