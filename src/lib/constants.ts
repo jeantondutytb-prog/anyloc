@@ -24,27 +24,6 @@ export const SITE = {
     "Anyloc te fait choisir où ton tel se croit — Snap, Insta, apps de rencontre, jeux : une loc pour tout l'appareil.",
 };
 
-export const DESTINATIONS = [
-  "Marbella",
-  "Ibiza",
-  "Miami",
-  "Mykonos",
-  "Monaco",
-  "Los Angeles",
-  "New York",
-  "Tokyo",
-  "Bali",
-  "Phuket",
-  "Valencia",
-  "Marrakech",
-  "Paris",
-  "Londres",
-  "Cancún",
-  "Rio",
-  "Barcelone",
-  "Bangkok",
-];
-
 /** Bénéfices identiques sur tous les plans — seule la durée change. */
 export const PLAN_VALUE_STACK = [
   "Changements de loc illimités sur toutes tes apps",
@@ -271,51 +250,8 @@ export function getCheckoutUrl(plan: string = DEFAULT_PLAN_ID) {
   return `/checkout?plan=${planId}`;
 }
 
-export const COMPARISON = [
-  {
-    feature: "Modifie le GPS de tout le tel",
-    anyloc: true,
-    vpn: false,
-    fakeGps: false,
-    screenshot: false,
-  },
-  {
-    feature: "Snap, Insta, Tinder, jeux en même temps",
-    anyloc: true,
-    vpn: false,
-    fakeGps: "partial",
-    screenshot: false,
-  },
-  {
-    feature: "Reste actif en arrière-plan",
-    anyloc: true,
-    vpn: false,
-    fakeGps: "partial",
-    screenshot: false,
-  },
-  {
-    feature: "Signal GPS réel (pas une image)",
-    anyloc: true,
-    vpn: false,
-    fakeGps: false,
-    screenshot: false,
-  },
-  {
-    feature: "Nouvelle ville en un clic",
-    anyloc: true,
-    vpn: false,
-    fakeGps: "partial",
-    screenshot: false,
-  },
-  {
-    feature: "Trajet simulé crédible",
-    anyloc: true,
-    vpn: false,
-    fakeGps: false,
-    screenshot: false,
-  },
-];
-
+// Shown on the landing and in its FAQPage JSON-LD. Install troubleshooting
+// (Windows warning, LocalDevVPN renewal) lives in the dashboard guides.
 export const FAQ = [
   {
     q: "Ça marche sur quelles apps ?",
@@ -328,24 +264,9 @@ export const FAQ = [
       "Ils voient un pin GPS normal, mis à jour en temps réel — le même signal que ton tel enverrait s'il était vraiment sur place. Pas de screen, pas de montage.",
   },
   {
-    q: "Pourquoi un VPN ça suffit pas ?",
-    a:
-      "Un VPN cache ton IP, pas ta position. Les apps sociales checkent le capteur GPS du tel. Anyloc intervient pile là.",
-  },
-  {
-    q: "Windows dit « Faites attention » et je n'arrive pas à ouvrir Anyloc ?",
-    a:
-      "Normal : Windows et Chrome disent ça pour toute app qui n'est pas dans le Microsoft Store. En bas de Chrome, clique la flèche à droite du fichier → Conserver (pas Jeter). Puis Téléchargements → double-clic Anyloc-Setup. Si l'écran bleu « Windows a protégé votre ordinateur » apparaît : Plus d'infos → Exécuter quand même (pas OK). Si Anyloc est déjà dans la barre en bas à droite : clic droit → Quitter, sinon tu réouvres l'ancienne fenêtre sans le guide « 3 étapes ». Toujours bloqué : clic droit → Propriétés → case Débloquer.",
-  },
-  {
     q: "Ça passe sur iPhone et Android ?",
     a:
       "Oui. Sur Android : 3 étapes sur le tel. Sur iPhone : un Mac ou un PC une seule fois (limite Apple), puis tu gères ta loc depuis l'iPhone. Le renouvellement (~7 jours) se fait avec LocalDevVPN, sans rebrancher l'ordi.",
-  },
-  {
-    q: "Faut-il rebrancher le Mac tous les 7 jours ?",
-    a:
-      "Non. Installe LocalDevVPN sur ton iPhone, connecte le VPN en Wi-Fi, puis ouvre Anyloc. Le renouvellement se fait depuis ton tel. Le Mac ne sert qu'une seule fois, à la première installation.",
   },
   {
     q: "Faut jailbreaker ou bidouiller le tel ?",
@@ -356,45 +277,6 @@ export const FAQ = [
     q: "La loc reste active si je ferme l'app ?",
     a:
       "Sur Android, oui, même écran verrouillé. Avec le plan annuel sur iPhone, pareil. Sinon, la loc reste tant que la session Anyloc tourne.",
-  },
-];
-
-export const FEATURES = [
-  {
-    title: "Zéro limite géo",
-    description:
-      "Tape une ville, une adresse ou un spot précis et bouge ton pin en quelques secondes.",
-    icon: "MapPin",
-  },
-  {
-    title: "Multi-apps native",
-    description:
-      "Un réglage, toutes les apps impactées — réseaux sociaux, rencontres, jeux, tout passe par le même GPS.",
-    icon: "Smartphone",
-  },
-  {
-    title: "Trajets simulés",
-    description:
-      "Trace un parcours entre deux points, règle la vitesse et mets des pauses pour un déplacement crédible.",
-    icon: "Route",
-  },
-  {
-    title: "Spots enregistrés",
-    description:
-      "Garde tes destinations fav — Marbella, Ibiza, Miami — et reviens y en un tap.",
-    icon: "Bookmark",
-  },
-  {
-    title: "Version web incluse",
-    description:
-      "Étends aussi ta loc aux interfaces web de Snapchat et d'autres services connectés.",
-    icon: "Globe",
-  },
-  {
-    title: "Pilotage centralisé",
-    description:
-      "Gère ton GPS depuis ton tel, ton Mac ou ton PC — un compte, tous tes appareils.",
-    icon: "Monitor",
   },
 ];
 
