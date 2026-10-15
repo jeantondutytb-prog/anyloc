@@ -50,6 +50,9 @@ UdidOption = Annotated[Optional[str], typer.Option("--udid", help="Target device
 NO_DEVICE_MESSAGE = (
     "AnylocNoDevice: iPhone not found over USB nor on this Wi-Fi network."
 )
+NOT_PAIRED_MESSAGE = (
+    "AnylocWifiNotPaired: no USB iPhone and no Wi-Fi pairing on this computer."
+)
 DDI_FAILED_MESSAGE = "AnylocDdiFailed: could not mount the Developer Disk Image."
 
 
@@ -76,7 +79,7 @@ async def location_simulation(udid: Optional[str]):
     serial = await _usb_serial(udid)
     if serial is None:
         if not any(True for _ in iter_remote_paired_identifiers()):
-            raise ConnectionError(NO_DEVICE_MESSAGE)
+            raise ConnectionError(NOT_PAIRED_MESSAGE)
         # pymobiledevice3 10.10.3 has no public hook to pick the RemotePairing
         # provider; the version is pinned in src/python-setup.js.
         userspace_tunnel._create_no_root_tunnel_provider = _wifi_tunnel_provider
@@ -105,9 +108,14 @@ async def location_simulation(udid: Optional[str]):
 async def ensure_developer_image(provider) -> bool:
     """Mount the Developer Disk Image if needed; True when it was mounted now."""
     personalized = Version(provider.product_version) >= Version("17.0")
-    mounter = (PersonalizedImageMounter if personalized else DeveloperDiskImageMounter)(provider)
-    if await mounter.is_image_mounted(mounter.IMAGE_TYPE):
-        return False
+    # The iPhone serves one image-mounter client at a time: this one must be
+    # closed before auto_mount opens its own, or that one waits forever and the
+    # iPhone stays at its real position after every reboot.
+    async with (PersonalizedImageMounter if personalized else DeveloperDiskImageMounter)(
+        provider
+    ) as mounter:
+        if await mounter.is_image_mounted(mounter.IMAGE_TYPE):
+            return False
     try:
         # Downloads the image once (cached in ~/.pymobiledevice3), then Apple
         # signs it for this iPhone: needs internet the first time.
