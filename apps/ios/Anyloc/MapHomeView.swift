@@ -49,7 +49,14 @@ struct MapHomeView: View {
             }
             .padding(.horizontal, 14)
             .padding(.top, 6)
+
+            if let showcase = vm.showcase {
+                TeleportShowcaseView(showcase: showcase)
+                    .transition(.opacity)
+                    .zIndex(1)
+            }
         }
+        .animation(.easeInOut(duration: 0.7), value: vm.showcase == nil)
         // The keyboard slides over the panel instead of pushing the whole screen up.
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .onGeometryChange(for: CGFloat.self, of: { $0.safeAreaInsets.bottom }) { bottomInset = $0 }
@@ -576,6 +583,8 @@ final class MapHomeViewModel: ObservableObject {
     /// Set while the teleport animation plays: a dot flies from the old position to the new one.
     @Published private(set) var flight: TeleportFlight?
     @Published private(set) var banner: TeleportBanner.State?
+    /// Branded full-screen loading, only in filming mode.
+    @Published private(set) var showcase: TeleportShowcase?
     /// Where the map was last left, so the flight can take off from the current view.
     var lastCamera: MapCamera?
     @Published private(set) var status: Status?
@@ -627,20 +636,30 @@ final class MapHomeViewModel: ObservableObject {
         isApplying = true
         let apply = Task { try await self.apply(p) }
 
-        banner = .flying(p.name)
-        if let origin = flightOrigin(to: p.coord) {
-            await fly(from: origin, to: p.coord)
+        // In filming mode the branded card covers the wait; the flight then plays
+        // only if the position was actually applied.
+        let filming = FilmingMode.isOn
+        let showFlight = filming ? await playShowcase(p, until: apply) : true
+        if showFlight, filming {
+            await land(on: p.coord)
+        } else if showFlight {
+            banner = .flying(p.name)
+            if let origin = flightOrigin(to: p.coord) {
+                await fly(from: origin, to: p.coord)
+            }
         }
         let result = await apply.result
-        let flew = flight != nil
+        let flew = flight != nil || (filming && showFlight)
         flight = nil
 
         switch result {
         case .success:
             activeCoord = p.coord
             if !flew { focus(p.coord) }
-            banner = .arrived(p.name)
             isApplying = false
+            // Filming mode: the branded card already said "Tu es à …".
+            guard !filming else { return }
+            banner = .arrived(p.name)
             try? await Task.sleep(nanoseconds: 2_400_000_000)
             if banner == .arrived(p.name) { banner = nil }
         case .failure(let error):
@@ -648,6 +667,51 @@ final class MapHomeViewModel: ObservableObject {
             banner = nil
             isApplying = false
             show(error.localizedDescription, isError: true)
+        }
+    }
+
+    /// Shows the branded card for at least ~4 s (so it reads on camera), until the
+    /// position is applied. Returns whether it succeeded.
+    private func playShowcase(_ p: SelectedPosition, until apply: Task<Void, Error>) async -> Bool {
+        let start = Date()
+        showcase = TeleportShowcase(destination: p.name)
+        // Warm the tiles of the landing shot while the card hides the map.
+        Task {
+            await Self.prefetchTiles(at: p.coord, distance: Self.landingAltitude, pitch: 0)
+            await Self.prefetchTiles(at: p.coord, distance: 1600, pitch: 50)
+        }
+        try? await Task.sleep(nanoseconds: 2_200_000_000)
+        showcase?.step = .sending
+        let ok = (try? await apply.value) != nil
+        let remaining = 4.2 - Date().timeIntervalSince(start)
+        if remaining > 0 { try? await Task.sleep(nanoseconds: UInt64(remaining * 1_000_000_000)) }
+        if ok {
+            showcase?.step = .done
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+            try? await Task.sleep(nanoseconds: 1_600_000_000)
+            // Behind the opaque card: put the camera high above the destination,
+            // so the card fades straight into the descent.
+            camera = .camera(MapCamera(centerCoordinate: p.coord.cl, distance: Self.landingAltitude,
+                                       heading: 0, pitch: 0))
+        }
+        showcase = nil
+        return ok
+    }
+
+    private static let landingAltitude = 40_000.0
+
+    /// Filming mode's camera move: one smooth descent from straight above onto the
+    /// pin, tilting as it lands. No detour via the previous position.
+    private func land(on dest: Coord) async {
+        guard !UIAccessibility.isReduceMotionEnabled else { return focus(dest) }
+        let duration = 3.2, start = Date()
+        while true {
+            let t = min(Date().timeIntervalSince(start) / duration, 1)
+            let k = t < 0.5 ? 4 * t * t * t : 1 - pow(-2 * t + 2, 3) / 2
+            let altitude = exp(log(Self.landingAltitude) + (log(1600.0) - log(Self.landingAltitude)) * k)
+            camera = .camera(MapCamera(centerCoordinate: dest.cl, distance: altitude, heading: 0, pitch: 50 * k * k))
+            if t >= 1 { break }
+            try? await Task.sleep(nanoseconds: 16_000_000)
         }
     }
 
