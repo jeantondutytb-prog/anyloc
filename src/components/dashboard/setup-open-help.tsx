@@ -66,39 +66,53 @@ function MacGatekeeperFix() {
   return (
     <details className="group mt-3 rounded-xl border border-amber-200 bg-amber-50">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-semibold text-amber-900 [&::-webkit-details-marker]:hidden">
-        <span>macOS bloque l&apos;app ?</span>
+        <span>Ton Mac refuse d&apos;ouvrir Anyloc ?</span>
         <ChevronDown className="h-4 w-4 shrink-0 text-amber-500 transition-transform group-open:rotate-180" />
       </summary>
       <div className="border-t border-amber-200 px-4 py-3 text-sm text-amber-900/90">
-        <p>
-          C&apos;est normal — macOS bloque les apps hors App Store. Voilà
-          comment débloquer :
-        </p>
+        <p>C&apos;est normal, ça se règle en 1 minute :</p>
         <ol className="mt-2 list-decimal space-y-2 pl-5">
           <li>
-            Clique <strong>Terminé</strong> sur le message d&apos;erreur
+            Clique <strong>Terminé</strong> sur le message
           </li>
           <li>
-            Ouvre{" "}
-            <strong>
-              Réglages Système → Confidentialité et sécurité
-            </strong>
+            Clique sur la pomme en haut à gauche →{" "}
+            <strong>Réglages Système</strong>
           </li>
           <li>
-            Scrolle en bas — tu verras « Anyloc a été bloqué ».
-            Clique{" "}
-            <strong>Ouvrir quand même</strong>
+            À gauche, clique <strong>Confidentialité et sécurité</strong>
           </li>
           <li>
-            Confirme avec ton mot de passe Mac → <strong>Ouvrir</strong>
+            Descends tout en bas → <strong>Ouvrir quand même</strong>
           </li>
+          <li>Tape le mot de passe de ton Mac</li>
         </ol>
         <p className="mt-3 text-xs text-amber-800/70">
-          Tu ne fais ça qu&apos;une seule fois. Après, Anyloc s&apos;ouvre
-          normalement.
+          Tu ne le fais qu&apos;une fois.
         </p>
       </div>
     </details>
+  );
+}
+
+export function MacOpenHelp() {
+  return (
+    <>
+      <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-zinc-700">
+        <li>
+          Ouvre le fichier que tu viens de télécharger (en haut ou en bas de
+          ton navigateur)
+        </li>
+        <li>
+          Une fenêtre s&apos;ouvre : glisse l&apos;icône{" "}
+          <strong>Anyloc</strong> sur le dossier <strong>Applications</strong>
+        </li>
+        <li>
+          Ouvre <strong>Anyloc</strong> dans tes Applications
+        </li>
+      </ol>
+      <MacGatekeeperFix />
+    </>
   );
 }
 
@@ -158,26 +172,7 @@ export function SetupOpenHelp({
       </div>
 
       {desktopOs === "mac" ? (
-        <>
-          <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-zinc-700">
-            <li>
-              Ouvre <strong>Téléchargements</strong> (icône en bas, ou Finder)
-            </li>
-            <li>
-              Double-clique <strong>Anyloc.dmg</strong> — une fenêtre
-              s&apos;ouvre avec l&apos;icône Anyloc
-            </li>
-            <li>
-              Glisse <strong>Anyloc</strong> sur le dossier{" "}
-              <strong>Applications</strong>
-            </li>
-            <li>
-              Va dans Applications → <strong>clic droit</strong> sur Anyloc →{" "}
-              <strong>Ouvrir</strong> → confirme <strong>Ouvrir</strong>
-            </li>
-          </ol>
-          <MacGatekeeperFix />
-        </>
+        <MacOpenHelp />
       ) : (
         <div className="mt-3">
           <WindowsOpenHelp

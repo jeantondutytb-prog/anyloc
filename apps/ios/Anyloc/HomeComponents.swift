@@ -268,6 +268,105 @@ struct TeleportBanner: View {
     }
 }
 
+/// "Mode tournage": when on, each teleport opens with a full-screen branded card so
+/// the anyloc.io name is big and readable in screen recordings for marketing videos.
+enum FilmingMode {
+    static let key = "anyloc.filmingMode"
+    static var isOn: Bool { UserDefaults.standard.bool(forKey: key) }
+}
+
+struct TeleportShowcase: Equatable {
+    enum Step: Equatable { case connecting, sending, done }
+    let destination: String
+    var step: Step = .connecting
+}
+
+/// Full-screen branded loading shown during a teleport in filming mode.
+struct TeleportShowcaseView: View {
+    let showcase: TeleportShowcase
+    @SwiftUI.State private var pulse = false
+    /// Staged entrance: logo, then the wordmark, then the status line.
+    @SwiftUI.State private var stage = 0
+
+    var body: some View {
+        ZStack {
+            // Opaque instead of a blur: fading a material over the live map stutters.
+            Theme.Dark.bg.opacity(0.95)
+            RadialGradient(colors: [Theme.accentStart.opacity(0.35), .clear],
+                           center: .center, startRadius: 10, endRadius: 320)
+
+            VStack(spacing: 28) {
+                ZStack {
+                    ForEach(0..<3) { i in
+                        Circle()
+                            .stroke(Theme.accentGradient, lineWidth: 2)
+                            .frame(width: 150, height: 150)
+                            .scaleEffect(pulse ? 2.1 : 0.8)
+                            .opacity(pulse ? 0 : 0.7)
+                            .animation(.easeOut(duration: 1.8).repeatForever(autoreverses: false)
+                                .delay(Double(i) * 0.6), value: pulse)
+                    }
+                    Image("Logo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 140, height: 140)
+                        .scaleEffect(pulse ? 1.06 : 0.96)
+                        .animation(.easeInOut(duration: 0.9).repeatForever(), value: pulse)
+                        .shadow(color: Theme.accentStart.opacity(0.6), radius: 24)
+                }
+                .frame(height: 220)
+                .scaleEffect(stage >= 1 ? 1 : 0.5)
+                .opacity(stage >= 1 ? 1 : 0)
+
+                (Text("anyloc").foregroundColor(.white)
+                    + Text(".io").foregroundStyle(Theme.accentGradient))
+                    .font(.system(size: 60, weight: .heavy, design: .rounded))
+                    .minimumScaleFactor(0.6)
+                    .lineLimit(1)
+                    .offset(y: stage >= 2 ? 0 : 24)
+                    .opacity(stage >= 2 ? 1 : 0)
+
+                HStack(spacing: 10) {
+                    if showcase.step == .done {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(Theme.accentGradient)
+                    } else {
+                        ProgressView().tint(Theme.Dark.accent)
+                    }
+                    Text(stepText)
+                        .contentTransition(.opacity)
+                }
+                .font(.system(size: 19, weight: .semibold))
+                .foregroundColor(Theme.Dark.textSoft)
+                .lineLimit(1)
+                .padding(.horizontal, 20)
+                .frame(height: 50)
+                .background(Capsule().fill(Theme.Dark.panel))
+                .overlay(Capsule().stroke(Theme.Dark.accentLine, lineWidth: 1))
+                .animation(.easeInOut(duration: 0.25), value: showcase.step)
+                .offset(y: stage >= 3 ? 0 : 16)
+                .opacity(stage >= 3 ? 1 : 0)
+            }
+            .padding(.horizontal, 24)
+        }
+        .ignoresSafeArea()
+        .onAppear {
+            pulse = true
+            withAnimation(.spring(response: 0.7, dampingFraction: 0.7).delay(0.25)) { stage = 1 }
+            withAnimation(.easeOut(duration: 0.6).delay(0.75)) { stage = 2 }
+            withAnimation(.easeOut(duration: 0.5).delay(1.2)) { stage = 3 }
+        }
+    }
+
+    private var stepText: String {
+        switch showcase.step {
+        case .connecting: return "Connexion à l'iPhone…"
+        case .sending: return "Téléportation vers \(showcase.destination)…"
+        case .done: return "Tu es à \(showcase.destination)"
+        }
+    }
+}
+
 /// The destination pin, dropping in with a bounce when it appears.
 struct DroppingPin: View {
     @SwiftUI.State private var landed = false

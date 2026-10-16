@@ -345,6 +345,10 @@ function runCli(args, timeoutMs = 30000) {
 // ones customers actually hit to an instruction they can follow.
 const PMD3_ERROR_HINTS = [
   [
+    /AnylocWifiNotPaired/,
+    "Cet iPhone n'est pas encore relié en Wi-Fi à cet ordinateur. Branche-le une fois en USB et déverrouille-le : Anyloc le relie tout seul, ensuite tu pourras le débrancher. Sur Windows, installe d'abord Apple Devices depuis le Microsoft Store.",
+  ],
+  [
     /AnylocNoDevice/,
     "iPhone introuvable. Branche-le en USB, ou mets-le sur le même Wi-Fi que cet ordinateur et déverrouille-le.",
   ],
@@ -359,6 +363,12 @@ const PMD3_ERROR_HINTS = [
   [
     /PairingDialogResponsePending|NotPairedError|UserDeniedPairing|InvalidHostID|PairingError/i,
     "L'iPhone ne fait pas encore confiance à cet ordinateur. Déverrouille-le et appuie sur « Faire confiance », puis réessaie.",
+  ],
+  // The connection opened, then the iPhone dropped it (screen locked, Wi-Fi
+  // lost). Checked before the tunnel hint: these tracebacks mention the tunnel.
+  [
+    /ConnectionTerminatedError|ConnectionResetError|ConnectionAbortedError|BrokenPipeError|Connection closed/,
+    "L'iPhone a coupé la connexion. Garde-le déverrouillé, écran allumé, pendant que la position s'applique, puis réessaie. En Wi-Fi, rapproche-le de la box ou branche-le en USB.",
   ],
   [
     /NoDeviceConnected|DeviceNotFound|ConnectionFailedToUsbmuxd|No device/i,

@@ -12,9 +12,12 @@ VENDOR_DIR="$IOS_DIR/Vendor"
 OUT="$VENDOR_DIR/IDevice.xcframework"
 IDEVICE_REPO="https://github.com/jkcoxson/idevice.git"
 IDEVICE_COMMIT="d32c8189c51c2789496b0768039419c3705498c3"
-FEATURES="ring,tcp,tunnel_tcp_stack,dvt,location_simulation,mobile_image_mounter,tss"
+# remote_pairing: iOS 26.4+ drops lockdown TLS over LocalDevVPN, so the app
+# opens its tunnel with RemotePairing instead (tunnel_create_rppairing).
+FEATURES="ring,tcp,tunnel_tcp_stack,dvt,location_simulation,mobile_image_mounter,tss,remote_pairing"
+STAMP="$IDEVICE_COMMIT $FEATURES"
 
-if [[ -d "$OUT" && -f "$VENDOR_DIR/.idevice-commit" && "$(cat "$VENDOR_DIR/.idevice-commit")" == "$IDEVICE_COMMIT" ]]; then
+if [[ -d "$OUT" && -f "$VENDOR_DIR/.idevice-commit" && "$(cat "$VENDOR_DIR/.idevice-commit")" == "$STAMP" ]]; then
   echo "✓ idevice déjà compilé ($IDEVICE_COMMIT)"
   exit 0
 fi
@@ -54,5 +57,5 @@ xcodebuild -create-xcframework \
   -library "$SRC_DIR/target/aarch64-apple-ios/release/libidevice_ffi.a" -headers "$HEADERS" \
   -library "$SRC_DIR/target/aarch64-apple-ios-sim/release/libidevice_ffi.a" -headers "$HEADERS" \
   -output "$OUT" >/dev/null
-echo "$IDEVICE_COMMIT" > "$VENDOR_DIR/.idevice-commit"
+echo "$STAMP" > "$VENDOR_DIR/.idevice-commit"
 echo "✓ $OUT"

@@ -8,7 +8,8 @@
         "run",
         "dev"
       ],
-      "port": 3000
+      "port": 3000,
+      "autoPort": true
     },
     {
       "name": "legal-preview",
@@ -23,6 +24,34 @@
         "3100"
       ],
       "port": 3100
+    },
+    {
+      "name": "conversion-preview",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "/Users/jean/anyloc-conversion",
+        "run",
+        "dev",
+        "--",
+        "-p",
+        "3200"
+      ],
+      "port": 3200
+    },
+    {
+      "name": "hq-preview",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "/Users/jean/anyloc-hq",
+        "run",
+        "dev",
+        "--",
+        "-p",
+        "3300"
+      ],
+      "port": 3300
     }
   ]
 }

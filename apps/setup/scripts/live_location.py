@@ -50,6 +50,9 @@ UdidOption = Annotated[Optional[str], typer.Option("--udid", help="Target device
 NO_DEVICE_MESSAGE = (
     "AnylocNoDevice: iPhone not found over USB nor on this Wi-Fi network."
 )
+NOT_PAIRED_MESSAGE = (
+    "AnylocWifiNotPaired: no USB iPhone and no Wi-Fi pairing on this computer."
+)
 DDI_FAILED_MESSAGE = "AnylocDdiFailed: could not mount the Developer Disk Image."
 
 
@@ -76,7 +79,7 @@ async def location_simulation(udid: Optional[str]):
     serial = await _usb_serial(udid)
     if serial is None:
         if not any(True for _ in iter_remote_paired_identifiers()):
-            raise ConnectionError(NO_DEVICE_MESSAGE)
+            raise ConnectionError(NOT_PAIRED_MESSAGE)
         # pymobiledevice3 10.10.3 has no public hook to pick the RemotePairing
         # provider; the version is pinned in src/python-setup.js.
         userspace_tunnel._create_no_root_tunnel_provider = _wifi_tunnel_provider

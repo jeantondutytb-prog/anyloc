@@ -6,6 +6,7 @@ struct SettingsView: View {
     @ObservedObject private var subscription = SubscriptionService.shared
     @State private var showRenewal = false
     @State private var journalURL: URL?
+    @AppStorage(FilmingMode.key) private var filmingMode = false
 
     var body: some View {
         ZStack {
@@ -149,6 +150,26 @@ struct SettingsView: View {
                                 .padding(.horizontal, 12)
                                 .padding(.bottom, 12)
                             }
+                        }
+
+                        // Filming mode
+                        settingsSection("Vidéos") {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Toggle(isOn: $filmingMode) {
+                                    HStack(spacing: 10) {
+                                        Image(systemName: "video.fill")
+                                            .foregroundColor(Theme.accentSolid)
+                                        Text("Mode tournage")
+                                            .font(.subheadline)
+                                            .foregroundColor(Theme.text)
+                                    }
+                                }
+                                .tint(Theme.accentSolid)
+                                Text("Affiche un écran anyloc.io en plein écran à chaque téléportation, pour tes vidéos.")
+                                    .font(.caption2)
+                                    .foregroundColor(Theme.textDim)
+                            }
+                            .padding(12)
                         }
 
                         // App

@@ -18,7 +18,7 @@ import { OnboardingLink } from "@/components/onboarding/onboarding-link";
 
 export function Hero() {
   return (
-    <section data-track-section="hero" className="relative overflow-hidden pt-32 pb-20 sm:pt-40 sm:pb-28">
+    <section data-track-section="hero" className="relative overflow-hidden pt-20 pb-20 sm:pt-28 sm:pb-28">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute top-1/4 left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-pink-500/10 blur-[120px]" />
         <div className="absolute top-0 right-0 h-[300px] w-[400px] rounded-full bg-violet-500/10 blur-[100px]" />
