@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import { track } from "@/lib/analytics/track";
 import {
   ChevronDown,
+  ChevronRight,
   CircleCheck,
   CreditCard,
   Monitor,
@@ -290,7 +291,12 @@ export function AnyLocCheckoutPanel({
         onClick={() => openPaymentModal(source)}
         className="btn-gradient flex h-12 w-full items-center justify-center gap-2 rounded-full text-[15px] font-bold text-white transition hover:opacity-90 disabled:opacity-70"
       >
-        {copy.continueCta}
+        {recoveryOffer && selectedPlan.id === RECOVERY_OFFER_PLAN_ID
+          ? copy.continueCtaRecoveryOffer
+          : copy.continueCta(
+              selectedPlan.price.replace("€", " €"),
+              BILLING_PERIOD_LABELS[selectedPlan.id]
+            )}
       </button>
     );
   }
@@ -311,8 +317,15 @@ export function AnyLocCheckoutPanel({
         </p>
       ) : null}
 
-      <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2.5">
-        <ShieldCheck className="mt-px h-4 w-4 shrink-0 text-emerald-600" />
+      {/* The whole box opens the conditions: visitors tapped it expecting details. */}
+      <Link
+        href="/politique-de-remboursement"
+        target="_blank"
+        rel="noreferrer"
+        data-track="checkout_guarantee_conditions_clicked"
+        className="mb-4 flex items-center gap-2.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2.5 transition hover:bg-emerald-100/70 active:bg-emerald-100"
+      >
+        <ShieldCheck className="h-4 w-4 shrink-0 self-start mt-px text-emerald-600" />
         <div className="min-w-0 flex-1">
           <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-sm font-bold leading-tight text-emerald-900">
             {GUARANTEE.title}
@@ -321,19 +334,11 @@ export function AnyLocCheckoutPanel({
             </span>
           </p>
           <p className="mt-1 text-[13.5px] leading-snug text-emerald-900/75">
-            {GUARANTEE.summary}{" "}
-            <Link
-              href="/politique-de-remboursement"
-              target="_blank"
-              rel="noreferrer"
-              data-track="checkout_guarantee_conditions_clicked"
-              className="whitespace-nowrap text-[9.5px] font-semibold text-emerald-700 underline"
-            >
-              {copy.guaranteeConditionsToggle}
-            </Link>
+            {GUARANTEE.summary}
           </p>
         </div>
-      </div>
+        <ChevronRight className="h-4 w-4 shrink-0 text-emerald-600" />
+      </Link>
 
       {focusPayment ? (
         <div className="text-center">

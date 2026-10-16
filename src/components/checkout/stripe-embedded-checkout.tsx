@@ -7,10 +7,16 @@ import { loadStripe, type StripeEmbeddedCheckoutAnalyticsEventUnion } from "@str
 export function StripeEmbeddedCheckout({
   clientSecret,
   publishableKey,
+  onRendered,
+  onSubmitted,
   onSubmitFailed,
 }: {
   clientSecret: string;
   publishableKey: string;
+  /** Stripe has actually drawn its payment form on screen. */
+  onRendered?: () => void;
+  /** The customer hit "Payer", whatever the outcome. */
+  onSubmitted?: (paymentMethodType: string) => void;
   /** The customer hit "Payer" and the payment didn't go through (e.g. card declined). */
   onSubmitFailed?: () => void;
 }) {
@@ -19,19 +25,26 @@ export function StripeEmbeddedCheckout({
     [publishableKey]
   );
 
-  // Stripe ignores option changes after mount: keep the latest callback in a ref.
-  const onSubmitFailedRef = useRef(onSubmitFailed);
+  // Stripe ignores option changes after mount: keep the latest callbacks in a ref.
+  const callbacksRef = useRef({ onRendered, onSubmitted, onSubmitFailed });
   useEffect(() => {
-    onSubmitFailedRef.current = onSubmitFailed;
-  }, [onSubmitFailed]);
+    callbacksRef.current = { onRendered, onSubmitted, onSubmitFailed };
+  }, [onRendered, onSubmitted, onSubmitFailed]);
 
   const options = useMemo(
     () => ({
       clientSecret,
       onAnalyticsEvent: (event: StripeEmbeddedCheckoutAnalyticsEventUnion) => {
-        if (event.eventType !== "checkoutSubmitFailed") return;
-        if (event.details.failureReason !== "user_cancelled") {
-          onSubmitFailedRef.current?.();
+        const callbacks = callbacksRef.current;
+        if (event.eventType === "checkoutRendered") {
+          callbacks.onRendered?.();
+        } else if (event.eventType === "checkoutSubmitted") {
+          callbacks.onSubmitted?.(event.details.paymentMethodType);
+        } else if (
+          event.eventType === "checkoutSubmitFailed" &&
+          event.details.failureReason !== "user_cancelled"
+        ) {
+          callbacks.onSubmitFailed?.();
         }
       },
     }),
