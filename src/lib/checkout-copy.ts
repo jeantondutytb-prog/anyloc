@@ -18,7 +18,9 @@ export const CHECKOUT_COPY = {
   paymentProcessor: "Paiement sécurisé, encaissé par Stripe",
   popularBadge: "Le plus choisi",
   planDesktopOnly: "Sur PC et Mac",
-  continueCta: "Continuer",
+  /** The pay button shows what is actually charged, so the popup holds no surprise. */
+  continueCta: (amount: string, period: string) => `Débloquer · ${amount} pour ${period}`,
+  continueCtaRecoveryOffer: "Débloquer · 4,95 € le 1er mois",
   redirecting: "Redirection vers le paiement…",
   modalTitle: "Paiement",
   modalCancelAnytime: "Résiliable à tout moment, en 1 clic depuis ton espace.",

@@ -290,7 +290,12 @@ export function AnyLocCheckoutPanel({
         onClick={() => openPaymentModal(source)}
         className="btn-gradient flex h-12 w-full items-center justify-center gap-2 rounded-full text-[15px] font-bold text-white transition hover:opacity-90 disabled:opacity-70"
       >
-        {copy.continueCta}
+        {recoveryOffer && selectedPlan.id === RECOVERY_OFFER_PLAN_ID
+          ? copy.continueCtaRecoveryOffer
+          : copy.continueCta(
+              selectedPlan.price.replace("€", " €"),
+              BILLING_PERIOD_LABELS[selectedPlan.id]
+            )}
       </button>
     );
   }

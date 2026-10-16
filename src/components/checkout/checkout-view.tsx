@@ -68,14 +68,9 @@ export function CheckoutView({
       </div>
 
       <div className="relative border-b border-zinc-200 bg-logo-background/90 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-2 px-4 sm:h-16 sm:px-6">
-          <Logo nameClassName="text-base font-bold tracking-tight sm:text-lg" />
-          <Link
-            href="/"
-            className="text-sm font-medium text-zinc-600 transition hover:text-zinc-900"
-          >
-            Accueil
-          </Link>
+        {/* No way back to the landing from here: it was the main exit of the paywall. */}
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-center px-4 sm:h-16 sm:px-6">
+          <Logo href={null} nameClassName="text-base font-bold tracking-tight sm:text-lg" />
         </div>
       </div>
 
