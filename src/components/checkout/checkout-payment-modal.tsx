@@ -44,10 +44,13 @@ export function CheckoutPaymentModal({
   const [attempt, setAttempt] = useState(0);
   const [paymentFailed, setPaymentFailed] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
+  // When this attempt to load the form started, to time Stripe's real render.
+  const loadStartedAtRef = useRef(0);
 
   useEffect(() => {
     const controller = new AbortController();
     const startedAt = performance.now();
+    loadStartedAtRef.current = startedAt;
 
     requestCheckoutSession("/api/stripe/embedded-checkout", plan.id, controller.signal)
       .then((data) => {
@@ -95,6 +98,20 @@ export function CheckoutPaymentModal({
       window.removeEventListener("keydown", handleKey);
     };
   }, [onClose]);
+
+  // checkout_payment_form_ready only means the session came back from the
+  // server; this one means Stripe actually drew its form on screen.
+  function handleRendered() {
+    track("checkout_stripe_form_rendered", {
+      plan: plan.id,
+      load_ms: Math.round(performance.now() - loadStartedAtRef.current),
+      retry: attempt > 0,
+    });
+  }
+
+  function handleSubmitted(paymentMethodType: string) {
+    track("checkout_pay_submitted", { plan: plan.id, payment_method: paymentMethodType });
+  }
 
   function handleSubmitFailed() {
     track("checkout_payment_failed", { plan: plan.id });
@@ -180,6 +197,8 @@ export function CheckoutPaymentModal({
               <StripeEmbeddedCheckout
                 clientSecret={clientSecret}
                 publishableKey={stripePublishableKey}
+                onRendered={handleRendered}
+                onSubmitted={handleSubmitted}
                 onSubmitFailed={handleSubmitFailed}
               />
             ) : error ? (
