@@ -49,7 +49,7 @@ export function CheckoutDownsellSheet({
         className="w-full max-w-md animate-[checkoutModalIn_.25s_ease-out] rounded-3xl bg-white p-5 text-center shadow-2xl"
       >
         <p className="text-lg font-bold text-zinc-900">{copy.downsellTitle(planPrice)}</p>
-        <p className="mt-1.5 text-sm text-zinc-600">{copy.downsellLead(offerPrice)}</p>
+        <p className="mt-1.5 text-sm text-zinc-600">{copy.downsellLead(offerPlan.name, offerPrice)}</p>
         {plan.mobileApp && !offerPlan.mobileApp ? (
           <p className="mt-2 text-xs text-zinc-500">
             <Monitor className="mr-1 inline h-3.5 w-3.5 -translate-y-px" />

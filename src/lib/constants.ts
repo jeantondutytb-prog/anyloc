@@ -168,7 +168,9 @@ export const LEGACY_PLAN_LABELS: Record<string, string> = {
 export const PLANS = [
   {
     id: "monthly",
+    grid: "v1",
     mobileApp: false,
+    perk: "Sur PC et Mac",
     name: "Mensuel",
     price: "9,90€",
     period: "/mois",
@@ -186,7 +188,9 @@ export const PLANS = [
   },
   {
     id: "6months",
+    grid: "v1",
     mobileApp: false,
+    perk: "Sur PC et Mac",
     name: "6 mois",
     price: "34,90€",
     period: "/6 mois",
@@ -204,7 +208,9 @@ export const PLANS = [
   },
   {
     id: "annual",
+    grid: "v1",
     mobileApp: true,
+    perk: "App mobile incluse",
     name: "Annuel",
     price: "49,00€",
     period: "/an",
@@ -220,6 +226,68 @@ export const PLANS = [
     ctaLabel: CHECKOUT_CTA_LABEL,
     stripePriceId: process.env.STRIPE_PRICE_ANNUAL,
   },
+  // Price grid tested against the plans above (see lib/pricing-experiment).
+  {
+    id: "month_v2",
+    grid: "v2",
+    mobileApp: false,
+    perk: "Sur PC et Mac",
+    name: "1 mois",
+    price: "19€",
+    period: "/mois",
+    perDay: "0,63",
+    perDayLabel: "€/jour",
+    billedNote:
+      "Facturé 19 € chaque mois. Résiliable à tout moment — accès conservé jusqu'à la fin du mois payé.",
+    compare: "Pour tester sans t'engager",
+    description: "Sans engagement, tu paies mois par mois.",
+    savings: undefined,
+    features: PLAN_VALUE_STACK,
+    popular: false,
+    ctaLabel: CHECKOUT_CTA_LABEL,
+    stripePriceId: process.env.STRIPE_PRICE_MONTH_V2,
+  },
+  {
+    id: "quarter_v2",
+    grid: "v2",
+    mobileApp: false,
+    perk: "PC et Mac + prix bloqué",
+    name: "3 mois",
+    price: "29€",
+    period: "/3 mois",
+    perDay: "≈ 0,32",
+    perDayLabel: "€/jour",
+    billedNote:
+      "Facturé 29 € tous les 3 mois, au même prix tant que tu restes abonné. Résiliable à tout moment — accès conservé jusqu'à la fin de la période payée.",
+    compare: "Soit 9,67 € par mois",
+    description: "Le bon choix pour l'utiliser vraiment.",
+    savings: "Tu économises 28 € vs 3 × 1 mois",
+    features: PLAN_VALUE_STACK,
+    popular: true,
+    ctaLabel: CHECKOUT_CTA_LABEL,
+    stripePriceId: process.env.STRIPE_PRICE_QUARTER_V2,
+  },
+  {
+    id: "year_v2",
+    grid: "v2",
+    mobileApp: true,
+    perk: "PC et Mac + app iPhone",
+    name: "1 an",
+    price: "79€",
+    period: "/an",
+    perDay: "≈ 0,22",
+    perDayLabel: "€/jour",
+    billedNote:
+      "Facturé 79 € une fois par an, au même prix tant que tu restes abonné.",
+    compare: "Soit 6,58 € par mois",
+    badge: "-65 %",
+    description: "Tout Anyloc, avec l'app iPhone sans ordinateur.",
+    savings: "Tu économises 149 € vs 12 × 1 mois",
+    features: PLAN_VALUE_STACK,
+    popular: false,
+    ctaLabel: CHECKOUT_CTA_LABEL,
+    stripePriceId: process.env.STRIPE_PRICE_YEAR_V2,
+  },
 ];
 
 export type Plan = (typeof PLANS)[number];
@@ -231,6 +299,22 @@ export type Plan = (typeof PLANS)[number];
 export const DEFAULT_PLAN_ID = "annual";
 
 export const PLAN_IDS = PLANS.map((plan) => plan.id);
+
+export type PricingGrid = Plan["grid"];
+
+export function getPlanGrid(planId: string): PricingGrid {
+  return PLANS.find((plan) => plan.id === planId)?.grid ?? "v1";
+}
+
+/** The plans shown side by side: those of one price grid, shortest first. */
+export function getGridPlans(grid: PricingGrid) {
+  return PLANS.filter((plan) => plan.grid === grid);
+}
+
+/** Shortest plan of a plan's grid: the one offered when a longer one is refused. */
+export function getGridEntryPlanId(planId: string) {
+  return getGridPlans(getPlanGrid(planId))[0].id;
+}
 
 export function isValidPlanId(plan: string | undefined) {
   return plan !== undefined && PLAN_IDS.includes(plan as (typeof PLAN_IDS)[number]);

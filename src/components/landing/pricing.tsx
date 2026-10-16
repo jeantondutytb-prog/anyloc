@@ -1,18 +1,36 @@
+"use client";
+
+import { useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   CHECKOUT_CTA_SUBLINE,
   CHECKOUT_SELECT_SUBLINE,
+  getGridPlans,
   getOnboardingUrl,
-  PLANS,
 } from "@/lib/constants";
+import { readPricingVariantCookie } from "@/lib/pricing-experiment";
 import { PaywallValueStack } from "@/components/pricing/paywall-value-stack";
 import { PlanPrice } from "@/components/pricing/plan-price";
 import { RefundPolicyNotice } from "@/components/pricing/refund-policy-notice";
 import { OnboardingLink } from "@/components/onboarding/onboarding-link";
 
+function subscribeToNothing() {
+  return () => {};
+}
+
 export function Pricing() {
+  // The price grid of this visitor's pricing A/B variant (cookie set by the
+  // proxy). Rendered with the current grid on the server: the section is far
+  // below the fold, so the swap after hydration isn't seen.
+  const variant = useSyncExternalStore(
+    subscribeToNothing,
+    readPricingVariantCookie,
+    () => "control" as const
+  );
+  const plans = getGridPlans(variant === "grid_v2" ? "v2" : "v1");
+
   return (
     <section id="pricing" data-track-section="pricing" className="py-24 sm:py-32">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
@@ -27,7 +45,7 @@ export function Pricing() {
         </div>
 
         <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {PLANS.map((plan) => (
+          {plans.map((plan) => (
             <Card
               key={plan.id}
               className={`relative flex flex-col p-6 ${

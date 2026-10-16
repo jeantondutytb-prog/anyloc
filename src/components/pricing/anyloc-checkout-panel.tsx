@@ -17,15 +17,16 @@ import { AuthDivider } from "@/components/auth/auth-divider";
 import { GoogleAuthLink } from "@/components/auth/google-auth-link";
 import { CheckoutDownsellSheet } from "@/components/checkout/checkout-downsell-sheet";
 import { CheckoutPaymentModal } from "@/components/checkout/checkout-payment-modal";
-import {
-  CHECKOUT_COPY,
-  CHECKOUT_PLAN_IDS,
-  CHECKOUT_REVIEWS,
-  getCheckoutHeadline,
-} from "@/lib/checkout-copy";
+import { CHECKOUT_COPY, CHECKOUT_REVIEWS, getCheckoutHeadline } from "@/lib/checkout-copy";
 import { RECOVERY_OFFER_PLAN_ID } from "@/lib/checkout-recovery-plan";
 import { isNetworkError, requestCheckoutSession } from "@/lib/checkout-request";
-import { GUARANTEE, PLAN_VALUE_STACK, PLANS } from "@/lib/constants";
+import {
+  getGridEntryPlanId,
+  getGridPlans,
+  getPlanGrid,
+  GUARANTEE,
+  PLAN_VALUE_STACK,
+} from "@/lib/constants";
 import type { OnboardingDestination } from "@/lib/onboarding-destinations";
 import { cn } from "@/lib/utils";
 
@@ -57,16 +58,10 @@ const BILLING_PERIOD_LABELS: Record<string, string> = {
   monthly: "1 mois",
   "6months": "6 mois",
   annual: "12 mois",
+  month_v2: "1 mois",
+  quarter_v2: "3 mois",
+  year_v2: "12 mois",
 };
-
-const DOWNGRADE_PLAN_ID = "monthly";
-
-function getCheckoutPlans() {
-  return CHECKOUT_PLAN_IDS.map((id) => {
-    const plan = PLANS.find((entry) => entry.id === id)!;
-    return plan;
-  });
-}
 
 export function AnyLocCheckoutPanel({
   selectedPlanId,
@@ -94,13 +89,15 @@ export function AnyLocCheckoutPanel({
   onShowAllPlans?: () => void;
 }) {
   const copy = CHECKOUT_COPY;
-  const checkoutPlans = getCheckoutPlans();
+  // The plans of the selected plan's price grid (see lib/pricing-experiment).
+  const checkoutPlans = getGridPlans(getPlanGrid(selectedPlanId));
   const selectedPlan =
     checkoutPlans.find((plan) => plan.id === selectedPlanId) ?? checkoutPlans[0];
-  // Card declined on a pricier plan: offer the monthly one in the popup.
+  // Card declined (or popup closed) on a pricier plan: offer the shortest one.
+  const entryPlanId = getGridEntryPlanId(selectedPlan.id);
   const downgradePlan =
-    selectedPlan.id !== DOWNGRADE_PLAN_ID
-      ? checkoutPlans.find((plan) => plan.id === DOWNGRADE_PLAN_ID)
+    selectedPlan.id !== entryPlanId
+      ? checkoutPlans.find((plan) => plan.id === entryPlanId)
       : undefined;
   const [redirecting, setRedirecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -121,10 +118,8 @@ export function AnyLocCheckoutPanel({
   const [downsellOpen, setDownsellOpen] = useState(false);
   const downsellShownRef = useRef(false);
   const closePaymentModal = useCallback(() => {
-    const downsellPlanId =
-      selectedPlanId !== DOWNGRADE_PLAN_ID && CHECKOUT_PLAN_IDS.includes(DOWNGRADE_PLAN_ID)
-        ? DOWNGRADE_PLAN_ID
-        : undefined;
+    const entryId = getGridEntryPlanId(selectedPlanId);
+    const downsellPlanId = selectedPlanId !== entryId ? entryId : undefined;
     track("checkout_modal_closed", { plan: selectedPlanId });
     requestRef.current?.abort();
     setRedirecting(false);
@@ -269,7 +264,7 @@ export function AnyLocCheckoutPanel({
                 ) : (
                   <Monitor className="h-3.5 w-3.5" />
                 )}
-                {plan.mobileApp ? copy.planMobileApp : copy.planDesktopOnly}
+                {plan.perk}
               </span>
             </span>
             <span className="shrink-0 text-right">

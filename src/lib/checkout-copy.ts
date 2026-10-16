@@ -1,4 +1,4 @@
-import { PAYWALL_TESTIMONIALS, PLAN_IDS, PLAN_VALUE_STACK } from "@/lib/constants";
+import { PAYWALL_TESTIMONIALS, PLAN_VALUE_STACK } from "@/lib/constants";
 
 export const CHECKOUT_REVIEWS = PAYWALL_TESTIMONIALS.map((testimonial) => ({
   name: testimonial.author,
@@ -17,7 +17,6 @@ export const CHECKOUT_COPY = {
   resumeTitle: "Reprends là où tu en étais",
   paymentProcessor: "Paiement sécurisé, encaissé par Stripe",
   popularBadge: "Le plus choisi",
-  planMobileApp: "App mobile incluse",
   planDesktopOnly: "Sur PC et Mac",
   continueCta: "Continuer",
   redirecting: "Redirection vers le paiement…",
@@ -28,13 +27,13 @@ export const CHECKOUT_COPY = {
   payOpening: "On prépare ton paiement…",
   retryCta: "Réessayer",
   downgradeTitle: (price: string) => `Paiement de ${price} refusé ?`,
-  downgradeLead: (price: string) =>
-    `Ta banque a peut-être bloqué le montant. Commence avec le Mensuel à ${price}, sans engagement.`,
-  downgradeNoMobileApp: "L'app iPhone reste réservée à l'Annuel.",
-  downgradeCta: (price: string) => `Passer au Mensuel à ${price}`,
+  downgradeLead: (name: string, price: string) =>
+    `Ta banque a peut-être bloqué le montant. Commence avec la formule ${name} à ${price}, sans engagement.`,
+  downgradeNoMobileApp: "L'app iPhone est réservée à la formule 1 an.",
+  downgradeCta: (name: string, price: string) => `Passer à la formule ${name} à ${price}`,
   downsellTitle: (price: string) => `Pas prêt à mettre ${price} d'un coup ?`,
-  downsellLead: (price: string) =>
-    `Commence avec le Mensuel à ${price}, sans engagement. Tu pourras passer à l'Annuel plus tard.`,
+  downsellLead: (name: string, price: string) =>
+    `Commence avec la formule ${name} à ${price}, sans engagement. Tu pourras passer sur plus long ensuite.`,
   downsellCta: (price: string) => `Commencer à ${price}`,
   downsellDismiss: "Non merci",
   faq: [
@@ -85,8 +84,6 @@ export function getCheckoutHeadline(city?: string) {
 
   return { before: "Active", highlight: "Anyloc" };
 }
-
-export const CHECKOUT_PLAN_IDS = PLAN_IDS;
 
 export const CHECKOUT_BASE_PERKS = PLAN_VALUE_STACK;
 

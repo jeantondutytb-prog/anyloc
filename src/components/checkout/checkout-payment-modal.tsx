@@ -160,7 +160,7 @@ export function CheckoutPaymentModal({
                 {copy.downgradeTitle(plan.price.replace("€", " €"))}
               </p>
               <p className="mt-0.5 text-xs text-zinc-600">
-                {copy.downgradeLead(downgradePlan.price.replace("€", " €"))}
+                {copy.downgradeLead(downgradePlan.name, downgradePlan.price.replace("€", " €"))}
                 {plan.mobileApp && !downgradePlan.mobileApp ? ` ${copy.downgradeNoMobileApp}` : null}
               </p>
               <button
@@ -170,7 +170,7 @@ export function CheckoutPaymentModal({
                 data-track-plan={plan.id}
                 className="btn-gradient mt-2 w-full rounded-full px-4 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
               >
-                {copy.downgradeCta(downgradePlan.price.replace("€", " €"))}
+                {copy.downgradeCta(downgradePlan.name, downgradePlan.price.replace("€", " €"))}
               </button>
             </div>
           ) : null}
