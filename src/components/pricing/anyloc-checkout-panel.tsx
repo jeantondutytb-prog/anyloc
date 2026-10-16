@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { AuthDivider } from "@/components/auth/auth-divider";
 import { GoogleAuthLink } from "@/components/auth/google-auth-link";
+import { CheckoutDownsellSheet } from "@/components/checkout/checkout-downsell-sheet";
 import { CheckoutPaymentModal } from "@/components/checkout/checkout-payment-modal";
 import {
   CHECKOUT_COPY,
@@ -116,12 +117,38 @@ export function AnyLocCheckoutPanel({
     setModalOpen(true);
   }
 
+  // Offered once per visit, when the popup of a pricier plan is closed.
+  const [downsellOpen, setDownsellOpen] = useState(false);
+  const downsellShownRef = useRef(false);
   const closePaymentModal = useCallback(() => {
+    const downsellPlanId =
+      selectedPlanId !== DOWNGRADE_PLAN_ID && CHECKOUT_PLAN_IDS.includes(DOWNGRADE_PLAN_ID)
+        ? DOWNGRADE_PLAN_ID
+        : undefined;
     track("checkout_modal_closed", { plan: selectedPlanId });
     requestRef.current?.abort();
     setRedirecting(false);
     setModalOpen(false);
+    if (downsellPlanId && !downsellShownRef.current) {
+      downsellShownRef.current = true;
+      track("checkout_downsell_shown", { plan: selectedPlanId, offer_plan: downsellPlanId });
+      setDownsellOpen(true);
+    }
   }, [selectedPlanId]);
+
+  const dismissDownsell = useCallback(() => {
+    track("checkout_downsell_dismissed", { plan: selectedPlanId });
+    setDownsellOpen(false);
+  }, [selectedPlanId]);
+
+  function acceptDownsell() {
+    if (!downgradePlan) return;
+    track("checkout_downsell_accepted", { plan: selectedPlanId, offer_plan: downgradePlan.id });
+    track("checkout_continue_clicked", { plan: downgradePlan.id, source: "downsell" });
+    setDownsellOpen(false);
+    onPlanChange(downgradePlan.id);
+    setModalOpen(true);
+  }
 
   /** Fallback from the popup: Stripe-hosted payment page for the selected plan. */
   async function goToHostedPayment() {
@@ -463,6 +490,15 @@ export function AnyLocCheckoutPanel({
           hostedError={error}
           onHostedFallback={() => void goToHostedPayment()}
           onClose={closePaymentModal}
+        />
+      ) : null}
+
+      {downsellOpen && downgradePlan && hydrated ? (
+        <CheckoutDownsellSheet
+          plan={selectedPlan}
+          offerPlan={downgradePlan}
+          onAccept={acceptDownsell}
+          onDismiss={dismissDownsell}
         />
       ) : null}
 

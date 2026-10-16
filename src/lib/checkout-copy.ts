@@ -32,6 +32,11 @@ export const CHECKOUT_COPY = {
     `Ta banque a peut-être bloqué le montant. Commence avec le Mensuel à ${price}, sans engagement.`,
   downgradeNoMobileApp: "L'app iPhone reste réservée à l'Annuel.",
   downgradeCta: (price: string) => `Passer au Mensuel à ${price}`,
+  downsellTitle: (price: string) => `Pas prêt à mettre ${price} d'un coup ?`,
+  downsellLead: (price: string) =>
+    `Commence avec le Mensuel à ${price}, sans engagement. Tu pourras passer à l'Annuel plus tard.`,
+  downsellCta: (price: string) => `Commencer à ${price}`,
+  downsellDismiss: "Non merci",
   faq: [
     {
       q: "Ma carte sera débitée tout de suite ?",
