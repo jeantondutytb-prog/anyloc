@@ -28,7 +28,7 @@ export type RetentionOffer =
   | { eligible: true; kind: keyof typeof COUPONS; label: string };
 
 function offerForPlan(planId: string | null): RetentionOffer & { eligible: true } {
-  return planId === "monthly"
+  return planId === "monthly" || planId === "month_v2"
     ? { eligible: true, kind: "repeating", label: "-50 % sur tes 3 prochains mois" }
     : { eligible: true, kind: "once", label: "-50 % sur ton prochain renouvellement" };
 }

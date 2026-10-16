@@ -3,7 +3,7 @@ import type { SubscriptionAccess } from "@/lib/subscription";
 export const IOS_ADHOC_BUNDLE_ID = "io.anyloc.app";
 
 /** Plans qui incluent l'app iPhone (la « formule 1 an »). */
-export const IOS_ADHOC_ELIGIBLE_PLANS = new Set(["annual", "admin", "clipper"]);
+export const IOS_ADHOC_ELIGIBLE_PLANS = new Set(["annual", "year_v2", "admin", "clipper"]);
 
 /** Apple : 100 iPhones par compte et par année d'adhésion — 5 gardés pour les tests. */
 export const IOS_ADHOC_ACCOUNT_DEVICE_LIMIT = 95;

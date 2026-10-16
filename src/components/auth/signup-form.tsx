@@ -9,6 +9,7 @@ import { AuthInput, AuthPasswordInput } from "@/components/auth/auth-input";
 import { GoogleAuthLink } from "@/components/auth/google-auth-link";
 import { Button } from "@/components/ui/button";
 import { track } from "@/lib/analytics/track";
+import { stashAuthEmail } from "@/lib/auth-email-handoff";
 import { DEFAULT_PLAN_ID, getCheckoutUrl } from "@/lib/constants";
 import { MIN_PASSWORD_LENGTH } from "@/lib/password-policy";
 
@@ -31,6 +32,7 @@ export function SignupForm({
     }
   }, [state]);
   const destination = redirectTo ?? getCheckoutUrl(plan);
+  const loginHref = `/login?plan=${plan}&next=${encodeURIComponent(destination)}`;
 
   return (
     <div>
@@ -46,6 +48,19 @@ export function SignupForm({
             className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
           >
             {state.error}
+            {state.accountExists ? (
+              <Link
+                href={loginHref}
+                onClick={() => {
+                  const input = document.getElementById("email");
+                  if (input instanceof HTMLInputElement) stashAuthEmail(input.value.trim());
+                  track("login_link_clicked", { source: "signup_account_exists", plan });
+                }}
+                className="mt-3 flex h-11 w-full items-center justify-center rounded-full bg-white font-semibold text-pink-600 ring-1 ring-pink-200 transition hover:bg-pink-50"
+              >
+                Me connecter avec cet email
+              </Link>
+            ) : null}
           </div>
         ) : null}
         {state.notice ? (
@@ -105,7 +120,7 @@ export function SignupForm({
       <p className="mt-4 text-center text-sm text-zinc-500">
         Déjà un compte ?{" "}
         <Link
-          href={`/login?plan=${plan}&next=${encodeURIComponent(destination)}`}
+          href={loginHref}
           className="font-medium text-pink-600 hover:underline"
         >
           Se connecter
