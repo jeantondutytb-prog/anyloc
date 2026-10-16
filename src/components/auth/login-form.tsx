@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { login, type AuthState } from "@/app/auth/actions";
 import { AuthDivider } from "@/components/auth/auth-divider";
@@ -9,6 +9,7 @@ import { AuthInput, AuthPasswordInput } from "@/components/auth/auth-input";
 import { GoogleAuthLink } from "@/components/auth/google-auth-link";
 import { Button } from "@/components/ui/button";
 import { track } from "@/lib/analytics/track";
+import { takeAuthEmail } from "@/lib/auth-email-handoff";
 import { DEFAULT_PLAN_ID } from "@/lib/constants";
 
 const initialState: AuthState = {};
@@ -22,6 +23,20 @@ export function LoginForm({
 }) {
   const [state, formAction, pending] = useActionState(login, initialState);
   const [showPassword, setShowPassword] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Sent here from /signup because the account already exists: keep the email.
+  useEffect(() => {
+    const email = takeAuthEmail();
+    const form = formRef.current;
+    if (!email || !form) return;
+    const emailInput = form.elements.namedItem("email");
+    const passwordInput = form.elements.namedItem("password");
+    if (emailInput instanceof HTMLInputElement && !emailInput.value) {
+      emailInput.value = email;
+      if (passwordInput instanceof HTMLInputElement) passwordInput.focus();
+    }
+  }, []);
 
   // A new state object comes back after every submission, even an identical error.
   useEffect(() => {
@@ -34,6 +49,7 @@ export function LoginForm({
   return (
     <div>
       <form
+        ref={formRef}
         action={formAction}
         onSubmit={() => track("auth_submitted", { flow: "login", method: "password", plan })}
         className="space-y-4"

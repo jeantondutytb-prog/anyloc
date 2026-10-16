@@ -16,6 +16,8 @@ export type AuthState = {
   error?: string;
   /** Set when the account still has to be confirmed from the email inbox. */
   notice?: string;
+  /** Signup hit an existing account: the form offers to log in instead. */
+  accountExists?: boolean;
 };
 
 export async function signOut() {
@@ -140,7 +142,10 @@ export async function signup(
   });
 
   if (error) {
-    return { error: translateAuthError(error.message) };
+    return {
+      error: translateAuthError(error.message),
+      accountExists: error.message.toLowerCase().includes("user already registered"),
+    };
   }
 
   // With "Confirm email" on, nobody is logged in until the inbox owner clicks
