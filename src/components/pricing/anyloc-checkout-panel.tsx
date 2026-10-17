@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { preconnect } from "react-dom";
 import { track } from "@/lib/analytics/track";
 import {
   ChevronDown,
@@ -29,6 +30,7 @@ import {
   PLAN_VALUE_STACK,
 } from "@/lib/constants";
 import type { OnboardingDestination } from "@/lib/onboarding-destinations";
+import { getStripe } from "@/lib/stripe-browser";
 import { cn } from "@/lib/utils";
 
 /** Apple logo outline (Simple Icons path, CC0): lucide's `Apple` is a fruit, not the brand. */
@@ -103,6 +105,14 @@ export function AnyLocCheckoutPanel({
   const [redirecting, setRedirecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const requestRef = useRef<AbortController | null>(null);
+
+  // Download Stripe.js and open its connections while the paywall is read, so
+  // "Continuer" only waits for the checkout session, not for Stripe to boot.
+  preconnect("https://api.stripe.com");
+  preconnect("https://checkout.stripe.com");
+  useEffect(() => {
+    if (stripePublishableKey) void getStripe(stripePublishableKey);
+  }, [stripePublishableKey]);
 
   // Email links (?paiement=1) land straight on the payment popup.
   const [modalOpen, setModalOpen] = useState(Boolean(focusPayment));

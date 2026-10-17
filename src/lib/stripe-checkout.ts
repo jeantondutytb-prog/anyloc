@@ -53,8 +53,11 @@ export async function createSubscriptionCheckoutSession({
   user?: User | null;
   uiMode: CheckoutMode;
   analyticsId?: string;
-  /** Stripe coupon applied up front (e.g. the recovery email offer). */
-  couponId?: string | null;
+  /**
+   * Stripe coupon applied up front (e.g. the recovery email offer). May be a
+   * pending lookup: it runs alongside the Stripe customer lookup.
+   */
+  couponId?: string | null | Promise<string | null>;
 }) {
   if (!stripe || !plan.stripePriceId) {
     throw new UserFacingError("Paiement non configuré pour ce plan");
@@ -62,15 +65,15 @@ export async function createSubscriptionCheckoutSession({
 
   const returnUrl = getCheckoutReturnUrl();
 
+  const [baseParams, coupon] = await Promise.all([
+    user?.id ? buildAuthenticatedCheckoutParams(plan, user) : buildGuestCheckoutParams(plan),
+    couponId,
+  ]);
+
   const sharedParams = {
-    ...withAnalyticsId(
-      user?.id
-        ? await buildAuthenticatedCheckoutParams(plan, user)
-        : buildGuestCheckoutParams(plan),
-      analyticsId
-    ),
+    ...withAnalyticsId(baseParams, analyticsId),
     ...getDeviceRequirementParams(),
-    ...(couponId ? { discounts: [{ coupon: couponId }] } : {}),
+    ...(coupon ? { discounts: [{ coupon }] } : {}),
   };
 
   if (uiMode === "embedded_page") {
