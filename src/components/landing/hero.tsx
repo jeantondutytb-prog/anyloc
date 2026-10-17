@@ -1,25 +1,14 @@
 "use client";
 
-import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Check } from "lucide-react";
 import { VslPlayer } from "@/components/landing/vsl-player";
-import {
-  CHECKOUT_CTA_LABEL,
-  DEFAULT_PLAN_ID,
-  getOnboardingUrl,
-  SITE,
-} from "@/lib/constants";
-import { OnboardingLink } from "@/components/onboarding/onboarding-link";
-import { useHasSession } from "@/lib/use-has-session";
+import { MainCta } from "@/components/landing/main-cta";
+import { SITE } from "@/lib/constants";
 
 const HERO_CHECKS = ["iOS + Android", "Zéro jailbreak", "Annulation en 1 clic"];
 
 export function Hero() {
-  // Already logged in on this device: straight to the dashboard, no onboarding.
-  const hasSession = useHasSession();
-
   return (
     <section data-track-section="hero" className="relative overflow-hidden pt-[120px] pb-20 sm:pt-28 sm:pb-28">
       <div className="pointer-events-none absolute inset-0">
@@ -51,21 +40,7 @@ export function Hero() {
           </p>
 
           <div className="mt-8 flex flex-col items-center">
-            {hasSession ? (
-              <Link href="/dashboard" data-track="dashboard_link_clicked" data-track-location="hero">
-                <Button size="lg" className="w-full sm:w-auto">
-                  Accéder à mon espace
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            ) : (
-              <OnboardingLink href={getOnboardingUrl(DEFAULT_PLAN_ID)} data-track="cta_clicked" data-track-location="hero" data-track-plan={DEFAULT_PLAN_ID}>
-                <Button size="lg" className="w-full sm:w-auto">
-                  {CHECKOUT_CTA_LABEL}
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </OnboardingLink>
-            )}
+            <MainCta location="hero" className="w-full sm:w-auto" />
           </div>
 
           <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-zinc-500">

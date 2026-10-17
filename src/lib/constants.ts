@@ -371,12 +371,12 @@ export const FAQ = [
   {
     q: "Ça passe sur iPhone et Android ?",
     a:
-      "Oui. Sur Android : 3 étapes sur le tel. Sur iPhone : un Mac ou un PC une seule fois (limite Apple), puis tu gères ta loc depuis l'iPhone. Le renouvellement (~7 jours) se fait avec LocalDevVPN, sans rebrancher l'ordi.",
+      "Oui. Sur Android : 3 étapes sur le tel. Sur iPhone : un Mac ou un PC une seule fois (limite Apple), puis tu gères ta loc depuis l'iPhone, sans rebrancher l'ordi.",
   },
   {
-    q: "Faut-il rebrancher le Mac tous les 7 jours ?",
+    q: "Faut-il garder le Mac branché ?",
     a:
-      "Non. Installe LocalDevVPN sur ton iPhone, connecte le VPN en Wi-Fi, puis ouvre Anyloc. Le renouvellement se fait depuis ton tel. Le Mac ne sert qu'une seule fois, à la première installation.",
+      "Non. Le Mac ne sert qu'une seule fois, à la première installation. Ensuite, installe LocalDevVPN sur ton iPhone, connecte le VPN en Wi-Fi, puis ouvre Anyloc : tout se gère depuis ton tel.",
   },
   {
     q: "Faut jailbreaker ou bidouiller le tel ?",

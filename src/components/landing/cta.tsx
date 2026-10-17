@@ -1,12 +1,5 @@
-import { ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  CHECKOUT_CTA_LABEL,
-  CHECKOUT_MARKETING_LINE,
-  DEFAULT_PLAN_ID,
-  getOnboardingUrl,
-} from "@/lib/constants";
-import { OnboardingLink } from "@/components/onboarding/onboarding-link";
+import { MainCta } from "@/components/landing/main-cta";
+import { CHECKOUT_MARKETING_LINE } from "@/lib/constants";
 
 export function Cta() {
   return (
@@ -19,12 +12,7 @@ export function Cta() {
           {CHECKOUT_MARKETING_LINE}
         </p>
         <div className="mt-8 flex flex-col items-center gap-4">
-          <OnboardingLink href={getOnboardingUrl(DEFAULT_PLAN_ID)} data-track="cta_clicked" data-track-location="final_cta" data-track-plan={DEFAULT_PLAN_ID}>
-            <Button size="lg">
-              {CHECKOUT_CTA_LABEL}
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </OnboardingLink>
+          <MainCta location="final_cta" />
         </div>
       </div>
     </section>

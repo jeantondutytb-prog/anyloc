@@ -545,11 +545,9 @@ export function AnyLocCheckoutPanel({
       </ul>
 
       {!focusPayment ? (
-        <div className="mt-10 border-t border-zinc-200 pt-8">
-          <h2 className="text-base font-bold text-zinc-900">{copy.resumeTitle}</h2>
-          {renderPlans("mt-3")}
-          <div className="mt-4">{renderContinueButton("resume")}</div>
-        </div>
+        // One last CTA for the plan picked at the top, so the bottom of the
+        // page can pay without scrolling back up or repeating the grid.
+        <div className="mt-10">{renderContinueButton("resume")}</div>
       ) : null}
 
       {modalOpen && hydrated ? (

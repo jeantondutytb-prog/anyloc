@@ -14,7 +14,6 @@ export const CHECKOUT_COPY = {
   unlockTitle: "Ce que tu débloques",
   faqTitle: "Les questions qu'on nous pose",
   reviewsListTitle: "Ce qu'ils en disent",
-  resumeTitle: "Reprends là où tu en étais",
   paymentProcessor: "Paiement sécurisé, encaissé par Stripe",
   popularBadge: "Le plus choisi",
   planDesktopOnly: "Sur PC et Mac",
