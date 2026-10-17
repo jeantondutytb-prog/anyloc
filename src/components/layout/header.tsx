@@ -1,13 +1,14 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { Banknote, ChevronRight } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
-import { CHECKOUT_CTA_LABEL_SHORT, DEFAULT_PLAN_ID, getOnboardingUrl } from "@/lib/constants";
-import { OnboardingLink } from "@/components/onboarding/onboarding-link";
+import { HeaderActions } from "@/components/layout/header-actions";
 
 export function Header() {
   return (
-    <header className="fixed top-0 z-50 w-full border-b border-zinc-200 bg-logo-background">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+    // Floating pills instead of a full-width bar: the wrapper lets clicks
+    // through, only the pills catch them.
+    <header className="pointer-events-none fixed inset-x-0 top-0 z-50 px-2 pt-2 sm:px-4 sm:pt-3">
+      <div className="pointer-events-auto mx-auto flex h-14 max-w-5xl items-center justify-between rounded-full border border-zinc-200/80 bg-white/85 pr-2 pl-3 shadow-lg shadow-zinc-900/5 backdrop-blur-md sm:pl-4">
         <Logo />
 
         <nav className="hidden items-center gap-8 md:flex">
@@ -18,7 +19,7 @@ export function Header() {
             Fonctionnalités
           </Link>
           <Link
-            href="/pricing"
+            href="/#pricing"
             className="text-sm text-zinc-600 transition-colors hover:text-zinc-900"
           >
             Tarifs
@@ -31,16 +32,32 @@ export function Header() {
           </Link>
         </nav>
 
-        <div className="flex items-center gap-2 sm:gap-3">
-          <Link href="/login" data-track="login_link_clicked" data-track-location="header">
-            <Button variant="ghost" size="sm">
-              Connexion
-            </Button>
+        <div className="flex items-center gap-1.5 sm:gap-3">
+          <Link
+            href="/clippeurs?utm_campaign=site_header"
+            data-track="clipper_link_clicked"
+            data-track-location="header"
+            className="hidden h-8 items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3 text-sm font-medium text-zinc-700 transition-colors hover:border-zinc-300 hover:text-zinc-900 sm:inline-flex"
+          >
+            <Banknote className="h-4 w-4 text-pink-600" />
+            Gagne de l&apos;argent
           </Link>
-          <OnboardingLink href={getOnboardingUrl(DEFAULT_PLAN_ID)} data-track="cta_clicked" data-track-location="header" data-track-plan={DEFAULT_PLAN_ID}>
-            <Button size="sm">{CHECKOUT_CTA_LABEL_SHORT}</Button>
-          </OnboardingLink>
+          <HeaderActions />
         </div>
+      </div>
+
+      {/* No room in the bar on a phone: a smaller pill under it. */}
+      <div className="mt-2 flex justify-center sm:hidden">
+        <Link
+          href="/clippeurs?utm_campaign=site_header"
+          data-track="clipper_link_clicked"
+          data-track-location="header_mobile"
+          className="pointer-events-auto inline-flex h-7 items-center gap-1.5 rounded-full border border-zinc-200/80 bg-white/85 px-3 text-xs font-semibold text-zinc-800 shadow-md shadow-zinc-900/5 backdrop-blur-md active:bg-zinc-100"
+        >
+          <Banknote className="h-3.5 w-3.5 text-pink-600" />
+          Gagne de l&apos;argent avec tes vidéos
+          <ChevronRight className="h-3.5 w-3.5 text-pink-600" />
+        </Link>
       </div>
     </header>
   );

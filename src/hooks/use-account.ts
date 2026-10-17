@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { AccountBillingDetails } from "@/lib/account-billing-types";
+import { PREVIEW_ACCOUNT } from "@/lib/preview-account";
 
 type AccountResult =
   | { ok: true; data: AccountBillingDetails | null }
@@ -31,9 +32,10 @@ async function fetchAccount(): Promise<AccountResult> {
   }
 }
 
-export function useAccount() {
-  const [data, setData] = useState<AccountBillingDetails | null>(null);
-  const [loading, setLoading] = useState(true);
+/** `preview`: the dev-only dashboard preview, served a fake account, no fetch. */
+export function useAccount(preview = false) {
+  const [data, setData] = useState<AccountBillingDetails | null>(preview ? PREVIEW_ACCOUNT : null);
+  const [loading, setLoading] = useState(!preview);
   const [error, setError] = useState<string | null>(null);
 
   const apply = useCallback((result: AccountResult) => {
@@ -52,6 +54,7 @@ export function useAccount() {
   }, [apply]);
 
   useEffect(() => {
+    if (preview) return;
     let active = true;
     void fetchAccount().then((result) => {
       if (active) apply(result);
@@ -59,7 +62,7 @@ export function useAccount() {
     return () => {
       active = false;
     };
-  }, [apply]);
+  }, [apply, preview]);
 
   return { data, loading, error, reload };
 }

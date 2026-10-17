@@ -10,7 +10,7 @@ export function Faq() {
   const [open, setOpen] = useState<number | null>(0);
 
   return (
-    <section id="faq" data-track-section="faq" className="border-t border-zinc-200 py-24 sm:py-32">
+    <section id="faq" data-track-section="faq" className="py-16 sm:py-24">
       <div className="mx-auto max-w-3xl px-4 sm:px-6">
         <div className="text-center">
           <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
@@ -18,11 +18,11 @@ export function Faq() {
           </h2>
         </div>
 
-        <div className="mt-12 space-y-3">
+        <div className="mt-10 space-y-3">
           {FAQ.map((item, i) => (
             <div
               key={item.q}
-              className="overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50"
+              className="overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50"
             >
               <button
                 type="button"

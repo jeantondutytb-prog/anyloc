@@ -140,7 +140,7 @@ function DesktopDownloadCard({
             <WindowsOpenHelp compact zipDownloadPath={windowsZip?.downloadPath} />
           </div>
         ) : (
-          <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-4 text-left">
+          <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-4 text-left">
             <p className="font-semibold text-zinc-900">
               Après le téléchargement, ouvre le fichier comme ça
             </p>
@@ -256,7 +256,8 @@ export function PaidDashboardView({
     );
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background">
+    // clip, not hidden: overflow-hidden would stop the header from sticking.
+    <div className="relative min-h-screen overflow-x-clip bg-background">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -top-24 left-1/2 h-[420px] w-[720px] -translate-x-1/2 rounded-full bg-pink-500/10 blur-[120px]" />
         <div className="absolute top-40 right-0 h-[280px] w-[360px] rounded-full bg-violet-500/10 blur-[100px]" />
@@ -268,13 +269,13 @@ export function PaidDashboardView({
         activeTab="home"
       />
 
-      <main className="relative mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-12">
+      <main className="relative mx-auto max-w-2xl px-4 pt-8 pb-8 sm:px-6 sm:pt-12 sm:pb-12">
         {paymentSuccess ? (
-          <div className="mb-6 flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
+          <div className="mb-6 flex items-center gap-3 rounded-2xl border border-pink-200 bg-pink-50 px-4 py-3">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-pink-500 to-purple-500 text-white">
               <Check className="h-4 w-4" />
             </span>
-            <p className="font-semibold text-emerald-950">
+            <p className="font-semibold text-zinc-900">
               Paiement confirmé — ton accès est actif.
             </p>
           </div>
@@ -305,6 +306,20 @@ export function PaidDashboardView({
           </div>
         ) : (
           <>
+            {/* On a phone the download is no use: sending the page to the
+                computer is the one thing to do, so it comes first. */}
+            {device.isPhone ? (
+              <div className="mt-8">
+                <WrongDeviceNotice
+                  title="Ouvre cette page sur ton Mac ou PC"
+                  href={getDashboardUrl()}
+                  copyLabel="Copier le lien"
+                >
+                  <p>L&apos;app Anyloc s&apos;installe sur un ordinateur.</p>
+                </WrongDeviceNotice>
+              </div>
+            ) : null}
+
             <ol className="mt-8 space-y-3">
               {DESKTOP_STEPS.map((step, index) => (
                 <li
@@ -329,17 +344,6 @@ export function PaidDashboardView({
               </p>
             ) : null}
 
-            {device.isPhone ? (
-              <div className="mt-8">
-                <WrongDeviceNotice
-                  title="Ouvre cette page sur ton Mac ou PC"
-                  href={getDashboardUrl()}
-                  copyLabel="Copier le lien"
-                >
-                  <p>L&apos;app Anyloc s&apos;installe sur un ordinateur.</p>
-                </WrongDeviceNotice>
-              </div>
-            ) : null}
           </>
         )}
 

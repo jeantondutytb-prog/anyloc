@@ -5,14 +5,13 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  HelpCircle,
   LayoutDashboard,
-  MapPin,
   Menu,
-  Smartphone,
+  MessageCircle,
   User,
   X,
 } from "lucide-react";
+import { CrispContactLink } from "@/components/crisp/crisp-contact-link";
 import {
   dashboardHref,
   getDashboardBasePath,
@@ -24,6 +23,8 @@ type MenuItem = {
   icon: typeof LayoutDashboard;
   label: string;
   href: string;
+  /** Opens the support chat instead of navigating. */
+  support?: boolean;
 };
 
 function getMenuSections(basePath: string): { items: MenuItem[] }[] {
@@ -31,13 +32,12 @@ function getMenuSections(basePath: string): { items: MenuItem[] }[] {
     {
       items: [
         { icon: LayoutDashboard, label: "Dashboard", href: dashboardHref(basePath) },
-        { icon: MapPin, label: "Choisir ma position", href: "/app" },
-        { icon: Smartphone, label: "App iPhone", href: "/dashboard/iphone" },
         { icon: User, label: "Mon compte", href: dashboardHref(basePath, "account") },
       ],
     },
     {
-      items: [{ icon: HelpCircle, label: "Aide", href: "/#faq" }],
+      // A paying customer needs a person, not the landing's pre-sale FAQ.
+      items: [{ icon: MessageCircle, label: "Contacter le support", href: "#contact", support: true }],
     },
   ];
 }
@@ -162,7 +162,7 @@ export function DashboardMenu() {
             animate="visible"
             exit="exit"
             variants={menuPanel}
-            className="absolute left-0 top-12 z-50 w-56 origin-top-left overflow-hidden rounded-2xl border border-zinc-200 bg-white/95 shadow-xl backdrop-blur-md"
+            className="absolute left-0 top-12 z-50 w-56 origin-top-left overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl"
           >
             {menuSections.map((section, sectionIndex) => (
               <motion.ul
@@ -171,7 +171,18 @@ export function DashboardMenu() {
                 variants={menuPanel}
               >
                 {section.items.map((item) => {
-                  const active = isActive(pathname, currentTab, item.href);
+                  const active = !item.support && isActive(pathname, currentTab, item.href);
+
+                  if (item.support) {
+                    return (
+                      <motion.li key={item.href} variants={menuItem} onClickCapture={() => setOpen(false)}>
+                        <CrispContactLink className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-zinc-700 transition-colors duration-150 hover:bg-zinc-50">
+                          <item.icon className="h-4 w-4 shrink-0" />
+                          {item.label}
+                        </CrispContactLink>
+                      </motion.li>
+                    );
+                  }
 
                   return (
                     <motion.li key={item.href} variants={menuItem}>

@@ -2,8 +2,11 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { CheckoutView } from "@/components/checkout/checkout-view";
 import { PricingExperimentExposure } from "@/components/pricing/pricing-experiment-exposure";
+import type { ReturningCustomer } from "@/lib/checkout-copy";
 import { hasActiveRecoveryOffer } from "@/lib/checkout-recovery-server";
-import { DEFAULT_PLAN_ID, getCheckoutUrl, isValidPlanId } from "@/lib/constants";
+import { DEFAULT_PLAN_ID, getCheckoutUrl, getPlanDisplayName, isValidPlanId } from "@/lib/constants";
+import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
+import { getSubscriptionInactiveReason } from "@/lib/subscription-inactive";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { getStripePublishableKey } from "@/lib/stripe-client";
 import { getSubscriptionAccessForUser } from "@/lib/subscription";
@@ -24,9 +27,10 @@ export default async function CheckoutPage({
     preview?: string;
     paiement?: string;
     pricing?: string;
+    retour?: string;
   }>;
 }) {
-  const { plan, canceled, preview, paiement, pricing } = await searchParams;
+  const { plan, canceled, preview, paiement, pricing, retour } = await searchParams;
   // Email links (?paiement=1) open straight on the payment form.
   const focusPayment = paiement === "1";
   // Local design preview without an account: /checkout?preview=1 under `next dev` only.
@@ -49,6 +53,9 @@ export default async function CheckoutPage({
     : planIdForVariant(requestedPlanId, pricingVariant);
 
   let recoveryOffer = false;
+  // The dev preview can show the welcome-back copy: /checkout?preview=1&retour=1.
+  let returning: ReturningCustomer | null =
+    devPreview && retour === "1" ? { paymentFailed: false, previousPlanName: "6 mois" } : null;
 
   if (isSupabaseConfigured() && !devPreview) {
     const supabase = await createClient();
@@ -73,6 +80,22 @@ export default async function CheckoutPage({
     }
 
     recoveryOffer = await hasActiveRecoveryOffer(user.id).catch(() => false);
+
+    // A former subscriber gets welcome-back copy; a first purchase stays as is.
+    if (isSupabaseAdminConfigured()) {
+      const { data: profile } = await createAdminClient()
+        .from("profiles")
+        .select("subscription_status, trial_status, trial_ends_at, plan_id")
+        .eq("id", user.id)
+        .maybeSingle();
+      const reason = getSubscriptionInactiveReason(profile ?? {});
+      if (reason !== "no_subscription") {
+        returning = {
+          paymentFailed: reason === "payment_failed",
+          previousPlanName: getPlanDisplayName(profile?.plan_id ?? null),
+        };
+      }
+    }
   }
 
   return (
@@ -86,6 +109,7 @@ export default async function CheckoutPage({
         recoveryOffer={recoveryOffer}
         focusPayment={focusPayment}
         stripePublishableKey={getStripePublishableKey()}
+        returning={returning}
       />
     </>
   );

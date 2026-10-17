@@ -4,8 +4,6 @@ import { useActionState, useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
-  ArrowDown,
-  ArrowUp,
   CalendarClock,
   CreditCard,
   ExternalLink,
@@ -144,8 +142,11 @@ export function BillingPortalButton({
   );
 }
 
-export function SettingsView({ embedded = false }: { embedded?: boolean } = {}) {
-  const { data, loading, error } = useAccount();
+export function SettingsView({
+  embedded = false,
+  preview = false,
+}: { embedded?: boolean; preview?: boolean } = {}) {
+  const { data, loading, error } = useAccount(preview);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [showDeleteForm, setShowDeleteForm] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
@@ -165,7 +166,6 @@ export function SettingsView({ embedded = false }: { embedded?: boolean } = {}) 
   );
 
   const currentPlan = PLANS.find((plan) => plan.id === data?.planId) ?? null;
-  const alternativePlans = PLANS.filter((plan) => plan.id !== data?.planId);
 
   async function openCancelPortal() {
     setCancelPortalLoading(true);
@@ -421,7 +421,7 @@ export function SettingsView({ embedded = false }: { embedded?: boolean } = {}) 
                   <Badge
                     className={cn(
                       data?.hasActiveSubscription
-                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                        ? "border-pink-200 bg-pink-50 text-pink-700"
                         : "border-zinc-200 bg-zinc-50 text-zinc-600"
                     )}
                   >
@@ -465,23 +465,6 @@ export function SettingsView({ embedded = false }: { embedded?: boolean } = {}) 
                     </BillingPortalButton>
                   ) : null}
 
-                  {!data?.isAdmin &&
-                  !data?.isClipper &&
-                  data?.hasActiveSubscription &&
-                  alternativePlans.length > 0 ? (
-                    alternativePlans.map((plan, index) => (
-                      <Link key={plan.id} href={getCheckoutUrl(plan.id)}>
-                        <Button variant="secondary" size="sm">
-                          {index === 0 ? (
-                            <ArrowUp className="h-4 w-4" />
-                          ) : (
-                            <ArrowDown className="h-4 w-4" />
-                          )}
-                          Passer au plan {plan.name}
-                        </Button>
-                      </Link>
-                    ))
-                  ) : null}
                 </div>
               </div>
             </div>

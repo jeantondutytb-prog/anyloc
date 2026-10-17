@@ -49,9 +49,9 @@ export function WrongDeviceNotice({
   qrLabel?: string;
 }) {
   return (
-    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-950">
+    <div className="rounded-2xl border border-pink-200 bg-pink-50 px-4 py-4 text-sm text-zinc-900">
       <p className="font-semibold">{title}</p>
-      <div className="mt-2 space-y-2 text-amber-900/90">{children}</div>
+      <div className="mt-2 space-y-2 text-zinc-600">{children}</div>
       <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start">
         <CopyPageLink href={href} label={copyLabel} />
         {qrLabel ? (
@@ -64,12 +64,12 @@ export function WrongDeviceNotice({
 
 function MacGatekeeperFix() {
   return (
-    <details className="group mt-3 rounded-xl border border-amber-200 bg-amber-50">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-semibold text-amber-900 [&::-webkit-details-marker]:hidden">
+    <details className="group mt-3 rounded-2xl border border-zinc-200 bg-white">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-semibold text-zinc-900 [&::-webkit-details-marker]:hidden">
         <span>Ton Mac refuse d&apos;ouvrir Anyloc ?</span>
-        <ChevronDown className="h-4 w-4 shrink-0 text-amber-500 transition-transform group-open:rotate-180" />
+        <ChevronDown className="h-4 w-4 shrink-0 text-zinc-400 transition-transform group-open:rotate-180" />
       </summary>
-      <div className="border-t border-amber-200 px-4 py-3 text-sm text-amber-900/90">
+      <div className="border-t border-zinc-200 px-4 py-3 text-sm text-zinc-700">
         <p>C&apos;est normal, ça se règle en 1 minute :</p>
         <ol className="mt-2 list-decimal space-y-2 pl-5">
           <li>
@@ -87,7 +87,7 @@ function MacGatekeeperFix() {
           </li>
           <li>Tape le mot de passe de ton Mac</li>
         </ol>
-        <p className="mt-3 text-xs text-amber-800/70">
+        <p className="mt-3 text-xs text-zinc-500">
           Tu ne le fais qu&apos;une fois.
         </p>
       </div>
@@ -130,12 +130,8 @@ export function SetupOpenHelp({
   return (
     <div
       className={cn(
-        "rounded-xl border px-4 py-4",
-        downloaded
-          ? "border-emerald-200 bg-emerald-50"
-          : desktopOs === "win"
-            ? "border-amber-200 bg-amber-50"
-            : "border-zinc-200 bg-zinc-50"
+        "rounded-2xl border px-4 py-4",
+        downloaded ? "border-pink-200 bg-pink-50" : "border-zinc-200 bg-zinc-50"
       )}
     >
       <p className="font-semibold text-zinc-900">
@@ -190,10 +186,8 @@ export function AndroidOpenHelp({ downloaded }: { downloaded: boolean }) {
   return (
     <div
       className={cn(
-        "rounded-xl border px-4 py-4",
-        downloaded
-          ? "border-emerald-200 bg-emerald-50"
-          : "border-zinc-200 bg-zinc-50"
+        "rounded-2xl border px-4 py-4",
+        downloaded ? "border-pink-200 bg-pink-50" : "border-zinc-200 bg-zinc-50"
       )}
     >
       <p className="font-semibold text-zinc-900">

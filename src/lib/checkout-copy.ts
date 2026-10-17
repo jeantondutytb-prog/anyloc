@@ -14,7 +14,6 @@ export const CHECKOUT_COPY = {
   unlockTitle: "Ce que tu débloques",
   faqTitle: "Les questions qu'on nous pose",
   reviewsListTitle: "Ce qu'ils en disent",
-  resumeTitle: "Reprends là où tu en étais",
   paymentProcessor: "Paiement sécurisé, encaissé par Stripe",
   popularBadge: "Le plus choisi",
   planDesktopOnly: "Sur PC et Mac",
@@ -83,13 +82,32 @@ export const CHECKOUT_COPY = {
     "Le paiement n'a pas pu se charger : ta connexion a coupé. Vérifie ton réseau puis réessaie.",
 } as const;
 
+/** A former subscriber back on the paywall: what changes in the copy. */
+export type ReturningCustomer = {
+  /** The subscription stopped on a failed payment rather than ending. */
+  paymentFailed: boolean;
+  previousPlanName: string | null;
+};
+
 /** One short line above the plans; picks up the city teleported to in onboarding. */
-export function getCheckoutHeadline(city?: string) {
+export function getCheckoutHeadline(city?: string, returning?: ReturningCustomer | null) {
+  if (returning) {
+    return { before: "Content de te revoir sur", highlight: "Anyloc" };
+  }
+
   if (city) {
     return { before: "Garde ta loc à", highlight: city };
   }
 
   return { before: "Active", highlight: "Anyloc" };
+}
+
+export function getReturningSubline(returning: ReturningCustomer) {
+  if (returning.paymentFailed) {
+    return "Ton dernier paiement n'est pas passé. Choisis une formule pour retrouver ta loc.";
+  }
+  const plan = returning.previousPlanName ? ` ${returning.previousPlanName.toLowerCase()}` : "";
+  return `Ton abonnement${plan} est terminé. Choisis une formule pour retrouver ta loc.`;
 }
 
 export const CHECKOUT_BASE_PERKS = PLAN_VALUE_STACK;

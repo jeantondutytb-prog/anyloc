@@ -28,14 +28,10 @@ export function Logo({
 
   const content = (
     <>
-      <span
-        className={cn(
-          "inline-flex shrink-0 overflow-hidden rounded-xl bg-logo-background",
-          imageClassName
-        )}
-      >
+      {/* The bare pin, no background square: it sits on any surface. */}
+      <span className={cn("inline-flex shrink-0", imageClassName)}>
         <Image
-          src="/logo.png"
+          src="/logo-mark.png"
           alt={`${SITE.name} logo`}
           width={src}
           height={src}

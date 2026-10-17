@@ -8,12 +8,12 @@ function Cell({ value }: { value: boolean | string }) {
   if (value === false) {
     return <X className="mx-auto h-5 w-5 text-zinc-400" />;
   }
-  return <Minus className="mx-auto h-5 w-5 text-amber-500/80" />;
+  return <Minus className="mx-auto h-5 w-5 text-zinc-400" />;
 }
 
 export function Comparison() {
   return (
-    <section data-track-section="comparison" className="py-24 sm:py-32">
+    <section data-track-section="comparison" className="py-16 sm:py-24">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
@@ -25,42 +25,36 @@ export function Comparison() {
           </p>
         </div>
 
-        <div className="mt-12 overflow-x-auto">
-          <table className="w-full min-w-[640px] border-collapse">
+        <div className="mx-auto mt-10 max-w-3xl sm:mt-12">
+          <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-zinc-200">
-                <th className="py-4 pr-4 text-left text-sm font-medium text-zinc-600" />
-                <th className="px-4 py-4 text-center text-sm font-semibold gradient-text">
+                <th className="py-3 pr-2 text-left text-sm font-medium text-zinc-600 sm:py-4 sm:pr-4" />
+                <th className="w-16 px-1 py-3 text-center text-xs sm:w-28 sm:px-4 sm:py-4 sm:text-sm font-semibold gradient-text">
                   Anyloc
                 </th>
-                <th className="px-4 py-4 text-center text-sm font-medium text-zinc-500">
+                <th className="w-16 px-1 py-3 text-center text-xs sm:w-28 sm:px-4 sm:py-4 sm:text-sm font-medium text-zinc-500">
                   VPN
                 </th>
-                <th className="px-4 py-4 text-center text-sm font-medium text-zinc-500">
+                <th className="w-16 px-1 py-3 text-center text-xs sm:w-28 sm:px-4 sm:py-4 sm:text-sm font-medium text-zinc-500">
                   App GPS fake
-                </th>
-                <th className="px-4 py-4 text-center text-sm font-medium text-zinc-500">
-                  Capture écran
                 </th>
               </tr>
             </thead>
             <tbody>
               {COMPARISON.map((row) => (
                 <tr key={row.feature} className="border-b border-zinc-200">
-                  <td className="py-4 pr-4 text-sm text-zinc-700">
+                  <td className="py-3 pr-2 text-sm text-zinc-700 sm:py-4 sm:pr-4">
                     {row.feature}
                   </td>
-                  <td className="px-4 py-4">
+                  <td className="px-1 py-3 sm:px-4 sm:py-4">
                     <Cell value={row.anyloc} />
                   </td>
-                  <td className="px-4 py-4">
+                  <td className="px-1 py-3 sm:px-4 sm:py-4">
                     <Cell value={row.vpn} />
                   </td>
-                  <td className="px-4 py-4">
+                  <td className="px-1 py-3 sm:px-4 sm:py-4">
                     <Cell value={row.fakeGps} />
-                  </td>
-                  <td className="px-4 py-4">
-                    <Cell value={row.screenshot} />
                   </td>
                 </tr>
               ))}

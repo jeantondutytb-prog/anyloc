@@ -16,7 +16,7 @@ export default function PricingPage() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="pt-16">
+      <main className="pt-[112px] sm:pt-20">
         <Pricing />
         <Faq />
       </main>

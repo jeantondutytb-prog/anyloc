@@ -10,6 +10,7 @@ import {
   ChevronRight,
   CircleCheck,
   CreditCard,
+  LockKeyhole,
   Monitor,
   ShieldCheck,
   Smartphone,
@@ -19,7 +20,13 @@ import { AuthDivider } from "@/components/auth/auth-divider";
 import { GoogleAuthLink } from "@/components/auth/google-auth-link";
 import { CheckoutDownsellSheet } from "@/components/checkout/checkout-downsell-sheet";
 import { CheckoutPaymentModal } from "@/components/checkout/checkout-payment-modal";
-import { CHECKOUT_COPY, CHECKOUT_REVIEWS, getCheckoutHeadline } from "@/lib/checkout-copy";
+import {
+  CHECKOUT_COPY,
+  CHECKOUT_REVIEWS,
+  getCheckoutHeadline,
+  getReturningSubline,
+  type ReturningCustomer,
+} from "@/lib/checkout-copy";
 import {
   getFirstMonthOfferPrice,
   getOrPickCloseOfferVariant,
@@ -82,6 +89,7 @@ export function AnyLocCheckoutPanel({
   recoveryOffer,
   focusPayment,
   onShowAllPlans,
+  returning,
 }: {
   selectedPlanId: string;
   onPlanChange: (planId: string) => void;
@@ -95,6 +103,8 @@ export function AnyLocCheckoutPanel({
   /** Arrived from an email: only the selected plan and the payment popup, no sales page. */
   focusPayment?: boolean;
   onShowAllPlans?: () => void;
+  /** A former subscriber: welcome-back copy instead of the first-purchase one. */
+  returning?: ReturningCustomer | null;
 }) {
   const copy = CHECKOUT_COPY;
   // The plans of the selected plan's price grid (see lib/pricing-experiment).
@@ -275,7 +285,7 @@ export function AnyLocCheckoutPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const headline = getCheckoutHeadline(destination?.city);
+  const headline = getCheckoutHeadline(destination?.city, returning);
 
   function renderPlans(className?: string) {
     return (
@@ -382,21 +392,21 @@ export function AnyLocCheckoutPanel({
         target="_blank"
         rel="noreferrer"
         data-track="checkout_guarantee_conditions_clicked"
-        className="mb-4 flex items-center gap-2.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2.5 transition hover:bg-emerald-100/70 active:bg-emerald-100"
+        className="mb-4 flex items-center gap-2.5 rounded-2xl border border-pink-200 bg-pink-50 px-3 py-2.5 transition hover:bg-pink-100/70 active:bg-pink-100"
       >
-        <ShieldCheck className="h-4 w-4 shrink-0 self-start mt-px text-emerald-600" />
+        <ShieldCheck className="h-4 w-4 shrink-0 self-start mt-px text-pink-600" />
         <div className="min-w-0 flex-1">
-          <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-sm font-bold leading-tight text-emerald-900">
+          <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-sm font-bold leading-tight text-zinc-900">
             {GUARANTEE.title}
-            <span className="rounded-full bg-emerald-600 px-1.5 py-px text-[10px] font-bold text-white">
+            <span className="rounded-full bg-gradient-to-r from-pink-500 to-purple-500 px-1.5 py-px text-[10px] font-bold text-white">
               {GUARANTEE.badge}
             </span>
           </p>
-          <p className="mt-1 text-[13.5px] leading-snug text-emerald-900/75">
+          <p className="mt-1 text-[13.5px] leading-snug text-zinc-600">
             {GUARANTEE.summary}
           </p>
         </div>
-        <ChevronRight className="h-4 w-4 shrink-0 text-emerald-600" />
+        <ChevronRight className="h-4 w-4 shrink-0 text-pink-600" />
       </Link>
 
       {focusPayment ? (
@@ -425,6 +435,11 @@ export function AnyLocCheckoutPanel({
           <h1 className="text-center text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">
             {headline.before} <span className="gradient-text">{headline.highlight}</span>
           </h1>
+          {returning ? (
+            <p className="mt-2 text-center text-sm text-zinc-600">
+              {getReturningSubline(returning)}
+            </p>
+          ) : null}
 
           {renderPlans("mt-5")}
         </>
@@ -441,8 +456,8 @@ export function AnyLocCheckoutPanel({
       </div>
 
       <div className="mt-4 text-center">
-        <p className="flex items-center justify-center gap-1.5 text-xs font-medium text-emerald-600">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+        <p className="flex items-center justify-center gap-1.5 text-xs font-medium text-zinc-600">
+          <LockKeyhole className="h-3.5 w-3.5 text-pink-600" />
           {copy.paymentProcessor}
         </p>
         <ul className="mt-2 flex flex-wrap items-center justify-center gap-1.5 text-[11px] text-zinc-500">
@@ -467,9 +482,9 @@ export function AnyLocCheckoutPanel({
         {PLAN_VALUE_STACK.map((perk) => (
           <li
             key={perk}
-            className="flex items-center gap-2.5 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-medium text-zinc-900"
+            className="flex items-center gap-2.5 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-medium text-zinc-900"
           >
-            <CircleCheck className="h-4 w-4 shrink-0 text-emerald-600" />
+            <CircleCheck className="h-4 w-4 shrink-0 text-pink-600" />
             {perk}
           </li>
         ))}
@@ -480,7 +495,7 @@ export function AnyLocCheckoutPanel({
         {copy.faq.map((item) => (
           <details
             key={item.q}
-            className="group rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm"
+            className="group rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm"
           >
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-medium text-zinc-900 [&::-webkit-details-marker]:hidden">
               {item.q}
@@ -496,7 +511,7 @@ export function AnyLocCheckoutPanel({
         {CHECKOUT_REVIEWS.slice(0, 3).map((review) => (
           <li
             key={review.name}
-            className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm"
+            className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm"
           >
             {review.avatar ? (
               <Image
@@ -520,7 +535,7 @@ export function AnyLocCheckoutPanel({
                 {review.name} · {review.city}
                 <span className="flex" aria-hidden>
                   {[0, 1, 2, 3, 4].map((i) => (
-                    <Star key={i} className="h-3 w-3 fill-amber-400 text-amber-400" />
+                    <Star key={i} className="h-3 w-3 fill-pink-500 text-pink-500" />
                   ))}
                 </span>
               </p>
@@ -530,11 +545,9 @@ export function AnyLocCheckoutPanel({
       </ul>
 
       {!focusPayment ? (
-        <div className="mt-10 border-t border-zinc-200 pt-8">
-          <h2 className="text-base font-bold text-zinc-900">{copy.resumeTitle}</h2>
-          {renderPlans("mt-3")}
-          <div className="mt-4">{renderContinueButton("resume")}</div>
-        </div>
+        // One last CTA for the plan picked at the top, so the bottom of the
+        // page can pay without scrolling back up or repeating the grid.
+        <div className="mt-10">{renderContinueButton("resume")}</div>
       ) : null}
 
       {modalOpen && hydrated ? (
@@ -564,6 +577,7 @@ export function AnyLocCheckoutPanel({
           onDismiss={dismissCloseOffer}
         />
       ) : null}
+
 
       {downsellOpen && downgradePlan && hydrated ? (
         <CheckoutDownsellSheet

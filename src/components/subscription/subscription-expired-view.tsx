@@ -28,9 +28,10 @@ export function SubscriptionExpiredView({
 }) {
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-zinc-200 bg-logo-background/95 px-4 py-4 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-2xl items-center justify-between gap-4">
-          <Logo nameClassName="text-base font-bold sm:text-lg" />
+      {/* Same floating pill as the landing header. */}
+      <header className="px-2 pt-2 sm:px-4 sm:pt-3">
+        <div className="mx-auto flex h-14 max-w-2xl items-center justify-between gap-4 rounded-full border border-zinc-200/80 bg-white/85 pr-2 pl-3 shadow-lg shadow-zinc-900/5 backdrop-blur-md sm:pl-4">
+          <Logo />
           <form action={signOut}>
             <Button type="submit" variant="ghost" size="sm" className="text-zinc-600">
               <LogOut className="h-4 w-4" />
