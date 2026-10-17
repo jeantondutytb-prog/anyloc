@@ -4,6 +4,8 @@ import {
   syncProfileFromCheckoutSession,
   syncProfileFromSubscription,
 } from "@/lib/billing";
+import { isDeclineOfferCode } from "@/lib/checkout-first-month-offer";
+import { markCheckoutSessionDeclined } from "@/lib/checkout-first-month-offer-server";
 import { chargeSubscriptionInvoiceImmediately } from "@/lib/trial-billing";
 import {
   aliasPostHogUser,
@@ -127,6 +129,13 @@ async function trackCheckoutPaymentAttempt(
   }
 
   const error = paymentIntent.last_payment_error;
+  // Lets the payment popup offer the -50 % first month; never worth failing the webhook over.
+  const declineCode = error?.decline_code;
+  if (declineCode && isDeclineOfferCode(declineCode)) {
+    await markCheckoutSessionDeclined(session.id, declineCode).catch((markError) =>
+      logError("stripe-webhook/mark-declined", markError, { stripe_object_id: session.id })
+    );
+  }
   await capturePostHogEvent({
     distinctId,
     event: "checkout_payment_failed",

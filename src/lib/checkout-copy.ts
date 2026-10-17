@@ -28,11 +28,16 @@ export const CHECKOUT_COPY = {
   modalFallbackCta: "Payer sur la page sécurisée Stripe ↗",
   payOpening: "On prépare ton paiement…",
   retryCta: "Réessayer",
-  downgradeTitle: (price: string) => `Paiement de ${price} refusé ?`,
-  downgradeLead: (name: string, price: string) =>
-    `Ta banque a peut-être bloqué le montant. Commence avec la formule ${name} à ${price}, sans engagement.`,
+  declineOfferTitle: "Paiement refusé : solde insuffisant",
+  declineOfferLead: (name: string, offerPrice: string, price: string) =>
+    `Pas de souci : ton 1er mois de formule ${name} passe à ${offerPrice} au lieu de ${price}. Sans engagement.`,
+  declineOfferCta: (offerPrice: string) => `Payer ${offerPrice} le 1er mois`,
+  firstMonthOfferHeader: (offerPrice: string) => `${offerPrice} le 1er mois`,
+  closeOfferTitle: "Attends ! -50 % sur ton 1er mois",
+  closeOfferLead: (name: string, offerPrice: string, price: string) =>
+    `Ton 1er mois de formule ${name} passe à ${offerPrice} au lieu de ${price}. Sans engagement, résiliable en 1 clic.`,
+  closeOfferCta: (offerPrice: string) => `Profiter de -50 % · ${offerPrice}`,
   downgradeNoMobileApp: "L'app iPhone est réservée à la formule 1 an.",
-  downgradeCta: (name: string, price: string) => `Passer à la formule ${name} à ${price}`,
   downsellTitle: (price: string) => `Pas prêt à mettre ${price} d'un coup ?`,
   downsellLead: (name: string, price: string) =>
     `Commence avec la formule ${name} à ${price}, sans engagement. Tu pourras passer sur plus long ensuite.`,
