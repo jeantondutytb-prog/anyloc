@@ -75,6 +75,70 @@ async function trackCheckoutPaymentFailed(session: Stripe.Checkout.Session) {
   });
 }
 
+/**
+ * The checkout session a payment attempt comes from. Checkout creates the
+ * PaymentIntent when the customer hits "Payer" and stamps the session id on it.
+ */
+async function getPaymentIntentCheckoutSession(paymentIntent: Stripe.PaymentIntent) {
+  const sessionId = paymentIntent.payment_details?.order_reference;
+
+  if (!stripe || !sessionId?.startsWith("cs_")) {
+    return null;
+  }
+
+  return stripe.checkout.sessions.retrieve(sessionId);
+}
+
+/**
+ * "Payer" pressed in the checkout and how it ended. Stripe's in-form analytics
+ * are a private preview not enabled on the account, so the webhook is what sees
+ * these steps. Same person as checkout_started: account id, else browser id.
+ */
+async function trackCheckoutPaymentAttempt(
+  paymentIntent: Stripe.PaymentIntent,
+  outcome: "submitted" | "failed"
+) {
+  const session = await getPaymentIntentCheckoutSession(paymentIntent);
+
+  if (!session) {
+    return;
+  }
+
+  const distinctId =
+    session.client_reference_id ??
+    session.metadata?.supabase_user_id ??
+    parsePostHogDistinctId(session.metadata?.posthog_distinct_id) ??
+    `stripe:${session.id}`;
+  const properties = {
+    plan: session.metadata?.plan_id,
+    guest_checkout: session.metadata?.guest_checkout === "true",
+    amount: paymentIntent.amount,
+    currency: paymentIntent.currency,
+    source: "stripe_webhook",
+  };
+
+  if (outcome === "submitted") {
+    await capturePostHogEvent({
+      distinctId,
+      event: "checkout_pay_submitted",
+      properties: { ...properties, payment_method: paymentIntent.payment_method_types[0] },
+    });
+    return;
+  }
+
+  const error = paymentIntent.last_payment_error;
+  await capturePostHogEvent({
+    distinctId,
+    event: "checkout_payment_failed",
+    properties: {
+      ...properties,
+      error_code: error?.code,
+      decline_code: error?.decline_code,
+      wallet: error?.payment_method?.card?.wallet?.type,
+    },
+  });
+}
+
 export async function POST(request: Request) {
   if (!stripe) {
     return NextResponse.json(
@@ -141,6 +205,18 @@ export async function POST(request: Request) {
       case "customer.subscription.deleted":
         await syncProfileFromSubscription(
           event.data.object as Stripe.Subscription
+        );
+        break;
+      case "payment_intent.created":
+        await trackCheckoutPaymentAttempt(
+          event.data.object as Stripe.PaymentIntent,
+          "submitted"
+        );
+        break;
+      case "payment_intent.payment_failed":
+        await trackCheckoutPaymentAttempt(
+          event.data.object as Stripe.PaymentIntent,
+          "failed"
         );
         break;
       case "invoice.created":

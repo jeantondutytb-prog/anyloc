@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from "@stripe/react-stripe-js";
 import { loadStripe, type StripeEmbeddedCheckoutAnalyticsEventUnion } from "@stripe/stripe-js";
 
@@ -8,16 +8,17 @@ export function StripeEmbeddedCheckout({
   clientSecret,
   publishableKey,
   onRendered,
-  onSubmitted,
   onSubmitFailed,
 }: {
   clientSecret: string;
   publishableKey: string;
   /** Stripe has actually drawn its payment form on screen. */
   onRendered?: () => void;
-  /** The customer hit "Payer", whatever the outcome. */
-  onSubmitted?: (paymentMethodType: string) => void;
-  /** The customer hit "Payer" and the payment didn't go through (e.g. card declined). */
+  /**
+   * The customer hit "Payer" and the payment didn't go through (e.g. card declined).
+   * Only fires once Stripe enables Embedded Checkout analytics (private preview)
+   * on the account; the webhook tracks "Payer" and failures in the meantime.
+   */
   onSubmitFailed?: () => void;
 }) {
   const stripePromise = useMemo(
@@ -26,10 +27,43 @@ export function StripeEmbeddedCheckout({
   );
 
   // Stripe ignores option changes after mount: keep the latest callbacks in a ref.
-  const callbacksRef = useRef({ onRendered, onSubmitted, onSubmitFailed });
+  const callbacksRef = useRef({ onRendered, onSubmitFailed });
   useEffect(() => {
-    callbacksRef.current = { onRendered, onSubmitted, onSubmitFailed };
-  }, [onRendered, onSubmitted, onSubmitFailed]);
+    callbacksRef.current = { onRendered, onSubmitFailed };
+  }, [onRendered, onSubmitFailed]);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const renderedRef = useRef(false);
+  const reportRendered = useCallback(() => {
+    if (renderedRef.current) return;
+    renderedRef.current = true;
+    callbacksRef.current.onRendered?.();
+  }, []);
+
+  // Stripe draws its form in an iframe it adds to our container: the iframe's
+  // load event is when the form shows up on screen.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    let iframe: HTMLIFrameElement | null = null;
+
+    function watchIframe() {
+      if (iframe) return;
+      iframe = container!.querySelector("iframe");
+      if (!iframe) return;
+      observer.disconnect();
+      iframe.addEventListener("load", reportRendered, { once: true });
+    }
+
+    const observer = new MutationObserver(watchIframe);
+    observer.observe(container, { childList: true, subtree: true });
+    watchIframe();
+
+    return () => {
+      observer.disconnect();
+      iframe?.removeEventListener("load", reportRendered);
+    };
+  }, [reportRendered]);
 
   const options = useMemo(
     () => ({
@@ -37,9 +71,7 @@ export function StripeEmbeddedCheckout({
       onAnalyticsEvent: (event: StripeEmbeddedCheckoutAnalyticsEventUnion) => {
         const callbacks = callbacksRef.current;
         if (event.eventType === "checkoutRendered") {
-          callbacks.onRendered?.();
-        } else if (event.eventType === "checkoutSubmitted") {
-          callbacks.onSubmitted?.(event.details.paymentMethodType);
+          reportRendered();
         } else if (
           event.eventType === "checkoutSubmitFailed" &&
           event.details.failureReason !== "user_cancelled"
@@ -48,7 +80,7 @@ export function StripeEmbeddedCheckout({
         }
       },
     }),
-    [clientSecret]
+    [clientSecret, reportRendered]
   );
 
   if (!publishableKey) {
@@ -60,7 +92,7 @@ export function StripeEmbeddedCheckout({
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white">
+    <div ref={containerRef} className="overflow-hidden rounded-2xl border border-zinc-200 bg-white">
       <EmbeddedCheckoutProvider stripe={stripePromise} options={options}>
         <EmbeddedCheckout />
       </EmbeddedCheckoutProvider>
