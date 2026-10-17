@@ -109,10 +109,6 @@ export function CheckoutPaymentModal({
     });
   }
 
-  function handleSubmitted(paymentMethodType: string) {
-    track("checkout_pay_submitted", { plan: plan.id, payment_method: paymentMethodType });
-  }
-
   function handleSubmitFailed() {
     track("checkout_payment_failed", { plan: plan.id });
     if (downgradePlan && !paymentFailed) {
@@ -198,7 +194,6 @@ export function CheckoutPaymentModal({
                 clientSecret={clientSecret}
                 publishableKey={stripePublishableKey}
                 onRendered={handleRendered}
-                onSubmitted={handleSubmitted}
                 onSubmitFailed={handleSubmitFailed}
               />
             ) : error ? (
