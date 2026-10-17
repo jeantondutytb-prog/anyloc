@@ -2,11 +2,6 @@ import { DESTINATION_SPOTS } from "@/lib/destination-spots";
 
 export const CHECKOUT_CTA_LABEL = "Débloque ton accès";
 
-export const CHECKOUT_CTA_LABEL_SHORT = "Accès immédiat";
-
-export const CHECKOUT_CTA_SUBLINE =
-  "Accès immédiat · Annulation en 1 clic · Installation guidée";
-
 export const CHECKOUT_MARKETING_LINE =
   "Active Anyloc sur le plan de ton choix — Snap, Insta, Tinder et toutes tes apps.";
 
@@ -356,48 +351,10 @@ export function getCheckoutUrl(plan: string = DEFAULT_PLAN_ID) {
 }
 
 export const COMPARISON = [
-  {
-    feature: "Modifie le GPS de tout le tel",
-    anyloc: true,
-    vpn: false,
-    fakeGps: false,
-    screenshot: false,
-  },
-  {
-    feature: "Snap, Insta, Tinder, jeux en même temps",
-    anyloc: true,
-    vpn: false,
-    fakeGps: "partial",
-    screenshot: false,
-  },
-  {
-    feature: "Reste actif en arrière-plan",
-    anyloc: true,
-    vpn: false,
-    fakeGps: "partial",
-    screenshot: false,
-  },
-  {
-    feature: "Signal GPS réel (pas une image)",
-    anyloc: true,
-    vpn: false,
-    fakeGps: false,
-    screenshot: false,
-  },
-  {
-    feature: "Nouvelle ville en un clic",
-    anyloc: true,
-    vpn: false,
-    fakeGps: "partial",
-    screenshot: false,
-  },
-  {
-    feature: "Trajet simulé crédible",
-    anyloc: true,
-    vpn: false,
-    fakeGps: false,
-    screenshot: false,
-  },
+  { feature: "Modifie le GPS de tout le tel", anyloc: true, vpn: false, fakeGps: false },
+  { feature: "Snap, Insta, Tinder, jeux en même temps", anyloc: true, vpn: false, fakeGps: "partial" },
+  { feature: "Reste actif en arrière-plan", anyloc: true, vpn: false, fakeGps: "partial" },
+  { feature: "Signal GPS réel (pas une image)", anyloc: true, vpn: false, fakeGps: false },
 ];
 
 export const FAQ = [
@@ -410,16 +367,6 @@ export const FAQ = [
     q: "Mes potes peuvent capter que c'est fake ?",
     a:
       "Ils voient un pin GPS normal, mis à jour en temps réel — le même signal que ton tel enverrait s'il était vraiment sur place. Pas de screen, pas de montage.",
-  },
-  {
-    q: "Pourquoi un VPN ça suffit pas ?",
-    a:
-      "Un VPN cache ton IP, pas ta position. Les apps sociales checkent le capteur GPS du tel. Anyloc intervient pile là.",
-  },
-  {
-    q: "Windows dit « Faites attention » et je n'arrive pas à ouvrir Anyloc ?",
-    a:
-      "Normal : Windows et Chrome disent ça pour toute app qui n'est pas dans le Microsoft Store. En bas de Chrome, clique la flèche à droite du fichier → Conserver (pas Jeter). Puis Téléchargements → double-clic Anyloc-Setup. Si l'écran bleu « Windows a protégé votre ordinateur » apparaît : Plus d'infos → Exécuter quand même (pas OK). Si Anyloc est déjà dans la barre en bas à droite : clic droit → Quitter, sinon tu réouvres l'ancienne fenêtre sans le guide « 3 étapes ». Toujours bloqué : clic droit → Propriétés → case Débloquer.",
   },
   {
     q: "Ça passe sur iPhone et Android ?",
@@ -451,12 +398,6 @@ export const FEATURES = [
     icon: "MapPin",
   },
   {
-    title: "Multi-apps native",
-    description:
-      "Un réglage, toutes les apps impactées — réseaux sociaux, rencontres, jeux, tout passe par le même GPS.",
-    icon: "Smartphone",
-  },
-  {
     title: "Trajets simulés",
     description:
       "Trace un parcours entre deux points, règle la vitesse et mets des pauses pour un déplacement crédible.",
@@ -467,18 +408,6 @@ export const FEATURES = [
     description:
       "Garde tes destinations fav — Marbella, Ibiza, Miami — et reviens y en un tap.",
     icon: "Bookmark",
-  },
-  {
-    title: "Version web incluse",
-    description:
-      "Étends aussi ta loc aux interfaces web de Snapchat et d'autres services connectés.",
-    icon: "Globe",
-  },
-  {
-    title: "Pilotage centralisé",
-    description:
-      "Gère ton GPS depuis ton tel, ton Mac ou ton PC — un compte, tous tes appareils.",
-    icon: "Monitor",
   },
 ];
 

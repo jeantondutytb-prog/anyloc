@@ -57,14 +57,7 @@ function UnifiedDashboardContent({
       />
       <main className="p-4 pb-8 sm:p-6 lg:p-8">
         <div className="mx-auto max-w-3xl">
-          {preview ? (
-            <p className="rounded-2xl border border-zinc-200 bg-white px-4 py-6 text-sm text-zinc-500">
-              Aperçu du compte — connecte-toi pour voir tes factures et ton
-              abonnement.
-            </p>
-          ) : (
-            <SettingsView embedded />
-          )}
+          <SettingsView embedded preview={preview} />
         </div>
       </main>
     </div>

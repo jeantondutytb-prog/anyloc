@@ -1,26 +1,15 @@
-import {
-  Bookmark,
-  Globe,
-  MapPin,
-  Monitor,
-  Route,
-  Smartphone,
-} from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { Bookmark, MapPin, Route } from "lucide-react";
 import { FEATURES } from "@/lib/constants";
 
 const iconMap = {
   MapPin,
-  Smartphone,
   Route,
   Bookmark,
-  Globe,
-  Monitor,
 };
 
 export function Features() {
   return (
-    <section id="features" data-track-section="features" className="py-24 sm:py-32">
+    <section id="features" data-track-section="features" className="py-16 sm:py-24">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
@@ -32,21 +21,24 @@ export function Features() {
           </p>
         </div>
 
-        <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {/* A compact list on a phone, three columns from md up. */}
+        <div className="mx-auto mt-10 grid max-w-md gap-6 md:mt-16 md:max-w-none md:grid-cols-3 md:gap-8">
           {FEATURES.map((feature) => {
             const Icon = iconMap[feature.icon as keyof typeof iconMap];
             return (
-              <Card key={feature.title} className="p-6 transition-colors hover:border-pink-500/20">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-pink-500/10">
+              <div key={feature.title} className="flex gap-4 md:flex-col md:items-center md:text-center">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pink-500/10">
                   <Icon className="h-5 w-5 text-pink-600" />
                 </div>
-                <h3 className="mt-4 text-lg font-semibold text-zinc-900">
-                  {feature.title}
-                </h3>
-                <p className="mt-2 text-sm leading-relaxed text-zinc-500">
-                  {feature.description}
-                </p>
-              </Card>
+                <div>
+                  <h3 className="font-semibold text-zinc-900 md:mt-1 md:text-lg">
+                    {feature.title}
+                  </h3>
+                  <p className="mt-1 text-sm leading-relaxed text-zinc-500">
+                    {feature.description}
+                  </p>
+                </div>
+              </div>
             );
           })}
         </div>

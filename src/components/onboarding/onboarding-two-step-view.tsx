@@ -1,18 +1,12 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { track } from "@/lib/analytics/track";
-import {
-  ArrowRight,
-  ChevronRight,
-  Loader2,
-  Search,
-} from "lucide-react";
+import { ChevronRight, Loader2, Search } from "lucide-react";
 import type { GeocodeResult } from "@/lib/geocoding";
 import { OnboardingAhaMoment } from "@/components/onboarding/onboarding-aha-moment";
-import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import {
   DEFAULT_PLAN_ID,
@@ -227,6 +221,9 @@ function StepDestination({
   );
 }
 
+/** How long the visitor sees the destination before signup takes over. */
+const AUTO_CONTINUE_MS = 1500;
+
 function StepPreview({
   destination,
   visitorLocation,
@@ -238,22 +235,18 @@ function StepPreview({
   onContinue: () => void;
   onDestinationChange: (lat: number, lng: number) => void;
 }) {
-  const [nudge, setNudge] = useState(0);
   const [teleported, setTeleported] = useState(false);
-  const validateRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!teleported) return;
-    // On a phone the button lands below the fold: bring it into view.
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    validateRef.current?.scrollIntoView({
-      behavior: reduced ? "auto" : "smooth",
-      block: "nearest",
-    });
+    // No extra "validate" tap: once the visitor has seen they're there, go on.
+    const timer = window.setTimeout(onContinue, AUTO_CONTINUE_MS);
+    return () => window.clearTimeout(timer);
+    // Only the teleport end matters, not a new callback identity.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teleported]);
 
   function handleLockedClick() {
-    setNudge((count) => count + 1);
     track("onboarding_preview_locked_click", { destination_city: destination.city });
   }
 
@@ -278,31 +271,13 @@ function StepPreview({
         onDone={() => setTeleported(true)}
       />
 
-      {teleported && (
-        <motion.div
-          ref={validateRef}
-          key={nudge}
-          initial={{ opacity: 0, y: 8 }}
-          animate={
-            nudge
-              ? { opacity: 1, y: 0, scale: [1, 1.04, 1, 1.04, 1] }
-              : { opacity: 1, y: 0 }
-          }
-          transition={{ duration: 0.4 }}
-          className="mt-5 scroll-mb-6"
-        >
-          <Button className="h-14 w-full text-base" onClick={onContinue}>
-            Valider ma position
-            <ArrowRight className="h-5 w-5" />
-          </Button>
-        </motion.div>
-      )}
 
     </div>
   );
 }
 
-const LEAVE_DURATION_MS = 350;
+// Long enough for the logo in the exit overlay to land before signup takes over.
+const LEAVE_DURATION_MS = 700;
 
 function readStoredDestination(): OnboardingDestination | null {
   if (typeof window === "undefined") {
@@ -429,9 +404,10 @@ function OnboardingViewContent({
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
-      <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
-          <Logo href="/" size="sm" nameClassName="hidden min-[380px]:inline text-base sm:text-lg" />
+      {/* Same floating pill as the landing header. */}
+      <header className="sticky top-0 z-20 px-2 pt-2 sm:px-4 sm:pt-3">
+        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-3 rounded-full border border-zinc-200/80 bg-white/85 pr-4 pl-3 shadow-lg shadow-zinc-900/5 backdrop-blur-md sm:pl-4">
+          <Logo />
           <ProgressBar step={step} />
         </div>
       </header>

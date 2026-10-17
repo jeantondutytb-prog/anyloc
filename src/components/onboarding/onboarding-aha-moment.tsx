@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowDown, Check, Crosshair, Lock, Search } from "lucide-react";
+import { ArrowDown, Check, CheckCircle2, Crosshair, Loader2, Lock, Search } from "lucide-react";
 import { track } from "@/lib/analytics/track";
 import { distanceKm } from "@/lib/geo-distance";
 import type { OnboardingDestination } from "@/lib/onboarding-destinations";
@@ -12,25 +12,28 @@ import { cn } from "@/lib/utils";
 import type { VisitorLocation } from "@/lib/visitor-location";
 
 // Mirrors the iOS app's dark map screen (apps/ios/Anyloc/MapHomeView.swift):
-// floating top bar + search, gradient pin, bottom sheet and the
-// "Application de la position…" overlay. With the visitor's position (city
-// from their IP), it starts there and the pin flies to the destination.
+// floating top bar + search, gradient pin, bottom sheet and the branded
+// teleport card of the app's filming mode (TeleportShowcaseView in
+// HomeComponents.swift), the one seen in the marketing videos. With the
+// visitor's position (city from their IP), it starts there; the map jumps to
+// the destination behind the card, with no flight.
 
 const OnboardingAppMap = dynamic(
   () => import("@/components/onboarding/onboarding-aha-map"),
   { ssr: false, loading: () => <div className="h-full w-full bg-[#1b1b1f]" /> },
 );
 
-type Phase = "connect" | "ready" | "travel" | "lock" | "applying" | "sync" | "done";
+type Phase = "connect" | "ready" | "showcase" | "lock" | "sync" | "done";
+
+type ShowcaseStep = "connecting" | "sending" | "done";
 
 const APPS = ["Snap", "Insta", "Tinder", "Life360"];
 
 const CAPTIONS: Record<Phase, string> = {
   connect: "Connexion au GPS…",
   ready: "Prêt",
-  travel: "Téléportation…",
+  showcase: "Téléportation…",
   lock: "Position verrouillée",
-  applying: "Position verrouillée",
   sync: "Synchro des apps…",
   // Not "active": the visitor's real location hasn't moved yet.
   done: "Prête à activer",
@@ -40,18 +43,25 @@ const TYPING_START = 300;
 /** With a flight, the visitor first sees their own city for a moment. */
 const HOME_HOLD_MS = 1400;
 const TYPING_SPEED = 70;
-/** The flight from the visitor's city to the destination. */
-const TRAVEL_MS = 2600;
+/** Once the card fully covers the map, the map jumps to the destination. */
+const SHOWCASE_COVERED_MS = 700;
+/** The card's steps, timed like the app's playShowcase (MapHomeView.swift). */
+const SHOWCASE_SENDING_MS = 2200;
+const SHOWCASE_DONE_MS = 4200;
+const SHOWCASE_END_MS = 5800;
 
 /**
  * The destination types itself into the search, then everything waits on
- * "Prêt" until the visitor taps "Définir cette position" (`start`): flight
- * from their city (if any), lock, apps synced one by one, then "done".
+ * "Prêt" until the visitor taps "Définir cette position" (`start`): the
+ * branded card (the map jumps to the destination behind it), lock,
+ * apps synced one by one, then "done".
  */
 function useTimeline(destination: OnboardingDestination, withTravel: boolean) {
   const [phase, setPhase] = useState<Phase>("connect");
   const [typed, setTyped] = useState(0);
   const [syncedApps, setSyncedApps] = useState(0);
+  const [showcaseStep, setShowcaseStep] = useState<ShowcaseStep>("connecting");
+  const [covered, setCovered] = useState(false);
   const timers = useRef<number[]>([]);
 
   const at = (ms: number, fn: () => void) => {
@@ -81,16 +91,18 @@ function useTimeline(destination: OnboardingDestination, withTravel: boolean) {
   function start() {
     if (phase !== "connect" && phase !== "ready") return;
     setTyped(destination.city.length);
-    const lockAt = withTravel ? TRAVEL_MS : 0;
-    if (withTravel) setPhase("travel");
+    setPhase("showcase");
+    at(SHOWCASE_COVERED_MS, () => setCovered(true));
+    at(SHOWCASE_SENDING_MS, () => setShowcaseStep("sending"));
+    at(SHOWCASE_DONE_MS, () => setShowcaseStep("done"));
+    const lockAt = SHOWCASE_END_MS;
     at(lockAt, () => setPhase("lock"));
-    at(lockAt + 500, () => setPhase("applying"));
-    at(lockAt + 1650, () => setPhase("sync"));
-    APPS.forEach((_, i) => at(lockAt + 1900 + i * 300, () => setSyncedApps(i + 1)));
-    at(lockAt + 1900 + APPS.length * 300, () => setPhase("done"));
+    at(lockAt + 500, () => setPhase("sync"));
+    APPS.forEach((_, i) => at(lockAt + 750 + i * 300, () => setSyncedApps(i + 1)));
+    at(lockAt + 750 + APPS.length * 300, () => setPhase("done"));
   }
 
-  return { phase, typed, syncedApps, start };
+  return { phase, typed, syncedApps, showcaseStep, covered, start };
 }
 
 /** Measures where the visible map area sits between the top UI and the sheet. */
@@ -138,40 +150,92 @@ function GradientPin({ live }: { live: boolean }) {
   );
 }
 
-function ApplyingOverlay() {
+/** Staged entrance like the app: logo, then the wordmark, then the status. */
+const SHOWCASE_STAGES = [0.25, 0.75, 1.2];
+
+function TeleportShowcase({ step, city }: { step: ShowcaseStep; city: string }) {
+  const text =
+    step === "connecting"
+      ? "Connexion à ton tel…"
+      : step === "sending"
+        ? `Téléportation vers ${city}…`
+        : `Tu es à ${city}`;
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
-      className="absolute inset-0 z-[600] flex flex-col items-center justify-center bg-black/75 px-8 text-center backdrop-blur-sm"
+      transition={{ duration: 0.6, ease: "easeInOut" }}
+      className="absolute inset-0 z-[600] flex flex-col items-center justify-center gap-5 bg-[#0A0A0C]/95 bg-[radial-gradient(circle_at_center,rgba(236,72,153,0.35),transparent_240px)] px-5"
     >
-      <Image
-        src="/logo.png"
-        alt=""
-        width={56}
-        height={56}
-        unoptimized
-        className="h-14 w-14 rounded-2xl drop-shadow-[0_0_16px_rgba(236,72,153,0.6)]"
-      />
-      <div className="mb-3.5 mt-2.5 flex gap-1.5">
+      <motion.div
+        className="relative flex h-[165px] w-full items-center justify-center"
+        initial={{ scale: 0.5, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", stiffness: 140, damping: 12, delay: SHOWCASE_STAGES[0] }}
+      >
         {[0, 1, 2].map((i) => (
           <motion.span
             key={i}
-            className="h-1.5 w-1.5 rounded-full bg-pink-500"
-            animate={{ opacity: [0.35, 1, 0.35] }}
-            transition={{ duration: 0.9, repeat: Infinity, delay: i * 0.3 }}
+            aria-hidden
+            className="absolute h-28 w-28 rounded-full border-2"
+            style={{ borderColor: i === 1 ? "#c06cf0" : i === 2 ? "#a855f7" : "#ec4899" }}
+            initial={{ scale: 0.8, opacity: 0.7 }}
+            animate={{ scale: 2.1, opacity: 0 }}
+            transition={{ duration: 1.8, repeat: Infinity, ease: "easeOut", delay: i * 0.6 }}
           />
         ))}
-      </div>
-      <p className="text-[15px] font-semibold text-[#F4F4F5]">
-        Application de la position…
-      </p>
-      <p className="mt-1.5 text-[11.5px] leading-snug text-[#8B8B94]">
-        Mise à jour de la position sur ton iPhone. Reste connecté, ça ne prend
-        qu&apos;un instant.
-      </p>
+        <motion.div
+          animate={{ scale: [0.96, 1.06, 0.96] }}
+          transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <Image
+            src="/logo-mark.png"
+            alt=""
+            width={104}
+            height={104}
+            className="h-[104px] w-[104px] drop-shadow-[0_0_24px_rgba(236,72,153,0.6)]"
+          />
+        </motion.div>
+      </motion.div>
+
+      <motion.p
+        className="whitespace-nowrap text-[44px] font-black leading-none tracking-tight [font-family:ui-rounded,'SF_Pro_Rounded',system-ui,sans-serif]"
+        initial={{ y: 18, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.6, ease: "easeOut", delay: SHOWCASE_STAGES[1] }}
+      >
+        <span className="text-white">anyloc</span>
+        <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
+          .io
+        </span>
+      </motion.p>
+
+      <motion.div
+        className="flex h-10 max-w-full items-center gap-2 rounded-full border border-pink-500/[0.42] bg-[#16161A] px-4 text-[15px] font-semibold text-[#C4C4CA]"
+        initial={{ y: 12, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5, ease: "easeOut", delay: SHOWCASE_STAGES[2] }}
+      >
+        {step === "done" ? (
+          <CheckCircle2 className="h-[18px] w-[18px] shrink-0 text-pink-500" />
+        ) : (
+          <Loader2 className="h-[18px] w-[18px] shrink-0 animate-spin text-pink-400" />
+        )}
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.span
+            key={step}
+            className="truncate"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+          >
+            {text}
+          </motion.span>
+        </AnimatePresence>
+      </motion.div>
     </motion.div>
   );
 }
@@ -201,7 +265,7 @@ export function OnboardingAhaMoment({
   // No flight when "there" is basically "here" (same city).
   const distance = origin ? distanceKm(origin, destination) : 0;
   const withTravel = Boolean(origin) && distance > 30;
-  const { phase, typed, syncedApps, start } = useTimeline(destination, withTravel);
+  const { phase, typed, syncedApps, showcaseStep, covered, start } = useTimeline(destination, withTravel);
 
   useEffect(() => {
     if (phase === "done") onDone?.();
@@ -210,11 +274,11 @@ export function OnboardingAhaMoment({
   }, [phase]);
 
   useEffect(() => {
-    if (phase === "travel") {
+    if (phase === "showcase" && withTravel) {
       // Rounded: says how far, never where the visitor is.
       track("onboarding_travel_played", { distance_km: Math.round(distance / 100) * 100 });
     }
-  }, [phase, distance]);
+  }, [phase, distance, withTravel]);
   const [lockedToast, setLockedToast] = useState(0);
 
   useEffect(() => {
@@ -231,7 +295,8 @@ export function OnboardingAhaMoment({
   };
   const { topRef, sheetRef, focusY } = useFocusY();
   const waiting = phase === "connect" || phase === "ready";
-  const atHome = withTravel && waiting;
+  // The map stays on the visitor's city until the card hides it.
+  const atHome = withTravel && (waiting || (phase === "showcase" && !covered));
   // The pin sits on the destination (it is "there") from the flight on, or
   // right away when there is no flight.
   const located = !atHome && phase !== "connect";
@@ -250,7 +315,7 @@ export function OnboardingAhaMoment({
             lng={mapPoint.lng}
             zoom={located || atHome ? 14 : 11}
             focusY={focusY}
-            flyDuration={(TRAVEL_MS - 300) / 1000}
+            instant={phase === "showcase"}
             trail={withTravel && origin && located ? { from: origin, to: destination } : null}
             onSelect={onDestinationChange}
           />
@@ -269,7 +334,7 @@ export function OnboardingAhaMoment({
             )}
           >
             <Image
-              src="/logo.png"
+              src="/logo-mark.png"
               alt=""
               width={26}
               height={26}
@@ -310,30 +375,10 @@ export function OnboardingAhaMoment({
           </p>
         </div>
 
-        {/* Teleport done: the map blurs behind the pin, because it's only a
-            preview — the visitor's real location hasn't changed yet. */}
-        <AnimatePresence>
-          {isDone && (
-            <motion.div
-              className="pointer-events-none absolute inset-0 z-[440] bg-black/30 backdrop-blur-[3px]"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5 }}
-            >
-              <span
-                className="absolute left-1/2 flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-full bg-white px-3 py-1.5 text-[12px] font-semibold text-zinc-900 shadow-xl"
-                style={{ top: focusY + 22 }}
-              >
-                <Lock className="h-3.5 w-3.5 text-pink-500" />
-                Aperçu : ta loc n&apos;a pas encore changé
-              </span>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         {/* Pin — drops in once the position is locked */}
         <AnimatePresence>
-          {(located || atHome) && (
+          {/* Behind the card, it drops in as the card fades, like the app's landing shot. */}
+          {(located || atHome) && phase !== "showcase" && (
             <motion.div
               className="pointer-events-none absolute left-1/2 z-[450] -ml-7"
               style={{ top: focusY - 38 }}
@@ -424,7 +469,7 @@ export function OnboardingAhaMoment({
             })}
           </div>
 
-          {/* Once done, "Valider ma position" under the phone takes over. */}
+          {/* Once done, the onboarding moves on to signup by itself. */}
           {!isDone && (
           <div className="relative">
           {phase === "ready" && (
@@ -486,7 +531,9 @@ export function OnboardingAhaMoment({
         </AnimatePresence>
 
         <AnimatePresence>
-          {phase === "applying" && <ApplyingOverlay />}
+          {phase === "showcase" && (
+            <TeleportShowcase step={showcaseStep} city={destination.city} />
+          )}
         </AnimatePresence>
       </div>
     </div>

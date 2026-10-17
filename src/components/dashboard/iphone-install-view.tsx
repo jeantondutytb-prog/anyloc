@@ -182,7 +182,7 @@ export function IphoneInstallView({ embedded = false }: { embedded?: boolean } =
 
           {status.state.kind === "ready" && status.installUrl && (
             <>
-              <p className="flex items-center gap-2 font-semibold text-emerald-700">
+              <p className="flex items-center gap-2 font-semibold text-pink-600">
                 <CheckCircle2 className="h-5 w-5" /> Ton app est prête.
               </p>
               <Button

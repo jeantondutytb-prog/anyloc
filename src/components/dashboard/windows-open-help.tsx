@@ -85,11 +85,9 @@ export function WindowsOpenHelp({
   return (
     <div
       className={cn(
-        !embedded && "rounded-xl border px-4 py-4",
+        !embedded && "rounded-2xl border px-4 py-4",
         !embedded &&
-          (downloaded
-            ? "border-emerald-200 bg-emerald-50"
-            : "border-amber-200 bg-amber-50")
+          (downloaded ? "border-pink-200 bg-pink-50" : "border-zinc-200 bg-zinc-50")
       )}
     >
       {!embedded ? (
@@ -99,7 +97,7 @@ export function WindowsOpenHelp({
               ? "Windows va dire « Faites attention » — clique Conserver, puis ouvre"
               : "Sur Windows, Chrome dit « Faites attention ». C'est normal."}
           </p>
-          <p className="mt-1 text-sm text-amber-950/80">
+          <p className="mt-1 text-sm text-zinc-600">
             Le fichier n&apos;est pas un virus. Windows le dit pour toutes les
             apps qui ne viennent pas du Microsoft Store.
           </p>

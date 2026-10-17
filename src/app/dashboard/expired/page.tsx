@@ -42,6 +42,13 @@ export default async function SubscriptionExpiredPage({
 
   const { card } = await searchParams;
 
+  // Nothing to fix here but a new purchase: straight to the paywall and its
+  // offers. A renewal Stripe is still retrying (past_due) stays here, since
+  // the fix is a new card on the same subscription, not a second one.
+  if (!details.updatePaymentMethod && card !== "declined") {
+    redirect(details.checkoutUrl);
+  }
+
   return (
     <SubscriptionExpiredView details={details} cardDeclined={card === "declined"} />
   );

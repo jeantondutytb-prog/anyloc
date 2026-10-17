@@ -27,6 +27,7 @@ export default function OnboardingAppMap({
   zoom,
   focusY,
   flyDuration = 1.1,
+  instant = false,
   trail = null,
   onSelect,
 }: {
@@ -36,6 +37,8 @@ export default function OnboardingAppMap({
   focusY: number;
   /** Seconds for a far move (the "teleport" flight). */
   flyDuration?: number;
+  /** Jump straight there, no fly or pan (the move happens behind a cover). */
+  instant?: boolean;
   /** Dashed line from the visitor's real position to the destination. */
   trail?: MapTrail | null;
   onSelect: (lat: number, lng: number) => void;
@@ -97,14 +100,16 @@ export default function OnboardingAppMap({
     const center = map.unproject(point, zoom);
     const far = map.getCenter().distanceTo(center) > 50_000;
 
-    if (far) {
+    if (instant) {
+      map.setView(center, zoom, { animate: false });
+    } else if (far) {
       map.flyTo(center, zoom, { duration: flyDuration });
     } else if (map.getZoom() === zoom) {
       map.panTo(center, { animate: true, duration: 0.5 });
     } else {
       map.flyTo(center, zoom, { duration: 1.1 });
     }
-  }, [lat, lng, zoom, focusY, flyDuration]);
+  }, [lat, lng, zoom, focusY, flyDuration, instant]);
 
   const fromLat = trail?.from.lat;
   const fromLng = trail?.from.lng;
