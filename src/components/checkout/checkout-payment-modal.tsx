@@ -8,19 +8,25 @@ import { StripeEmbeddedCheckout } from "@/components/checkout/stripe-embedded-ch
 import { isCrispHiddenPath, setCrispBubbleHidden } from "@/components/crisp/crisp-visibility";
 import { track } from "@/lib/analytics/track";
 import { CHECKOUT_COPY } from "@/lib/checkout-copy";
+import { getFirstMonthOfferPrice } from "@/lib/checkout-first-month-offer";
 import { isNetworkError, requestCheckoutSession } from "@/lib/checkout-request";
 import { GUARANTEE, type Plan } from "@/lib/constants";
 
 /**
  * Payment popup opened by the paywall's "Continuer": Stripe's embedded
  * checkout for the chosen plan, with the guarantee reminder on top and a
- * fallback to the Stripe-hosted page if the form doesn't load.
+ * fallback to the Stripe-hosted page if the form doesn't load. When the bank
+ * refuses the card for lack of funds, offers -50 % on the shortest plan.
  * Rendered only while open, so every opening starts a fresh session.
  */
+/** How often the popup asks whether its checkout was refused for lack of funds. */
+const DECLINE_POLL_MS = 3000;
+
 export function CheckoutPaymentModal({
   plan,
-  downgradePlan,
-  onDowngrade,
+  offerPlan,
+  offerSessionId,
+  onDeclineOffer,
   stripePublishableKey,
   hostedRedirecting,
   hostedError,
@@ -28,21 +34,27 @@ export function CheckoutPaymentModal({
   onClose,
 }: {
   plan: Plan;
-  /** Cheaper plan offered when the card is declined on this one. */
-  downgradePlan?: Plan;
-  onDowngrade?: () => void;
+  /** Shortest plan of the grid: its 1st month at -50 % when the card is refused for lack of funds. */
+  offerPlan: Plan;
+  /** This popup is the discounted checkout: the refused (or closed) one it comes from. */
+  offerSessionId?: string;
+  onDeclineOffer: (declinedSessionId: string) => void;
   stripePublishableKey: string;
   /** The hosted-page fallback is loading. */
   hostedRedirecting: boolean;
   hostedError?: string | null;
   onHostedFallback: () => void;
-  onClose: () => void;
+  /** `sessionId`: the checkout being closed, for the -50 % offer of the A/B test. */
+  onClose: (sessionId: string | null) => void;
 }) {
   const copy = CHECKOUT_COPY;
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
-  const [paymentFailed, setPaymentFailed] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [declined, setDeclined] = useState(false);
+  // Read by the Escape handler, which is set up once.
+  const sessionIdRef = useRef<string | null>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   // When this attempt to load the form started, to time Stripe's real render.
   const loadStartedAtRef = useRef(0);
@@ -52,12 +64,19 @@ export function CheckoutPaymentModal({
     const startedAt = performance.now();
     loadStartedAtRef.current = startedAt;
 
-    requestCheckoutSession("/api/stripe/embedded-checkout", plan.id, controller.signal)
+    requestCheckoutSession(
+      "/api/stripe/embedded-checkout",
+      plan.id,
+      controller.signal,
+      offerSessionId
+    )
       .then((data) => {
         if (!data.clientSecret) {
           throw new Error(data.error ?? copy.errStart);
         }
         setClientSecret(data.clientSecret);
+        setSessionId(data.sessionId ?? null);
+        sessionIdRef.current = data.sessionId ?? null;
         track("checkout_payment_form_ready", {
           plan: plan.id,
           load_ms: Math.round(performance.now() - startedAt),
@@ -80,7 +99,31 @@ export function CheckoutPaymentModal({
       });
 
     return () => controller.abort();
-  }, [plan.id, attempt, copy]);
+  }, [plan.id, attempt, copy, offerSessionId]);
+
+  // Stripe's form doesn't tell the page why a card was refused: the webhook
+  // stamps it on the session, read back here. Once discounted, no second offer.
+  useEffect(() => {
+    if (!sessionId || declined || offerSessionId) return;
+    const controller = new AbortController();
+    const timer = setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      fetch(`/api/stripe/checkout-decline?session_id=${encodeURIComponent(sessionId)}`, {
+        signal: controller.signal,
+      })
+        .then((res) => res.json() as Promise<{ declined?: boolean }>)
+        .then((data) => {
+          if (!data.declined) return;
+          setDeclined(true);
+          track("checkout_decline_offer_shown", { plan: plan.id, offer_plan: offerPlan.id });
+        })
+        .catch(() => {});
+    }, DECLINE_POLL_MS);
+    return () => {
+      clearInterval(timer);
+      controller.abort();
+    };
+  }, [sessionId, declined, offerSessionId, plan.id, offerPlan.id]);
 
   useEffect(() => {
     closeRef.current?.focus();
@@ -89,7 +132,7 @@ export function CheckoutPaymentModal({
     const { overflow } = document.body.style;
     document.body.style.overflow = "hidden";
     function handleKey(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") onClose(sessionIdRef.current);
     }
     window.addEventListener("keydown", handleKey);
     return () => {
@@ -109,13 +152,8 @@ export function CheckoutPaymentModal({
     });
   }
 
-  function handleSubmitFailed() {
-    track("checkout_payment_failed", { plan: plan.id });
-    if (downgradePlan && !paymentFailed) {
-      track("checkout_downgrade_offer_shown", { plan: plan.id, offer_plan: downgradePlan.id });
-    }
-    setPaymentFailed(true);
-  }
+  const price = plan.price.replace("€", " €");
+  const offerPrice = getFirstMonthOfferPrice(offerPlan.price);
 
   function retry() {
     setError(null);
@@ -125,7 +163,7 @@ export function CheckoutPaymentModal({
   return createPortal(
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/60 p-4 backdrop-blur-sm"
-      onClick={onClose}
+      onClick={() => onClose(sessionId)}
     >
       <div
         role="dialog"
@@ -136,12 +174,13 @@ export function CheckoutPaymentModal({
       >
         <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
           <p className="text-sm font-bold text-zinc-900">
-            {plan.name} · {plan.price.replace("€", " €")}
+            {plan.name} ·{" "}
+            {offerSessionId ? copy.firstMonthOfferHeader(getFirstMonthOfferPrice(plan.price)) : price}
           </p>
           <button
             ref={closeRef}
             type="button"
-            onClick={onClose}
+            onClick={() => onClose(sessionId)}
             aria-label="Fermer"
             className="flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 text-zinc-500 transition hover:text-zinc-900"
           >
@@ -167,23 +206,23 @@ export function CheckoutPaymentModal({
           </div>
           <p className="mt-2 text-xs text-zinc-500">{copy.modalCancelAnytime}</p>
 
-          {paymentFailed && downgradePlan && onDowngrade ? (
+          {declined && sessionId ? (
             <div className="mt-3 rounded-2xl border border-pink-200 bg-pink-50 p-3">
-              <p className="text-sm font-bold text-zinc-900">
-                {copy.downgradeTitle(plan.price.replace("€", " €"))}
-              </p>
+              <p className="text-sm font-bold text-zinc-900">{copy.declineOfferTitle}</p>
               <p className="mt-0.5 text-xs text-zinc-600">
-                {copy.downgradeLead(downgradePlan.name, downgradePlan.price.replace("€", " €"))}
-                {plan.mobileApp && !downgradePlan.mobileApp ? ` ${copy.downgradeNoMobileApp}` : null}
+                {copy.declineOfferLead(
+                  offerPlan.name,
+                  offerPrice,
+                  offerPlan.price.replace("€", " €")
+                )}
+                {plan.mobileApp && !offerPlan.mobileApp ? ` ${copy.downgradeNoMobileApp}` : null}
               </p>
               <button
                 type="button"
-                onClick={onDowngrade}
-                data-track="checkout_downgrade_clicked"
-                data-track-plan={plan.id}
+                onClick={() => onDeclineOffer(sessionId)}
                 className="btn-gradient mt-2 w-full rounded-full px-4 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
               >
-                {copy.downgradeCta(downgradePlan.name, downgradePlan.price.replace("€", " €"))}
+                {copy.declineOfferCta(offerPrice)}
               </button>
             </div>
           ) : null}
@@ -194,7 +233,6 @@ export function CheckoutPaymentModal({
                 clientSecret={clientSecret}
                 publishableKey={stripePublishableKey}
                 onRendered={handleRendered}
-                onSubmitFailed={handleSubmitFailed}
               />
             ) : error ? (
               <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-center">

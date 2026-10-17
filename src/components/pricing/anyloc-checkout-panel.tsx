@@ -20,6 +20,10 @@ import { GoogleAuthLink } from "@/components/auth/google-auth-link";
 import { CheckoutDownsellSheet } from "@/components/checkout/checkout-downsell-sheet";
 import { CheckoutPaymentModal } from "@/components/checkout/checkout-payment-modal";
 import { CHECKOUT_COPY, CHECKOUT_REVIEWS, getCheckoutHeadline } from "@/lib/checkout-copy";
+import {
+  getFirstMonthOfferPrice,
+  getOrPickCloseOfferVariant,
+} from "@/lib/checkout-first-month-offer";
 import { RECOVERY_OFFER_PLAN_ID } from "@/lib/checkout-recovery-plan";
 import { isNetworkError, requestCheckoutSession } from "@/lib/checkout-request";
 import {
@@ -30,6 +34,7 @@ import {
   PLAN_VALUE_STACK,
 } from "@/lib/constants";
 import type { OnboardingDestination } from "@/lib/onboarding-destinations";
+import { registerPostHogProperties } from "@/lib/posthog/browser";
 import { getStripe } from "@/lib/stripe-browser";
 import { cn } from "@/lib/utils";
 
@@ -98,10 +103,11 @@ export function AnyLocCheckoutPanel({
     checkoutPlans.find((plan) => plan.id === selectedPlanId) ?? checkoutPlans[0];
   // Card declined (or popup closed) on a pricier plan: offer the shortest one.
   const entryPlanId = getGridEntryPlanId(selectedPlan.id);
-  const downgradePlan =
-    selectedPlan.id !== entryPlanId
-      ? checkoutPlans.find((plan) => plan.id === entryPlanId)
-      : undefined;
+  const entryPlan = checkoutPlans.find((plan) => plan.id === entryPlanId) ?? selectedPlan;
+  const downgradePlan = selectedPlan.id !== entryPlanId ? entryPlan : undefined;
+  // Checkout refused for lack of funds (or closed, in the A/B test) that
+  // unlocks the shortest plan at -50 % on the 1st month.
+  const [offerSessionId, setOfferSessionId] = useState<string | null>(null);
   const [redirecting, setRedirecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const requestRef = useRef<AbortController | null>(null);
@@ -128,24 +134,66 @@ export function AnyLocCheckoutPanel({
   // Offered once per visit, when the popup of a pricier plan is closed.
   const [downsellOpen, setDownsellOpen] = useState(false);
   const downsellShownRef = useRef(false);
-  const closePaymentModal = useCallback(() => {
+  // A/B test: half of the visitors closing the popup get -50 % on the 1st month.
+  const [closeOfferSessionId, setCloseOfferSessionId] = useState<string | null>(null);
+  const closeOfferDrawnRef = useRef(false);
+  const closePaymentModal = useCallback((sessionId: string | null) => {
     const entryId = getGridEntryPlanId(selectedPlanId);
     const downsellPlanId = selectedPlanId !== entryId ? entryId : undefined;
     track("checkout_modal_closed", { plan: selectedPlanId });
     requestRef.current?.abort();
     setRedirecting(false);
     setModalOpen(false);
+    // Already discounted: nothing more to offer.
+    if (offerSessionId) return;
+    if (sessionId && !closeOfferDrawnRef.current) {
+      closeOfferDrawnRef.current = true;
+      const variant = getOrPickCloseOfferVariant();
+      registerPostHogProperties({ close_offer_variant: variant });
+      track("close_offer_experiment_exposed", {
+        close_offer_variant: variant,
+        plan: selectedPlanId,
+        $set: { close_offer_variant: variant },
+      });
+      if (variant === "offer") {
+        setCloseOfferSessionId(sessionId);
+        return;
+      }
+    }
     if (downsellPlanId && !downsellShownRef.current) {
       downsellShownRef.current = true;
       track("checkout_downsell_shown", { plan: selectedPlanId, offer_plan: downsellPlanId });
       setDownsellOpen(true);
     }
+  }, [selectedPlanId, offerSessionId]);
+
+  const dismissCloseOffer = useCallback(() => {
+    track("close_offer_dismissed", { plan: selectedPlanId });
+    setCloseOfferSessionId(null);
   }, [selectedPlanId]);
+
+  function acceptCloseOffer() {
+    track("close_offer_accepted", { plan: selectedPlanId, offer_plan: entryPlanId });
+    setOfferSessionId(closeOfferSessionId);
+    setCloseOfferSessionId(null);
+    if (entryPlanId !== selectedPlanId) {
+      onPlanChange(entryPlanId);
+    }
+    setModalOpen(true);
+  }
 
   const dismissDownsell = useCallback(() => {
     track("checkout_downsell_dismissed", { plan: selectedPlanId });
     setDownsellOpen(false);
   }, [selectedPlanId]);
+
+  function acceptDeclineOffer(sessionId: string) {
+    track("checkout_decline_offer_accepted", { plan: selectedPlanId, offer_plan: entryPlanId });
+    setOfferSessionId(sessionId);
+    if (entryPlanId !== selectedPlanId) {
+      onPlanChange(entryPlanId);
+    }
+  }
 
   function acceptDownsell() {
     if (!downgradePlan) return;
@@ -195,6 +243,7 @@ export function AnyLocCheckoutPanel({
   function selectPlan(planId: string) {
     track("checkout_plan_selected", { plan: planId, previous_plan: selectedPlanId });
     setError(null);
+    setOfferSessionId(null);
     if (planId !== selectedPlanId) {
       onPlanChange(planId);
     }
@@ -490,16 +539,29 @@ export function AnyLocCheckoutPanel({
 
       {modalOpen && hydrated ? (
         <CheckoutPaymentModal
-          // A new plan needs a new Stripe session: remount the popup.
-          key={selectedPlan.id}
+          // A new plan or the discount needs a new Stripe session: remount the popup.
+          key={`${selectedPlan.id}:${offerSessionId ?? ""}`}
           plan={selectedPlan}
-          downgradePlan={downgradePlan}
-          onDowngrade={downgradePlan ? () => onPlanChange(downgradePlan.id) : undefined}
+          offerPlan={entryPlan}
+          offerSessionId={
+            offerSessionId && selectedPlan.id === entryPlanId ? offerSessionId : undefined
+          }
+          onDeclineOffer={acceptDeclineOffer}
           stripePublishableKey={stripePublishableKey}
           hostedRedirecting={redirecting}
           hostedError={error}
           onHostedFallback={() => void goToHostedPayment()}
           onClose={closePaymentModal}
+        />
+      ) : null}
+
+      {closeOfferSessionId && hydrated ? (
+        <CheckoutDownsellSheet
+          plan={selectedPlan}
+          offerPlan={entryPlan}
+          firstMonthPrice={getFirstMonthOfferPrice(entryPlan.price)}
+          onAccept={acceptCloseOffer}
+          onDismiss={dismissCloseOffer}
         />
       ) : null}
 

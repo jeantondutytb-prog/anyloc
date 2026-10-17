@@ -29,7 +29,12 @@ async function parseJsonResponse(res: Response) {
   }
 
   try {
-    return JSON.parse(text) as { clientSecret?: string; url?: string; error?: string };
+    return JSON.parse(text) as {
+      clientSecret?: string;
+      sessionId?: string;
+      url?: string;
+      error?: string;
+    };
   } catch {
     throw new Error("Réponse serveur invalide. Réessaie dans quelques instants.");
   }
@@ -39,12 +44,14 @@ async function parseJsonResponse(res: Response) {
  * Creates a Stripe checkout session for `planId`: `/api/stripe/embedded-checkout`
  * answers a client secret (payment popup), `/api/checkout` a hosted page URL.
  * Retries when the network drops the request; `networkRetries` is reported
- * for analytics.
+ * for analytics. `offerSessionId`: the checkout refused for lack of funds (or
+ * closed, in the A/B test) that unlocks -50 % on the 1st month.
  */
 export async function requestCheckoutSession(
   endpoint: "/api/stripe/embedded-checkout" | "/api/checkout",
   planId: string,
-  signal: AbortSignal
+  signal: AbortSignal,
+  offerSessionId?: string
 ) {
   let attempt = 0;
 
@@ -54,7 +61,7 @@ export async function requestCheckoutSession(
         method: "POST",
         headers: { "Content-Type": "application/json" },
         // Lets the webhook tie a purchase made without an account to this visit.
-        body: JSON.stringify({ planId, analyticsId: getPostHogDistinctId() }),
+        body: JSON.stringify({ planId, analyticsId: getPostHogDistinctId(), offerSessionId }),
         signal,
       });
       const data = await parseJsonResponse(res);

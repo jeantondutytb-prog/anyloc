@@ -1,9 +1,12 @@
+import { cookies } from "next/headers";
 import { after, NextResponse } from "next/server";
 import { logError } from "@/lib/log-error";
 import {
   enrollInCheckoutRecovery,
   getRecoveryCouponForUser,
 } from "@/lib/checkout-recovery-server";
+import { CLOSE_OFFER_COOKIE, parseCloseOfferVariant } from "@/lib/checkout-first-month-offer";
+import { getFirstMonthOfferCoupon } from "@/lib/checkout-first-month-offer-server";
 import { PLANS } from "@/lib/constants";
 import { capturePostHogEvent, parsePostHogDistinctId } from "@/lib/posthog/server";
 import { publicErrorMessage } from "@/lib/errors";
@@ -39,9 +42,18 @@ export async function POST(request: Request) {
     const user = await getAuthenticatedCheckoutUser();
     userId = user?.id;
     const analyticsId = parsePostHogDistinctId(body?.analyticsId);
+    // The earlier checkout refused for lack of funds (or closed, in the A/B
+    // test) that this one comes from: -50 % on the 1st month.
+    const offerSessionId = typeof body?.offerSessionId === "string" ? body.offerSessionId : null;
+    const closeOfferVariant = parseCloseOfferVariant((await cookies()).get(CLOSE_OFFER_COOKIE)?.value);
 
     // Looked up while Stripe finds the customer: every round trip delays the payment form.
-    const couponPromise = user ? getRecoveryCouponForUser(user.id, plan.id) : null;
+    const offerPromise = offerSessionId
+      ? getFirstMonthOfferCoupon(offerSessionId, plan.id, closeOfferVariant)
+      : Promise.resolve(null);
+    const couponPromise = offerPromise.then(
+      (offer) => offer?.couponId ?? (user ? getRecoveryCouponForUser(user.id, plan.id) : null)
+    );
 
     const session = await createSubscriptionCheckoutSession({
       plan,
@@ -50,7 +62,7 @@ export async function POST(request: Request) {
       uiMode: "embedded_page",
       couponId: couponPromise,
     });
-    const couponId = await couponPromise;
+    const [couponId, offer] = await Promise.all([couponPromise, offerPromise]);
 
     // Bookkeeping that the customer doesn't wait for: sent once the response is out.
     after(async () => {
@@ -66,7 +78,8 @@ export async function POST(request: Request) {
             guest_checkout: !user,
             ui_mode: "embedded",
             checkout_variant: "direct",
-            recovery_offer: Boolean(couponId),
+            recovery_offer: Boolean(couponId) && !offer,
+            first_month_offer: offer?.reason ?? null,
           },
         });
       } catch (error) {
@@ -81,7 +94,7 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({ clientSecret: session.client_secret });
+    return NextResponse.json({ clientSecret: session.client_secret, sessionId: session.id });
   } catch (error) {
     await logError("embedded-checkout", error, { userId, plan_id: planId });
 
