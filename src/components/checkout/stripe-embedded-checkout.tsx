@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from "@stripe/react-stripe-js";
-import { loadStripe, type StripeEmbeddedCheckoutAnalyticsEventUnion } from "@stripe/stripe-js";
+import type { StripeEmbeddedCheckoutAnalyticsEventUnion } from "@stripe/stripe-js";
+import { getStripe } from "@/lib/stripe-browser";
 
 export function StripeEmbeddedCheckout({
   clientSecret,
@@ -22,7 +23,7 @@ export function StripeEmbeddedCheckout({
   onSubmitFailed?: () => void;
 }) {
   const stripePromise = useMemo(
-    () => (publishableKey ? loadStripe(publishableKey) : null),
+    () => (publishableKey ? getStripe(publishableKey) : null),
     [publishableKey]
   );
 

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { logError } from "@/lib/log-error";
 import {
   enrollInCheckoutRecovery,
@@ -40,30 +40,38 @@ export async function POST(request: Request) {
     userId = user?.id;
     const analyticsId = parsePostHogDistinctId(body?.analyticsId);
 
-    const couponId = user ? await getRecoveryCouponForUser(user.id, plan.id) : null;
+    // Looked up while Stripe finds the customer: every round trip delays the payment form.
+    const couponPromise = user ? getRecoveryCouponForUser(user.id, plan.id) : null;
 
     const session = await createSubscriptionCheckoutSession({
       plan,
       user,
       analyticsId,
       uiMode: "embedded_page",
-      couponId,
+      couponId: couponPromise,
     });
+    const couponId = await couponPromise;
 
-    if (user) {
-      await enrollInCheckoutRecovery(user, plan.id);
-    }
-
-    await capturePostHogEvent({
-      distinctId: user?.id ?? analyticsId ?? session.id,
-      event: "checkout_started",
-      properties: {
-        plan: plan.id,
-        guest_checkout: !user,
-        ui_mode: "embedded",
-        checkout_variant: "direct",
-        recovery_offer: Boolean(couponId),
-      },
+    // Bookkeeping that the customer doesn't wait for: sent once the response is out.
+    after(async () => {
+      try {
+        if (user) {
+          await enrollInCheckoutRecovery(user, plan.id);
+        }
+        await capturePostHogEvent({
+          distinctId: user?.id ?? analyticsId ?? session.id,
+          event: "checkout_started",
+          properties: {
+            plan: plan.id,
+            guest_checkout: !user,
+            ui_mode: "embedded",
+            checkout_variant: "direct",
+            recovery_offer: Boolean(couponId),
+          },
+        });
+      } catch (error) {
+        await logError("embedded-checkout/after", error, { userId, plan_id: plan.id });
+      }
     });
 
     if (!session.client_secret) {
