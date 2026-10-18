@@ -43,7 +43,7 @@ function translateAuthError(message: string) {
     return "Un compte existe déjà avec cet email.";
   }
   if (normalized.includes("password should be at least")) {
-    return "Le mot de passe ne respecte pas les critères minimaux.";
+    return "Mot de passe trop court, ajoute quelques caractères.";
   }
   if (normalized.includes("valid email")) {
     return "Adresse email invalide.";
@@ -142,10 +142,27 @@ export async function signup(
   });
 
   if (error) {
-    return {
-      error: translateAuthError(error.message),
-      accountExists: error.message.toLowerCase().includes("user already registered"),
-    };
+    const accountExists = error.message.toLowerCase().includes("user already registered");
+
+    // Most people hitting this already have an account and typed its password:
+    // log them in instead of sending them to another form.
+    if (accountExists) {
+      const { data: login } = await supabase.auth.signInWithPassword({ email, password });
+      if (login.user) {
+        await identifyPostHogUser({
+          distinctId: login.user.id,
+          properties: { email: login.user.email },
+        });
+        await capturePostHogEvent({
+          distinctId: login.user.id,
+          event: "login_completed",
+          properties: { source: "signup_account_exists" },
+        });
+        redirect(await resolvePostAuthRedirect(login.user.id, login.user.email, redirectTo));
+      }
+    }
+
+    return { error: translateAuthError(error.message), accountExists };
   }
 
   // With "Confirm email" on, nobody is logged in until the inbox owner clicks
