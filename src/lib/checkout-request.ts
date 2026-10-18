@@ -1,3 +1,4 @@
+import type { CheckoutButtonVariant } from "@/lib/checkout-button-experiment";
 import { track } from "@/lib/analytics/track";
 import { getPostHogDistinctId } from "@/lib/posthog/browser";
 
@@ -48,10 +49,11 @@ async function parseJsonResponse(res: Response) {
  * closed, in the A/B test) that unlocks -50 % on the 1st month.
  */
 export async function requestCheckoutSession(
-  endpoint: "/api/stripe/embedded-checkout" | "/api/checkout",
+  endpoint: "/api/stripe/embedded-checkout" | "/api/stripe/express-checkout" | "/api/checkout",
   planId: string,
   signal: AbortSignal,
-  offerSessionId?: string
+  offerSessionId?: string,
+  checkoutButtonVariant?: CheckoutButtonVariant | null
 ) {
   let attempt = 0;
 
@@ -61,7 +63,13 @@ export async function requestCheckoutSession(
         method: "POST",
         headers: { "Content-Type": "application/json" },
         // Lets the webhook tie a purchase made without an account to this visit.
-        body: JSON.stringify({ planId, analyticsId: getPostHogDistinctId(), offerSessionId }),
+        body: JSON.stringify({
+          planId,
+          analyticsId: getPostHogDistinctId(),
+          offerSessionId,
+          // Tags the sale in Stripe with the payment button the buyer saw.
+          checkoutButtonVariant: checkoutButtonVariant ?? undefined,
+        }),
         signal,
       });
       const data = await parseJsonResponse(res);
