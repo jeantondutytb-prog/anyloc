@@ -8,6 +8,7 @@ import { StripeEmbeddedCheckout } from "@/components/checkout/stripe-embedded-ch
 import { isCrispHiddenPath, setCrispBubbleHidden } from "@/components/crisp/crisp-visibility";
 import { track } from "@/lib/analytics/track";
 import { CHECKOUT_COPY } from "@/lib/checkout-copy";
+import type { CheckoutButtonVariant } from "@/lib/checkout-button-experiment";
 import { getFirstMonthOfferPrice } from "@/lib/checkout-first-month-offer";
 import { isNetworkError, requestCheckoutSession } from "@/lib/checkout-request";
 import { GUARANTEE, type Plan } from "@/lib/constants";
@@ -32,6 +33,7 @@ export function CheckoutPaymentModal({
   hostedError,
   onHostedFallback,
   onClose,
+  checkoutButtonVariant,
 }: {
   plan: Plan;
   /** Shortest plan of the grid: its 1st month at -50 % when the card is refused for lack of funds. */
@@ -46,6 +48,8 @@ export function CheckoutPaymentModal({
   onHostedFallback: () => void;
   /** `sessionId`: the checkout being closed, for the -50 % offer of the A/B test. */
   onClose: (sessionId: string | null) => void;
+  /** Payment button A/B test variant, to tag the session in Stripe. */
+  checkoutButtonVariant?: CheckoutButtonVariant | null;
 }) {
   const copy = CHECKOUT_COPY;
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -68,7 +72,8 @@ export function CheckoutPaymentModal({
       "/api/stripe/embedded-checkout",
       plan.id,
       controller.signal,
-      offerSessionId
+      offerSessionId,
+      checkoutButtonVariant
     )
       .then((data) => {
         if (!data.clientSecret) {
@@ -99,7 +104,7 @@ export function CheckoutPaymentModal({
       });
 
     return () => controller.abort();
-  }, [plan.id, attempt, copy, offerSessionId]);
+  }, [plan.id, attempt, copy, offerSessionId, checkoutButtonVariant]);
 
   // Stripe's form doesn't tell the page why a card was refused: the webhook
   // stamps it on the session, read back here. Once discounted, no second offer.
