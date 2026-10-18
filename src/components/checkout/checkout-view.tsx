@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnyLocCheckoutPanel } from "@/components/pricing/anyloc-checkout-panel";
 import { Logo } from "@/components/ui/logo";
+import type { CheckoutButtonVariant } from "@/lib/checkout-button-experiment";
 import type { ReturningCustomer } from "@/lib/checkout-copy";
 import { DEFAULT_PLAN_ID, isValidPlanId } from "@/lib/constants";
 import {
@@ -31,6 +32,7 @@ export function CheckoutView({
   recoveryOffer,
   focusPayment: initialFocusPayment,
   returning,
+  checkoutButtonVariant,
 }: {
   initialPlanId: string;
   canceled?: boolean;
@@ -38,6 +40,8 @@ export function CheckoutView({
   recoveryOffer?: boolean;
   focusPayment?: boolean;
   returning?: ReturningCustomer | null;
+  /** Payment button A/B test: null when this visit is not part of it. */
+  checkoutButtonVariant?: CheckoutButtonVariant | null;
 }) {
   const router = useRouter();
   const [selectedPlanId, setSelectedPlanId] = useState(
@@ -90,6 +94,7 @@ export function CheckoutView({
           focusPayment={focusPayment}
           onShowAllPlans={() => setFocusPayment(false)}
           returning={returning}
+          checkoutButtonVariant={checkoutButtonVariant}
         />
       </main>
 

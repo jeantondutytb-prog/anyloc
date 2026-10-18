@@ -1,7 +1,14 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { CheckoutView } from "@/components/checkout/checkout-view";
+import { CheckoutButtonExperimentExposure } from "@/components/checkout/checkout-button-experiment-exposure";
 import { PricingExperimentExposure } from "@/components/pricing/pricing-experiment-exposure";
+import {
+  CHECKOUT_BUTTON_VARIANT_COOKIE,
+  getEffectiveCheckoutButtonVariant,
+  isCheckoutButtonExperimentEnabled,
+  parseCheckoutButtonVariant,
+} from "@/lib/checkout-button-experiment";
 import type { ReturningCustomer } from "@/lib/checkout-copy";
 import { hasActiveRecoveryOffer } from "@/lib/checkout-recovery-server";
 import { DEFAULT_PLAN_ID, getCheckoutUrl, getPlanDisplayName, isValidPlanId } from "@/lib/constants";
@@ -27,10 +34,11 @@ export default async function CheckoutPage({
     preview?: string;
     paiement?: string;
     pricing?: string;
+    button?: string;
     retour?: string;
   }>;
 }) {
-  const { plan, canceled, preview, paiement, pricing, retour } = await searchParams;
+  const { plan, canceled, preview, paiement, pricing, button, retour } = await searchParams;
   // Email links (?paiement=1) open straight on the payment form.
   const focusPayment = paiement === "1";
   // Local design preview without an account: /checkout?preview=1 under `next dev` only.
@@ -51,6 +59,12 @@ export default async function CheckoutPage({
   const planId = focusPayment
     ? requestedPlanId
     : planIdForVariant(requestedPlanId, pricingVariant);
+
+  // Same for the payment button: /checkout?preview=1&button=apple_pay_direct.
+  const buttonVariant =
+    devPreview && parseCheckoutButtonVariant(button)
+      ? parseCheckoutButtonVariant(button)!
+      : getEffectiveCheckoutButtonVariant((await cookies()).get(CHECKOUT_BUTTON_VARIANT_COOKIE)?.value);
 
   let recoveryOffer = false;
   // The dev preview can show the welcome-back copy: /checkout?preview=1&retour=1.
@@ -98,8 +112,16 @@ export default async function CheckoutPage({
     }
   }
 
+  // The button test only covers the normal paywall: email links
+  // (?paiement=1) and the recovery offer keep the current button.
+  const inButtonExperiment =
+    (isCheckoutButtonExperimentEnabled() || (devPreview && Boolean(parseCheckoutButtonVariant(button)))) &&
+    !focusPayment &&
+    !recoveryOffer;
+
   return (
     <>
+      {inButtonExperiment ? <CheckoutButtonExperimentExposure variant={buttonVariant} /> : null}
       {isPricingExperimentEnabled() ? (
         <PricingExperimentExposure variant={pricingVariant} />
       ) : null}
@@ -110,6 +132,7 @@ export default async function CheckoutPage({
         focusPayment={focusPayment}
         stripePublishableKey={getStripePublishableKey()}
         returning={returning}
+        checkoutButtonVariant={inButtonExperiment ? buttonVariant : null}
       />
     </>
   );
