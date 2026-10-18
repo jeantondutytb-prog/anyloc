@@ -306,6 +306,21 @@ export const PLAN_IDS = PLANS.map((plan) => plan.id);
 
 export type PricingGrid = Plan["grid"];
 
+/** Stripe portal configurations letting a subscriber switch between the plans of their grid. */
+export const PLAN_SWITCH_PORTAL_CONFIGURATIONS: Record<PricingGrid, string> = {
+  v1: "bpc_1URxjvENC8ag2ECj5PthFo0H",
+  v2: "bpc_1URxjvENC8ag2ECjEcsZJvqX",
+};
+
+/** Plan a Stripe price belongs to: follows a plan switch made from the portal. */
+export function getPlanIdForStripePrice(priceId: string | null | undefined) {
+  if (!priceId) {
+    return null;
+  }
+
+  return PLANS.find((plan) => plan.stripePriceId === priceId)?.id ?? null;
+}
+
 export function getPlanGrid(planId: string): PricingGrid {
   return PLANS.find((plan) => plan.id === planId)?.grid ?? "v1";
 }
