@@ -38,6 +38,7 @@ import {
   getGridPlans,
   getPlanGrid,
   GUARANTEE,
+  PLAN_VALUE_DETAILS,
   PLAN_VALUE_STACK,
 } from "@/lib/constants";
 import type { OnboardingDestination } from "@/lib/onboarding-destinations";
@@ -139,6 +140,14 @@ export function AnyLocCheckoutPanel({
     track("checkout_continue_clicked", { plan: selectedPlanId, source });
     setError(null);
     setModalOpen(true);
+  }
+
+  // "Ce que tu débloques": one card open at a time.
+  const [openFeature, setOpenFeature] = useState<number | null>(null);
+
+  function toggleFeature(index: number) {
+    if (openFeature !== index) track("checkout_feature_opened", { feature: index });
+    setOpenFeature(openFeature === index ? null : index);
   }
 
   // Offered once per visit, when the popup of a pricier plan is closed.
@@ -495,13 +504,28 @@ export function AnyLocCheckoutPanel({
 
       <h2 className="mt-10 text-base font-bold text-zinc-900">{copy.unlockTitle}</h2>
       <ul className="mt-3 space-y-2">
-        {PLAN_VALUE_STACK.map((perk) => (
-          <li
-            key={perk}
-            className="flex items-center gap-2.5 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-medium text-zinc-900"
-          >
-            <CircleCheck className="h-4 w-4 shrink-0 text-pink-600" />
-            {perk}
+        {PLAN_VALUE_STACK.map((perk, index) => (
+          <li key={perk}>
+            <button
+              type="button"
+              onClick={() => toggleFeature(index)}
+              aria-expanded={openFeature === index}
+              className="flex w-full items-center gap-2.5 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-medium text-zinc-900 transition active:bg-zinc-50"
+            >
+              <CircleCheck className="h-4 w-4 shrink-0 text-pink-600" />
+              <span className="flex-1">{perk}</span>
+              <ChevronDown
+                className={cn(
+                  "h-4 w-4 shrink-0 text-zinc-400 transition-transform",
+                  openFeature === index && "rotate-180"
+                )}
+              />
+            </button>
+            {openFeature === index ? (
+              <p className="px-4 pt-2 pb-1 text-xs leading-relaxed text-zinc-600">
+                {PLAN_VALUE_DETAILS[index]}
+              </p>
+            ) : null}
           </li>
         ))}
       </ul>
