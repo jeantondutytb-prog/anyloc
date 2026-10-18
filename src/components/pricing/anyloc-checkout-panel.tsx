@@ -135,7 +135,7 @@ export function AnyLocCheckoutPanel({
   // The popup is portaled to <body>: only render it once in the browser.
   const hydrated = useSyncExternalStore(subscribeToNothing, () => true, () => false);
 
-  function openPaymentModal(source: "main" | "resume") {
+  function openPaymentModal(source: "main" | "resume" | "apple_pay_badge") {
     track("checkout_continue_clicked", { plan: selectedPlanId, source });
     setError(null);
     setModalOpen(true);
@@ -468,10 +468,26 @@ export function AnyLocCheckoutPanel({
           ].map(({ label, Icon }) => (
             <li
               key={label}
-              className="flex items-center gap-1 rounded-md border border-zinc-200 bg-white px-2 py-1"
+              className={cn(
+                "flex items-center gap-1 rounded-md border border-zinc-200 bg-white",
+                label !== "Apple Pay" && "px-2 py-1"
+              )}
             >
-              <Icon className="h-3 w-3" />
-              {label}
+              {label === "Apple Pay" ? (
+                <button
+                  type="button"
+                  onClick={() => openPaymentModal("apple_pay_badge")}
+                  className="flex items-center gap-1 rounded-md px-2 py-1 transition active:bg-zinc-100"
+                >
+                  <Icon className="h-3 w-3" />
+                  {label}
+                </button>
+              ) : (
+                <>
+                  <Icon className="h-3 w-3" />
+                  {label}
+                </>
+              )}
             </li>
           ))}
         </ul>
