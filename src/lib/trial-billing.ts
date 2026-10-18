@@ -1,4 +1,5 @@
 import type Stripe from "stripe";
+import { getPlanIdForStripePrice } from "@/lib/constants";
 import { logError } from "@/lib/log-error";
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 import { stripe } from "@/lib/stripe";
@@ -10,7 +11,11 @@ export function getTrialProfilePatchFromSubscription(
   const basePatch = {
     stripe_subscription_id: subscription.id,
     subscription_status: subscription.status,
-    plan_id: subscription.metadata?.plan_id ?? null,
+    // The price wins over the checkout metadata, which a portal plan switch leaves as is.
+    plan_id:
+      getPlanIdForStripePrice(subscription.items.data[0]?.price.id) ??
+      subscription.metadata?.plan_id ??
+      null,
   };
 
   if (!subscription.trial_start && !subscription.trial_end) {

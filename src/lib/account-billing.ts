@@ -3,7 +3,7 @@ import {
   CANCEL_ENDING_EMAIL_SENT_KEY,
   CANCEL_SCHEDULED_KEY,
 } from "@/lib/cancel-ending-email";
-import { getPlanDisplayName } from "@/lib/constants";
+import { getPlanDisplayName, PLANS, PLAN_SWITCH_PORTAL_CONFIGURATIONS } from "@/lib/constants";
 import { logError } from "@/lib/log-error";
 import type {
   BillingPortalFlow,
@@ -185,7 +185,12 @@ export async function createBillingPortalSession({
     return_url: returnUrl,
   };
 
-  if (flow === "subscription" && profile?.stripe_subscription_id) {
+  // Switching is offered within the subscriber's own grid only; a legacy plan
+  // (weekly, grandfathered price) gets the plain portal instead of an error.
+  const switchGrid = PLANS.find((plan) => plan.id === profile?.plan_id)?.grid;
+
+  if (flow === "subscription" && profile?.stripe_subscription_id && switchGrid) {
+    sessionParams.configuration = PLAN_SWITCH_PORTAL_CONFIGURATIONS[switchGrid];
     sessionParams.flow_data = {
       type: "subscription_update",
       subscription_update: {
