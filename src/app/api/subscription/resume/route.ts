@@ -19,6 +19,7 @@ export async function POST(request: Request) {
     await resumeSubscriptionForUser(user.id);
     return NextResponse.json({ ok: true });
   } catch (resumeError) {
+    console.error("[subscription/resume]", resumeError);
     const message =
       resumeError instanceof Error
         ? resumeError.message
