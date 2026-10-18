@@ -278,9 +278,13 @@ export async function resumeSubscriptionForUser(userId: string) {
     );
   }
 
+  // Stripe refuses cancel_at and cancel_at_period_end in the same call, and
+  // cancel_at_period_end: true also fills cancel_at: clear only the one that
+  // scheduled the end (resetting cancel_at_period_end clears cancel_at too).
   await client.subscriptions.update(subscriptionId, {
-    cancel_at_period_end: false,
-    ...(subscription.cancel_at ? { cancel_at: "" as const } : {}),
+    ...(subscription.cancel_at && !subscription.cancel_at_period_end
+      ? { cancel_at: "" as const }
+      : { cancel_at_period_end: false }),
     // Clears the reminder flags so a later cancellation gets its own email.
     metadata: { [CANCEL_SCHEDULED_KEY]: "", [CANCEL_ENDING_EMAIL_SENT_KEY]: "" },
   });

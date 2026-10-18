@@ -1,4 +1,5 @@
-export const MIN_PASSWORD_LENGTH = 10;
+// 10 lost about 20 signups a day; 8 is the NIST floor, keep it there.
+export const MIN_PASSWORD_LENGTH = 8;
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
