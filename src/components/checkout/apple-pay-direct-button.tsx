@@ -26,7 +26,9 @@ const EXPRESS_OPTIONS: StripeCheckoutExpressCheckoutElementOptions = {
   buttonHeight: BUTTON_HEIGHT,
   buttonTheme: { applePay: "black" },
   buttonType: { applePay: "subscribe" },
-  layout: { maxColumns: 1, maxRows: 1, overflow: "never" },
+  // No `overflow: "never"`: combined with `maxRows: 1`, Stripe never fires
+  // `ready`, so the paywall timed out and hid Apple Pay for every visitor.
+  layout: { maxColumns: 1, maxRows: 1 },
   paymentMethodOrder: ["apple_pay"],
   paymentMethods: {
     applePay: "auto",
