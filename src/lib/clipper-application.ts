@@ -53,6 +53,34 @@ export function normalizePhone(input: string) {
   return E164_PHONE.test(phone) ? phone : null;
 }
 
+// Ton numéro WhatsApp, au format international sans "+" ni espaces (ex. "33612345678").
+export const CLIPPER_WHATSAPP_NUMBER = "33643192953";
+
+// Lien wa.me qui ouvre WhatsApp avec le message de candidature déjà écrit, adressé à Jean.
+export function clipperWhatsAppUrl({
+  firstName,
+  instagram,
+  videosPerDay,
+}: {
+  firstName: string;
+  instagram: string;
+  videosPerDay: string;
+}) {
+  const handle = normalizeInstagramHandle(instagram);
+  const videos: Record<string, string> = {
+    "1": "1 vidéo",
+    "2-3": "2 à 3 vidéos",
+    "4+": "4 vidéos ou plus",
+  };
+  const lines = [
+    `Salut Jean ! C'est ${firstName.trim()}${handle ? ` (@${handle} sur Insta)` : ""} 👋`,
+    "Je viens de postuler pour devenir clippeur Anyloc.",
+    videos[videosPerDay] ? `Je peux poster ${videos[videosPerDay]} par jour.` : null,
+  ].filter(Boolean);
+
+  return `https://wa.me/${CLIPPER_WHATSAPP_NUMBER}?text=${encodeURIComponent(lines.join("\n"))}`;
+}
+
 // Garde seulement un nom de campagne propre (ex. "clippeurs_mail3"), sinon null.
 export function normalizeUtmCampaign(input: string | null | undefined) {
   const campaign = (input ?? "").trim().toLowerCase();

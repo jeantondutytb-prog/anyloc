@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  CLIPPER_WHATSAPP_NUMBER,
+  clipperWhatsAppUrl,
   normalizeInstagramHandle,
   normalizePhone,
   normalizeUtmCampaign,
@@ -118,5 +120,18 @@ describe("parseClipperApplication", () => {
       form({ videosPerDay: "100", firstName: "Léa", instagram: "lea" })
     );
     assert.equal(result.ok, false);
+  });
+});
+
+describe("clipperWhatsAppUrl", () => {
+  it("pré-remplit un message qui dit qui écrit et pourquoi", () => {
+    const url = new URL(
+      clipperWhatsAppUrl({ firstName: " Léa ", instagram: "@Lea.Clips", videosPerDay: "2-3" })
+    );
+    assert.equal(url.origin + url.pathname, `https://wa.me/${CLIPPER_WHATSAPP_NUMBER}`);
+    const text = url.searchParams.get("text") ?? "";
+    assert.match(text, /C'est Léa \(@lea\.clips sur Insta\)/);
+    assert.match(text, /clippeur Anyloc/);
+    assert.match(text, /2 à 3 vidéos par jour/);
   });
 });

@@ -1,7 +1,7 @@
 "use client";
 
-import { startTransition, useActionState, useState } from "react";
-import { ArrowLeft, ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
+import { startTransition, useActionState, useEffect, useState } from "react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, MessageCircle } from "lucide-react";
 import {
   submitClipperApplication,
   type ClipperApplicationState,
@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   CLIPPER_VIDEOS_PER_DAY,
+  clipperWhatsAppUrl,
   normalizeInstagramHandle,
   normalizePhone,
 } from "@/lib/clipper-application";
@@ -36,6 +37,15 @@ export function ClipperApplicationForm({
   const [phone, setPhone] = useState("");
   const [honeypot, setHoneypot] = useState("");
 
+  const whatsAppUrl = clipperWhatsAppUrl({ firstName, instagram, videosPerDay });
+
+  // Candidature enregistrée : on ouvre WhatsApp avec le message déjà écrit,
+  // pour que le clippeur ait une conversation avec nous et se souvienne de qui on est.
+  useEffect(() => {
+    if (state.submitted) window.location.href = whatsAppUrl;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.submitted]);
+
   if (state.submitted) {
     return (
       <div className="py-6 text-center">
@@ -44,24 +54,16 @@ export function ClipperApplicationForm({
           C&apos;est noté{firstName ? `, ${firstName}` : ""} !
         </h2>
         <p className="mt-2 text-sm text-zinc-600">
-          {phone.trim() ? (
-            "On regarde ton profil et on t’écrit sur WhatsApp très vite."
-          ) : (
-            <>
-              On regarde ton profil et on t&apos;écrit sur Insta très vite, depuis le
-              compte{" "}
-              <a
-                href="https://www.instagram.com/jean.tdt/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-medium text-pink-600 hover:underline"
-              >
-                @jean.tdt
-              </a>
-              .
-            </>
-          )}
+          Dernière étape : envoie-nous le message sur WhatsApp, c&apos;est là qu&apos;on
+          te répond.
         </p>
+        <a
+          href={whatsAppUrl}
+          className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] text-base font-semibold text-white transition hover:bg-[#1ebe5a]"
+        >
+          <MessageCircle className="h-5 w-5" />
+          Envoyer sur WhatsApp
+        </a>
       </div>
     );
   }
@@ -231,7 +233,7 @@ export function ClipperApplicationForm({
                 Envoi…
               </>
             ) : (
-              "Je veux devenir clippeur"
+              "Envoyer ma candidature"
             )}
           </Button>
         </div>
