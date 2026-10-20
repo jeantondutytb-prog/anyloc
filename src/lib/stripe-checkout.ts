@@ -1,36 +1,11 @@
 import type { User } from "@supabase/supabase-js";
 import type Stripe from "stripe";
-import type { CheckoutButtonVariant } from "@/lib/checkout-button-experiment";
 import { CHECKOUT_PAY_CONSENT, DEVICE_REQUIREMENT_NOTE, type Plan } from "@/lib/constants";
 import { ensureStripeCustomerForUser } from "@/lib/billing";
 import { getAppUrl, stripe } from "@/lib/stripe";
 import { UserFacingError } from "@/lib/errors";
 
-// "elements": Stripe Elements on our own page (the Apple Pay button of the
-// paywall), paid from the page with checkout.confirm().
-type CheckoutMode = "embedded_page" | "hosted_page" | "elements";
-
-/**
- * Tags the session and its subscription with the payment button the buyer
- * saw, so sales can be counted per variant in Stripe.
- */
-function withCheckoutButtonVariant(
-  params: Stripe.Checkout.SessionCreateParams,
-  variant?: CheckoutButtonVariant | null
-): Stripe.Checkout.SessionCreateParams {
-  if (!variant) {
-    return params;
-  }
-
-  return {
-    ...params,
-    metadata: { ...params.metadata, checkout_button_variant: variant },
-    subscription_data: {
-      ...params.subscription_data,
-      metadata: { ...params.subscription_data?.metadata, checkout_button_variant: variant },
-    },
-  };
-}
+type CheckoutMode = "embedded_page" | "hosted_page";
 
 /**
  * Keeps the browser's PostHog id on the session so the webhook can attribute
@@ -73,7 +48,6 @@ export async function createSubscriptionCheckoutSession({
   uiMode,
   analyticsId,
   couponId,
-  checkoutButtonVariant,
 }: {
   plan: Plan;
   user?: User | null;
@@ -84,8 +58,6 @@ export async function createSubscriptionCheckoutSession({
    * pending lookup: it runs alongside the Stripe customer lookup.
    */
   couponId?: string | null | Promise<string | null>;
-  /** Payment button A/B test variant of the visitor, when they are part of it. */
-  checkoutButtonVariant?: CheckoutButtonVariant | null;
 }) {
   if (!stripe || !plan.stripePriceId) {
     throw new UserFacingError("Paiement non configuré pour ce plan");
@@ -98,23 +70,8 @@ export async function createSubscriptionCheckoutSession({
     couponId,
   ]);
 
-  const taggedParams = withCheckoutButtonVariant(
-    withAnalyticsId(baseParams, analyticsId),
-    checkoutButtonVariant
-  );
-
-  // Elements sessions take no custom_text: the page shows the consent itself.
-  if (uiMode === "elements") {
-    return stripe.checkout.sessions.create({
-      ...taggedParams,
-      ...(coupon ? { discounts: [{ coupon }] } : {}),
-      ui_mode: "elements",
-      return_url: returnUrl,
-    });
-  }
-
   const sharedParams = {
-    ...taggedParams,
+    ...withAnalyticsId(baseParams, analyticsId),
     ...getDeviceRequirementParams(),
     ...(coupon ? { discounts: [{ coupon }] } : {}),
   };
