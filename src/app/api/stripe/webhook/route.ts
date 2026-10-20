@@ -49,7 +49,6 @@ async function trackCheckoutCompleted(
       guest_checkout: session.metadata?.guest_checkout === "true",
       amount_total: session.amount_total,
       currency: session.currency,
-      checkout_button_variant: session.metadata?.checkout_button_variant,
     },
   });
 }

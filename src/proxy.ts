@@ -1,11 +1,4 @@
 import { type NextRequest, NextResponse } from "next/server";
-import {
-  CHECKOUT_BUTTON_VARIANT_COOKIE,
-  CHECKOUT_BUTTON_VARIANT_MAX_AGE,
-  isCheckoutButtonExperimentEnabled,
-  parseCheckoutButtonVariant,
-  pickCheckoutButtonVariant,
-} from "@/lib/checkout-button-experiment";
 import { isSiteUrlOAuthFallback } from "@/lib/oauth";
 import {
   isPricingExperimentEnabled,
@@ -34,16 +27,6 @@ export async function proxy(request: NextRequest) {
     request.cookies.set(PRICING_VARIANT_COOKIE, newVariant);
   }
 
-  // Same for the checkout button A/B test, with its own draw: independent of the pricing one.
-  const newButtonVariant =
-    isCheckoutButtonExperimentEnabled() &&
-    !parseCheckoutButtonVariant(request.cookies.get(CHECKOUT_BUTTON_VARIANT_COOKIE)?.value)
-      ? pickCheckoutButtonVariant()
-      : null;
-  if (newButtonVariant) {
-    request.cookies.set(CHECKOUT_BUTTON_VARIANT_COOKIE, newButtonVariant);
-  }
-
   const response =
     process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
       ? await updateSession(request)
@@ -53,14 +36,6 @@ export async function proxy(request: NextRequest) {
     response.cookies.set(PRICING_VARIANT_COOKIE, newVariant, {
       path: "/",
       maxAge: PRICING_VARIANT_MAX_AGE,
-      sameSite: "lax",
-    });
-  }
-
-  if (newButtonVariant) {
-    response.cookies.set(CHECKOUT_BUTTON_VARIANT_COOKIE, newButtonVariant, {
-      path: "/",
-      maxAge: CHECKOUT_BUTTON_VARIANT_MAX_AGE,
       sameSite: "lax",
     });
   }

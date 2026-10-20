@@ -18,10 +18,6 @@ import {
 } from "lucide-react";
 import { AuthDivider } from "@/components/auth/auth-divider";
 import { GoogleAuthLink } from "@/components/auth/google-auth-link";
-import {
-  ApplePayDirectButton,
-  type ApplePayDirectStatus,
-} from "@/components/checkout/apple-pay-direct-button";
 import { CheckoutDownsellSheet } from "@/components/checkout/checkout-downsell-sheet";
 import { CheckoutPaymentModal } from "@/components/checkout/checkout-payment-modal";
 import {
@@ -35,14 +31,12 @@ import {
   getFirstMonthOfferPrice,
   getOrPickCloseOfferVariant,
 } from "@/lib/checkout-first-month-offer";
-import type { CheckoutButtonVariant } from "@/lib/checkout-button-experiment";
 import { RECOVERY_OFFER_PLAN_ID } from "@/lib/checkout-recovery-plan";
 import { isNetworkError, requestCheckoutSession } from "@/lib/checkout-request";
 import {
   getGridEntryPlanId,
   getGridPlans,
   getPlanGrid,
-  CHECKOUT_PAY_CONSENT,
   GUARANTEE,
   PLAN_VALUE_DETAILS,
   PLAN_VALUE_STACK,
@@ -97,7 +91,6 @@ export function AnyLocCheckoutPanel({
   focusPayment,
   onShowAllPlans,
   returning,
-  checkoutButtonVariant,
 }: {
   selectedPlanId: string;
   onPlanChange: (planId: string) => void;
@@ -113,8 +106,6 @@ export function AnyLocCheckoutPanel({
   onShowAllPlans?: () => void;
   /** A former subscriber: welcome-back copy instead of the first-purchase one. */
   returning?: ReturningCustomer | null;
-  /** Payment button A/B test (null: not part of it). */
-  checkoutButtonVariant?: CheckoutButtonVariant | null;
 }) {
   const copy = CHECKOUT_COPY;
   // The plans of the selected plan's price grid (see lib/pricing-experiment).
@@ -145,19 +136,7 @@ export function AnyLocCheckoutPanel({
   // The popup is portaled to <body>: only render it once in the browser.
   const hydrated = useSyncExternalStore(subscribeToNothing, () => true, () => false);
 
-  // Variant B: a native Apple Pay button on the paywall, the popup being the
-  // way to pay by card. Not on the embedded onboarding step, nor after a
-  // declined-card offer (its discount lives in the popup's session).
-  const applePayDirect =
-    checkoutButtonVariant === "apple_pay_direct" &&
-    !focusPayment &&
-    !recoveryOffer &&
-    !onBack &&
-    !offerSessionId;
-  const [applePayStatus, setApplePayStatus] = useState<ApplePayDirectStatus>("pending");
-  const showApplePayDirect = applePayDirect && applePayStatus !== "unavailable";
-
-  function openPaymentModal(source: "main" | "resume" | "apple_pay_badge" | "secondary") {
+  function openPaymentModal(source: "main" | "resume" | "apple_pay_badge") {
     track("checkout_continue_clicked", { plan: selectedPlanId, source });
     setError(null);
     setModalOpen(true);
@@ -384,36 +363,6 @@ export function AnyLocCheckoutPanel({
   }
 
   function renderContinueButton(source: "main" | "resume") {
-    if (showApplePayDirect) {
-      // Apple Pay first; "Continuer" stays the way to pay by card.
-      return (
-        <div>
-          {source === "main" ? (
-            <ApplePayDirectButton
-              planId={selectedPlan.id}
-              stripePublishableKey={stripePublishableKey}
-              onStatusChange={setApplePayStatus}
-            />
-          ) : null}
-          {source === "main" ? (
-            <p className="my-2 text-center text-xs text-zinc-500">ou</p>
-          ) : null}
-          <button
-            type="button"
-            onClick={() => openPaymentModal(source === "main" ? "secondary" : source)}
-            className="flex h-12 w-full items-center justify-center rounded-full border border-zinc-300 bg-white text-[15px] font-bold text-zinc-900 transition hover:bg-zinc-50 active:bg-zinc-100"
-          >
-            Continuer · {selectedPlan.price.replace("€", " €")}
-          </button>
-          {source === "main" ? (
-            <p className="mt-2 text-center text-[11px] leading-snug text-zinc-500">
-              {CHECKOUT_PAY_CONSENT}
-            </p>
-          ) : null}
-        </div>
-      );
-    }
-
     return (
       <button
         type="button"
@@ -656,7 +605,6 @@ export function AnyLocCheckoutPanel({
           hostedError={error}
           onHostedFallback={() => void goToHostedPayment()}
           onClose={closePaymentModal}
-          checkoutButtonVariant={checkoutButtonVariant}
         />
       ) : null}
 

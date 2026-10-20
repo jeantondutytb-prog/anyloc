@@ -7,7 +7,6 @@ import {
 } from "@/lib/checkout-recovery-server";
 import { CLOSE_OFFER_COOKIE, parseCloseOfferVariant } from "@/lib/checkout-first-month-offer";
 import { getFirstMonthOfferCoupon } from "@/lib/checkout-first-month-offer-server";
-import { parseCheckoutButtonVariant } from "@/lib/checkout-button-experiment";
 import { PLANS } from "@/lib/constants";
 import { capturePostHogEvent, parsePostHogDistinctId } from "@/lib/posthog/server";
 import { publicErrorMessage } from "@/lib/errors";
@@ -62,7 +61,6 @@ export async function POST(request: Request) {
       analyticsId,
       uiMode: "embedded_page",
       couponId: couponPromise,
-      checkoutButtonVariant: parseCheckoutButtonVariant(body?.checkoutButtonVariant),
     });
     const [couponId, offer] = await Promise.all([couponPromise, offerPromise]);
 
