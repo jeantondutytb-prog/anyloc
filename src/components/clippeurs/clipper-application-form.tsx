@@ -10,13 +10,12 @@ import { Button } from "@/components/ui/button";
 import {
   CLIPPER_VIDEOS_PER_DAY,
   clipperWhatsAppUrl,
-  normalizeInstagramHandle,
   normalizePhone,
 } from "@/lib/clipper-application";
 import { cn } from "@/lib/utils";
 
 const initialState: ClipperApplicationState = {};
-const STEP_COUNT = 4;
+const STEP_COUNT = 3;
 
 const inputClassName =
   "w-full rounded-xl border border-zinc-200 bg-white px-4 py-3.5 text-base text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-pink-500/50 focus:ring-2 focus:ring-pink-500/20";
@@ -33,11 +32,10 @@ export function ClipperApplicationForm({
   const [step, setStep] = useState(0);
   const [videosPerDay, setVideosPerDay] = useState("");
   const [firstName, setFirstName] = useState("");
-  const [instagram, setInstagram] = useState("");
   const [phone, setPhone] = useState("");
   const [honeypot, setHoneypot] = useState("");
 
-  const whatsAppUrl = clipperWhatsAppUrl({ firstName, instagram, videosPerDay });
+  const whatsAppUrl = clipperWhatsAppUrl({ firstName, videosPerDay });
 
   // Candidature enregistrée : on ouvre WhatsApp avec le message déjà écrit,
   // pour que le clippeur ait une conversation avec nous et se souvienne de qui on est.
@@ -72,16 +70,13 @@ export function ClipperApplicationForm({
     const formData = new FormData();
     formData.set("videosPerDay", videosPerDay);
     formData.set("firstName", firstName);
-    formData.set("instagram", instagram);
     formData.set("phone", phone);
     formData.set("website", honeypot);
     if (utmCampaign) formData.set("utmCampaign", utmCampaign);
     startTransition(() => formAction(formData));
   }
 
-  const instagramIsValid = normalizeInstagramHandle(instagram) !== null;
-  // Facultatif : on peut envoyer sans numéro.
-  const phoneIsValid = !phone.trim() || normalizePhone(phone) !== null;
+  const phoneIsValid = normalizePhone(phone) !== null;
 
   return (
     <form
@@ -89,9 +84,7 @@ export function ClipperApplicationForm({
         event.preventDefault();
         if (step === 1 && firstName.trim()) {
           setStep(2);
-        } else if (step === 2 && instagramIsValid) {
-          setStep(3);
-        } else if (step === 3 && phoneIsValid) {
+        } else if (step === 2 && phoneIsValid) {
           submit();
         }
       }}
@@ -169,39 +162,11 @@ export function ClipperApplicationForm({
 
       {step === 2 ? (
         <div className="mt-6">
-          <label htmlFor="instagram" className="text-xl font-semibold text-zinc-900">
-            Ton Insta, pour qu&apos;on te recontacte
-          </label>
-          <div className="relative mt-5">
-            <span className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-base text-zinc-400">
-              @
-            </span>
-            <input
-              id="instagram"
-              autoFocus
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-              value={instagram}
-              onChange={(event) => setInstagram(event.target.value)}
-              placeholder="tonpseudo"
-              className={cn(inputClassName, "pl-9")}
-            />
-          </div>
-
-          <Button type="submit" size="lg" className="mt-4 w-full" disabled={!instagramIsValid}>
-            Continuer
-          </Button>
-        </div>
-      ) : null}
-
-      {step === 3 ? (
-        <div className="mt-6">
           <label htmlFor="phone" className="text-xl font-semibold text-zinc-900">
-            Ton numéro, pour qu&apos;on te réponde plus vite
+            Ton numéro, pour qu&apos;on te recontacte
           </label>
           <p className="mt-1.5 text-sm text-zinc-500">
-            On t&apos;écrit sur WhatsApp ou par SMS. Facultatif.
+            On te répond sur WhatsApp.
           </p>
           <input
             id="phone"
