@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { logError } from "@/lib/log-error";
 import { detectUserPlatform } from "@/lib/platform";
 import {
@@ -61,9 +61,11 @@ export async function POST(request: Request) {
   const userAgent = request.headers.get("user-agent") ?? "";
   const platform = detectUserPlatform(userAgent) === "android" ? "android" : "ios";
   const token = generateDeviceToken();
-  const supabase = await createClient();
+  // Users have no INSERT policy on device_tokens: the token is created here,
+  // after the subscription and device-limit checks.
+  const admin = createAdminClient();
 
-  const { error: dbError } = await supabase.from("device_tokens").insert({
+  const { error: dbError } = await admin.from("device_tokens").insert({
     user_id: user.id,
     token_hash: hashDeviceToken(token),
     platform,

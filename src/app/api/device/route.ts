@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { logError } from "@/lib/log-error";
 import {
   generateDeviceToken,
@@ -77,9 +78,11 @@ export async function POST(request: Request) {
   }
 
   const token = generateDeviceToken();
-  const supabase = await createClient();
+  // Users have no INSERT policy on device_tokens: only this route, after the
+  // subscription and device-limit checks, can create one.
+  const admin = createAdminClient();
 
-  const { data, error: dbError } = await supabase
+  const { data, error: dbError } = await admin
     .from("device_tokens")
     .insert({
       user_id: user.id,
