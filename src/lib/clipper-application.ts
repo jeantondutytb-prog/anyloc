@@ -8,9 +8,8 @@ export type ClipperVideosPerDay = (typeof CLIPPER_VIDEOS_PER_DAY)[number]["value
 
 export type ClipperApplication = {
   firstName: string;
-  instagram: string;
   videosPerDay: ClipperVideosPerDay;
-  phone: string | null;
+  phone: string;
   utmCampaign: string | null;
 };
 
@@ -18,26 +17,12 @@ export type ClipperApplicationResult =
   | { ok: true; application: ClipperApplication }
   | { ok: false; error: string };
 
-const INSTAGRAM_HANDLE = /^[a-z0-9._]{1,30}$/;
 const UTM_CAMPAIGN = /^[a-z0-9_-]{1,64}$/;
 const E164_PHONE = /^\+[1-9]\d{7,14}$/;
 
 function text(formData: FormData, name: string) {
   const value = formData.get(name);
   return typeof value === "string" ? value.trim().slice(0, 100) : "";
-}
-
-// Accepte "@pseudo", "pseudo" ou un lien instagram.com/pseudo.
-export function normalizeInstagramHandle(input: string) {
-  const handle = input
-    .trim()
-    .replace(/^https?:\/\//i, "")
-    .replace(/^(www\.)?instagram\.com\//i, "")
-    .replace(/^@/, "")
-    .split(/[/?#]/)[0]
-    .toLowerCase();
-
-  return INSTAGRAM_HANDLE.test(handle) ? handle : null;
 }
 
 // Met le numéro au format +33612345678 ; "06 12 34 56 78" est lu comme un numéro français.
@@ -57,23 +42,21 @@ export function normalizePhone(input: string) {
 export const CLIPPER_WHATSAPP_NUMBER = "33643192953";
 
 // Lien wa.me qui ouvre WhatsApp avec le message de candidature déjà écrit, adressé à Jean.
+// Pas d'emoji : wa.me les abîme parfois en « � ».
 export function clipperWhatsAppUrl({
   firstName,
-  instagram,
   videosPerDay,
 }: {
   firstName: string;
-  instagram: string;
   videosPerDay: string;
 }) {
-  const handle = normalizeInstagramHandle(instagram);
   const videos: Record<string, string> = {
     "1": "1 vidéo",
     "2-3": "2 à 3 vidéos",
     "4+": "4 vidéos ou plus",
   };
   const lines = [
-    `Salut Jean ! C'est ${firstName.trim()}${handle ? ` (@${handle} sur Insta)` : ""} 👋`,
+    `Salut Jean ! C'est ${firstName.trim()}.`,
     "Je viens de postuler pour devenir clippeur Anyloc.",
     videos[videosPerDay] ? `Je peux poster ${videos[videosPerDay]} par jour.` : null,
   ].filter(Boolean);
@@ -101,15 +84,8 @@ export function parseClipperApplication(
     return { ok: false, error: "Renseigne ton prénom." };
   }
 
-  const instagram = normalizeInstagramHandle(text(formData, "instagram"));
-  if (!instagram) {
-    return { ok: false, error: "Ce pseudo Instagram n'a pas l'air valide." };
-  }
-
-  // Facultatif : vide c'est ok, mal formé non.
-  const rawPhone = text(formData, "phone");
-  const phone = rawPhone ? normalizePhone(rawPhone) : null;
-  if (rawPhone && !phone) {
+  const phone = normalizePhone(text(formData, "phone"));
+  if (!phone) {
     return { ok: false, error: "Ce numéro n'a pas l'air valide. Ex. : 06 12 34 56 78." };
   }
 
@@ -117,7 +93,6 @@ export function parseClipperApplication(
     ok: true,
     application: {
       firstName,
-      instagram,
       videosPerDay: videosOption.value,
       phone,
       utmCampaign: normalizeUtmCampaign(text(formData, "utmCampaign")),

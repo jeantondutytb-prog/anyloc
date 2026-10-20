@@ -3,7 +3,6 @@ import { describe, it } from "node:test";
 import {
   CLIPPER_WHATSAPP_NUMBER,
   clipperWhatsAppUrl,
-  normalizeInstagramHandle,
   normalizePhone,
   normalizeUtmCampaign,
   parseClipperApplication,
@@ -16,37 +15,6 @@ function form(fields: Record<string, string>) {
   }
   return formData;
 }
-
-describe("normalizeInstagramHandle", () => {
-  it("accepts a handle with or without @", () => {
-    assert.equal(normalizeInstagramHandle("@Lea.Clips"), "lea.clips");
-    assert.equal(normalizeInstagramHandle("lea_clips"), "lea_clips");
-  });
-
-  it("extracts the handle from a profile link", () => {
-    assert.equal(
-      normalizeInstagramHandle("https://www.instagram.com/lea.clips/?hl=fr"),
-      "lea.clips"
-    );
-  });
-
-  it("rejects invalid handles", () => {
-    assert.equal(normalizeInstagramHandle(""), null);
-    assert.equal(normalizeInstagramHandle("pas un pseudo"), null);
-  });
-});
-
-describe("normalizeUtmCampaign", () => {
-  it("keeps a clean campaign name", () => {
-    assert.equal(normalizeUtmCampaign(" Clippeurs_Mail3 "), "clippeurs_mail3");
-  });
-
-  it("drops missing or suspicious values", () => {
-    assert.equal(normalizeUtmCampaign(undefined), null);
-    assert.equal(normalizeUtmCampaign(""), null);
-    assert.equal(normalizeUtmCampaign("<script>"), null);
-  });
-});
 
 describe("normalizePhone", () => {
   it("reads French numbers typed the local way", () => {
@@ -66,23 +34,14 @@ describe("normalizePhone", () => {
 });
 
 describe("parseClipperApplication", () => {
-  it("treats the phone as optional", () => {
-    const result = parseClipperApplication(
-      form({ videosPerDay: "1", firstName: "Léa", instagram: "lea" })
-    );
-    assert.equal(result.ok && result.application.phone, null);
-  });
-
-  it("normalizes the phone", () => {
-    const result = parseClipperApplication(
-      form({ videosPerDay: "1", firstName: "Léa", instagram: "lea", phone: "06 12 34 56 78" })
-    );
-    assert.equal(result.ok && result.application.phone, "+33612345678");
+  it("requires the phone", () => {
+    const result = parseClipperApplication(form({ videosPerDay: "1", firstName: "Léa" }));
+    assert.equal(result.ok, false);
   });
 
   it("rejects a malformed phone", () => {
     const result = parseClipperApplication(
-      form({ videosPerDay: "1", firstName: "Léa", instagram: "lea", phone: "123" })
+      form({ videosPerDay: "1", firstName: "Léa", phone: "123" })
     );
     assert.equal(result.ok, false);
   });
@@ -92,7 +51,7 @@ describe("parseClipperApplication", () => {
       form({
         videosPerDay: "1",
         firstName: "Léa",
-        instagram: "lea",
+        phone: "06 12 34 56 78",
         utmCampaign: "clippeurs_mail3",
       })
     );
@@ -101,36 +60,29 @@ describe("parseClipperApplication", () => {
 
   it("returns a normalized application", () => {
     const result = parseClipperApplication(
-      form({ videosPerDay: "2-3", firstName: " Léa ", instagram: "@Lea.Clips" })
+      form({ videosPerDay: "2-3", firstName: " Léa ", phone: "06 12 34 56 78" })
     );
     assert.deepEqual(result, {
       ok: true,
       application: {
         firstName: "Léa",
-        instagram: "lea.clips",
         videosPerDay: "2-3",
-        phone: null,
+        phone: "+33612345678",
         utmCampaign: null,
       },
     });
-  });
-
-  it("rejects an unknown videos-per-day value", () => {
-    const result = parseClipperApplication(
-      form({ videosPerDay: "100", firstName: "Léa", instagram: "lea" })
-    );
-    assert.equal(result.ok, false);
   });
 });
 
 describe("clipperWhatsAppUrl", () => {
   it("pré-remplit un message qui dit qui écrit et pourquoi", () => {
     const url = new URL(
-      clipperWhatsAppUrl({ firstName: " Léa ", instagram: "@Lea.Clips", videosPerDay: "2-3" })
+      clipperWhatsAppUrl({ firstName: " Léa ", videosPerDay: "2-3" })
     );
     assert.equal(url.origin + url.pathname, `https://wa.me/${CLIPPER_WHATSAPP_NUMBER}`);
     const text = url.searchParams.get("text") ?? "";
-    assert.match(text, /C'est Léa \(@lea\.clips sur Insta\)/);
+    assert.match(text, /C'est Léa\./);
+    assert.doesNotMatch(text, /\p{Extended_Pictographic}/u);
     assert.match(text, /clippeur Anyloc/);
     assert.match(text, /2 à 3 vidéos par jour/);
   });
