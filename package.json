@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@amplitude/unified": "^1.1.35",
+    "@anthropic-ai/sdk": "^1.0.0",
     "@stripe/react-stripe-js": "^6.9.0",
     "@stripe/stripe-js": "^9.15.0",
     "@supabase/ssr": "^0.12.6",
