@@ -81,6 +81,11 @@ describe("getSkipReason", () => {
       getSkipReason({ messages, fingerprint: 3, segments: [ESCALATED_SEGMENT], mode: "live", now: NOW }),
       "human_active"
     );
+    // Free Crisp plan: no segment, the handover comes from our own log.
+    assert.equal(
+      getSkipReason({ messages, fingerprint: 3, segments: [], escalated: true, mode: "live", now: NOW }),
+      "human_active"
+    );
   });
 });
 
