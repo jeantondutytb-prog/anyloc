@@ -2,7 +2,9 @@ import Anthropic from "@anthropic-ai/sdk";
 import { SUPPORT_AGENT_NICKNAME, type CrispMessage } from "@/lib/support/crisp-api";
 import { buildSupportKnowledge } from "@/lib/support/knowledge";
 
-export const SUPPORT_AGENT_MODEL = "claude-opus-5-5";
+// The cheapest current model: answers come from the written knowledge, and
+// anything unsure is handed over to the team anyway.
+export const SUPPORT_AGENT_MODEL = "claude-haiku-5-5";
 
 export type SupportDecision =
   | { action: "reply"; reply: string; internalNote: string }
@@ -147,11 +149,9 @@ export async function decideSupportReply({
   const response = await client.beta.messages.create({
     model: SUPPORT_AGENT_MODEL,
     max_tokens: 16000,
-    betas: ["server-side-fallback-2026-07-01"],
-    fallbacks: "default",
     system: getSystemPrompt(),
     output_config: {
-      effort: "medium",
+      effort: "low",
       format: { type: "json_schema", schema: DECISION_SCHEMA },
     },
     messages: [
