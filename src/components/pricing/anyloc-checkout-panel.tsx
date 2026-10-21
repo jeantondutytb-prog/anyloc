@@ -20,6 +20,7 @@ import { AuthDivider } from "@/components/auth/auth-divider";
 import { GoogleAuthLink } from "@/components/auth/google-auth-link";
 import { CheckoutDownsellSheet } from "@/components/checkout/checkout-downsell-sheet";
 import { CheckoutPaymentModal } from "@/components/checkout/checkout-payment-modal";
+import { CheckoutProofVideo } from "@/components/checkout/checkout-proof-video";
 import {
   CHECKOUT_COPY,
   CHECKOUT_REVIEWS,
@@ -453,6 +454,10 @@ export function AnyLocCheckoutPanel({
           </div>
         ) : null}
         {renderContinueButton("main")}
+        <p className="mt-2 flex items-center justify-center gap-1.5 text-xs font-semibold text-emerald-700">
+          <ShieldCheck className="h-3.5 w-3.5" />
+          {copy.payReassurance}
+        </p>
       </div>
 
       <div className="mt-4 text-center">
@@ -476,6 +481,8 @@ export function AnyLocCheckoutPanel({
           ))}
         </ul>
       </div>
+
+      {hydrated ? <CheckoutProofVideo /> : null}
 
       <h2 className="mt-10 text-base font-bold text-zinc-900">{copy.unlockTitle}</h2>
       <ul className="mt-3 space-y-2">
