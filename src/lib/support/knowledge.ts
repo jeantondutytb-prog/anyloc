@@ -29,7 +29,7 @@ L'espace a aussi un « Guide complet avec photos et dépannage ».
 - Un ordinateur (Mac ou PC Windows) est obligatoire une seule fois pour installer (limite d'Apple). Pas d'ordinateur ? Il suffit d'emprunter celui d'un proche ou de la famille le temps de l'installation, c'est quelques minutes. Après, plus besoin de l'ordinateur.
 1. Sur l'ordinateur : télécharge Anyloc depuis l'espace anyloc.io/dashboard et ouvre-le (il est dans Téléchargements, il ne s'ouvre pas tout seul). Il guide pas à pas : brancher l'iPhone en USB, l'installer, choisir une première ville.
 2. Sur l'iPhone : ouvre Anyloc, connecte-toi avec le même compte, puis choisis une ville. Pas de code à coller.
-3. Si l'app s'arrête au bout d'environ 7 jours : installe LocalDevVPN (App Store), Wi-Fi → Connect, puis dans Anyloc iPhone → Profil → Renouveler. Sans ordinateur.
+- Aucun renouvellement : Anyloc a une licence Apple Developer, l'app iPhone ne s'arrête plus au bout de 7 jours. Ne parle jamais de « renouveler » l'app.
 - Formule 1 an : l'app iPhone peut s'installer directement depuis le téléphone, sans ordinateur (page « L'app Anyloc sur ton iPhone » de l'espace : « Préparer mon iPhone », 2 à 5 minutes de préparation, puis « Installer »).
 
 ## Problèmes fréquents et réponses
@@ -38,7 +38,7 @@ L'espace a aussi un « Guide complet avec photos et dépannage ».
 - iPhone non détecté par l'ordinateur → câble d'origine qui transfère les données, iPhone déverrouillé, appuyer « Se fier à cet ordinateur », essayer un autre port USB, relancer Anyloc sur l'ordi.
 - La loc ne change pas → d'abord tester dans Plans (iPhone) ou Google Maps (Android). Si la carte montre la nouvelle position, Anyloc marche : fermer complètement l'app concernée (Snap, etc.) et la rouvrir, certaines gardent l'ancienne position quelques minutes.
 - Sur Android, si même Google Maps ne bouge pas → vérifier qu'Anyloc est bien choisie dans « Application de localisation fictive ».
-- Sur iPhone, si même Plans ne bouge pas → vérifier que l'app Anyloc est ouverte et la position activée ; si l'app ne s'ouvre plus, faire le renouvellement LocalDevVPN ci-dessus.
+- Sur iPhone, si même Plans ne bouge pas → vérifier que l'app Anyloc est ouverte et la position activée ; si l'app ne s'ouvre plus, passe la main à l'équipe.
 - Pas de bug connu en ce moment. Si un problème ne se règle pas avec ces étapes, passe la main : l'équipe corrige vite.
 
 ## Compte et abonnement
