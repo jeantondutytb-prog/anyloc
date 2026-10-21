@@ -127,9 +127,9 @@ export const REFUND_POLICY_SUMMARY =
  */
 export const GUARANTEE = {
   badge: "Garantie 48 h",
-  title: "Ta loc bouge pas ? On te rembourse.",
+  title: "Ça marche sur ton tel, ou on te rembourse.",
   summary:
-    "Ta position ne bouge pas malgré le support ? Ton 1er paiement est remboursé.",
+    "On t'aide en direct jusqu'à ce que ta loc bouge. Si elle ne bouge toujours pas, ton 1er paiement est remboursé.",
   conditions: [
     {
       t: "Demande sous 48 h",

@@ -20,6 +20,16 @@ export const CHECKOUT_COPY = {
   /** The pay button shows what is actually charged, so the popup holds no surprise. */
   continueCta: (amount: string, period: string) => `Débloquer · ${amount} pour ${period}`,
   continueCtaRecoveryOffer: "Débloquer · 4,95 € le 1er mois",
+  /** Right under the pay button, where the fear of paying for nothing peaks. */
+  payReassurance: "Ça marche ou remboursé · Résiliable en 1 clic",
+  proofVideoTitle: "Regarde, ça marche pour de vrai",
+  proofVideoSteps: [
+    "Je choisis Londres dans Anyloc",
+    "J'ouvre Snap : je suis à Londres",
+    "Je passe à Paris, Snap suit",
+  ],
+  proofVideoCaption: "Filmé en une prise sur iPhone · accéléré ×3",
+  proofVideoAlt: "Enregistrement d'écran : la position Snap Map passe à Londres puis à Paris avec Anyloc",
   redirecting: "Redirection vers le paiement…",
   modalTitle: "Paiement",
   modalCancelAnytime: "Résiliable à tout moment, en 1 clic depuis ton espace.",
@@ -43,6 +53,11 @@ export const CHECKOUT_COPY = {
   downsellCta: (price: string) => `Commencer à ${price}`,
   downsellDismiss: "Non merci",
   faq: [
+    {
+      q: "Y a un essai gratuit ?",
+      a:
+        "Non, mais tu ne prends aucun risque : si ta loc ne bouge pas sur ton tel, on t'aide en direct sur le chat, et si ça ne marche toujours pas, ton 1er paiement est remboursé (garantie 48 h). Et tu résilies en 1 clic quand tu veux.",
+    },
     {
       q: "Ma carte sera débitée tout de suite ?",
       a:
