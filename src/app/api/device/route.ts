@@ -56,6 +56,11 @@ export async function POST(request: Request) {
     return Response.json({ error }, { status });
   }
 
+  // requireActiveSubscription returns the user even without an active plan.
+  if (!access?.hasAccess) {
+    return Response.json({ error }, { status: 403 });
+  }
+
   let body: unknown;
 
   try {
