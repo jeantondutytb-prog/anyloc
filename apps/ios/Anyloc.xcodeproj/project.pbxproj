@@ -10,7 +10,6 @@
 		019B27DCF7DD8A85B5DC418B /* OnDeviceLocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F9D1B701173CFAE257511FF /* OnDeviceLocationService.swift */; };
 		12656B2BB942AF659CF29CED /* RoutePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E845F92F91B91E29E8E5AD17 /* RoutePanel.swift */; };
 		1713D15BAE1107AA75DB2F08 /* SubscriptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F28FEC6EC8C8F1B6FF07A00E /* SubscriptionService.swift */; };
-		187558EA3BCF3D5781548FA4 /* RenewalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E175DD0BF658783555645C /* RenewalView.swift */; };
 		1A4A1A01983B46371799B42B /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8461A9F65866A329254C9446 /* Theme.swift */; };
 		1C0714F378382D8379766405 /* LocationAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFC20EDE5853BB8E68B9D20E /* LocationAPI.swift */; };
 		21487D0B8A1E885F3616133F /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D02DE99BB015A0A818066AA /* SettingsView.swift */; };
@@ -21,9 +20,9 @@
 		6608D882E2DF31187118E384 /* SavedSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6F81B3BD94B6B334D8B3128 /* SavedSheet.swift */; };
 		82C2FBF1A4565749BFC55B46 /* IDevice.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = EE02B48DA61E22DDB85708FE /* IDevice.xcframework */; };
 		84E7E8669F64DE5C49D5217A /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68EDBF284E1E3A8E44C9DDF7 /* MainTabView.swift */; };
-		9618B333B2B17243C69190BB /* SignatureRenewalService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF93F6F18F89DA3CA6E90E20 /* SignatureRenewalService.swift */; };
 		9955F27D99BD04DCEF1598BA /* AnylocApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CD54BEF9C6AFE0282EC9304 /* AnylocApp.swift */; };
 		9AC4D649A64527E585CB8C64 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 792FF94A6595BED9D0CEF713 /* Assets.xcassets */; };
+		A8E9B68771E1A17D10B87FFD /* PairingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36837D2CEAFEF3E416D87921 /* PairingService.swift */; };
 		C7FABBF3D04B1ECEF288F7D6 /* MapHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DA17A390E2A5A062A28BD2C /* MapHomeView.swift */; };
 		CA375C1BC5C61B29CA3EE1A7 /* RouteEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF3B1206BA4C1076D0962AD4 /* RouteEngine.swift */; };
 		CBB78CFBDC5BC9F210BF7855 /* HomeComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F4298EC273B3763B172CE59 /* HomeComponents.swift */; };
@@ -38,6 +37,7 @@
 		26079CE314542ED66C07C1B8 /* Spots.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Spots.swift; sourceTree = "<group>"; };
 		2F6704E4E43632785C1A5F34 /* SavedModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedModels.swift; sourceTree = "<group>"; };
 		365E5A6D651D16F05F577CFD /* SubscriptionExpiredView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionExpiredView.swift; sourceTree = "<group>"; };
+		36837D2CEAFEF3E416D87921 /* PairingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairingService.swift; sourceTree = "<group>"; };
 		3F4298EC273B3763B172CE59 /* HomeComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeComponents.swift; sourceTree = "<group>"; };
 		4146D4F32E55E6241EFCD269 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		47122D6E07120D2D13CDEF9C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -51,13 +51,11 @@
 		7598C2810AD188339EA97811 /* Anyloc.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Anyloc.entitlements; sourceTree = "<group>"; };
 		792FF94A6595BED9D0CEF713 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		8461A9F65866A329254C9446 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
-		BF93F6F18F89DA3CA6E90E20 /* SignatureRenewalService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignatureRenewalService.swift; sourceTree = "<group>"; };
 		CFC20EDE5853BB8E68B9D20E /* LocationAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationAPI.swift; sourceTree = "<group>"; };
 		DF3B1206BA4C1076D0962AD4 /* RouteEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteEngine.swift; sourceTree = "<group>"; };
 		E6F81B3BD94B6B334D8B3128 /* SavedSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedSheet.swift; sourceTree = "<group>"; };
 		E845F92F91B91E29E8E5AD17 /* RoutePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutePanel.swift; sourceTree = "<group>"; };
 		EE02B48DA61E22DDB85708FE /* IDevice.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = IDevice.xcframework; path = Vendor/IDevice.xcframework; sourceTree = "<group>"; };
-		F1E175DD0BF658783555645C /* RenewalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenewalView.swift; sourceTree = "<group>"; };
 		F28FEC6EC8C8F1B6FF07A00E /* SubscriptionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -105,13 +103,12 @@
 				68EDBF284E1E3A8E44C9DDF7 /* MainTabView.swift */,
 				5DA17A390E2A5A062A28BD2C /* MapHomeView.swift */,
 				4F9D1B701173CFAE257511FF /* OnDeviceLocationService.swift */,
-				F1E175DD0BF658783555645C /* RenewalView.swift */,
+				36837D2CEAFEF3E416D87921 /* PairingService.swift */,
 				DF3B1206BA4C1076D0962AD4 /* RouteEngine.swift */,
 				E845F92F91B91E29E8E5AD17 /* RoutePanel.swift */,
 				2F6704E4E43632785C1A5F34 /* SavedModels.swift */,
 				E6F81B3BD94B6B334D8B3128 /* SavedSheet.swift */,
 				4D02DE99BB015A0A818066AA /* SettingsView.swift */,
-				BF93F6F18F89DA3CA6E90E20 /* SignatureRenewalService.swift */,
 				26079CE314542ED66C07C1B8 /* Spots.swift */,
 				365E5A6D651D16F05F577CFD /* SubscriptionExpiredView.swift */,
 				49C09F6CE9C14B8F309D4E68 /* SubscriptionModels.swift */,
@@ -209,13 +206,12 @@
 				84E7E8669F64DE5C49D5217A /* MainTabView.swift in Sources */,
 				C7FABBF3D04B1ECEF288F7D6 /* MapHomeView.swift in Sources */,
 				019B27DCF7DD8A85B5DC418B /* OnDeviceLocationService.swift in Sources */,
-				187558EA3BCF3D5781548FA4 /* RenewalView.swift in Sources */,
+				A8E9B68771E1A17D10B87FFD /* PairingService.swift in Sources */,
 				CA375C1BC5C61B29CA3EE1A7 /* RouteEngine.swift in Sources */,
 				12656B2BB942AF659CF29CED /* RoutePanel.swift in Sources */,
 				59EF164F980141B849123668 /* SavedModels.swift in Sources */,
 				6608D882E2DF31187118E384 /* SavedSheet.swift in Sources */,
 				21487D0B8A1E885F3616133F /* SettingsView.swift in Sources */,
-				9618B333B2B17243C69190BB /* SignatureRenewalService.swift in Sources */,
 				4A323DB1F3D91F1DEB64CB9F /* Spots.swift in Sources */,
 				E23233C1FF33AA1DE83054E7 /* SubscriptionExpiredView.swift in Sources */,
 				5444F7A98925EAEB78526018 /* SubscriptionModels.swift in Sources */,

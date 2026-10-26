@@ -55,7 +55,7 @@ extension Color {
     }
 }
 
-/// Primary CTA style used across Login, Dashboard, Renewal, Settings and
+/// Primary CTA style used across Login, Dashboard, Settings and
 /// SubscriptionExpired — matches the web checkout's `.btn-gradient`.
 struct PrimaryGradientButtonStyle: ButtonStyle {
     var isDisabled: Bool = false
