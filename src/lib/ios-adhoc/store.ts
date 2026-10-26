@@ -16,6 +16,19 @@ export async function getLatestDeviceForUser(userId: string) {
   return (data as IosDeviceRow | null) ?? null;
 }
 
+export async function getRegisteredDeviceForUser(userId: string, udid: string) {
+  const { data, error } = await createAdminClient()
+    .from("ios_devices")
+    .select(DEVICE_COLUMNS)
+    .eq("user_id", userId)
+    .eq("status", "registered")
+    .ilike("udid", udid)
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as IosDeviceRow | null) ?? null;
+}
+
 export async function getDevice(id: string) {
   const { data, error } = await createAdminClient()
     .from("ios_devices")

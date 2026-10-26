@@ -14,8 +14,12 @@ import * as store from "./store";
 const ALREADY_LINKED =
   "Cet iPhone est déjà lié à un autre compte Anyloc. Écris-nous sur le chat pour le transférer.";
 
-export async function startIosEnrollment(userId: string, now: Date) {
-  const existing = await store.getLatestDeviceForUser(userId);
+export async function startIosEnrollment(
+  userId: string,
+  now: Date,
+  { allowMultipleIphones = false }: { allowMultipleIphones?: boolean } = {}
+) {
+  const existing = allowMultipleIphones ? null : await store.getLatestDeviceForUser(userId);
 
   if (existing?.status === "registered") {
     return { kind: "already_registered" as const };
@@ -96,13 +100,20 @@ const UDID_RE = /^[0-9A-Fa-f-]{24,40}$/;
 export async function registerIosDeviceFromDesktop(
   userId: string,
   input: { udid: string; product: string | null; osVersion: string | null },
-  now: Date
+  now: Date,
+  /** Admin accounts can link several iPhones; everyone else gets one. */
+  { allowMultipleIphones = false }: { allowMultipleIphones?: boolean } = {}
 ) {
   if (!UDID_RE.test(input.udid)) {
     return { ok: false as const, message: "iPhone non reconnu. Rebranche-le et réessaie." };
   }
 
-  const existing = await store.getLatestDeviceForUser(userId);
+  if (allowMultipleIphones && (await store.getRegisteredDeviceForUser(userId, input.udid))) {
+    await ensureBuildForPendingDevices(now);
+    return { ok: true as const };
+  }
+
+  const existing = allowMultipleIphones ? null : await store.getLatestDeviceForUser(userId);
   if (existing?.status === "registered") {
     if (existing.udid?.toLowerCase() === input.udid.toLowerCase()) {
       await ensureBuildForPendingDevices(now);
@@ -114,7 +125,7 @@ export async function registerIosDeviceFromDesktop(
     };
   }
 
-  const started = await startIosEnrollment(userId, now);
+  const started = await startIosEnrollment(userId, now, { allowMultipleIphones });
   if (started.kind === "quota_full") {
     return {
       ok: false as const,
