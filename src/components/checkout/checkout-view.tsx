@@ -78,11 +78,11 @@ export function CheckoutView({
         <div className="absolute top-0 right-0 h-[300px] w-[400px] rounded-full bg-violet-500/10 blur-[100px]" />
       </div>
 
-      {/* Same floating pill as the landing header. No way back to the landing
-          from here: it was the main exit of the paywall. */}
+      {/* Same floating pill as the landing header. Only the logo links home:
+          no separate back button, it was the main exit of the paywall. */}
       <div className="relative px-2 pt-2 sm:px-4 sm:pt-3">
         <div className="mx-auto flex h-14 max-w-md items-center justify-center rounded-full border border-zinc-200/80 bg-white/85 px-3 shadow-lg shadow-zinc-900/5 backdrop-blur-md sm:px-4">
-          <Logo href={null} />
+          <Logo />
         </div>
       </div>
 

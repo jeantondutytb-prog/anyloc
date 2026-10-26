@@ -49,6 +49,15 @@ export const PLAN_VALUE_STACK = [
   "Installation guidée pas à pas",
 ];
 
+/** Détail déplié au tap sur chaque bénéfice du paywall, dans le même ordre que PLAN_VALUE_STACK. */
+export const PLAN_VALUE_DETAILS = [
+  "Tu changes de position quand tu veux, autant de fois que tu veux, sans limite.",
+  "Ta loc change dans toutes tes apps en même temps, pas besoin de la régler une par une.",
+  "Ça marche sur iPhone comme sur Android, sans jailbreak.",
+  "Ton trajet suit les vraies routes, à une vitesse réaliste : personne ne remarque rien.",
+  "On te guide étape par étape. Si ta loc ne bouge pas, tu es remboursé : garantie 48 h.",
+];
+
 /** Consentement affiché par Stripe juste au-dessus du bouton de paiement. */
 export const CHECKOUT_PAY_CONSENT =
   "En payant, tu acceptes nos conditions générales (anyloc.io/conditions-generales), tu demandes l'accès immédiat au service et tu renonces à ton droit de rétractation de 14 jours. Remboursement possible uniquement via la garantie 48 h, sous conditions.";

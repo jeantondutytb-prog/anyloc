@@ -65,7 +65,12 @@ export function AuthPasswordInput({
         <button
           type="button"
           onClick={onToggle}
-          className="absolute top-1/2 right-3 -translate-y-1/2 text-xs font-medium text-zinc-500 transition hover:text-zinc-900"
+          // Keeps the focus in the input so the keyboard stays open on iPhone.
+          onMouseDown={(event) => event.preventDefault()}
+          onPointerDown={(event) => event.preventDefault()}
+          aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+          aria-pressed={showPassword}
+          className="absolute top-1/2 right-0 flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center px-3 text-xs font-medium text-zinc-500 transition hover:text-zinc-900 active:text-zinc-900"
         >
           {showPassword ? "Masquer" : "Afficher"}
         </button>
