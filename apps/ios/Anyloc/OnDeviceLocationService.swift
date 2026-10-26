@@ -433,7 +433,7 @@ enum RemotePairingPort {
             let port = UserDefaults.standard.integer(forKey: lastWorkingKey)
             return port > 0 ? UInt16(clamping: port) : nil
         }
-        set { UserDefaults.standard.set(newValue.map(Int.init), forKey: lastWorkingKey) }
+        set { UserDefaults.standard.set(newValue.map { Int($0) }, forKey: lastWorkingKey) }
     }
 
     /// Ports advertised on the Wi-Fi. Other iPhones on the same network show up
