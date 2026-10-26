@@ -73,7 +73,7 @@ export async function POST(request: Request) {
     );
   }
 
-  if (await hasReachedDeviceLimit(user.id)) {
+  if (await hasReachedDeviceLimit(user)) {
     return Response.json({ error: DEVICE_LIMIT_ERROR }, { status: 409 });
   }
 
