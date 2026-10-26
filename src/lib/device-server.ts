@@ -9,7 +9,7 @@ import { buildSubscriptionAccessResponse } from "@/lib/subscription-access-api";
 import {
   getSubscriptionAccessForUser,
   isActiveSubscriptionStatus,
-  isAdminEmail,
+  type SubscriptionAccess,
 } from "@/lib/subscription";
 
 /** Caps linked devices so one subscription can't be shared across a group. */
@@ -17,12 +17,13 @@ export const MAX_DEVICES_PER_USER = 10;
 
 export const DEVICE_LIMIT_ERROR = `Tu as atteint la limite de ${MAX_DEVICES_PER_USER} appareils. Supprime un ancien appareil dans Paramètres pour en ajouter un.`;
 
-export async function hasReachedDeviceLimit(user: {
-  id: string;
-  email?: string | null;
-}) {
-  // Admin accounts (ANYLOC_ADMIN_EMAILS) can link as many devices as they want.
-  if (isAdminEmail(user.email) || !isSupabaseAdminConfigured()) {
+export async function hasReachedDeviceLimit(
+  userId: string,
+  access: Pick<SubscriptionAccess, "isAdmin"> | null
+) {
+  // Admin accounts can link as many devices as they want. `access.isAdmin` is
+  // only set once the admin email is confirmed, unlike a raw email match.
+  if (access?.isAdmin || !isSupabaseAdminConfigured()) {
     return false;
   }
 
@@ -30,7 +31,7 @@ export async function hasReachedDeviceLimit(user: {
   const { count, error } = await admin
     .from("device_tokens")
     .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id);
+    .eq("user_id", userId);
 
   if (error) {
     console.error("[device] Count failed:", error);
