@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     return limited;
   }
 
-  const { user, error } = await requireActiveSubscription();
+  const { user, error, access } = await requireActiveSubscription();
 
   if (!user) {
     const status = error?.includes("Connecte") ? 401 : 403;
@@ -72,7 +72,7 @@ export async function POST(request: Request) {
     );
   }
 
-  if (await hasReachedDeviceLimit(user)) {
+  if (await hasReachedDeviceLimit(user.id, access)) {
     return Response.json({ error: DEVICE_LIMIT_ERROR }, { status: 409 });
   }
 
