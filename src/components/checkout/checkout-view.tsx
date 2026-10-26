@@ -11,6 +11,7 @@ import {
   ONBOARDING_DESTINATION_KEY,
   type OnboardingDestination,
 } from "@/lib/onboarding-destinations";
+import { readQuizResult, type QuizResult } from "@/lib/onboarding-quiz";
 
 // The paywall keeps only what a buyer may need: the legal pages and support.
 const CHECKOUT_FOOTER_LINKS = [
@@ -31,6 +32,7 @@ export function CheckoutView({
   recoveryOffer,
   focusPayment: initialFocusPayment,
   returning,
+  fromQuiz,
 }: {
   initialPlanId: string;
   canceled?: boolean;
@@ -38,6 +40,8 @@ export function CheckoutView({
   recoveryOffer?: boolean;
   focusPayment?: boolean;
   returning?: ReturningCustomer | null;
+  /** Arrived from the quiz onboarding: its recommendation shapes the paywall. */
+  fromQuiz?: boolean;
 }) {
   const router = useRouter();
   const [selectedPlanId, setSelectedPlanId] = useState(
@@ -45,6 +49,7 @@ export function CheckoutView({
   );
   const [destination, setDestination] = useState<OnboardingDestination | undefined>();
   const [focusPayment, setFocusPayment] = useState(Boolean(initialFocusPayment));
+  const [quiz, setQuiz] = useState<QuizResult | null>(null);
 
   useEffect(() => {
     try {
@@ -56,7 +61,10 @@ export function CheckoutView({
     } catch {
       setDestination(undefined);
     }
-  }, []);
+    if (fromQuiz) {
+      setQuiz(readQuizResult());
+    }
+  }, [fromQuiz]);
 
   function selectPlan(planId: string) {
     setSelectedPlanId(planId);
@@ -90,6 +98,7 @@ export function CheckoutView({
           focusPayment={focusPayment}
           onShowAllPlans={() => setFocusPayment(false)}
           returning={returning}
+          quiz={quiz}
         />
       </main>
 

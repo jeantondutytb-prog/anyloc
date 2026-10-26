@@ -28,9 +28,10 @@ export default async function CheckoutPage({
     paiement?: string;
     pricing?: string;
     retour?: string;
+    parcours?: string;
   }>;
 }) {
-  const { plan, canceled, preview, paiement, pricing, retour } = await searchParams;
+  const { plan, canceled, preview, paiement, pricing, retour, parcours } = await searchParams;
   // Email links (?paiement=1) open straight on the payment form.
   const focusPayment = paiement === "1";
   // Local design preview without an account: /checkout?preview=1 under `next dev` only.
@@ -110,6 +111,7 @@ export default async function CheckoutPage({
         focusPayment={focusPayment}
         stripePublishableKey={getStripePublishableKey()}
         returning={returning}
+        fromQuiz={parcours === "quiz" && !returning}
       />
     </>
   );

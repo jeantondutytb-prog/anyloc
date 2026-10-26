@@ -1,8 +1,14 @@
+// "mobile" metadata: only mobile numbers count as valid.
+import { parsePhoneNumberFromString } from "libphonenumber-js/mobile";
+
 export const CLIPPER_VIDEOS_PER_DAY = [
   { value: "1", label: "1 vidéo" },
   { value: "2-3", label: "2 à 3 vidéos" },
   { value: "4+", label: "4 ou plus" },
 ] as const;
+
+export const CLIPPER_PHONE_ERROR =
+  "Mets ton vrai numéro de portable (06 ou 07), c'est là qu'on te recontacte.";
 
 export type ClipperVideosPerDay = (typeof CLIPPER_VIDEOS_PER_DAY)[number]["value"];
 
@@ -18,24 +24,33 @@ export type ClipperApplicationResult =
   | { ok: false; error: string };
 
 const UTM_CAMPAIGN = /^[a-z0-9_-]{1,64}$/;
-const E164_PHONE = /^\+[1-9]\d{7,14}$/;
 
 function text(formData: FormData, name: string) {
   const value = formData.get(name);
   return typeof value === "string" ? value.trim().slice(0, 100) : "";
 }
 
-// Met le numéro au format +33612345678 ; "06 12 34 56 78" est lu comme un numéro français.
-export function normalizePhone(input: string) {
-  let phone = input.trim().replace(/[\s.()-]/g, "");
-
-  if (phone.startsWith("00")) {
-    phone = `+${phone.slice(2)}`;
-  } else if (/^0[1-9]\d{8}$/.test(phone)) {
-    phone = `+33${phone.slice(1)}`;
+// Les numéros qu'on tape pour passer le formulaire : 06 12 34 56 78, 06 66 66 66 66…
+function looksFake(nationalNumber: string) {
+  if (/(\d)\1{5}/.test(nationalNumber)) return true;
+  const ascending = "0123456789012";
+  const descending = "9876543210987";
+  for (let start = 0; start + 6 <= nationalNumber.length; start += 1) {
+    const run = nationalNumber.slice(start, start + 6);
+    if (ascending.includes(run) || descending.includes(run)) return true;
   }
+  return false;
+}
 
-  return E164_PHONE.test(phone) ? phone : null;
+// Met le numéro au format +33612345678, seulement si c'est un vrai portable
+// (06, 07 attribué, ou un mobile étranger) : un fixe ou un faux numéro ne permet pas de recontacter.
+// "06 12 34 56 78" est lu comme un numéro français.
+export function normalizePhone(input: string) {
+  const parsed = parsePhoneNumberFromString(input.trim(), "FR");
+  if (!parsed?.isValid() || looksFake(parsed.nationalNumber)) {
+    return null;
+  }
+  return parsed.number;
 }
 
 // Ton numéro WhatsApp, au format international sans "+" ni espaces (ex. "33612345678").
@@ -86,7 +101,7 @@ export function parseClipperApplication(
 
   const phone = normalizePhone(text(formData, "phone"));
   if (!phone) {
-    return { ok: false, error: "Ce numéro n'a pas l'air valide. Ex. : 06 12 34 56 78." };
+    return { ok: false, error: CLIPPER_PHONE_ERROR };
   }
 
   return {

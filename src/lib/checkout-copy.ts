@@ -46,6 +46,10 @@ export const CHECKOUT_COPY = {
   closeOfferLead: (name: string, offerPrice: string, price: string) =>
     `Ton 1er mois de formule ${name} passe à ${offerPrice} au lieu de ${price}. Sans engagement, résiliable en 1 clic.`,
   closeOfferCta: (offerPrice: string) => `Profiter de -50 % · ${offerPrice}`,
+  clipperOfferTitle: "Pas le budget ? Gagne de l'argent",
+  clipperOfferLead:
+    "Poste des clips Anyloc sur TikTok ou Insta : tu as l'accès gratuit et tu es payé pour tes vidéos. Pas besoin d'abonnés.",
+  clipperOfferCta: "Devenir clippeur",
   downgradeNoMobileApp: "L'app iPhone est réservée à la formule 1 an.",
   downsellTitle: (price: string) => `Pas prêt à mettre ${price} d'un coup ?`,
   downsellLead: (name: string, price: string) =>
