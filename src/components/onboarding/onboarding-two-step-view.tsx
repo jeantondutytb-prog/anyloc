@@ -80,7 +80,7 @@ function DestinationCard({
   );
 }
 
-function StepDestination({
+export function StepDestination({
   query,
   onQueryChange,
   onSelect,

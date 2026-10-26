@@ -18,9 +18,11 @@ import {
 } from "lucide-react";
 import { AuthDivider } from "@/components/auth/auth-divider";
 import { GoogleAuthLink } from "@/components/auth/google-auth-link";
+import { CheckoutClipperSheet } from "@/components/checkout/checkout-clipper-sheet";
 import { CheckoutDownsellSheet } from "@/components/checkout/checkout-downsell-sheet";
 import { CheckoutPaymentModal } from "@/components/checkout/checkout-payment-modal";
 import { CheckoutProofVideo } from "@/components/checkout/checkout-proof-video";
+import { GuaranteeSheet } from "@/components/checkout/guarantee-sheet";
 import {
   CHECKOUT_COPY,
   CHECKOUT_REVIEWS,
@@ -28,6 +30,7 @@ import {
   getReturningSubline,
   type ReturningCustomer,
 } from "@/lib/checkout-copy";
+import { getOrPickClipperOfferVariant } from "@/lib/checkout-clipper-offer";
 import {
   getFirstMonthOfferPrice,
   getOrPickCloseOfferVariant,
@@ -42,6 +45,7 @@ import {
   PLAN_VALUE_STACK,
 } from "@/lib/constants";
 import type { OnboardingDestination } from "@/lib/onboarding-destinations";
+import type { QuizResult } from "@/lib/onboarding-quiz";
 import { registerPostHogProperties } from "@/lib/posthog/browser";
 import { getStripe } from "@/lib/stripe-browser";
 import { cn } from "@/lib/utils";
@@ -91,6 +95,7 @@ export function AnyLocCheckoutPanel({
   focusPayment,
   onShowAllPlans,
   returning,
+  quiz,
 }: {
   selectedPlanId: string;
   onPlanChange: (planId: string) => void;
@@ -106,6 +111,8 @@ export function AnyLocCheckoutPanel({
   onShowAllPlans?: () => void;
   /** A former subscriber: welcome-back copy instead of the first-purchase one. */
   returning?: ReturningCustomer | null;
+  /** Arrived from the quiz onboarding: recommended plan and personal headline. */
+  quiz?: QuizResult | null;
 }) {
   const copy = CHECKOUT_COPY;
   // The plans of the selected plan's price grid (see lib/pricing-experiment).
@@ -178,10 +185,29 @@ export function AnyLocCheckoutPanel({
     }
   }, [selectedPlanId, offerSessionId]);
 
+  // A/B test: half of those who turn down the -50 % get the clipper programme.
+  const [clipperOfferOpen, setClipperOfferOpen] = useState(false);
   const dismissCloseOffer = useCallback(() => {
     track("close_offer_dismissed", { plan: selectedPlanId });
     setCloseOfferSessionId(null);
+    const variant = getOrPickClipperOfferVariant();
+    registerPostHogProperties({ clipper_offer_variant: variant });
+    track("clipper_offer_experiment_exposed", {
+      clipper_offer_variant: variant,
+      plan: selectedPlanId,
+      $set: { clipper_offer_variant: variant },
+    });
+    if (variant === "clipper") setClipperOfferOpen(true);
   }, [selectedPlanId]);
+
+  const dismissClipperOffer = useCallback(() => {
+    track("clipper_offer_dismissed", { plan: selectedPlanId });
+    setClipperOfferOpen(false);
+  }, [selectedPlanId]);
+
+  function acceptClipperOffer() {
+    track("clipper_offer_accepted", { plan: selectedPlanId });
+  }
 
   function acceptCloseOffer() {
     track("close_offer_accepted", { plan: selectedPlanId, offer_plan: entryPlanId });
@@ -287,12 +313,63 @@ export function AnyLocCheckoutPanel({
   }, []);
 
   const headline = getCheckoutHeadline(destination?.city, returning);
+  // From the quiz: "Active ta loc à Marbella sur Snap" and its recommended plan.
+  const recommendedPlan = quiz
+    ? checkoutPlans.find((plan) => plan.id === quiz.recommendedPlanId)
+    : undefined;
+  const quizHeadline =
+    quiz && destination
+      ? {
+          before: "Active ta loc à",
+          highlight: destination.city,
+          after: quiz.mainApp ? ` sur ${quiz.mainApp}` : "",
+        }
+      : null;
+  const [guaranteeOpen, setGuaranteeOpen] = useState(false);
+  // The quiz result is read after hydration, so it gets its own event.
+  useEffect(() => {
+    if (!quiz) return;
+    track("checkout_quiz_recommendation_shown", {
+      recommended_plan: quiz.recommendedPlanId,
+      plan: selectedPlanId,
+    });
+    // Once, when the quiz result arrives.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quiz]);
+  const guaranteeBoxClassName =
+    "mb-4 flex items-center gap-2.5 rounded-2xl border border-pink-200 bg-pink-50 px-3 py-2.5 transition hover:bg-pink-100/70 active:bg-pink-100";
+  const guaranteeBoxContent = (
+    <>
+      <ShieldCheck className="h-4 w-4 shrink-0 self-start mt-px text-pink-600" />
+      <div className="min-w-0 flex-1">
+        <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-sm font-bold leading-tight text-zinc-900">
+          {GUARANTEE.title}
+          <span className="rounded-full bg-gradient-to-r from-pink-500 to-purple-500 px-1.5 py-px text-[10px] font-bold text-white">
+            {GUARANTEE.badge}
+          </span>
+        </p>
+        <p className="mt-1 text-[13.5px] leading-snug text-zinc-600">
+          {GUARANTEE.summary}
+        </p>
+      </div>
+      <ChevronRight className="h-4 w-4 shrink-0 text-pink-600" />
+    </>
+  );
 
   function renderPlans(className?: string) {
     return (
     <div role="radiogroup" aria-label="Choisis ton plan" className={cn("space-y-2.5", className)}>
       {checkoutPlans.map((plan) => {
         const selected = plan.id === selectedPlanId;
+        const recommended = plan.id === recommendedPlan?.id;
+        // From the quiz, the recommendation replaces the "most chosen" badge.
+        const badge = recommendedPlan
+          ? recommended
+            ? "Idéal pour toi"
+            : null
+          : plan.popular
+            ? copy.popularBadge
+            : null;
 
         return (
           <button
@@ -303,15 +380,20 @@ export function AnyLocCheckoutPanel({
             onClick={() => selectPlan(plan.id)}
             className={cn(
               "relative flex w-full items-center gap-3 rounded-2xl border bg-white px-4 py-3.5 text-left transition",
-              plan.popular && "mt-4",
+              badge && "mt-4",
               selected
                 ? "border-pink-500 ring-2 ring-pink-500/30"
                 : "border-zinc-200 hover:border-zinc-300"
             )}
           >
-            {plan.popular ? (
-              <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-pink-500 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-                {copy.popularBadge}
+            {badge ? (
+              <span
+                className={cn(
+                  "absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white",
+                  recommended ? "bg-gradient-to-r from-pink-500 to-violet-500" : "bg-pink-500"
+                )}
+              >
+                {badge}
               </span>
             ) : null}
             <span
@@ -335,7 +417,7 @@ export function AnyLocCheckoutPanel({
                 ) : (
                   <Monitor className="h-3.5 w-3.5" />
                 )}
-                {plan.perk}
+                {recommended && quiz ? quiz.reason : plan.perk}
               </span>
             </span>
             <span className="shrink-0 text-right">
@@ -387,28 +469,31 @@ export function AnyLocCheckoutPanel({
         </p>
       ) : null}
 
-      {/* The whole box opens the conditions: visitors tapped it expecting details. */}
-      <Link
-        href="/politique-de-remboursement"
-        target="_blank"
-        rel="noreferrer"
-        data-track="checkout_guarantee_conditions_clicked"
-        className="mb-4 flex items-center gap-2.5 rounded-2xl border border-pink-200 bg-pink-50 px-3 py-2.5 transition hover:bg-pink-100/70 active:bg-pink-100"
-      >
-        <ShieldCheck className="h-4 w-4 shrink-0 self-start mt-px text-pink-600" />
-        <div className="min-w-0 flex-1">
-          <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-sm font-bold leading-tight text-zinc-900">
-            {GUARANTEE.title}
-            <span className="rounded-full bg-gradient-to-r from-pink-500 to-purple-500 px-1.5 py-px text-[10px] font-bold text-white">
-              {GUARANTEE.badge}
-            </span>
-          </p>
-          <p className="mt-1 text-[13.5px] leading-snug text-zinc-600">
-            {GUARANTEE.summary}
-          </p>
-        </div>
-        <ChevronRight className="h-4 w-4 shrink-0 text-pink-600" />
-      </Link>
+      {/* The whole box opens the conditions: visitors tapped it expecting details.
+          From the quiz they open over the paywall, so coming back is one tap. */}
+      {quiz ? (
+        <>
+          <button
+            type="button"
+            onClick={() => setGuaranteeOpen(true)}
+            data-track="checkout_guarantee_conditions_clicked"
+            className={cn(guaranteeBoxClassName, "w-full text-left")}
+          >
+            {guaranteeBoxContent}
+          </button>
+          <GuaranteeSheet open={guaranteeOpen} onClose={() => setGuaranteeOpen(false)} />
+        </>
+      ) : (
+        <Link
+          href="/politique-de-remboursement"
+          target="_blank"
+          rel="noreferrer"
+          data-track="checkout_guarantee_conditions_clicked"
+          className={guaranteeBoxClassName}
+        >
+          {guaranteeBoxContent}
+        </Link>
+      )}
 
       {focusPayment ? (
         <div className="text-center">
@@ -434,11 +519,24 @@ export function AnyLocCheckoutPanel({
       ) : (
         <>
           <h1 className="text-center text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">
-            {headline.before} <span className="gradient-text">{headline.highlight}</span>
+            {quizHeadline ? (
+              <>
+                {quizHeadline.before} <span className="gradient-text">{quizHeadline.highlight}</span>
+                {quizHeadline.after}
+              </>
+            ) : (
+              <>
+                {headline.before} <span className="gradient-text">{headline.highlight}</span>
+              </>
+            )}
           </h1>
           {returning ? (
             <p className="mt-2 text-center text-sm text-zinc-600">
               {getReturningSubline(returning)}
+            </p>
+          ) : recommendedPlan ? (
+            <p className="mt-2 text-center text-sm text-zinc-600">
+              Pour toi, on recommande la formule {recommendedPlan.name}.
             </p>
           ) : null}
 
@@ -585,6 +683,9 @@ export function AnyLocCheckoutPanel({
         />
       ) : null}
 
+      {clipperOfferOpen && hydrated ? (
+        <CheckoutClipperSheet onAccept={acceptClipperOffer} onDismiss={dismissClipperOffer} />
+      ) : null}
 
       {downsellOpen && downgradePlan && hydrated ? (
         <CheckoutDownsellSheet
