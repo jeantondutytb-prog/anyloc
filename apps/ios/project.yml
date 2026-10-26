@@ -31,6 +31,9 @@ targets:
       properties:
         UILaunchScreen: {}
         UIBackgroundModes: [location]
+        # iOS 26.6 moved RemotePairing off 49152: its port is found over Bonjour.
+        NSBonjourServices: [_remotepairing._tcp]
+        NSLocalNetworkUsageDescription: "Anyloc cherche sur le réseau local le service de jumelage de ton iPhone : c'est ce qui lui permet de changer ta position sans ordinateur."
         NSLocationWhenInUseUsageDescription: "Anyloc s'appuie sur la localisation pour rester actif en arrière-plan : c'est ce qui garde ta position simulée appliquée quand l'app est fermée. Ta vraie position n'est ni enregistrée ni envoyée."
         CFBundleURLTypes:
           - CFBundleURLName: io.anyloc.app

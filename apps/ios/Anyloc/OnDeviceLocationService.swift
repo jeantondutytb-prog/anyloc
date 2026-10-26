@@ -2,12 +2,13 @@ import CoreLocation
 import CryptoKit
 import Foundation
 import IDevice
+import Network
 
 /// Drives the iPhone's own location simulation without a computer.
 ///
 /// LocalDevVPN loops 10.7.0.1 back to the iPhone, so with a RemotePairing
 /// record the app can talk to its own developer services: RemotePairing
-/// tunnel (port 49152) → RSD → DVT LocationSimulation. iOS 26.4+ drops the
+/// tunnel (see RemotePairingPort) → RSD → DVT LocationSimulation. iOS 26.4+ drops the
 /// older lockdown TLS sessions over LocalDevVPN ("Broken pipe"), so lockdown
 /// pairing records are not used here. The simulated location only lasts while that DVT
 /// connection is open, so the session is kept alive (see BackgroundKeeper).
@@ -275,23 +276,62 @@ final class OnDeviceLocationService: ObservableObject {
 
     private func openTunnel(pairing: Data, promptForVPN: Bool) async throws {
         let session = session
-        let updated: Data
-        do {
-            updated = try await deadline(20, "Connexion à LocalDevVPN") { try await session.openTunnel(pairing: pairing) }
-        } catch {
-            log("Tunnel : \(error.localizedDescription)")
-            // Nothing answers on 10.7.0.1: LocalDevVPN is off (or Wi-Fi is off).
-            guard Self.isUnreachable(error) else { throw error }
-            needsVPN = promptForVPN
-            throw DeviceError.message("iPhone injoignable : ouvre LocalDevVPN, appuie sur Connect (Wi-Fi allumé), puis réessaie.")
+        var tried = Set<UInt16>()
+        var lastError: Error = DeviceError.message("Connexion impossible")
+        // Known ports first (a wrong one is refused at once), Bonjour only if they all are.
+        for round in 0..<2 {
+            let ports: [UInt16]
+            if round == 0 {
+                ports = [RemotePairingPort.lastWorking, RemotePairingPort.legacy].compactMap { $0 }
+            } else {
+                ports = await RemotePairingPort.discover()
+                log("Ports annoncés : \(ports.map { String($0) }.joined(separator: ", "))")
+            }
+            for port in ports {
+                guard tried.insert(port).inserted else { continue }
+                do {
+                    let updated = try await deadline(20, "Connexion à LocalDevVPN") {
+                        try await session.openTunnel(pairing: pairing, port: port)
+                    }
+                    RemotePairingPort.lastWorking = port
+                    needsVPN = false
+                    if updated != pairing { Self.savePairing(updated) }
+                    return
+                } catch {
+                    log("Tunnel (port \(port)) : \(error.localizedDescription)")
+                    lastError = error
+                    // Only a refused port is worth another one: anything else (VPN off,
+                    // pair-verify) fails the same way on every port.
+                    guard Self.isPortClosed(error) else { throw explain(error, promptForVPN: promptForVPN) }
+                }
+            }
         }
-        needsVPN = false
-        if updated != pairing { Self.savePairing(updated) }
+        throw explain(lastError, promptForVPN: promptForVPN)
     }
 
-    private static func isUnreachable(_ error: Error) -> Bool {
+    /// Turns a tunnel failure into what the user has to do about it.
+    private func explain(_ error: Error, promptForVPN: Bool) -> Error {
+        if Self.isPortClosed(error) {
+            // 10.7.0.1 answered, so LocalDevVPN is fine: the port wasn't found,
+            // usually because Bonjour is blocked (Réseau local refusé).
+            needsVPN = false
+            return DeviceError.message("LocalDevVPN est bien connecté, mais l'iPhone refuse la connexion. Autorise « Réseau local » pour Anyloc (Réglages > Confidentialité et sécurité > Réseau local), puis réessaie.")
+        }
+        guard Self.isVPNOff(error) else { return error }
+        needsVPN = promptForVPN
+        return DeviceError.message("iPhone injoignable : ouvre LocalDevVPN, appuie sur Connect (Wi-Fi allumé), puis réessaie.")
+    }
+
+    /// 10.7.0.1 answered but nothing listens on that port.
+    private static func isPortClosed(_ error: Error) -> Bool {
+        guard case DeviceError.ffi(let message, _) = error else { return false }
+        return message.contains("connect:") && !message.contains("Timeout")
+    }
+
+    /// Nothing answers on 10.7.0.1: LocalDevVPN is off (or Wi-Fi is off).
+    private static func isVPNOff(_ error: Error) -> Bool {
         if case DeviceError.ffi(let message, _) = error {
-            return message.contains("connect:")
+            return message.contains("connect:") && message.contains("Timeout")
         }
         // The deadline fired: 10.7.0.1 never answered.
         return true
@@ -378,6 +418,107 @@ private final class ResumeOnce<T>: @unchecked Sendable {
     }
 }
 
+// MARK: - RemotePairing port
+
+/// Older iOS versions served RemotePairing on 49152. iOS 26.6 picks a port at
+/// boot instead, which the iPhone advertises over Bonjour as `_remotepairing._tcp`
+/// (seen live: 49152 closed, 64462 open).
+enum RemotePairingPort {
+    static let legacy: UInt16 = 49152
+    private static let lastWorkingKey = "anyloc.remotePairingPort"
+
+    /// The port that last opened a tunnel; it holds until the iPhone reboots.
+    static var lastWorking: UInt16? {
+        get {
+            let port = UserDefaults.standard.integer(forKey: lastWorkingKey)
+            return port > 0 ? UInt16(clamping: port) : nil
+        }
+        set { UserDefaults.standard.set(newValue.map(Int.init), forKey: lastWorkingKey) }
+    }
+
+    /// Ports advertised on the Wi-Fi. Other iPhones on the same network show up
+    /// too: the caller tries each against 10.7.0.1, where only ours answers.
+    /// Returns nothing when « Réseau local » is refused.
+    static func discover(timeout: TimeInterval = 4) async -> [UInt16] {
+        let queue = DispatchQueue(label: "anyloc.remotepairing-bonjour")
+        let found = FoundPorts()
+        let browser = NWBrowser(for: .bonjour(type: "_remotepairing._tcp", domain: nil), using: .tcp)
+        browser.browseResultsChangedHandler = { results, _ in
+            for result in results {
+                guard found.claim("\(result.endpoint)") else { continue }
+                // Bonjour only gives a service name: connecting resolves it to host:port.
+                let connection = NWConnection(to: result.endpoint, using: .tcp)
+                connection.stateUpdateHandler = { [weak connection] state in
+                    guard let connection else { return }
+                    switch state {
+                    case .ready:
+                        if case .hostPort(_, let port) = connection.currentPath?.remoteEndpoint {
+                            found.add(port.rawValue)
+                        }
+                        connection.cancel()
+                    case .failed, .waiting:
+                        connection.cancel()
+                    default:
+                        break
+                    }
+                }
+                found.track(connection)
+                connection.start(queue: queue)
+            }
+        }
+        browser.start(queue: queue)
+
+        // Stop shortly after the first port: the other results are other iPhones.
+        let start = Date()
+        var firstSeen: Date?
+        while Date().timeIntervalSince(start) < timeout {
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            if firstSeen == nil, !found.ports.isEmpty { firstSeen = Date() }
+            if let firstSeen, Date().timeIntervalSince(firstSeen) > 0.5 { break }
+        }
+        browser.cancel()
+        found.cancelResolving()
+        return found.ports
+    }
+}
+
+private final class FoundPorts: @unchecked Sendable {
+    private let lock = NSLock()
+    private var seen = Set<String>()
+    private var list: [UInt16] = []
+    private var connections: [NWConnection] = []
+
+    /// Keeps a resolving connection alive until the search ends.
+    func track(_ connection: NWConnection) {
+        lock.lock(); defer { lock.unlock() }
+        connections.append(connection)
+    }
+
+    func cancelResolving() {
+        lock.lock()
+        let pending = connections
+        connections = []
+        lock.unlock()
+        pending.forEach { $0.cancel() }
+    }
+
+    /// True the first time an endpoint shows up, so each one is resolved once.
+    func claim(_ endpoint: String) -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        return seen.insert(endpoint).inserted
+    }
+
+    func add(_ port: UInt16) {
+        lock.lock(); defer { lock.unlock() }
+        if !list.contains(port) { list.append(port) }
+    }
+
+    var ports: [UInt16] {
+        lock.lock(); defer { lock.unlock() }
+        return list
+    }
+}
+
 // MARK: - FFI session
 
 enum DeviceError: LocalizedError {
@@ -397,9 +538,6 @@ enum DeviceError: LocalizedError {
 private final class DeviceSession: @unchecked Sendable {
     static let loopbackIP = "10.7.0.1"
 
-    /// RemotePairing service, reached through LocalDevVPN's loopback.
-    static let remotePairingPort: UInt16 = 49152
-
     private let thread = FFIThread()
     private var adapter: OpaquePointer?
     private var handshake: OpaquePointer?
@@ -417,7 +555,7 @@ private final class DeviceSession: @unchecked Sendable {
     /// the record Anyloc Setup made over USB). Works before the developer image
     /// is mounted, so the image is checked and mounted through it. Returns the
     /// record as the library left it, in case a pair-setup rewrote it.
-    func openTunnel(pairing data: Data) async throws -> Data {
+    func openTunnel(pairing data: Data, port: UInt16) async throws -> Data {
         try await thread.call { [self] in
             closeAll()
             var pairingFile: OpaquePointer?
@@ -429,7 +567,7 @@ private final class DeviceSession: @unchecked Sendable {
 
             var addr = sockaddr_in()
             addr.sin_family = sa_family_t(AF_INET)
-            addr.sin_port = in_port_t(Self.remotePairingPort.bigEndian)
+            addr.sin_port = in_port_t(port.bigEndian)
             inet_pton(AF_INET, Self.loopbackIP, &addr.sin_addr)
             try withUnsafePointer(to: &addr) { ptr in
                 try ptr.withMemoryRebound(to: sockaddr.self, capacity: 1) { sa in

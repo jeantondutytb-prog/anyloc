@@ -29,6 +29,12 @@
 	</array>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_remotepairing._tcp</string>
+	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Anyloc cherche sur le réseau local le service de jumelage de ton iPhone : c'est ce qui lui permet de changer ta position sans ordinateur.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Anyloc s'appuie sur la localisation pour rester actif en arrière-plan : c'est ce qui garde ta position simulée appliquée quand l'app est fermée. Ta vraie position n'est ni enregistrée ni envoyée.</string>
 	<key>UIBackgroundModes</key>
