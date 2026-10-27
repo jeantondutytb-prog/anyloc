@@ -53,8 +53,12 @@ export function CheckoutPaymentModal({
   const [attempt, setAttempt] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [declined, setDeclined] = useState(false);
+  // Closing a drawn form first asks why, in place of the form.
+  const [askingExitReason, setAskingExitReason] = useState(false);
   // Read by the Escape handler, which is set up once.
   const sessionIdRef = useRef<string | null>(null);
+  const formRenderedRef = useRef(false);
+  const askingExitReasonRef = useRef(false);
   const closeRef = useRef<HTMLButtonElement>(null);
   // When this attempt to load the form started, to time Stripe's real render.
   const loadStartedAtRef = useRef(0);
@@ -132,7 +136,7 @@ export function CheckoutPaymentModal({
     const { overflow } = document.body.style;
     document.body.style.overflow = "hidden";
     function handleKey(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose(sessionIdRef.current);
+      if (event.key === "Escape") requestCloseRef.current();
     }
     window.addEventListener("keydown", handleKey);
     return () => {
@@ -140,16 +144,46 @@ export function CheckoutPaymentModal({
       document.body.style.overflow = overflow;
       window.removeEventListener("keydown", handleKey);
     };
-  }, [onClose]);
+  }, []);
 
   // checkout_payment_form_ready only means the session came back from the
   // server; this one means Stripe actually drew its form on screen.
   function handleRendered() {
+    formRenderedRef.current = true;
     track("checkout_stripe_form_rendered", {
       plan: plan.id,
       load_ms: Math.round(performance.now() - loadStartedAtRef.current),
       retry: attempt > 0,
     });
+  }
+
+  // Only someone who saw the card form is asked why they leave; closing the
+  // question again closes the popup for good.
+  function requestClose() {
+    if (!formRenderedRef.current) {
+      onClose(sessionIdRef.current);
+      return;
+    }
+    if (askingExitReasonRef.current) {
+      answerExitReason(null);
+      return;
+    }
+    askingExitReasonRef.current = true;
+    setAskingExitReason(true);
+    track("checkout_exit_question_shown", { plan: plan.id });
+  }
+  const requestCloseRef = useRef(requestClose);
+  useEffect(() => {
+    requestCloseRef.current = requestClose;
+  });
+
+  function answerExitReason(reason: string | null) {
+    track("checkout_exit_reason", {
+      plan: plan.id,
+      reason: reason ?? "skipped",
+      $set: reason ? { checkout_exit_reason: reason } : undefined,
+    });
+    onClose(sessionIdRef.current);
   }
 
   const price = plan.price.replace("€", " €");
@@ -163,7 +197,7 @@ export function CheckoutPaymentModal({
   return createPortal(
     <div
       className="fixed inset-0 z-[100] flex cursor-pointer items-center justify-center bg-zinc-950/60 p-4 backdrop-blur-sm"
-      onClick={() => onClose(sessionId)}
+      onClick={requestClose}
     >
       <div
         role="dialog"
@@ -180,7 +214,7 @@ export function CheckoutPaymentModal({
           <button
             ref={closeRef}
             type="button"
-            onClick={() => onClose(sessionId)}
+            onClick={requestClose}
             aria-label="Fermer"
             className="flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 text-zinc-500 transition hover:text-zinc-900"
           >
@@ -188,7 +222,37 @@ export function CheckoutPaymentModal({
           </button>
         </div>
 
-        <div className="overflow-y-auto overscroll-contain px-4 pb-4 pt-3">
+        {askingExitReason ? (
+          <div className="px-4 pb-5 pt-4">
+            <p className="text-base font-bold text-zinc-900">{copy.exitQuestionTitle}</p>
+            <p className="mt-0.5 text-xs text-zinc-500">{copy.exitQuestionLead}</p>
+            <div className="mt-3 flex flex-col gap-2">
+              {copy.exitQuestionReasons.map((reason) => (
+                <button
+                  key={reason.id}
+                  type="button"
+                  onClick={() => answerExitReason(reason.id)}
+                  className="w-full rounded-2xl border border-zinc-200 px-4 py-3 text-left text-sm font-semibold text-zinc-800 transition hover:border-pink-300 hover:bg-pink-50"
+                >
+                  {reason.label}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => answerExitReason(null)}
+              className="mt-3 w-full text-center text-xs font-medium text-zinc-500 underline transition hover:text-zinc-800"
+            >
+              {copy.exitQuestionSkip}
+            </button>
+          </div>
+        ) : null}
+
+        <div
+          className={
+            askingExitReason ? "hidden" : "overflow-y-auto overscroll-contain px-4 pb-4 pt-3"
+          }
+        >
           <div className="flex items-start gap-2 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs leading-snug text-emerald-900/80">
             <Check className="mt-px h-3.5 w-3.5 shrink-0 text-emerald-600" strokeWidth={3} />
             <p>

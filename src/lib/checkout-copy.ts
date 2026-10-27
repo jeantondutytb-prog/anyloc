@@ -37,6 +37,17 @@ export const CHECKOUT_COPY = {
   modalFallbackCta: "Payer sur la page sécurisée Stripe ↗",
   payOpening: "On prépare ton paiement…",
   retryCta: "Réessayer",
+  /** Asked once when the payment popup is closed: one tap, then it closes. */
+  exitQuestionTitle: "Qu'est-ce qui te bloque ?",
+  exitQuestionLead: "Un clic, ça nous aide à améliorer Anyloc.",
+  exitQuestionReasons: [
+    { id: "price", label: "C'est trop cher" },
+    { id: "computer_required", label: "L'ordinateur obligatoire" },
+    { id: "no_card", label: "Je n'ai pas de carte" },
+    { id: "just_looking", label: "Je regardais juste" },
+    { id: "other", label: "Autre chose" },
+  ],
+  exitQuestionSkip: "Fermer sans répondre",
   declineOfferTitle: "Paiement refusé : solde insuffisant",
   declineOfferLead: (name: string, offerPrice: string, price: string) =>
     `Pas de souci : ton 1er mois de formule ${name} passe à ${offerPrice} au lieu de ${price}. Sans engagement.`,
