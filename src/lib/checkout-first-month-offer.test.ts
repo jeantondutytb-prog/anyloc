@@ -42,10 +42,17 @@ describe("getFirstMonthOfferReason", () => {
     );
   });
 
-  it("offers a closed checkout only to the offer group", () => {
+  it("offers a closed checkout only to the offer group", (t) => {
+    t.after(() => delete process.env.NEXT_PUBLIC_CLOSE_OFFER_EXPERIMENT);
+    process.env.NEXT_PUBLIC_CLOSE_OFFER_EXPERIMENT = "on";
     assert.equal(getFirstMonthOfferReason(closed, "monthly", "offer", later(0)), "closed");
     assert.equal(getFirstMonthOfferReason(closed, "monthly", "control", later(0)), null);
     assert.equal(getFirstMonthOfferReason(closed, "monthly", null, later(0)), null);
+  });
+
+  it("offers nothing on close while the test is off", () => {
+    assert.equal(getFirstMonthOfferReason(closed, "monthly", "offer", later(0)), null);
+    assert.equal(getFirstMonthOfferReason(declined, "monthly", "offer", later(0)), "declined");
   });
 
   it("expires after the window", () => {
