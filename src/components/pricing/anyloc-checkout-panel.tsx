@@ -34,6 +34,7 @@ import { getOrPickClipperOfferVariant } from "@/lib/checkout-clipper-offer";
 import {
   getFirstMonthOfferPrice,
   getOrPickCloseOfferVariant,
+  isCloseOfferExperimentEnabled,
 } from "@/lib/checkout-first-month-offer";
 import { RECOVERY_OFFER_PLAN_ID } from "@/lib/checkout-recovery-plan";
 import { isNetworkError, requestCheckoutSession } from "@/lib/checkout-request";
@@ -173,7 +174,7 @@ export function AnyLocCheckoutPanel({
     setModalOpen(false);
     // Already discounted: nothing more to offer.
     if (offerSessionId) return;
-    if (sessionId && !closeOfferDrawnRef.current) {
+    if (isCloseOfferExperimentEnabled() && sessionId && !closeOfferDrawnRef.current) {
       closeOfferDrawnRef.current = true;
       const variant = getOrPickCloseOfferVariant();
       registerPostHogProperties({ close_offer_variant: variant });

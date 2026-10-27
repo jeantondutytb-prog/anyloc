@@ -4,7 +4,7 @@ import { getGridEntryPlanId } from "@/lib/constants";
  * 1er mois à -50 % (coupon RELANCE50) sur la formule la plus courte, proposé
  * dans deux cas :
  * - la banque refuse la carte faute de solde ;
- * - A/B test : la moitié des visiteurs qui ferment la fenêtre de paiement.
+ * - A/B test (arrêté) : la moitié des visiteurs qui ferment la fenêtre de paiement.
  * Client-safe ; la partie Stripe est dans checkout-first-month-offer-server.
  */
 
@@ -24,7 +24,9 @@ export function isDeclineOfferCode(code: string | null | undefined) {
 /**
  * A/B test of the offer when the payment popup is closed. Drawn the first
  * time a visitor closes it, so only those visitors are in the test, and kept
- * in a cookie: the server reads it to allow the coupon.
+ * in a cookie: the server reads it to allow the coupon. Stopped (same
+ * conversion as control, at half the first month): off until
+ * NEXT_PUBLIC_CLOSE_OFFER_EXPERIMENT is "on", and everyone is then control.
  */
 export const CLOSE_OFFER_VARIANTS = ["control", "offer"] as const;
 
@@ -33,6 +35,10 @@ export type CloseOfferVariant = (typeof CLOSE_OFFER_VARIANTS)[number];
 export const CLOSE_OFFER_COOKIE = "anyloc-close-offer";
 
 const CLOSE_OFFER_MAX_AGE = 60 * 60 * 24 * 90;
+
+export function isCloseOfferExperimentEnabled() {
+  return process.env.NEXT_PUBLIC_CLOSE_OFFER_EXPERIMENT === "on";
+}
 
 export function parseCloseOfferVariant(value: unknown): CloseOfferVariant | null {
   return CLOSE_OFFER_VARIANTS.find((variant) => variant === value) ?? null;
@@ -65,7 +71,7 @@ export function getFirstMonthOfferReason(
   if (!source.planId || offerPlanId !== getGridEntryPlanId(source.planId)) return null;
   if (now.getTime() - source.createdAt.getTime() > FIRST_MONTH_OFFER_WINDOW_MS) return null;
   if (isDeclineOfferCode(source.declineCode)) return "declined";
-  return closeOfferVariant === "offer" ? "closed" : null;
+  return isCloseOfferExperimentEnabled() && closeOfferVariant === "offer" ? "closed" : null;
 }
 
 /** "9,90€" -> "4,95 €": the first month once RELANCE50 (-50 %) is applied. */
