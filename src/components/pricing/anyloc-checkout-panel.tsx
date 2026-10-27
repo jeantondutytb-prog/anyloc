@@ -162,8 +162,10 @@ export function AnyLocCheckoutPanel({
   // Offered once per visit, when the popup of a pricier plan is closed.
   const [downsellOpen, setDownsellOpen] = useState(false);
   const downsellShownRef = useRef(false);
-  // A/B test: half of the visitors closing the popup get -50 % on the 1st month.
+  // Closing the popup offers the clipper programme, once per visit. While the
+  // -50 % test is on, half of the visitors get -50 % on the 1st month instead.
   const [closeOfferSessionId, setCloseOfferSessionId] = useState<string | null>(null);
+  const [clipperOfferOpen, setClipperOfferOpen] = useState(false);
   const closeOfferDrawnRef = useRef(false);
   const closePaymentModal = useCallback((sessionId: string | null) => {
     const entryId = getGridEntryPlanId(selectedPlanId);
@@ -174,8 +176,13 @@ export function AnyLocCheckoutPanel({
     setModalOpen(false);
     // Already discounted: nothing more to offer.
     if (offerSessionId) return;
-    if (isCloseOfferExperimentEnabled() && sessionId && !closeOfferDrawnRef.current) {
+    if (sessionId && !closeOfferDrawnRef.current) {
       closeOfferDrawnRef.current = true;
+      if (!isCloseOfferExperimentEnabled()) {
+        track("clipper_offer_shown", { plan: selectedPlanId });
+        setClipperOfferOpen(true);
+        return;
+      }
       const variant = getOrPickCloseOfferVariant();
       registerPostHogProperties({ close_offer_variant: variant });
       track("close_offer_experiment_exposed", {
@@ -196,7 +203,6 @@ export function AnyLocCheckoutPanel({
   }, [selectedPlanId, offerSessionId]);
 
   // A/B test: half of those who turn down the -50 % get the clipper programme.
-  const [clipperOfferOpen, setClipperOfferOpen] = useState(false);
   const dismissCloseOffer = useCallback(() => {
     track("close_offer_dismissed", { plan: selectedPlanId });
     setCloseOfferSessionId(null);
