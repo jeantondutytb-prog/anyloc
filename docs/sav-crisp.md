@@ -14,12 +14,12 @@ Un agent Claude lit chaque message envoyé dans le chat Crisp et y répond. Il t
 | Mode | Effet |
 |------|-------|
 | `off` (défaut) | Rien. |
-| `draft` | Il écrit sa réponse en **note privée** (`[IA · brouillon] …`), que le client ne voit pas. Tu relis, puis tu envoies toi-même si c'est bon. |
+| `draft` | Il écrit sa réponse en **note privée** (`[IA · brouillon] …`), que le client ne voit pas. Tu relis, puis tu envoies toi-même si c'est bon. **Ne marche pas sur le plan Crisp gratuit** : les notes privées y sont refusées (erreur 402). |
 | `live` | Il répond au client sous le nom « Léa · Anyloc ». S'il passe la main, il prévient le client, laisse une note `[IA] À TOI : …`, ajoute le segment `ia-escalade` et repasse la conversation en « non résolue ». |
 
 En mode `live`, il ne répond pas dans deux cas :
 - un humain a écrit dans la conversation depuis moins de 12 h ;
-- la conversation a le segment `ia-escalade`. Retire ce segment pour lui rendre la main.
+- il a passé la main dans cette conversation depuis moins de 24 h (retenu dans la table `support_agent_events`). Sur un plan Crisp payant, il ajoute aussi le segment `ia-escalade` : tant qu'il est présent, l'agent reste silencieux, retire-le pour lui rendre la main.
 
 Chaque décision est enregistrée dans la table Supabase `support_agent_events` (réponse, raison, note), pour relire ce qu'il a fait.
 

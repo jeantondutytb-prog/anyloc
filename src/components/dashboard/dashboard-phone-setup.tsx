@@ -369,14 +369,6 @@ export function DashboardPhoneSetup({
                   une ville. Pas de code à coller.
                 </p>
               </StepBox>
-
-              <StepBox number={3} title="Si l'app s'arrête dans ~7 jours">
-                <p className="text-xs text-zinc-500">
-                  Installe <strong>LocalDevVPN</strong> (App Store), Wi-Fi →
-                  Connect, puis Anyloc iPhone → <strong>Profil → Renouveler</strong>.
-                  Sans ordinateur.
-                </p>
-              </StepBox>
             </ol>
           ) : (
             <ol className="space-y-3">

@@ -196,7 +196,7 @@ export function CheckoutPaymentModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/60 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex cursor-pointer items-center justify-center bg-zinc-950/60 p-4 backdrop-blur-sm"
       onClick={requestClose}
     >
       <div
@@ -204,7 +204,7 @@ export function CheckoutPaymentModal({
         aria-modal="true"
         aria-label={copy.modalTitle}
         onClick={(event) => event.stopPropagation()}
-        className="flex max-h-[calc(100dvh-2rem)] w-full max-w-md animate-[checkoutModalIn_.25s_ease-out] flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
+        className="flex cursor-auto max-h-[calc(100dvh-2rem)] w-full max-w-md animate-[checkoutModalIn_.25s_ease-out] flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
       >
         <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
           <p className="text-sm font-bold text-zinc-900">

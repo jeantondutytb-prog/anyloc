@@ -25,6 +25,9 @@ const DEBOUNCE_MS = 8_000;
 /** A human who wrote in the last hours owns the conversation. */
 const HUMAN_TAKEOVER_MS = 12 * 60 * 60 * 1000;
 
+/** After handing over, the agent leaves the conversation to the team this long. */
+const ESCALATION_HOLD_MS = 24 * 60 * 60 * 1000;
+
 const UNIQUE_VIOLATION = "23505";
 
 const DEFAULT_HANDOVER_REPLY =
@@ -51,12 +54,15 @@ export function getSkipReason({
   messages,
   fingerprint,
   segments,
+  escalated = false,
   mode,
   now = Date.now(),
 }: {
   messages: CrispMessage[];
   fingerprint: number;
   segments: string[];
+  /** The agent handed this conversation over recently (from our own log). */
+  escalated?: boolean;
   mode: Exclude<SupportAgentMode, "off">;
   now?: number;
 }): "superseded" | "human_active" | null {
@@ -75,7 +81,30 @@ export function getSkipReason({
     return "human_active";
   }
 
-  return segments.includes(ESCALATED_SEGMENT) ? "human_active" : null;
+  return escalated || segments.includes(ESCALATED_SEGMENT) ? "human_active" : null;
+}
+
+/**
+ * Crisp segments and notes need a paid plan, so the handover is also
+ * remembered in our own log.
+ */
+async function wasEscalatedRecently(sessionId: string) {
+  if (!isSupabaseAdminConfigured()) {
+    return false;
+  }
+  const { data, error } = await createAdminClient()
+    .from("support_agent_events")
+    .select("id")
+    .eq("session_id", sessionId)
+    .eq("action", "escalate")
+    .gte("created_at", new Date(Date.now() - ESCALATION_HOLD_MS).toISOString())
+    .limit(1);
+
+  if (error) {
+    await logError("support-agent/escalation-check", error, { session_id: sessionId });
+    return false;
+  }
+  return (data ?? []).length > 0;
 }
 
 async function claimMessage(sessionId: string, fingerprint: number, mode: SupportAgentMode) {
@@ -154,9 +183,19 @@ async function applyLiveDecision(sessionId: string, decision: SupportDecision, s
     return;
   }
   await sendOperatorText(sessionId, decision.reply || DEFAULT_HANDOVER_REPLY);
-  await sendPrivateNote(sessionId, `[IA] À TOI : ${decision.reason}\n\n${decision.internalNote}`);
-  await setConversationSegments(sessionId, [...new Set([...segments, ESCALATED_SEGMENT])]);
-  await markConversationUnresolved(sessionId);
+
+  // Extras for the team: notes and segments need a paid Crisp plan, so a
+  // refusal is fine. The reason stays in support_agent_events either way.
+  const extras = await Promise.allSettled([
+    sendPrivateNote(sessionId, `[IA] À TOI : ${decision.reason}\n\n${decision.internalNote}`),
+    setConversationSegments(sessionId, [...new Set([...segments, ESCALATED_SEGMENT])]),
+    markConversationUnresolved(sessionId),
+  ]);
+  for (const extra of extras) {
+    if (extra.status === "rejected") {
+      console.warn("support-agent: handover extra failed", String(extra.reason).slice(0, 200));
+    }
+  }
 }
 
 /**
@@ -179,14 +218,16 @@ export async function handleCrispVisitorMessage({
   await new Promise((resolve) => setTimeout(resolve, DEBOUNCE_MS));
 
   let composing = false;
+  let decision: SupportDecision | undefined;
   try {
-    const [messages, meta] = await Promise.all([
+    const [messages, meta, escalated] = await Promise.all([
       getConversationMessages(sessionId),
       getConversationMeta(sessionId),
+      wasEscalatedRecently(sessionId),
     ]);
     const segments = meta?.segments ?? [];
 
-    const skipReason = getSkipReason({ messages, fingerprint, segments, mode });
+    const skipReason = getSkipReason({ messages, fingerprint, segments, escalated, mode });
     if (skipReason) {
       await recordOutcome(sessionId, fingerprint, { status: skipReason });
       return;
@@ -199,7 +240,7 @@ export async function handleCrispVisitorMessage({
 
     // The Crisp email isn't verified: a live answer goes straight to whoever
     // typed it, so account data only reaches the model behind a human review.
-    const decision = await decideSupportReply({
+    decision = await decideSupportReply({
       transcript: formatTranscript(messages),
       customer:
         mode === "draft"
@@ -218,6 +259,7 @@ export async function handleCrispVisitorMessage({
     await logError("support-agent/handle", error, { session_id: sessionId });
     await recordOutcome(sessionId, fingerprint, {
       status: "error",
+      decision,
       error: error instanceof Error ? error.message : String(error),
     });
   } finally {
