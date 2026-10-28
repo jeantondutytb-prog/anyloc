@@ -1,4 +1,5 @@
 import posthog from "posthog-js";
+import { isThirdPartyOff } from "@/lib/third-party-off";
 
 export function isPostHogBrowserReady() {
   return typeof window !== "undefined" && posthog.__loaded;
@@ -11,7 +12,7 @@ export function initPostHogBrowser() {
 
   const apiKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;
 
-  if (!apiKey || posthog.__loaded) {
+  if (!apiKey || posthog.__loaded || isThirdPartyOff("posthog")) {
     return;
   }
 

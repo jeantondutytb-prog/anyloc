@@ -8,6 +8,8 @@ import {
   track,
 } from "@amplitude/unified";
 
+import { isThirdPartyOff } from "@/lib/third-party-off";
+
 let initPromise: Promise<void> | null = null;
 
 export function isAmplitudeBrowserReady() {
@@ -29,7 +31,7 @@ export async function initAmplitudeBrowser() {
 
   const apiKey = process.env.NEXT_PUBLIC_AMPLITUDE_API_KEY;
 
-  if (!apiKey || isAmplitudeBrowserReady()) {
+  if (!apiKey || isAmplitudeBrowserReady() || isThirdPartyOff("amplitude")) {
     return;
   }
 
