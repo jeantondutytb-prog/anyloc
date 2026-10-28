@@ -38,6 +38,7 @@ import {
 } from "@/lib/checkout-first-month-offer";
 import { RECOVERY_OFFER_PLAN_ID } from "@/lib/checkout-recovery-plan";
 import { isNetworkError, requestCheckoutSession } from "@/lib/checkout-request";
+import { getMonthlyDisplayPrice, type PriceDisplayVariant } from "@/lib/price-display-experiment";
 import {
   getGridEntryPlanId,
   getGridPlans,
@@ -98,6 +99,7 @@ export function AnyLocCheckoutPanel({
   onShowAllPlans,
   returning,
   quiz,
+  priceDisplay = "per_day",
 }: {
   selectedPlanId: string;
   onPlanChange: (planId: string) => void;
@@ -115,6 +117,8 @@ export function AnyLocCheckoutPanel({
   returning?: ReturningCustomer | null;
   /** Arrived from the quiz onboarding: recommended plan and personal headline. */
   quiz?: QuizResult | null;
+  /** A/B test: plans priced per day or per month (see lib/price-display-experiment). */
+  priceDisplay?: PriceDisplayVariant;
 }) {
   const copy = CHECKOUT_COPY;
   // The plans of the selected plan's price grid (see lib/pricing-experiment).
@@ -438,11 +442,18 @@ export function AnyLocCheckoutPanel({
             </span>
             <span className="shrink-0 text-right">
               <span className="block whitespace-nowrap text-lg font-bold tabular-nums text-zinc-900">
-                {plan.perDay.replace("≈ ", "")} €
-                <span className="text-xs font-medium text-zinc-500">/jour</span>
+                {priceDisplay === "per_month"
+                  ? getMonthlyDisplayPrice(plan)
+                  : plan.perDay.replace("≈ ", "")}{" "}
+                €
+                <span className="text-xs font-medium text-zinc-500">
+                  {priceDisplay === "per_month" ? "/mois" : "/jour"}
+                </span>
               </span>
               <span className="block whitespace-nowrap text-xs tabular-nums text-zinc-500">
-                {plan.price.replace("€", " €")} / {BILLING_PERIOD_LABELS[plan.id]}
+                {priceDisplay === "per_month" && BILLING_PERIOD_LABELS[plan.id] === "1 mois"
+                  ? "Sans engagement"
+                  : `${plan.price.replace("€", " €")} / ${BILLING_PERIOD_LABELS[plan.id]}`}
               </span>
             </span>
           </button>

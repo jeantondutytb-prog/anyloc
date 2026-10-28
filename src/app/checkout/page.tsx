@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { CheckoutView } from "@/components/checkout/checkout-view";
+import { PriceDisplayExperimentExposure } from "@/components/pricing/price-display-experiment-exposure";
 import { PricingExperimentExposure } from "@/components/pricing/pricing-experiment-exposure";
 import type { ReturningCustomer } from "@/lib/checkout-copy";
 import { hasActiveRecoveryOffer } from "@/lib/checkout-recovery-server";
@@ -17,6 +18,7 @@ import {
   planIdForVariant,
   PRICING_VARIANT_COOKIE,
 } from "@/lib/pricing-experiment";
+import { parsePriceDisplayVariant, PRICE_DISPLAY_COOKIE } from "@/lib/price-display-experiment";
 
 export default async function CheckoutPage({
   searchParams,
@@ -29,9 +31,11 @@ export default async function CheckoutPage({
     pricing?: string;
     retour?: string;
     parcours?: string;
+    prix?: string;
   }>;
 }) {
-  const { plan, canceled, preview, paiement, pricing, retour, parcours } = await searchParams;
+  const { plan, canceled, preview, paiement, pricing, retour, parcours, prix } =
+    await searchParams;
   // Email links (?paiement=1) open straight on the payment form.
   const focusPayment = paiement === "1";
   // Local design preview without an account: /checkout?preview=1 under `next dev` only.
@@ -47,6 +51,11 @@ export default async function CheckoutPage({
     devPreview && parsePricingVariant(pricing)
       ? parsePricingVariant(pricing)!
       : getEffectivePricingVariant((await cookies()).get(PRICING_VARIANT_COOKIE)?.value);
+  // Per day or per month: the dev preview can force it with &prix=per_month.
+  const priceDisplay =
+    (devPreview && parsePriceDisplayVariant(prix)) ||
+    parsePriceDisplayVariant((await cookies()).get(PRICE_DISPLAY_COOKIE)?.value) ||
+    "per_day";
   // Show the plan in the visitor's price grid; email links keep the plan
   // (and coupon) they announced.
   const planId = focusPayment
@@ -104,6 +113,7 @@ export default async function CheckoutPage({
       {isPricingExperimentEnabled() ? (
         <PricingExperimentExposure variant={pricingVariant} />
       ) : null}
+      <PriceDisplayExperimentExposure variant={priceDisplay} />
       <CheckoutView
         initialPlanId={planId}
         canceled={canceled === "true"}
@@ -112,6 +122,7 @@ export default async function CheckoutPage({
         stripePublishableKey={getStripePublishableKey()}
         returning={returning}
         fromQuiz={parcours === "quiz" && !returning}
+        priceDisplay={priceDisplay}
       />
     </>
   );
