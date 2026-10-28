@@ -27,7 +27,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
-  themeColor: "#ffffff",
+  themeColor: "#0a0a0c",
 };
 
 export default async function RemoteAppPage() {

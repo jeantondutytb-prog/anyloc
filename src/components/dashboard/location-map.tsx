@@ -12,7 +12,17 @@ interface Location {
   lng: number;
 }
 
-function createPinIcon(active: boolean) {
+function createPinIcon(active: boolean, dark: boolean) {
+  if (dark) {
+    // Teardrop gradient pin, same as the iOS app's GradientPin.
+    return L.divIcon({
+      className: "map-pin-icon",
+      html: `<div class="dark-pin ${active ? "dark-pin--active" : ""}"><span class="dark-pin__glow"></span><span class="dark-pin__drop"><span class="dark-pin__dot"></span></span></div>`,
+      iconSize: [64, 46],
+      iconAnchor: [32, 46],
+    });
+  }
+
   return L.divIcon({
     className: "map-pin-icon",
     html: `<div class="map-pin ${active ? "map-pin--active" : ""}"><span class="map-pin__dot"></span></div>`,
@@ -27,12 +37,18 @@ export default function LocationMap({
   active,
   fullScreen = false,
   layoutKey = 0,
+  dark = false,
+  showPin = true,
+  recenterKey = 0,
 }: {
   selected: Location;
   onSelect: (loc: Location) => void;
   active: boolean;
   fullScreen?: boolean;
   layoutKey?: number;
+  dark?: boolean;
+  showPin?: boolean;
+  recenterKey?: number;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -53,11 +69,12 @@ export default function LocationMap({
 
     const map = L.map(containerRef.current, {
       center: [selected.lat, selected.lng],
-      zoom: 12,
+      zoom: dark ? 15 : 12,
       zoomControl: true,
       attributionControl: true,
     });
 
+    // The dark map is the same OSM tiles, inverted in CSS (.simple-map-shell--dark).
     L.tileLayer(TILE_URL, {
       subdomains: ["a", "b", "c"],
       maxZoom: 19,
@@ -66,8 +83,9 @@ export default function LocationMap({
     }).addTo(map);
 
     const marker = L.marker([selected.lat, selected.lng], {
-      icon: createPinIcon(active),
+      icon: createPinIcon(active, dark),
       zIndexOffset: 1000,
+      opacity: showPin ? 1 : 0,
     }).addTo(map);
 
     const outerCircle = L.circle([selected.lat, selected.lng], {
@@ -87,7 +105,7 @@ export default function LocationMap({
       weight: 1,
     });
 
-    if (active) {
+    if (active && !dark) {
       outerCircle.addTo(map);
       innerCircle.addTo(map);
     }
@@ -133,16 +151,19 @@ export default function LocationMap({
     const position: L.LatLngExpression = [selected.lat, selected.lng];
 
     marker.setLatLng(position);
-    marker.setIcon(createPinIcon(active));
+    marker.setIcon(createPinIcon(active, dark));
+    marker.setOpacity(showPin ? 1 : 0);
     outerCircle.setLatLng(position);
     innerCircle.setLatLng(position);
 
     if (hasCenteredRef.current) {
-      map.flyTo(position, Math.max(map.getZoom(), 11), { duration: 0.8 });
+      map.flyTo(position, Math.max(map.getZoom(), dark ? 15 : 11), {
+        duration: dark ? 1.6 : 0.8,
+      });
     } else {
       hasCenteredRef.current = true;
     }
-  }, [selected.lat, selected.lng, active]);
+  }, [selected.lat, selected.lng, active, dark, showPin, recenterKey]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -153,7 +174,7 @@ export default function LocationMap({
       return;
     }
 
-    if (active) {
+    if (active && !dark) {
       outerCircle.addTo(map);
       innerCircle.addTo(map);
       return;
@@ -161,7 +182,7 @@ export default function LocationMap({
 
     outerCircle.remove();
     innerCircle.remove();
-  }, [active]);
+  }, [active, dark]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -179,9 +200,10 @@ export default function LocationMap({
   return (
     <div
       className={
-        fullScreen
+        (fullScreen
           ? "simple-map-shell simple-map-shell--fullscreen h-full w-full"
-          : "simple-map-shell h-[400px] w-full lg:h-[500px]"
+          : "simple-map-shell h-[400px] w-full lg:h-[500px]") +
+        (dark ? " simple-map-shell--dark" : "")
       }
     >
       <div ref={containerRef} className="simple-map h-full w-full" />
