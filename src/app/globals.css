@@ -299,6 +299,27 @@ body {
   }
 }
 
+@keyframes showcase-pulse {
+  from {
+    transform: scale(0.96);
+  }
+  to {
+    transform: scale(1.06);
+  }
+}
+
+@keyframes showcase-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes showcase-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
 @keyframes showcase-enter {
   from {
     opacity: 0;

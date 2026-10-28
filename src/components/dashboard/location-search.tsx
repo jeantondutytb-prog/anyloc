@@ -233,7 +233,7 @@ export const LocationSearch = forwardRef<LocationSearchHandle, LocationSearchPro
           }
           className={cn(
             variant === "dark"
-              ? "h-11 w-full rounded-[14px] border border-[#25252b] bg-[#0a0a0c]/[0.93] pl-11 pr-4 text-base text-[#f4f4f5] outline-none placeholder:text-[#8b8b94] focus:border-[#ec4899]/40"
+              ? "h-10 w-full rounded-[13px] border border-[#25252b] bg-[#0a0a0c]/[0.93] pl-11 pr-4 text-base text-[#f4f4f5] outline-none placeholder:text-[#8b8b94] focus:border-[#ec4899]/40"
               : "w-full rounded-2xl border pl-11 pr-4 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-pink-300 focus:ring-2 focus:ring-pink-200/50",
             variant === "dark"
               ? ""
