@@ -14,10 +14,11 @@ import {
   getPlanGrid,
   GUARANTEE,
 } from "@/lib/constants";
+import { getMonthlyDisplayPrice } from "@/lib/price-display-experiment";
 import { getStripe } from "@/lib/stripe-browser";
 import { cn } from "@/lib/utils";
 
-/** What the price is billed for, under the daily price. */
+/** What the price is billed for, under the monthly price. */
 const BILLING_PERIOD_LABELS: Record<string, string> = {
   monthly: "1 mois",
   "6months": "6 mois",
@@ -28,9 +29,10 @@ const BILLING_PERIOD_LABELS: Record<string, string> = {
 };
 
 /**
- * Plans of the web remote, in its dark style: opened from "Activer ma
- * localisation" after a teleport without subscription, so paying never leaves
- * /app. "Continuer" opens the same Stripe popup as /checkout.
+ * Plans of the web remote, in its dark style: a popup that rises to the middle
+ * of the screen, opened from "Activer ma localisation" after a teleport
+ * without subscription, so paying never leaves /app. "Continuer" opens the
+ * same Stripe popup as /checkout.
  */
 export function RemotePlansSheet({
   initialPlanId,
@@ -136,27 +138,24 @@ export function RemotePlansSheet({
   return (
     <>
       <div
-        className="fixed inset-0 z-[1600] flex items-end bg-black/60 animate-[remote-fade_0.25s_ease-out]"
+        className="fixed inset-0 z-[1600] flex items-center justify-center bg-black/60 px-4 py-[max(env(safe-area-inset-top),1rem)] animate-[remote-fade_0.25s_ease-out]"
         onClick={onClose}
       >
         <div
           role="dialog"
           aria-modal="true"
           aria-label="Choisis ton abonnement"
-          className="max-h-[92dvh] w-full overflow-y-auto rounded-t-[28px] border-t border-[#25252b] bg-[#0a0a0c] px-5 pb-[max(env(safe-area-inset-bottom),1.25rem)] pt-3"
+          className="max-h-[calc(100dvh-2rem)] w-full max-w-[400px] overflow-y-auto rounded-[28px] border border-[#25252b] bg-[#0a0a0c] px-5 pb-5 pt-5 shadow-[0_20px_60px_rgba(0,0,0,0.6)] animate-[remote-rise_0.35s_cubic-bezier(0.22,1,0.36,1)]"
           onClick={(event) => event.stopPropagation()}
         >
-          <div className="relative mb-4">
-            <div className="mx-auto h-[5px] w-10 rounded-full bg-[#303038]" />
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Fermer"
-              className="absolute -top-0.5 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-[#1c1c21] text-[#8b8b94]"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Fermer"
+            className="float-right -mr-1 -mt-1 flex h-8 w-8 items-center justify-center rounded-full bg-[#1c1c21] text-[#8b8b94]"
+          >
+            <X className="h-4 w-4" />
+          </button>
 
           <p className="pr-10 text-[22px] font-bold leading-tight text-[#f4f4f5]">
             Choisis ton abonnement
@@ -226,14 +225,15 @@ export function RemotePlansSheet({
                   </span>
                   <span className="shrink-0 text-right">
                     <span className="block whitespace-nowrap text-lg font-bold tabular-nums text-[#f4f4f5]">
-                      {plan.perDay.replace("≈ ", "")} €
+                      {getMonthlyDisplayPrice(plan)} €
                       <span className="text-xs font-medium text-[#8b8b94]">
-                        /jour
+                        /mois
                       </span>
                     </span>
                     <span className="block whitespace-nowrap text-xs tabular-nums text-[#8b8b94]">
-                      {plan.price.replace("€", " €")} /{" "}
-                      {BILLING_PERIOD_LABELS[plan.id]}
+                      {BILLING_PERIOD_LABELS[plan.id] === "1 mois"
+                        ? "Sans engagement"
+                        : `${plan.price.replace("€", " €")} / ${BILLING_PERIOD_LABELS[plan.id]}`}
                     </span>
                   </span>
                 </button>

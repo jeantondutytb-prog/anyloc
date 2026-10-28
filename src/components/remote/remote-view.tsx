@@ -664,6 +664,7 @@ export function RemoteView({
     null
   );
   const geocodeRef = useRef(0);
+  const cameraMovingRef = useRef(false);
 
   const isActive = location?.isActive ?? false;
   // Back after paying: the spot teleported to before is picked again, one
@@ -725,13 +726,29 @@ export function RemoteView({
     });
   }, []);
 
+  const handleCameraMoving = useCallback((moving: boolean) => {
+    cameraMovingRef.current = moving;
+  }, []);
+
+  /** Resolves once the camera has been still for a moment (at most ~6 s). */
+  const waitForCameraSettled = useCallback(async () => {
+    const deadline = Date.now() + 6000;
+    let stillFor = 0;
+    while (stillFor < 400 && Date.now() < deadline) {
+      await sleep(100);
+      stillFor = cameraMovingRef.current ? 0 : stillFor + 100;
+    }
+  }, []);
+
   const teleport = useCallback(
     async (place: Place) => {
       setSelected(place);
       // No subscription: the whole teleport plays, but nothing is sent (the
       // API would refuse) and the paywall opens on arrival.
       writePendingPlace(hasAccess ? null : place);
-      const showPaywall = () => {
+      // Once the zoom onto the destination is over, not on top of it.
+      const showPaywall = async () => {
+        await waitForCameraSettled();
         track("remote_paywall_shown", { destination: place.name });
         setPaywallPlace(place);
       };
@@ -775,7 +792,7 @@ export function RemoteView({
         setShowcase((current) => current && { ...current, closing: true });
         await sleep(SHOWCASE_FADE_MS);
         setShowcase(null);
-        if (ok && !hasAccess) showPaywall();
+        if (ok && !hasAccess) await showPaywall();
         return;
       }
 
@@ -786,7 +803,7 @@ export function RemoteView({
         return;
       }
       setBanner({ kind: "arrived", name: place.name });
-      if (!hasAccess) showPaywall();
+      if (!hasAccess) void showPaywall();
       await sleep(2400);
       setBanner((current) =>
         current?.kind === "arrived" && current.name === place.name
@@ -794,7 +811,7 @@ export function RemoteView({
           : current
       );
     },
-    [hasAccess, saveLocation, flash]
+    [hasAccess, saveLocation, flash, waitForCameraSettled]
   );
 
   const stop = useCallback(async () => {
@@ -869,6 +886,7 @@ export function RemoteView({
           showPin={selected != null && mode === "teleport"}
           recenterKey={recenterKey}
           landingKey={landingKey}
+          onCameraMoving={handleCameraMoving}
         />
       </div>
 
