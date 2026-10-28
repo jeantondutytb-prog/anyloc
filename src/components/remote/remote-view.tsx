@@ -32,13 +32,17 @@ import { DEFAULT_LOCATION } from "@/lib/location";
 import { REMOTE_SPOT_CATEGORIES, REMOTE_SPOTS } from "@/lib/remote-spots";
 import { cn } from "@/lib/utils";
 
-const LocationMap = dynamic(
-  () => import("@/components/dashboard/location-map"),
-  {
-    ssr: false,
-    loading: () => <div className="h-full w-full bg-[#0a0a0c]" />,
-  }
-);
+const RemoteMap = dynamic(() => import("@/components/remote/remote-map"), {
+  ssr: false,
+  loading: () => <div className="h-full w-full bg-[#151518]" />,
+});
+
+// iOS system fonts, so Safari renders /app in SF Pro like the native app.
+const SYSTEM_FONT =
+  "[font-family:-apple-system,BlinkMacSystemFont,'SF_Pro_Text',system-ui,sans-serif]";
+const MONO_FONT = "[font-family:ui-monospace,'SF_Mono',Menlo,monospace]";
+/** Press feedback shared by the remote's buttons. */
+const PRESSABLE = "transition-transform duration-150 active:scale-[0.96]";
 
 type Place = { name: string; lat: number; lng: number };
 type Mode = "teleport" | "explore";
@@ -162,7 +166,10 @@ function SquareIconButton({
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-[#ec4899]/[0.13] text-[#f472b6]"
+      className={cn(
+        "flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-[#ec4899]/[0.13] text-[#f472b6]",
+        PRESSABLE
+      )}
     >
       {children}
     </button>
@@ -200,7 +207,7 @@ function AddToHomeScreenHint({ onDismiss }: { onDismiss: () => void }) {
 
 function TeleportBanner({ banner }: { banner: Banner }) {
   return (
-    <div className="flex justify-center">
+    <div className="flex animate-[remote-in_0.35s_cubic-bezier(0.32,0.72,0,1)] justify-center">
       <div className="flex h-11 max-w-full items-center gap-2.5 rounded-full border border-[#ec4899]/40 bg-[#0a0a0c]/[0.93] px-4 text-[15px] font-semibold text-[#f4f4f5] shadow-[0_6px_14px_rgba(236,72,153,0.35)] backdrop-blur-md">
         {banner.kind === "flying" ? (
           <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[#f472b6]" />
@@ -266,7 +273,7 @@ function TeleportShowcase({
         />
       </div>
       <p
-        className="relative text-[clamp(40px,15vw,60px)] font-extrabold leading-none text-white"
+        className="relative text-[clamp(40px,15vw,60px)] font-black leading-none text-white [font-family:ui-rounded,'SF_Pro_Rounded',system-ui,sans-serif]"
         style={{ animation: "showcase-enter 0.6s 0.75s both" }}
       >
         anyloc
@@ -316,7 +323,12 @@ function ActiveLocationBar({
           <p className="text-[11px] font-medium leading-tight text-[#8b8b94]">
             Position simulée
           </p>
-          <p className="font-mono text-base font-semibold leading-tight text-[#f472b6]">
+          <p
+            className={cn(
+              "text-base font-semibold leading-tight tabular-nums text-[#f472b6]",
+              MONO_FONT
+            )}
+          >
             {formatElapsed(now - since)}
           </p>
         </div>
@@ -373,7 +385,7 @@ function SavedSheet({
                 <span className="block truncate text-base font-semibold text-[#f4f4f5]">
                   {place.name}
                 </span>
-                <span className="block font-mono text-[12.5px] text-[#8b8b94]">
+                <span className={cn("block text-[12.5px] text-[#8b8b94]", MONO_FONT)}>
                   {formatCoords(place.lat, place.lng)}
                 </span>
               </span>
@@ -399,6 +411,7 @@ export function RemoteView() {
   const [collapsed, setCollapsed] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
   const [recenterKey, setRecenterKey] = useState(0);
+  const [landingKey, setLandingKey] = useState(0);
   const [banner, setBanner] = useState<Banner | null>(null);
   const [showcase, setShowcase] = useState<{
     destination: string;
@@ -506,8 +519,8 @@ export function RemoteView() {
           setShowcase({ destination: place.name, step: "done" });
           await sleep(1600);
         }
-        // Recentre behind the card so it fades straight onto the destination.
-        setRecenterKey((key) => key + 1);
+        // Start the descent behind the card so it fades straight into it.
+        if (ok) setLandingKey((key) => key + 1);
         setShowcase((current) => current && { ...current, closing: true });
         await sleep(SHOWCASE_FADE_MS);
         setShowcase(null);
@@ -589,17 +602,20 @@ export function RemoteView() {
   const mapPlace = selected ?? DEFAULT_LOCATION;
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-[#0a0a0c] text-[#f4f4f5]">
-      {/* Pinch-to-zoom on phones; Leaflet's +/- would sit under the search bar. */}
-      <div className="absolute inset-0 [&_.leaflet-control-zoom]:hidden">
-        <LocationMap
-          selected={mapPlace}
+    <div
+      className={cn(
+        "fixed inset-0 flex flex-col bg-[#0a0a0c] text-[#f4f4f5] antialiased",
+        SYSTEM_FONT
+      )}
+    >
+      <div className="absolute inset-0">
+        <RemoteMap
+          place={mapPlace}
           onSelect={(place) => select(place, true)}
           active={isSelectedActive}
-          fullScreen
-          dark
           showPin={selected != null && mode === "teleport"}
           recenterKey={recenterKey}
+          landingKey={landingKey}
         />
       </div>
 
@@ -615,7 +631,10 @@ export function RemoteView() {
             type="button"
             onClick={() => setShowSaved(true)}
             aria-label="Favoris"
-            className="flex h-10 w-10 items-center justify-center text-[#f472b6]"
+            className={cn(
+              "flex h-10 w-10 items-center justify-center text-[#f472b6]",
+              PRESSABLE
+            )}
           >
             <Bookmark className="h-[18px] w-[18px]" strokeWidth={2.4} />
           </button>
@@ -640,12 +659,12 @@ export function RemoteView() {
           </div>
         ) : null}
 
-        {banner ? <TeleportBanner banner={banner} /> : null}
+        {banner ? <TeleportBanner key={banner.kind} banner={banner} /> : null}
         {showHomeHint ? <AddToHomeScreenHint onDismiss={dismissHomeHint} /> : null}
       </div>
 
       <div className="relative z-[1000] mt-auto px-2.5 pb-[max(env(safe-area-inset-bottom),0.375rem)]">
-        <div className="rounded-[20px] border border-[#25252b] bg-[#0c0c0e]/[0.97] px-3 pb-2.5 pt-1 shadow-[0_-6px_20px_rgba(0,0,0,0.4)]">
+        <div className="rounded-[20px] border border-[#25252b] bg-[#0c0c0e]/[0.94] px-3 pb-2.5 pt-1 shadow-[0_-6px_20px_rgba(0,0,0,0.4)] backdrop-blur-xl">
           <button
             type="button"
             onClick={() => setCollapsed((value) => !value)}
@@ -655,7 +674,15 @@ export function RemoteView() {
             <span className="h-1 w-9 rounded-full bg-[#303038]" />
           </button>
 
-          <div className="flex gap-1 rounded-xl border border-[#25252b] bg-[#070708] p-[3px]">
+          {/* The pill slides under the tabs instead of jumping between them. */}
+          <div className="relative flex rounded-xl border border-[#25252b] bg-[#070708] p-[3px]">
+            <span
+              aria-hidden
+              className="absolute bottom-[3px] left-[3px] top-[3px] w-[calc(50%-3px)] rounded-[9px] bg-[#ec4899]/[0.13] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"
+              style={{
+                transform: mode === "explore" ? "translateX(100%)" : "none",
+              }}
+            />
             {(
               [
                 { value: "teleport", label: "Téléporter", Icon: Navigation },
@@ -667,10 +694,8 @@ export function RemoteView() {
                 type="button"
                 onClick={() => setMode(value)}
                 className={cn(
-                  "flex h-8 flex-1 items-center justify-center gap-1.5 rounded-[9px] text-sm font-medium transition-colors",
-                  mode === value
-                    ? "bg-[#ec4899]/[0.13] text-[#f472b6]"
-                    : "text-[#c4c4ca]"
+                  "relative flex h-8 flex-1 items-center justify-center gap-1.5 rounded-[9px] text-sm font-medium transition-colors duration-300",
+                  mode === value ? "text-[#f472b6]" : "text-[#c4c4ca]"
                 )}
               >
                 <Icon
@@ -684,18 +709,34 @@ export function RemoteView() {
             ))}
           </div>
 
-          {collapsed ? null : mode === "teleport" ? (
-            <div className="pt-2.5">
+          {/* Collapse by animating the row height (grid 1fr -> 0fr). */}
+          <div
+            className={cn(
+              "grid transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
+              collapsed ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
+            )}
+          >
+          <div className="min-h-0 overflow-hidden">
+          {mode === "teleport" ? (
+            <div key="teleport" className="animate-[remote-fade_0.25s_ease-out] pt-2.5">
               {selected ? (
                 <div className="flex items-center gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-baseline gap-2">
                       <Caption text={statusText} error={offline} />
-                      <p className="truncate font-mono text-[11px] text-[#8b8b94]">
+                      <p
+                        className={cn(
+                          "truncate text-[11px] tabular-nums text-[#8b8b94]",
+                          MONO_FONT
+                        )}
+                      >
                         {formatCoords(selected.lat, selected.lng)}
                       </p>
                     </div>
-                    <p className="truncate text-[17px] font-semibold leading-tight">
+                    <p
+                      key={selected.name}
+                      className="animate-[remote-fade_0.25s_ease-out] truncate text-[17px] font-semibold leading-tight tracking-[-0.01em]"
+                    >
                       {selected.name}
                     </p>
                   </div>
@@ -739,7 +780,9 @@ export function RemoteView() {
                     disabled={selected == null || isBusy || offline}
                     onClick={() => selected && void teleport(selected)}
                     data-track="remote_teleport"
-                    className="flex h-11 w-full items-center justify-center gap-2 rounded-[14px] bg-gradient-to-br from-[#ec4899] to-[#a855f7] text-base font-semibold text-white shadow-[0_6px_12px_rgba(236,72,153,0.4)] disabled:opacity-45 disabled:shadow-none"
+                    className={cn(
+                      "flex h-11 w-full items-center justify-center gap-2 rounded-[14px] bg-gradient-to-br from-[#ec4899] to-[#a855f7] text-base font-semibold text-white shadow-[0_6px_12px_rgba(236,72,153,0.4)] transition-[transform,opacity] duration-150 active:scale-[0.98] disabled:opacity-45 disabled:shadow-none"
+                    )}
                   >
                     {isBusy ? (
                       <Loader2 className="h-[18px] w-[18px] animate-spin" />
@@ -773,7 +816,7 @@ export function RemoteView() {
               ) : null}
             </div>
           ) : (
-            <div>
+            <div key="explore" className="animate-[remote-fade_0.25s_ease-out]">
               <div className="-mx-3 flex gap-2 overflow-x-auto px-3 py-2.5 [scrollbar-width:none]">
                 {REMOTE_SPOT_CATEGORIES.map((category) => {
                   const on = spotCategory === category.id;
@@ -783,7 +826,7 @@ export function RemoteView() {
                       type="button"
                       onClick={() => setSpotCategory(category.id)}
                       className={cn(
-                        "shrink-0 rounded-full border px-3.5 py-[7px] text-[13px] font-semibold",
+                        "shrink-0 rounded-full border px-3.5 py-[7px] text-[13px] font-semibold transition-colors duration-200",
                         on
                           ? "border-[#ec4899]/40 bg-[#ec4899]/[0.13] text-[#f472b6]"
                           : "border-[#25252b] bg-[#16161a] text-[#c4c4ca]"
@@ -808,7 +851,7 @@ export function RemoteView() {
                         false
                       )
                     }
-                    className="flex w-full items-center gap-3 py-1.5 text-left"
+                    className="flex w-full items-center gap-3 rounded-xl py-1.5 text-left transition-colors duration-150 active:bg-[#16161a]"
                   >
                     <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] bg-[#1c1c21] text-[22px]">
                       {spot.emoji}
@@ -827,6 +870,8 @@ export function RemoteView() {
               </div>
             </div>
           )}
+          </div>
+          </div>
         </div>
       </div>
 
