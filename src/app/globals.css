@@ -182,24 +182,24 @@ body {
   }
 }
 
-/* Dark map of the iPhone remote (/app), matching the iOS app. */
-.simple-map-shell--dark,
-.simple-map-shell--dark .simple-map.leaflet-container {
-  background: #0a0a0c;
+/* Map of the iPhone remote (/app): MapLibre controls in the app's dark theme. */
+.remote-map,
+.remote-map .maplibregl-canvas-container {
+  background: #1a1a1e;
 }
 
-.simple-map-shell--dark .simple-map .leaflet-tile-pane {
-  /* Esri dark grey, pushed towards the iOS app's near-black, slightly violet map. */
-  filter: brightness(0.75) contrast(1.15) sepia(0.2) hue-rotate(230deg);
-}
-
-.simple-map-shell--dark .simple-map .leaflet-control-attribution {
+.remote-map .maplibregl-ctrl.maplibregl-ctrl-attrib {
   background: rgba(10, 10, 12, 0.6);
   color: #55555d;
+  font-size: 10px;
 }
 
-.simple-map-shell--dark .simple-map .leaflet-control-attribution a {
+.remote-map .maplibregl-ctrl-attrib a {
   color: #8b8b94;
+}
+
+.remote-map .maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button {
+  filter: invert(1) opacity(0.5);
 }
 
 .dark-search-results,
@@ -223,11 +223,25 @@ body {
   background: #16161a;
 }
 
+/* The marker element itself is positioned by MapLibre through `transform`:
+   only its children animate. */
 .dark-pin {
   position: relative;
   width: 64px;
   height: 46px;
-  animation: dark-pin-drop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* MapLibre writes the marker's own inline opacity: hide its children instead. */
+.dark-pin > * {
+  transition: opacity 0.25s ease;
+}
+
+.dark-pin--hidden {
+  pointer-events: none;
+}
+
+.dark-pin--hidden > * {
+  opacity: 0;
 }
 
 .dark-pin__glow {
@@ -250,6 +264,11 @@ body {
   transform: rotate(-45deg);
   background: linear-gradient(135deg, #ec4899, #a855f7);
   box-shadow: 0 6px 12px rgba(236, 72, 153, 0.55);
+  will-change: transform;
+}
+
+.dark-pin__drop--landing {
+  animation: dark-pin-drop 0.5s cubic-bezier(0.34, 1.4, 0.64, 1) backwards;
 }
 
 .dark-pin__dot {
@@ -263,28 +282,41 @@ body {
 }
 
 .dark-pin--active .dark-pin__glow {
-  animation: dark-pin-pulse 1.4s ease-out infinite;
+  animation: dark-pin-pulse 1.8s ease-out infinite;
 }
 
 @keyframes dark-pin-drop {
   from {
     opacity: 0;
-    transform: translateY(-36px);
+    transform: translateY(-28px) rotate(-45deg);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: rotate(-45deg);
   }
 }
 
 @keyframes dark-pin-pulse {
   0% {
-    opacity: 1;
-    transform: scale(0.6);
+    opacity: 0.9;
+    transform: scale(0.7);
   }
   100% {
     opacity: 0;
-    transform: scale(1.6);
+    transform: scale(1.5);
+  }
+}
+
+@keyframes remote-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes remote-fade {
+  from {
+    opacity: 0;
   }
 }
 
