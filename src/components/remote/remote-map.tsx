@@ -2,8 +2,14 @@
 
 import { useEffect, useRef } from "react";
 import { preconnect } from "react-dom";
-import maplibregl from "maplibre-gl";
+import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+
+// MapLibre 6 looks for its worker next to its own file, which the bundler
+// doesn't copy: point it at the bundled copy instead.
+maplibregl.setWorkerUrl(
+  new URL("maplibre-gl/dist/maplibre-gl-worker.mjs", import.meta.url).href
+);
 
 // OpenFreeMap: free vector tiles, no key. Recoloured below to sit closer to
 // the iOS app's muted dark Apple map.
@@ -27,8 +33,16 @@ const easeOutCubic = (t: number) => 1 - (1 - t) ** 3;
 const easeInOutCubic = (t: number) =>
   t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2;
 
-function paint(map: maplibregl.Map, id: string, prop: string, value: unknown) {
-  if (map.getLayer(id)) map.setPaintProperty(id, prop, value);
+type PaintProperty = Parameters<maplibregl.Map["setPaintProperty"]>[1];
+
+function paint(
+  map: maplibregl.Map,
+  id: string,
+  prop: PaintProperty,
+  value: string | number
+) {
+  // Each property has its own value type; these are plain colours/numbers.
+  if (map.getLayer(id)) map.setPaintProperty(id, prop, value as never);
 }
 
 /** Lighter, slightly violet greys and readable latin labels. */
