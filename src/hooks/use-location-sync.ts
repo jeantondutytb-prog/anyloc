@@ -56,14 +56,17 @@ async function fetchLocation(): Promise<LocationResult> {
 type UseLocationSyncOptions = {
   onSynced?: () => void;
   pollIntervalMs?: number;
+  /** false skips loading and polling (no subscription: the API would 403). */
+  enabled?: boolean;
 };
 
 export function useLocationSync({
   onSynced,
   pollIntervalMs = 0,
+  enabled = true,
 }: UseLocationSyncOptions = {}) {
   const [location, setLocation] = useState<SyncedLocation | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -83,6 +86,9 @@ export function useLocationSync({
   }, [apply]);
 
   useEffect(() => {
+    if (!enabled) {
+      return;
+    }
     let active = true;
     void fetchLocation().then((result) => {
       if (active) apply(result);
@@ -90,10 +96,10 @@ export function useLocationSync({
     return () => {
       active = false;
     };
-  }, [apply]);
+  }, [apply, enabled]);
 
   useEffect(() => {
-    if (!pollIntervalMs || pollIntervalMs <= 0) {
+    if (!enabled || !pollIntervalMs || pollIntervalMs <= 0) {
       return;
     }
 
@@ -102,7 +108,7 @@ export function useLocationSync({
     }, pollIntervalMs);
 
     return () => window.clearInterval(interval);
-  }, [loadLocation, pollIntervalMs]);
+  }, [enabled, loadLocation, pollIntervalMs]);
 
   const saveLocation = useCallback(
     async (next: Record<string, unknown>) => {

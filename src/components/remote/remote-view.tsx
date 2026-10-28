@@ -27,7 +27,10 @@ import {
   X,
 } from "lucide-react";
 import { LocationSearch } from "@/components/dashboard/location-search";
+import type { InstallTrack } from "@/components/dashboard/paid-dashboard-view";
+import { RemotePlansSheet } from "@/components/remote/remote-plans-sheet";
 import { useLocationSync } from "@/hooks/use-location-sync";
+import { track } from "@/lib/analytics/track";
 import { DEFAULT_LOCATION } from "@/lib/location";
 import { REMOTE_SPOT_CATEGORIES, REMOTE_SPOTS } from "@/lib/remote-spots";
 import { cn } from "@/lib/utils";
@@ -52,6 +55,8 @@ type ShowcaseStep = "connecting" | "sending" | "done";
 const SHOWCASE_FADE_MS = 600;
 
 const FAVORITES_KEY = "anyloc.remote.favorites";
+// Spot teleported to before paying: picked again once the subscription is on.
+const PENDING_PLACE_KEY = "anyloc.remote.pendingPlace";
 const HOME_HINT_DISMISSED_KEY = "anyloc.remote.homeHintDismissed";
 // "Mode tournage" of the iOS app, on by default here: ?tournage=0 turns it off,
 // ?tournage=1 back on.
@@ -71,6 +76,31 @@ function readFavorites(): Place[] {
 function writeFavorites(favorites: Place[]) {
   try {
     window.localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+  } catch {}
+}
+
+function readPendingPlace(): Place | null {
+  try {
+    const raw = window.localStorage.getItem(PENDING_PLACE_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return parsed &&
+      typeof parsed.name === "string" &&
+      typeof parsed.lat === "number" &&
+      typeof parsed.lng === "number"
+      ? parsed
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function writePendingPlace(place: Place | null) {
+  try {
+    if (place) {
+      window.localStorage.setItem(PENDING_PLACE_KEY, JSON.stringify(place));
+    } else {
+      window.localStorage.removeItem(PENDING_PLACE_KEY);
+    }
   } catch {}
 }
 
@@ -417,9 +447,180 @@ function SavedSheet({
   );
 }
 
-export function RemoteView() {
+/**
+ * Shown on arrival when the account has no subscription: the teleport only
+ * played on the map, paying is what sends the position to the iPhone.
+ */
+function ActivateLocationDialog({
+  place,
+  onActivate,
+  onClose,
+}: {
+  place: Place;
+  onActivate: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-[1500] flex items-center justify-center bg-black/60 px-6 animate-[remote-fade_0.25s_ease-out]"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Dernière étape"
+        className="w-full max-w-[340px] rounded-[28px] border border-[#25252b] bg-[#0a0a0c] px-5 pb-4 pt-6 shadow-[0_20px_60px_rgba(0,0,0,0.6)]"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[18px] bg-[#ec4899]/[0.13]">
+          <Navigation className="h-6 w-6 fill-current text-[#f472b6]" />
+        </div>
+        <p className="text-center text-[13px] font-semibold uppercase tracking-wide text-[#f472b6]">
+          Dernière étape
+        </p>
+        <p className="mt-1 text-center text-[22px] font-bold leading-tight text-[#f4f4f5]">
+          Active ta localisation
+        </p>
+        <p className="mx-auto mt-2 text-center text-[15px] leading-snug text-[#8b8b94]">
+          Ta position est prête à{" "}
+          <span className="font-semibold text-[#f4f4f5]">{place.name}</span>. Active-la
+          pour qu&apos;elle s&apos;affiche sur ton iPhone.
+        </p>
+        <button
+          type="button"
+          onClick={onActivate}
+          data-track="remote_activate_location"
+          className={cn(
+            "mt-6 flex h-12 w-full items-center justify-center rounded-[14px] bg-gradient-to-br from-[#ec4899] to-[#a855f7] text-base font-semibold text-white shadow-[0_6px_12px_rgba(236,72,153,0.4)]",
+            PRESSABLE
+          )}
+        >
+          Activer ma localisation
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-full pt-3 text-[13px] font-medium text-[#8b8b94]"
+        >
+          Plus tard
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** Install step after a payment, as the dashboard splits it (see InstallTrack). */
+const SETUP_COPY: Record<InstallTrack, { title: string; text: string; steps: string[] }> = {
+  iphone: {
+    title: "Installe Anyloc sur ton iPhone",
+    text: "Une seule fois, sans ordi ni câble. Ça prend 5 minutes.",
+    steps: [
+      "Autorise le profil Anyloc",
+      "Réglages → Profil téléchargé → Installer",
+      "Reviens ici : ta position s'active",
+    ],
+  },
+  desktop: {
+    title: "Installe Anyloc sur ton ordi",
+    text: "Une seule fois, 10 minutes. Ensuite tout se passe ici.",
+    steps: [
+      "Télécharge Anyloc sur ton Mac ou PC",
+      "Branche ton iPhone en USB",
+      "Reviens ici : ta position s'active",
+    ],
+  },
+};
+
+/**
+ * Shown when the payment made from the plans sheet comes back to /app: the
+ * account is active, but the position only moves once Anyloc is installed.
+ */
+function SetupDialog({
+  installTrack,
+  onClose,
+}: {
+  installTrack: InstallTrack;
+  onClose: () => void;
+}) {
+  const copy = SETUP_COPY[installTrack];
+  return (
+    <div
+      className="fixed inset-0 z-[1500] flex items-center justify-center bg-black/60 px-6 animate-[remote-fade_0.25s_ease-out]"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={copy.title}
+        className="w-full max-w-[340px] rounded-[28px] border border-[#25252b] bg-[#0a0a0c] px-5 pb-4 pt-6 shadow-[0_20px_60px_rgba(0,0,0,0.6)]"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[18px] bg-[#ec4899]/[0.13]">
+          <CheckCircle2 className="h-7 w-7 text-[#f472b6]" />
+        </div>
+        <p className="text-center text-[13px] font-semibold uppercase tracking-wide text-[#f472b6]">
+          Paiement confirmé
+        </p>
+        <p className="mt-1 text-center text-[22px] font-bold leading-tight text-[#f4f4f5]">
+          {copy.title}
+        </p>
+        <p className="mx-auto mt-2 text-center text-[15px] leading-snug text-[#8b8b94]">
+          {copy.text}
+        </p>
+        <ol className="mt-5 space-y-2">
+          {copy.steps.map((step, index) => (
+            <li
+              key={step}
+              className="flex items-center gap-3 rounded-[14px] border border-[#25252b] bg-[#16161a] px-3 py-2.5"
+            >
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#ec4899] text-xs font-bold text-white">
+                {index + 1}
+              </span>
+              <span className="text-[14px] font-medium text-[#f4f4f5]">{step}</span>
+            </li>
+          ))}
+        </ol>
+        <Link
+          href="/dashboard"
+          data-track="remote_setup_cta"
+          data-track-install-track={installTrack}
+          className={cn(
+            "mt-6 flex h-12 w-full items-center justify-center rounded-[14px] bg-gradient-to-br from-[#ec4899] to-[#a855f7] text-base font-semibold text-white shadow-[0_6px_12px_rgba(236,72,153,0.4)]",
+            PRESSABLE
+          )}
+        >
+          Configurer maintenant
+        </Link>
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-full pt-3 text-[13px] font-medium text-[#8b8b94]"
+        >
+          Plus tard
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function RemoteView({
+  hasAccess,
+  justPaid = false,
+  installTrack,
+  planId,
+  stripePublishableKey,
+}: {
+  hasAccess: boolean;
+  /** Back from a payment made in the plans sheet: opens the setup popup. */
+  justPaid?: boolean;
+  installTrack: InstallTrack;
+  /** Plan preselected in the plans sheet, mapped to the visitor's price grid. */
+  planId: string;
+  stripePublishableKey: string;
+}) {
   const { location, loading, saving, error, saveLocation } = useLocationSync({
     pollIntervalMs: POLL_INTERVAL_MS,
+    enabled: hasAccess,
   });
 
   // null = nothing picked yet: show the position already active on the
@@ -438,6 +639,19 @@ export function RemoteView() {
     closing?: boolean;
   } | null>(null);
   const [offline, setOffline] = useState(false);
+  // Destination reached without a subscription: asks to pay to validate it.
+  const [paywallPlace, setPaywallPlace] = useState<Place | null>(null);
+  const [plansPlace, setPlansPlace] = useState<Place | null>(null);
+  const [showSetup, setShowSetup] = useState(justPaid);
+
+  useEffect(() => {
+    if (!justPaid) return;
+    track("remote_setup_shown", { install_track: installTrack });
+    // Drop ?paye=1 so a reload doesn't show the popup again.
+    const url = new URL(window.location.href);
+    url.searchParams.delete("paye");
+    window.history.replaceState(null, "", url);
+  }, [justPaid, installTrack]);
   const isClient = useSyncExternalStore(
     noopSubscribe,
     () => true,
@@ -452,13 +666,20 @@ export function RemoteView() {
   const geocodeRef = useRef(0);
 
   const isActive = location?.isActive ?? false;
+  // Back after paying: the spot teleported to before is picked again, one
+  // tap away from being sent for real.
+  const pendingPlace = useMemo(
+    () => (hasAccess && isClient ? readPendingPlace() : null),
+    [hasAccess, isClient]
+  );
   const selected = useMemo<Place | null>(
     () =>
       picked ??
+      pendingPlace ??
       (location?.isActive
         ? { name: location.name, lat: location.lat, lng: location.lng }
         : null),
-    [picked, location]
+    [picked, pendingPlace, location]
   );
   const activeSince =
     isActive && location?.updatedAt ? Date.parse(location.updatedAt) : null;
@@ -507,12 +728,23 @@ export function RemoteView() {
   const teleport = useCallback(
     async (place: Place) => {
       setSelected(place);
-      const apply = saveLocation({
-        name: place.name,
-        lat: place.lat,
-        lng: place.lng,
-        isActive: true,
-      }).then(
+      // No subscription: the whole teleport plays, but nothing is sent (the
+      // API would refuse) and the paywall opens on arrival.
+      writePendingPlace(hasAccess ? null : place);
+      const showPaywall = () => {
+        track("remote_paywall_shown", { destination: place.name });
+        setPaywallPlace(place);
+      };
+      const apply = (
+        hasAccess
+          ? saveLocation({
+              name: place.name,
+              lat: place.lat,
+              lng: place.lng,
+              isActive: true,
+            })
+          : Promise.resolve()
+      ).then(
         () => true,
         (saveError: unknown) => {
           flash(
@@ -543,6 +775,7 @@ export function RemoteView() {
         setShowcase((current) => current && { ...current, closing: true });
         await sleep(SHOWCASE_FADE_MS);
         setShowcase(null);
+        if (ok && !hasAccess) showPaywall();
         return;
       }
 
@@ -553,6 +786,7 @@ export function RemoteView() {
         return;
       }
       setBanner({ kind: "arrived", name: place.name });
+      if (!hasAccess) showPaywall();
       await sleep(2400);
       setBanner((current) =>
         current?.kind === "arrived" && current.name === place.name
@@ -560,7 +794,7 @@ export function RemoteView() {
           : current
       );
     },
-    [saveLocation, flash]
+    [hasAccess, saveLocation, flash]
   );
 
   const stop = useCallback(async () => {
@@ -901,6 +1135,30 @@ export function RemoteView() {
             setMode("teleport");
             void teleport(place);
           }}
+        />
+      ) : null}
+
+      {paywallPlace ? (
+        <ActivateLocationDialog
+          place={paywallPlace}
+          onActivate={() => {
+            setPlansPlace(paywallPlace);
+            setPaywallPlace(null);
+          }}
+          onClose={() => setPaywallPlace(null)}
+        />
+      ) : null}
+
+      {showSetup ? (
+        <SetupDialog installTrack={installTrack} onClose={() => setShowSetup(false)} />
+      ) : null}
+
+      {plansPlace ? (
+        <RemotePlansSheet
+          initialPlanId={planId}
+          stripePublishableKey={stripePublishableKey}
+          destination={plansPlace.name}
+          onClose={() => setPlansPlace(null)}
         />
       ) : null}
 

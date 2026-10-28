@@ -4,11 +4,11 @@ import { OnboardingExperimentExposure } from "@/components/onboarding/onboarding
 import { OnboardingTwoStepView } from "@/components/onboarding/onboarding-two-step-view";
 import { DEFAULT_PLAN_ID, isValidPlanId } from "@/lib/constants";
 import {
+  getAppSignupUrl,
   getEffectiveOnboardingVariant,
-  getOnboardingQuizUrl,
-  getQuizSignupUrl,
   isOnboardingExperimentEnabled,
   ONBOARDING_VARIANT_COOKIE,
+  REMOTE_APP_PATH,
 } from "@/lib/onboarding-experiment";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { getVisitorLocation } from "@/lib/visitor-location";
@@ -27,11 +27,11 @@ export default async function OnboardingPage({
   const { plan } = await searchParams;
   const planId = isValidPlanId(plan) ? plan! : DEFAULT_PLAN_ID;
 
-  // A/B test: the quiz half signs up first (see lib/onboarding-experiment).
+  // A/B test: the app half signs up first (see lib/onboarding-experiment).
   const variant = getEffectiveOnboardingVariant(
     (await cookies()).get(ONBOARDING_VARIANT_COOKIE)?.value
   );
-  if (variant === "quiz") {
+  if (variant === "app") {
     let signedIn = false;
     if (isSupabaseConfigured()) {
       const supabase = await createClient();
@@ -40,7 +40,7 @@ export default async function OnboardingPage({
       } = await supabase.auth.getUser();
       signedIn = Boolean(user);
     }
-    redirect(signedIn ? getOnboardingQuizUrl(planId) : getQuizSignupUrl(planId));
+    redirect(signedIn ? REMOTE_APP_PATH : getAppSignupUrl(planId));
   }
 
   // The step-2 pin starts where the visitor is (city from their IP).
