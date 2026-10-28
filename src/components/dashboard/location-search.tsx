@@ -26,7 +26,7 @@ export type LocationSearchHandle = {
 
 type LocationSearchProps = {
   onSelect: (location: Location) => void;
-  variant?: "default" | "panel" | "top";
+  variant?: "default" | "panel" | "top" | "dark";
   disabled?: boolean;
 };
 
@@ -206,8 +206,8 @@ export const LocationSearch = forwardRef<LocationSearchHandle, LocationSearchPro
       <div ref={containerRef} className="relative">
         <Search
           className={cn(
-            "pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2",
-            variant === "panel" ? "text-zinc-400" : "text-zinc-400"
+            "pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2",
+            variant === "dark" ? "h-5 w-5 text-[#c4c4ca]" : "h-4 w-4 text-zinc-400"
           )}
         />
         <input
@@ -227,11 +227,17 @@ export const LocationSearch = forwardRef<LocationSearchHandle, LocationSearchPro
           placeholder={
             disabled
               ? "Termine d'abord les étapes sur ton téléphone…"
-              : "Ville, adresse ou coordonnées GPS (ex. 34.08, -118.48)…"
+              : variant === "dark"
+                ? "Rechercher une ville, une adresse, un lieu"
+                : "Ville, adresse ou coordonnées GPS (ex. 34.08, -118.48)…"
           }
           className={cn(
-            "w-full rounded-2xl border pl-11 pr-4 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-pink-300 focus:ring-2 focus:ring-pink-200/50",
-            variant === "top"
+            variant === "dark"
+              ? "h-[54px] w-full rounded-[18px] border border-[#25252b] bg-[#0a0a0c]/[0.93] pl-12 pr-4 text-base text-[#f4f4f5] outline-none placeholder:text-[#8b8b94] focus:border-[#ec4899]/40"
+              : "w-full rounded-2xl border pl-11 pr-4 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-pink-300 focus:ring-2 focus:ring-pink-200/50",
+            variant === "dark"
+              ? ""
+              : variant === "top"
               ? "border-zinc-200/80 bg-white/95 py-2.5 shadow-lg backdrop-blur-md"
               : variant === "panel"
                 ? "border-zinc-200 bg-zinc-50 py-3 shadow-sm"
@@ -244,8 +250,11 @@ export const LocationSearch = forwardRef<LocationSearchHandle, LocationSearchPro
         {showDropdown && (
           <div
             className={cn(
-              "absolute z-50 mt-2 w-full overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl",
-              (variant === "panel" || variant === "top") && "max-h-72"
+              "absolute z-50 mt-2 w-full overflow-hidden rounded-2xl border shadow-xl",
+              variant === "dark"
+                ? "dark-search-results border-[#25252b] bg-[#0a0a0c]/[0.96]"
+                : "border-zinc-200 bg-white",
+              (variant === "panel" || variant === "top" || variant === "dark") && "max-h-72"
             )}
           >
             {loading && (
