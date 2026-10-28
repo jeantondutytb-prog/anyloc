@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { MessageCircle } from "lucide-react";
 import { openCrispChat } from "@/components/crisp/crisp-loader";
-import { isThirdPartyOff } from "@/lib/third-party-off";
 
 /** Pages where the chat bubble covers the content (the onboarding phone). */
 const HIDDEN_PATH_PREFIXES = ["/onboarding"];
@@ -19,34 +18,32 @@ export function isCrispHiddenPath(pathname: string | null) {
 }
 
 /**
- * Test for the iPhone scroll stall (`?off=crispbubble`): Crisp stays loaded
- * but its bubble is hidden, and a look-alike opens the chat instead.
- */
-function usesOwnBubble() {
-  return isThirdPartyOff("crispbubble");
-}
-
-/**
- * Hides or shows the Crisp bubble. `$crisp` is a command queue, so this works
- * even before Crisp's script has loaded.
+ * Shows or hides our chat bubble. Crisp's own bubble always stays hidden: on
+ * iPhone (Safari and Chrome) it cut every fast scroll after about a screen.
+ * Crisp itself stays loaded, so visitors still show up live in the Crisp app.
  */
 export function setCrispBubbleHidden(hidden: boolean) {
   if (typeof window === "undefined") return;
   window.$crisp = window.$crisp ?? [];
-  window.$crisp.push(["do", hidden || usesOwnBubble() ? "chat:hide" : "chat:show"]);
+  window.$crisp.push(["do", "chat:hide"]);
   window.dispatchEvent(new CustomEvent<boolean>(BUBBLE_EVENT, { detail: hidden }));
 }
 
-/** Keeps the bubble hidden on the pages listed above, visible elsewhere. */
+/**
+ * Draws a look-alike of Crisp's bubble that opens the real chat, hidden on
+ * the pages listed above.
+ */
 export function CrispVisibility() {
   const pathname = usePathname();
   const [hidden, setHidden] = useState(true);
   const [opened, setOpened] = useState(false);
-  // Same first render on server and client: `hidden` starts true either way.
-  const [ownBubble] = useState(usesOwnBubble);
+  const hiddenRef = useRef(hidden);
 
   useEffect(() => {
-    if (!ownBubble) return;
+    hiddenRef.current = hidden;
+  }, [hidden]);
+
+  useEffect(() => {
     window.$crisp = window.$crisp ?? [];
     window.$crisp.push([
       "on",
@@ -56,19 +53,31 @@ export function CrispVisibility() {
         setOpened(false);
       },
     ]);
+    // With Crisp's bubble hidden, an operator's message would go unseen:
+    // open the chat on it, as Crisp does with its own bubble (not on the
+    // pages where the bubble stays hidden).
+    window.$crisp.push([
+      "on",
+      "message:received",
+      () => {
+        if (hiddenRef.current) return;
+        setOpened(true);
+        openCrispChat();
+      },
+    ]);
 
     function onBubble(event: Event) {
       setHidden((event as CustomEvent<boolean>).detail);
     }
     window.addEventListener(BUBBLE_EVENT, onBubble);
     return () => window.removeEventListener(BUBBLE_EVENT, onBubble);
-  }, [ownBubble]);
+  }, []);
 
   useEffect(() => {
     setCrispBubbleHidden(isCrispHiddenPath(pathname));
-  }, [pathname, ownBubble]);
+  }, [pathname]);
 
-  if (!ownBubble || hidden || opened) return null;
+  if (hidden || opened) return null;
 
   return (
     <button

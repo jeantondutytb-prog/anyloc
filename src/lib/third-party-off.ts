@@ -6,7 +6,7 @@
  */
 const STORAGE_KEY = "anyloc:third-party-off";
 
-export type ThirdParty = "crisp" | "crispbubble" | "posthog" | "amplitude" | "clarity";
+export type ThirdParty = "crisp" | "posthog" | "amplitude" | "clarity";
 
 function readOffList() {
   try {
