@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { track } from "@/lib/analytics/track";
 import { preconnect } from "react-dom";
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -241,6 +242,12 @@ export default function RemoteMap({
     });
     map.touchZoomRotate.disableRotation();
     map.on("style.load", () => restyle(map));
+    // Once per map: tiles failing one by one would flood the analytics.
+    map.once("error", (event) => {
+      track("remote_map_error", {
+        error: event.error?.message ?? "unknown",
+      });
+    });
     // Keep the canvas matched to the container (Safari's toolbar resizes it).
     const resizeObserver = new ResizeObserver(() => map.resize());
     resizeObserver.observe(containerRef.current);

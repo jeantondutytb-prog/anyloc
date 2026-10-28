@@ -644,6 +644,11 @@ export function RemoteView({
   const [plansPlace, setPlansPlace] = useState<Place | null>(null);
   const [showSetup, setShowSetup] = useState(justPaid);
 
+  // Top of the /app funnel: a new signup without subscription lands here.
+  useEffect(() => {
+    track("remote_viewed", { has_access: hasAccess, just_paid: justPaid });
+  }, [hasAccess, justPaid]);
+
   useEffect(() => {
     if (!justPaid) return;
     track("remote_setup_shown", { install_track: installTrack });
@@ -730,14 +735,19 @@ export function RemoteView({
     cameraMovingRef.current = moving;
   }, []);
 
-  /** Resolves once the camera has been still for a moment (at most ~6 s). */
+  /**
+   * Resolves once the camera has been still for a moment (at most ~6 s), with
+   * how long it waited and whether it gave up on a camera still moving.
+   */
   const waitForCameraSettled = useCallback(async () => {
-    const deadline = Date.now() + 6000;
+    const start = Date.now();
+    const deadline = start + 6000;
     let stillFor = 0;
     while (stillFor < 400 && Date.now() < deadline) {
       await sleep(100);
       stillFor = cameraMovingRef.current ? 0 : stillFor + 100;
     }
+    return { waitMs: Date.now() - start, timedOut: stillFor < 400 };
   }, []);
 
   const teleport = useCallback(
@@ -748,8 +758,12 @@ export function RemoteView({
       writePendingPlace(hasAccess ? null : place);
       // Once the zoom onto the destination is over, not on top of it.
       const showPaywall = async () => {
-        await waitForCameraSettled();
-        track("remote_paywall_shown", { destination: place.name });
+        const camera = await waitForCameraSettled();
+        track("remote_paywall_shown", {
+          destination: place.name,
+          camera_wait_ms: camera.waitMs,
+          camera_timed_out: camera.timedOut,
+        });
         setPaywallPlace(place);
       };
       const apply = (
@@ -774,7 +788,14 @@ export function RemoteView({
         }
       );
 
-      if (readFilmingMode()) {
+      const filming = readFilmingMode();
+      track("remote_teleport_started", {
+        destination: place.name,
+        has_access: hasAccess,
+        filming_mode: filming,
+      });
+
+      if (filming) {
         // The branded card stays at least ~4 s so it reads on camera.
         const start = Date.now();
         setShowcase({ destination: place.name, step: "connecting" });
@@ -1163,7 +1184,10 @@ export function RemoteView({
             setPlansPlace(paywallPlace);
             setPaywallPlace(null);
           }}
-          onClose={() => setPaywallPlace(null)}
+          onClose={() => {
+            track("remote_paywall_dismissed", { destination: paywallPlace.name });
+            setPaywallPlace(null);
+          }}
         />
       ) : null}
 
@@ -1176,7 +1200,10 @@ export function RemoteView({
           initialPlanId={planId}
           stripePublishableKey={stripePublishableKey}
           destination={plansPlace.name}
-          onClose={() => setPlansPlace(null)}
+          onClose={() => {
+            track("remote_plans_closed", { plan: planId });
+            setPlansPlace(null);
+          }}
         />
       ) : null}
 
