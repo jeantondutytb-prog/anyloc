@@ -329,7 +329,7 @@ class MainActivity : AppCompatActivity() {
 
         Thread {
             val api = AnylocApi(credentials.first, credentials.second)
-            val results = api.searchPlaces(query)
+            val results = runCatching { api.searchPlaces(query) }.getOrDefault(emptyList())
 
             runOnUiThread {
                 renderSearchResults(results)
@@ -388,12 +388,18 @@ class MainActivity : AppCompatActivity() {
 
         Thread {
             val api = AnylocApi(credentials.first, credentials.second)
-            val location = api.updateLocation(result.name, result.lat, result.lng, isActive = true)
+            // Network errors must not kill the app: show the failure instead.
+            val location = runCatching {
+                api.updateLocation(result.name, result.lat, result.lng, isActive = true)
+            }.onFailure { error ->
+                AppErrorReporter.report(this, credentials.first, credentials.second, "location/activate", error)
+            }.getOrNull()
+            // Fetched here, not on the UI thread: Android kills the app on main-thread network calls.
+            val check = if (location == null) runCatching { api.fetchLocation() }.getOrNull() else null
 
             runOnUiThread {
                 if (location == null) {
-                    val check = api.fetchLocation()
-                    if (check.subscriptionInactive) {
+                    if (check?.subscriptionInactive == true) {
                         showSubscriptionInactive(
                             check.inactiveDetails
                                 ?: SubscriptionInactiveDetails.fallback(credentials.first)
@@ -425,7 +431,9 @@ class MainActivity : AppCompatActivity() {
 
         Thread {
             val api = AnylocApi(credentials.first, credentials.second)
-            val location = api.updateLocation(current.name, current.lat, current.lng, isActive = false)
+            val location = runCatching {
+                api.updateLocation(current.name, current.lat, current.lng, isActive = false)
+            }.getOrNull()
 
             runOnUiThread {
                 if (location != null) {
@@ -447,7 +455,7 @@ class MainActivity : AppCompatActivity() {
 
         Thread {
             val api = AnylocApi(credentials.first, credentials.second)
-            val result = api.fetchLocation()
+            val result = runCatching { api.fetchLocation() }.getOrNull() ?: return@Thread
 
             runOnUiThread {
                 val location = result.location
@@ -545,9 +553,14 @@ class MainActivity : AppCompatActivity() {
 
         Thread {
             val api = AnylocApi(credentials.first, credentials.second)
-            val result = api.fetchLocation()
+            val result = runCatching { api.fetchLocation() }.getOrNull()
 
             runOnUiThread {
+                if (result == null) {
+                    statusText.text = "Pas de connexion — réessaie"
+                    return@runOnUiThread
+                }
+
                 if (result.subscriptionInactive) {
                     showSubscriptionInactive(
                         result.inactiveDetails
