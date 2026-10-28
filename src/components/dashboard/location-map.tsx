@@ -5,6 +5,12 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 const TILE_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+// Esri's dark canvas: a clean base plus a separate, sparse label layer
+// (romanised names), much sharper than inverted OSM tiles.
+const DARK_BASE_URL =
+  "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}";
+const DARK_LABELS_URL =
+  "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}";
 
 interface Location {
   name: string;
@@ -74,13 +80,24 @@ export default function LocationMap({
       attributionControl: true,
     });
 
-    // The dark map is the same OSM tiles, inverted in CSS (.simple-map-shell--dark).
-    L.tileLayer(TILE_URL, {
-      subdomains: ["a", "b", "c"],
-      maxZoom: 19,
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    }).addTo(map);
+    if (dark) {
+      // The base layer stops at z16; Leaflet upscales it beyond that.
+      L.tileLayer(DARK_BASE_URL, {
+        maxNativeZoom: 16,
+        maxZoom: 19,
+        attribution: "Esri, HERE, Garmin, &copy; OpenStreetMap",
+      }).addTo(map);
+      L.tileLayer(DARK_LABELS_URL, { maxNativeZoom: 16, maxZoom: 19 }).addTo(
+        map
+      );
+    } else {
+      L.tileLayer(TILE_URL, {
+        subdomains: ["a", "b", "c"],
+        maxZoom: 19,
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      }).addTo(map);
+    }
 
     const marker = L.marker([selected.lat, selected.lng], {
       icon: createPinIcon(active, dark),
