@@ -79,12 +79,19 @@ async function trackCheckoutPaymentFailed(session: Stripe.Checkout.Session) {
 
 /**
  * The checkout session a payment attempt comes from. Checkout creates the
- * PaymentIntent when the customer hits "Payer" and stamps the session id on it.
+ * PaymentIntent when the customer hits "Payer" and stamps the session id on it
+ * right after, so payment_intent.created carries none: read it back then.
  */
 async function getPaymentIntentCheckoutSession(paymentIntent: Stripe.PaymentIntent) {
-  const sessionId = paymentIntent.payment_details?.order_reference;
+  if (!stripe) {
+    return null;
+  }
 
-  if (!stripe || !sessionId?.startsWith("cs_")) {
+  const sessionId =
+    paymentIntent.payment_details?.order_reference ??
+    (await stripe.paymentIntents.retrieve(paymentIntent.id)).payment_details?.order_reference;
+
+  if (!sessionId?.startsWith("cs_")) {
     return null;
   }
 
