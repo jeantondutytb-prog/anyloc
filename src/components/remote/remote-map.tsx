@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { track } from "@/lib/analytics/track";
 import { preconnect } from "react-dom";
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -190,6 +191,7 @@ export default function RemoteMap({
   onSelect,
   recenterKey,
   landingKey,
+  onCameraMoving,
 }: {
   place: Place;
   showPin: boolean;
@@ -199,6 +201,8 @@ export default function RemoteMap({
   recenterKey: number;
   /** Bump to play the descent onto the place (after a teleport). */
   landingKey: number;
+  /** The camera starts (true) or ends (false) a glide, flight or descent. */
+  onCameraMoving?: (moving: boolean) => void;
 }) {
   // Style, glyphs and tiles all come from there: open the connection early.
   preconnect("https://tiles.openfreemap.org", { crossOrigin: "anonymous" });
@@ -207,11 +211,15 @@ export default function RemoteMap({
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markerRef = useRef<maplibregl.Marker | null>(null);
   const onSelectRef = useRef(onSelect);
+  const onCameraMovingRef = useRef(onCameraMoving);
+  // Latest camera motion: only its end reports the camera as settled.
+  const motionRef = useRef(0);
   const placeRef = useRef(place);
   const lastPinRef = useRef<string | null>(null);
   const mountedAtRef = useRef(0);
 
   useEffect(() => {
+    onCameraMovingRef.current = onCameraMoving;
     onSelectRef.current = onSelect;
     placeRef.current = place;
   });
@@ -234,6 +242,12 @@ export default function RemoteMap({
     });
     map.touchZoomRotate.disableRotation();
     map.on("style.load", () => restyle(map));
+    // Once per map: tiles failing one by one would flood the analytics.
+    map.once("error", (event) => {
+      track("remote_map_error", {
+        error: event.error?.message ?? "unknown",
+      });
+    });
     // Keep the canvas matched to the container (Safari's toolbar resizes it).
     const resizeObserver = new ResizeObserver(() => map.resize());
     resizeObserver.observe(containerRef.current);
@@ -285,6 +299,19 @@ export default function RemoteMap({
     }
   }, [place.lat, place.lng, showPin, active]);
 
+  /** Reports the camera as moving until the ease it returns `settle` for ends. */
+  function startMotion() {
+    const id = ++motionRef.current;
+    onCameraMovingRef.current?.(true);
+    return (map: maplibregl.Map) => {
+      // Registered after easeTo: easeTo first stops the previous ease, whose
+      // moveend must not count as this one's.
+      map.once("moveend", () => {
+        if (motionRef.current === id) onCameraMovingRef.current?.(false);
+      });
+    };
+  }
+
   // Camera follows the selection: a short glide nearby. Further away, a flight
   // would zoom out over tiles that aren't loaded (black frames), so instead the
   // destination is preloaded, then a quick fade cuts to it and the camera
@@ -305,6 +332,7 @@ export default function RemoteMap({
       20_000;
 
     if (!far) {
+      const settle = startMotion();
       map.easeTo({
         center: target,
         zoom: Math.max(map.getZoom(), 13),
@@ -313,12 +341,14 @@ export default function RemoteMap({
         easing: easeOutCubic,
         essential: true,
       });
+      settle(map);
       // Ready for the landing descent after a teleport.
       void warmTiles(map, place.lat, place.lng);
       return;
     }
 
     let cancelled = false;
+    const settle = startMotion();
     void (async () => {
       await warmTiles(map, place.lat, place.lng);
       if (cancelled) return;
@@ -334,6 +364,7 @@ export default function RemoteMap({
         easing: easeOutCubic,
         essential: true,
       });
+      settle(map);
     })();
     return () => {
       cancelled = true;
@@ -347,6 +378,7 @@ export default function RemoteMap({
     if (!map || landingKey === 0) return;
     const { lat, lng } = placeRef.current;
     map.jumpTo({ center: [lng, lat], zoom: LANDING_START_ZOOM, pitch: 0 });
+    const settle = startMotion();
     map.easeTo({
       center: [lng, lat],
       zoom: STREET_ZOOM,
@@ -355,6 +387,7 @@ export default function RemoteMap({
       easing: easeInOutCubic,
       essential: true,
     });
+    settle(map);
   }, [landingKey]);
 
   return (

@@ -32,6 +32,7 @@ export function CheckoutPaymentModal({
   hostedError,
   onHostedFallback,
   onClose,
+  zIndexClassName = "z-[100]",
 }: {
   plan: Plan;
   /** Shortest plan of the grid: its 1st month at -50 % when the card is refused for lack of funds. */
@@ -46,6 +47,8 @@ export function CheckoutPaymentModal({
   onHostedFallback: () => void;
   /** `sessionId`: the checkout being closed, for the -50 % offer of the A/B test. */
   onClose: (sessionId: string | null) => void;
+  /** Stacking of the overlay: the web remote's map sits above z-[100]. */
+  zIndexClassName?: string;
 }) {
   const copy = CHECKOUT_COPY;
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -196,7 +199,7 @@ export function CheckoutPaymentModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex cursor-pointer items-center justify-center bg-zinc-950/60 p-4 backdrop-blur-sm"
+      className={`fixed inset-0 ${zIndexClassName} flex cursor-pointer items-center justify-center bg-zinc-950/60 p-4 backdrop-blur-sm`}
       onClick={requestClose}
     >
       <div

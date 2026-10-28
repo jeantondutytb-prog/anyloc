@@ -3,7 +3,7 @@ import { OnboardingActivationNotice } from "@/components/auth/onboarding-activat
 import { SignupForm } from "@/components/auth/signup-form";
 import { OnboardingExperimentExposure } from "@/components/onboarding/onboarding-experiment-exposure";
 import { DEFAULT_PLAN_ID, getCheckoutUrl, isValidPlanId } from "@/lib/constants";
-import { isOnboardingQuizPath } from "@/lib/onboarding-experiment";
+import { isOnboardingQuizPath, isRemoteAppPath } from "@/lib/onboarding-experiment";
 import { sanitizeRedirectPath } from "@/lib/safe-redirect";
 
 export default async function SignupPage({
@@ -17,8 +17,10 @@ export default async function SignupPage({
     next ?? redirectToParam,
     getCheckoutUrl(planId)
   );
-  // The quiz half of the onboarding A/B test signs up before anything else.
-  const beforeQuiz = isOnboardingQuizPath(redirectTo);
+  // The app half of the onboarding A/B test (and the quiz before it) signs up
+  // before anything else.
+  const beforeApp = isRemoteAppPath(redirectTo);
+  const beforeQuiz = beforeApp || isOnboardingQuizPath(redirectTo);
 
   return (
     <AuthShell
@@ -36,7 +38,7 @@ export default async function SignupPage({
           : "Email et mot de passe suffisent pour choisir ta destination."
       }
     >
-      {beforeQuiz ? <OnboardingExperimentExposure variant="quiz" /> : null}
+      {beforeApp ? <OnboardingExperimentExposure variant="app" /> : null}
       <SignupForm plan={planId} redirectTo={redirectTo} />
     </AuthShell>
   );

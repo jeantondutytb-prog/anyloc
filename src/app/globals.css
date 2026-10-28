@@ -314,6 +314,13 @@ body {
   }
 }
 
+@keyframes remote-rise {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.98);
+  }
+}
+
 @keyframes remote-fade {
   from {
     opacity: 0;
