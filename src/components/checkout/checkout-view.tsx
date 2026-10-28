@@ -12,6 +12,7 @@ import {
   type OnboardingDestination,
 } from "@/lib/onboarding-destinations";
 import { readQuizResult, type QuizResult } from "@/lib/onboarding-quiz";
+import type { PriceDisplayVariant } from "@/lib/price-display-experiment";
 
 // The paywall keeps only what a buyer may need: the legal pages and support.
 const CHECKOUT_FOOTER_LINKS = [
@@ -33,6 +34,7 @@ export function CheckoutView({
   focusPayment: initialFocusPayment,
   returning,
   fromQuiz,
+  priceDisplay,
 }: {
   initialPlanId: string;
   canceled?: boolean;
@@ -42,6 +44,8 @@ export function CheckoutView({
   returning?: ReturningCustomer | null;
   /** Arrived from the quiz onboarding: its recommendation shapes the paywall. */
   fromQuiz?: boolean;
+  /** A/B test: plans priced per day or per month. */
+  priceDisplay?: PriceDisplayVariant;
 }) {
   const router = useRouter();
   const [selectedPlanId, setSelectedPlanId] = useState(
@@ -99,6 +103,7 @@ export function CheckoutView({
           onShowAllPlans={() => setFocusPayment(false)}
           returning={returning}
           quiz={quiz}
+          priceDisplay={priceDisplay}
         />
       </main>
 
