@@ -19,7 +19,12 @@ const STYLE_URL = "https://tiles.openfreemap.org/styles/dark";
 const STREET_ZOOM = 15.6;
 const STREET_PITCH = 50;
 /** Height the landing descent starts from (hidden behind the teleport card). */
-const LANDING_START_ZOOM = 9.5;
+const LANDING_START_ZOOM = 11.5;
+/** Far trips cut to this height above the destination, then descend. */
+const ARRIVAL_START_ZOOM = 12.5;
+/** Longest wait for the destination's tiles before moving anyway. */
+const WARM_TIMEOUT_MS = 1500;
+const FADE_MS = 180;
 
 type Place = { name: string; lat: number; lng: number };
 
@@ -30,6 +35,55 @@ const LABEL_TEXT: maplibregl.ExpressionSpecification = [
 ];
 
 const easeOutCubic = (t: number) => 1 - (1 - t) ** 3;
+const sleep = (ms: number) =>
+  new Promise<void>((resolve) => window.setTimeout(resolve, ms));
+
+/**
+ * Fetches the tiles around a place for every zoom the descent passes through,
+ * so the browser cache already holds them when MapLibre asks: no black frames
+ * while the camera moves. Resolves once loaded, or after `timeoutMs`.
+ */
+async function warmTiles(
+  map: maplibregl.Map,
+  lat: number,
+  lng: number,
+  timeoutMs = WARM_TIMEOUT_MS
+) {
+  const source = map.getSource("openmaptiles") as
+    | maplibregl.VectorTileSource
+    | undefined;
+  const template = source?.tiles?.[0];
+  if (!template) return;
+
+  const urls: string[] = [];
+  const latRad = (lat * Math.PI) / 180;
+  for (let z = 10; z <= 14; z++) {
+    const n = 2 ** z;
+    const cx = Math.floor(((lng + 180) / 360) * n);
+    const cy = Math.floor(
+      ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) *
+        n
+    );
+    // The tilted camera looks north: take two extra rows towards the horizon.
+    for (let dy = z >= 13 ? -3 : -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const x = (cx + dx + n) % n;
+        const y = cy + dy;
+        if (y < 0 || y >= n) continue;
+        urls.push(
+          template
+            .replace("{z}", String(z))
+            .replace("{x}", String(x))
+            .replace("{y}", String(y))
+        );
+      }
+    }
+  }
+  await Promise.race([
+    Promise.allSettled(urls.map((url) => fetch(url))),
+    sleep(timeoutMs),
+  ]);
+}
 const easeInOutCubic = (t: number) =>
   t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2;
 
@@ -231,38 +285,60 @@ export default function RemoteMap({
     }
   }, [place.lat, place.lng, showPin, active]);
 
-  // Camera follows the selection: a short glide nearby, a flight further away.
+  // Camera follows the selection: a short glide nearby. Further away, a flight
+  // would zoom out over tiles that aren't loaded (black frames), so instead the
+  // destination is preloaded, then a quick fade cuts to it and the camera
+  // descends, like the iOS app's landing.
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    const container = containerRef.current;
+    if (!map || !container) return;
     const target: [number, number] = [place.lng, place.lat];
     // The saved position arriving right after load: no flight from the default.
     if (Date.now() - mountedAtRef.current < 1500) {
       map.jumpTo({ center: target });
+      void warmTiles(map, place.lat, place.lng);
       return;
     }
-    const from = map.getCenter();
     const far =
-      from.distanceTo(new maplibregl.LngLat(place.lng, place.lat)) > 20_000;
+      map.getCenter().distanceTo(new maplibregl.LngLat(place.lng, place.lat)) >
+      20_000;
 
-    if (far || map.getZoom() < 12) {
-      map.flyTo({
-        center: target,
-        zoom: STREET_ZOOM,
-        pitch: STREET_PITCH,
-        // A fixed duration: with `maxDuration` MapLibre jumps on long trips.
-        duration: far ? 2600 : 1200,
-        curve: 1.5,
-        essential: true,
-      });
-    } else {
+    if (!far) {
       map.easeTo({
         center: target,
+        zoom: Math.max(map.getZoom(), 13),
+        pitch: STREET_PITCH,
         duration: 650,
         easing: easeOutCubic,
         essential: true,
       });
+      // Ready for the landing descent after a teleport.
+      void warmTiles(map, place.lat, place.lng);
+      return;
     }
+
+    let cancelled = false;
+    void (async () => {
+      await warmTiles(map, place.lat, place.lng);
+      if (cancelled) return;
+      container.style.opacity = "0";
+      await sleep(FADE_MS);
+      if (cancelled) return;
+      map.jumpTo({ center: target, zoom: ARRIVAL_START_ZOOM, pitch: 20 });
+      container.style.opacity = "1";
+      map.easeTo({
+        zoom: STREET_ZOOM,
+        pitch: STREET_PITCH,
+        duration: 1600,
+        easing: easeOutCubic,
+        essential: true,
+      });
+    })();
+    return () => {
+      cancelled = true;
+      container.style.opacity = "1";
+    };
   }, [place.lat, place.lng, recenterKey]);
 
   // Landing after a teleport: jump high above (hidden by the card), then descend.
@@ -281,5 +357,10 @@ export default function RemoteMap({
     });
   }, [landingKey]);
 
-  return <div ref={containerRef} className="remote-map h-full w-full" />;
+  return (
+    <div
+      ref={containerRef}
+      className="remote-map h-full w-full transition-opacity duration-[180ms] ease-out"
+    />
+  );
 }
