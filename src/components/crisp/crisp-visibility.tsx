@@ -5,8 +5,11 @@ import { usePathname } from "next/navigation";
 
 /** Pages where the chat bubble covers the content (the onboarding phone). */
 const HIDDEN_PATH_PREFIXES = ["/onboarding"];
+/** The iPhone remote: the bubble sits on the "Définir cette position" button. */
+const HIDDEN_PATHS = ["/app"];
 
 export function isCrispHiddenPath(pathname: string | null) {
+  if (pathname && HIDDEN_PATHS.includes(pathname)) return true;
   return HIDDEN_PATH_PREFIXES.some((prefix) => pathname?.startsWith(prefix));
 }
 

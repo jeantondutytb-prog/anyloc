@@ -207,7 +207,7 @@ export const LocationSearch = forwardRef<LocationSearchHandle, LocationSearchPro
         <Search
           className={cn(
             "pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2",
-            variant === "dark" ? "h-5 w-5 text-[#c4c4ca]" : "h-4 w-4 text-zinc-400"
+            variant === "dark" ? "h-[18px] w-[18px] text-[#c4c4ca]" : "h-4 w-4 text-zinc-400"
           )}
         />
         <input
@@ -228,12 +228,12 @@ export const LocationSearch = forwardRef<LocationSearchHandle, LocationSearchPro
             disabled
               ? "Termine d'abord les étapes sur ton téléphone…"
               : variant === "dark"
-                ? "Rechercher une ville, une adresse, un lieu"
+                ? "Rechercher un lieu"
                 : "Ville, adresse ou coordonnées GPS (ex. 34.08, -118.48)…"
           }
           className={cn(
             variant === "dark"
-              ? "h-[54px] w-full rounded-[18px] border border-[#25252b] bg-[#0a0a0c]/[0.93] pl-12 pr-4 text-base text-[#f4f4f5] outline-none placeholder:text-[#8b8b94] focus:border-[#ec4899]/40"
+              ? "h-11 w-full rounded-[14px] border border-[#25252b] bg-[#0a0a0c]/[0.93] pl-11 pr-4 text-base text-[#f4f4f5] outline-none placeholder:text-[#8b8b94] focus:border-[#ec4899]/40"
               : "w-full rounded-2xl border pl-11 pr-4 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-pink-300 focus:ring-2 focus:ring-pink-200/50",
             variant === "dark"
               ? ""
