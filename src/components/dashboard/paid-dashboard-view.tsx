@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Check, Download, Loader2, Monitor } from "lucide-react";
 import { DashboardAppHeader } from "@/components/dashboard/dashboard-app-header";
+import { DashboardPhoneSetup } from "@/components/dashboard/dashboard-phone-setup";
 import { IphoneInstallView } from "@/components/dashboard/iphone-install-view";
 import { SetupPasswordForm } from "@/components/dashboard/setup-password-form";
 import {
@@ -15,6 +16,7 @@ import { WindowsOpenHelp } from "@/components/dashboard/windows-open-help";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAccount } from "@/hooks/use-account";
+import { useDeviceStatus } from "@/hooks/use-device-status";
 import { useDownloads, type DownloadAssetInfo } from "@/hooks/use-downloads";
 import { usePaymentSuccess } from "@/hooks/use-payment-success";
 import { track as trackEvent } from "@/lib/analytics/track";
@@ -195,6 +197,9 @@ export function PaidDashboardView({
     };
   }, [device.isPhone, device.desktopOs]);
   const showIphoneInstall = track === "iphone" && device.isIos;
+  // The Android app installs from the phone itself, on every plan.
+  const showAndroidInstall = device.isAndroid;
+  const { devices, phoneOnline } = useDeviceStatus();
 
   const assets = preview ? PREVIEW_ASSETS : data?.assets ?? [];
   const hasAccess = preview || (data?.hasAccess ?? false);
@@ -285,10 +290,12 @@ export function PaidDashboardView({
           <h1 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
             {showIphoneInstall
               ? "Installe Anyloc sur ton iPhone"
-              : "Installe Anyloc sur ton ordi"}
+              : showAndroidInstall
+                ? "Installe Anyloc sur ton Android"
+                : "Installe Anyloc sur ton ordi"}
           </h1>
           <p className="mt-3 text-sm text-zinc-600 sm:text-base">
-            {showIphoneInstall
+            {showIphoneInstall || showAndroidInstall
               ? "Directement sur le téléphone, sans ordi ni câble."
               : "3 étapes, 10 minutes. Ensuite tout se passe dans l'app."}
           </p>
@@ -304,6 +311,14 @@ export function PaidDashboardView({
           <div className="mt-8">
             <IphoneInstallView embedded />
           </div>
+        ) : showAndroidInstall ? (
+          <Card className="mt-8 border-pink-200 bg-white p-5 sm:p-6">
+            <DashboardPhoneSetup
+              devices={devices}
+              phoneOnline={phoneOnline}
+              lockedPlatform="android"
+            />
+          </Card>
         ) : (
           <>
             {/* On a phone the download is no use: sending the page to the
@@ -341,6 +356,14 @@ export function PaidDashboardView({
                 Tu as aussi l&apos;app iPhone : ouvre{" "}
                 <span className="font-medium text-zinc-700">anyloc.io/dashboard</span>{" "}
                 sur ton iPhone.
+              </p>
+            ) : null}
+
+            {!device.isPhone ? (
+              <p className="mt-4 text-center text-sm text-zinc-500">
+                Tu as un Android ? Pas besoin d&apos;ordi : ouvre{" "}
+                <span className="font-medium text-zinc-700">anyloc.io/dashboard</span>{" "}
+                sur ton téléphone.
               </p>
             ) : null}
 
