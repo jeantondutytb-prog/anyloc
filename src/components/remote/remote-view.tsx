@@ -224,6 +224,30 @@ function TeleportBanner({ banner }: { banner: Banner }) {
   );
 }
 
+/** "anyloc.io" in SF Pro Rounded, shared by the top bar and the teleport card. */
+function Wordmark({
+  className,
+  style,
+}: {
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <p
+      className={cn(
+        "font-black leading-none text-white [font-family:ui-rounded,'SF_Pro_Rounded',system-ui,sans-serif]",
+        className
+      )}
+      style={style}
+    >
+      anyloc
+      <span className="bg-gradient-to-br from-[#ec4899] to-[#a855f7] bg-clip-text text-transparent">
+        .io
+      </span>
+    </p>
+  );
+}
+
 /** Full-screen branded loading shown during a teleport in filming mode. */
 function TeleportShowcase({
   destination,
@@ -272,15 +296,10 @@ function TeleportShowcase({
           priority
         />
       </div>
-      <p
-        className="relative text-[clamp(40px,15vw,60px)] font-black leading-none text-white [font-family:ui-rounded,'SF_Pro_Rounded',system-ui,sans-serif]"
+      <Wordmark
+        className="relative text-[clamp(40px,15vw,60px)]"
         style={{ animation: "showcase-enter 0.6s 0.75s both" }}
-      >
-        anyloc
-        <span className="bg-gradient-to-br from-[#ec4899] to-[#a855f7] bg-clip-text text-transparent">
-          .io
-        </span>
-      </p>
+      />
       <div
         className="relative flex h-[50px] max-w-full items-center gap-2.5 rounded-full border border-[#ec4899]/40 bg-[#16161a] px-5 text-[19px] font-semibold text-[#c4c4ca]"
         style={{ animation: "showcase-enter 0.5s 1.2s both" }}
@@ -638,9 +657,7 @@ export function RemoteView() {
           >
             <Bookmark className="h-[18px] w-[18px]" strokeWidth={2.4} />
           </button>
-          <p className="flex-1 text-center font-['Helvetica_Neue',Helvetica,Arial,sans-serif] text-lg font-bold tracking-[-0.02em]">
-            Anyloc<span className="text-[#f472b6]">.io</span>
-          </p>
+          <Wordmark className="flex-1 text-center text-[21px]" />
           <Link
             href="/dashboard?tab=account"
             aria-label="Réglages"
