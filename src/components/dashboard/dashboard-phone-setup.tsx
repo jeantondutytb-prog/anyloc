@@ -40,6 +40,8 @@ type DashboardPhoneSetupProps = {
   phoneOnline: boolean;
   onLinked?: () => void;
   compact?: boolean;
+  /** Skip the iPhone / Android choice when the page already knows the phone. */
+  lockedPlatform?: Platform;
 };
 
 function detectPlatform(): Platform {
@@ -111,11 +113,14 @@ export function DashboardPhoneSetup({
   phoneOnline,
   onLinked,
   compact = false,
+  lockedPlatform,
 }: DashboardPhoneSetupProps) {
-  const [platform, setPlatform] = useState<Platform>(detectPlatform);
+  const [platform, setPlatform] = useState<Platform>(
+    () => lockedPlatform ?? detectPlatform()
+  );
   const [creating, setCreating] = useState(false);
   const [createdToken, setCreatedToken] = useState<CreatedToken | null>(() =>
-    readCachedToken(detectPlatform())
+    readCachedToken(lockedPlatform ?? detectPlatform())
   );
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -270,31 +275,49 @@ export function DashboardPhoneSetup({
         </p>
       </div>
 
-      <div className="flex gap-2">
-        {(["ios", "android"] as const).map((value) => (
-          <button
-            key={value}
-            type="button"
-            data-track="phone_setup_platform_selected"
-            data-track-platform={value}
-            onClick={() => {
-              setPlatform(value);
-              setError(null);
-              setCreatedToken(readCachedToken(value));
-            }}
-            className={cn(
-              "flex-1 rounded-xl border px-3 py-2 text-sm font-medium transition-colors",
-              platform === value
-                ? "border-pink-300 bg-pink-50 text-pink-700"
-                : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"
-            )}
-          >
-            {value === "ios" ? "J'ai un iPhone" : "J'ai un Android"}
-          </button>
-        ))}
-      </div>
+      {lockedPlatform ? null : (
+        <div className="flex gap-2">
+          {(["ios", "android"] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              data-track="phone_setup_platform_selected"
+              data-track-platform={value}
+              onClick={() => {
+                setPlatform(value);
+                setError(null);
+                setCreatedToken(readCachedToken(value));
+              }}
+              className={cn(
+                "flex-1 rounded-xl border px-3 py-2 text-sm font-medium transition-colors",
+                platform === value
+                  ? "border-pink-300 bg-pink-50 text-pink-700"
+                  : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"
+              )}
+            >
+              {value === "ios" ? "J'ai un iPhone" : "J'ai un Android"}
+            </button>
+          ))}
+        </div>
+      )}
 
       {error && <p className="text-sm text-red-600">{error}</p>}
+
+      {/* The APK needs no device link: never leave an Android user without it. */}
+      {error && platform === "android" && setupDownload?.available ? (
+        <a
+          href={setupDownload.downloadPath}
+          data-track="app_downloaded"
+          data-track-platform="android"
+          data-track-source="phone_setup_error"
+          className="block"
+        >
+          <Button size="sm" className="w-full">
+            <Download className="h-4 w-4" />
+            Télécharger l&apos;app Anyloc
+          </Button>
+        </a>
+      ) : null}
 
       {creating || !createdToken ? (
         <div className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
@@ -374,7 +397,12 @@ export function DashboardPhoneSetup({
             <ol className="space-y-3">
               <StepBox number={1} title="Installe l'app Anyloc sur ton téléphone">
                 {setupDownload?.available ? (
-                  <a href={setupDownload.downloadPath}>
+                  <a
+                    href={setupDownload.downloadPath}
+                    data-track="app_downloaded"
+                    data-track-platform="android"
+                    data-track-source="phone_setup"
+                  >
                     <Button size="sm">
                       <Download className="h-4 w-4" />
                       Télécharger l&apos;app Anyloc
@@ -395,24 +423,43 @@ export function DashboardPhoneSetup({
               </StepBox>
 
               <StepBox number={2} title="Lie l'app à ton compte">
-                <p>
-                  Scanne le carré avec ton appareil photo, ou appuie sur le bouton
-                  ci-dessous.
-                </p>
-                {mobileSetupLink ? (
-                  <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-start">
-                    <SetupQrCode
-                      value={mobileSetupLink}
-                      label="Scanne avec l'appareil photo"
-                    />
-                    <a href={mobileSetupLink} className="w-full sm:w-auto">
-                      <Button size="sm" className="w-full">
-                        <Smartphone className="h-4 w-4" />
-                        Ouvrir Anyloc sur mon tel
-                      </Button>
-                    </a>
-                  </div>
-                ) : null}
+                {lockedPlatform ? (
+                  <>
+                    <p>
+                      Une fois l&apos;app installée, reviens ici et appuie sur le
+                      bouton : Anyloc s&apos;ouvre déjà connectée à ton compte.
+                    </p>
+                    {mobileSetupLink ? (
+                      <a href={mobileSetupLink} className="block">
+                        <Button size="sm" className="w-full">
+                          <Smartphone className="h-4 w-4" />
+                          Ouvrir Anyloc sur mon tel
+                        </Button>
+                      </a>
+                    ) : null}
+                  </>
+                ) : (
+                  <>
+                    <p>
+                      Scanne le carré avec ton appareil photo, ou appuie sur le bouton
+                      ci-dessous.
+                    </p>
+                    {mobileSetupLink ? (
+                      <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-start">
+                        <SetupQrCode
+                          value={mobileSetupLink}
+                          label="Scanne avec l'appareil photo"
+                        />
+                        <a href={mobileSetupLink} className="w-full sm:w-auto">
+                          <Button size="sm" className="w-full">
+                            <Smartphone className="h-4 w-4" />
+                            Ouvrir Anyloc sur mon tel
+                          </Button>
+                        </a>
+                      </div>
+                    ) : null}
+                  </>
+                )}
               </StepBox>
 
               <StepBox number={3} title="Autorise la fausse position (1 fois)">
