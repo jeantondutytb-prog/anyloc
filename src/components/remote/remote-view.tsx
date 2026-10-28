@@ -44,10 +44,13 @@ type Place = { name: string; lat: number; lng: number };
 type Mode = "teleport" | "explore";
 type Banner = { kind: "flying" | "arrived"; name: string };
 type ShowcaseStep = "connecting" | "sending" | "done";
+// Fade length of the branded card, in and out (the iOS app uses 0.7 s).
+const SHOWCASE_FADE_MS = 600;
 
 const FAVORITES_KEY = "anyloc.remote.favorites";
 const HOME_HINT_DISMISSED_KEY = "anyloc.remote.homeHintDismissed";
-// "Mode tournage" of the iOS app: /app?tournage=1 turns it on, ?tournage=0 off.
+// "Mode tournage" of the iOS app, on by default here: ?tournage=0 turns it off,
+// ?tournage=1 back on.
 const FILMING_MODE_KEY = "anyloc.remote.filmingMode";
 const POLL_INTERVAL_MS = 15_000;
 
@@ -83,9 +86,9 @@ function readFilmingMode() {
     if (param === "1" || param === "0") {
       window.localStorage.setItem(FILMING_MODE_KEY, param);
     }
-    return window.localStorage.getItem(FILMING_MODE_KEY) === "1";
+    return window.localStorage.getItem(FILMING_MODE_KEY) !== "0";
   } catch {
-    return false;
+    return true;
   }
 }
 
@@ -136,7 +139,7 @@ function Caption({ text, error }: { text: string; error?: boolean }) {
   return (
     <p
       className={cn(
-        "text-xs font-semibold uppercase tracking-[0.075em]",
+        "text-[11px] font-semibold uppercase tracking-[0.075em]",
         error ? "text-[#f87171]" : "text-[#f472b6]"
       )}
     >
@@ -159,7 +162,7 @@ function SquareIconButton({
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-[14px] bg-[#ec4899]/[0.13] text-[#f472b6]"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-[#ec4899]/[0.13] text-[#f472b6]"
     >
       {children}
     </button>
@@ -218,9 +221,11 @@ function TeleportBanner({ banner }: { banner: Banner }) {
 function TeleportShowcase({
   destination,
   step,
+  closing,
 }: {
   destination: string;
   step: ShowcaseStep;
+  closing: boolean;
 }) {
   const stepText =
     step === "connecting"
@@ -230,7 +235,12 @@ function TeleportShowcase({
         : `Tu es à ${destination}`;
 
   return (
-    <div className="fixed inset-0 z-[2000] flex flex-col items-center justify-center gap-7 bg-[#0a0a0c]/95 px-6">
+    <div
+      className="fixed inset-0 z-[2000] flex flex-col items-center justify-center gap-7 bg-[#0a0a0c]/95 px-6"
+      style={{
+        animation: `${closing ? "showcase-fade-out" : "showcase-fade-in"} ${SHOWCASE_FADE_MS}ms ease-in-out both`,
+      }}
+    >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(236,72,153,0.35),transparent_320px)]" />
       <div
         className="relative flex h-[220px] w-[220px] items-center justify-center"
@@ -251,6 +261,7 @@ function TeleportShowcase({
           width={140}
           height={140}
           className="relative h-[140px] w-[140px] object-contain drop-shadow-[0_0_24px_rgba(236,72,153,0.6)]"
+          style={{ animation: "showcase-pulse 0.9s ease-in-out infinite alternate" }}
           priority
         />
       </div>
@@ -297,15 +308,15 @@ function ActiveLocationBar({
 
   return (
     <div className="flex gap-2.5">
-      <div className="flex h-16 flex-1 items-center gap-3 rounded-2xl border border-[#25252b] bg-[#16161a] px-2.5">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#ec4899]/[0.13]">
-          <Navigation className="h-[17px] w-[17px] fill-current text-[#f472b6]" />
+      <div className="flex h-11 flex-1 items-center gap-2.5 rounded-[14px] border border-[#25252b] bg-[#16161a] px-2">
+        <div className="flex h-7 w-7 items-center justify-center rounded-[9px] bg-[#ec4899]/[0.13]">
+          <Navigation className="h-[15px] w-[15px] fill-current text-[#f472b6]" />
         </div>
         <div>
-          <p className="text-[13px] font-medium text-[#8b8b94]">
+          <p className="text-[11px] font-medium leading-tight text-[#8b8b94]">
             Position simulée
           </p>
-          <p className="font-mono text-xl font-semibold text-[#f472b6]">
+          <p className="font-mono text-base font-semibold leading-tight text-[#f472b6]">
             {formatElapsed(now - since)}
           </p>
         </div>
@@ -314,9 +325,9 @@ function ActiveLocationBar({
         type="button"
         disabled={disabled}
         onClick={onStop}
-        className="flex h-16 w-[78px] flex-col items-center justify-center gap-1 rounded-2xl border border-[#f87171]/40 bg-[#f87171]/[0.12] text-[13px] font-semibold text-[#f87171] disabled:opacity-60"
+        className="flex h-11 w-16 flex-col items-center justify-center gap-0.5 rounded-[14px] border border-[#f87171]/40 bg-[#f87171]/[0.12] text-xs font-semibold text-[#f87171] disabled:opacity-60"
       >
-        <Square className="h-4 w-4 fill-current" />
+        <Square className="h-3.5 w-3.5 fill-current" />
         Stop
       </button>
     </div>
@@ -392,6 +403,7 @@ export function RemoteView() {
   const [showcase, setShowcase] = useState<{
     destination: string;
     step: ShowcaseStep;
+    closing?: boolean;
   } | null>(null);
   const [offline, setOffline] = useState(false);
   const isClient = useSyncExternalStore(
@@ -494,8 +506,11 @@ export function RemoteView() {
           setShowcase({ destination: place.name, step: "done" });
           await sleep(1600);
         }
-        setShowcase(null);
+        // Recentre behind the card so it fades straight onto the destination.
         setRecenterKey((key) => key + 1);
+        setShowcase((current) => current && { ...current, closing: true });
+        await sleep(SHOWCASE_FADE_MS);
+        setShowcase(null);
         return;
       }
 
@@ -588,11 +603,11 @@ export function RemoteView() {
         />
       </div>
 
-      <div className="pointer-events-none relative z-[1000] flex flex-col gap-2.5 px-3.5 pt-[max(env(safe-area-inset-top),0.5rem)]">
+      <div className="pointer-events-none relative z-[1000] flex flex-col gap-2 px-3 pt-[max(env(safe-area-inset-top),0.5rem)]">
         {/* Buttons on either side so the wordmark sits dead centre for screen recordings. */}
         <div
           className={cn(
-            "pointer-events-auto flex h-[58px] items-center rounded-[18px] px-2",
+            "pointer-events-auto flex h-11 items-center rounded-[14px] px-1",
             floating
           )}
         >
@@ -600,19 +615,19 @@ export function RemoteView() {
             type="button"
             onClick={() => setShowSaved(true)}
             aria-label="Favoris"
-            className="flex h-11 w-11 items-center justify-center text-[#f472b6]"
+            className="flex h-10 w-10 items-center justify-center text-[#f472b6]"
           >
-            <Bookmark className="h-5 w-5" strokeWidth={2.4} />
+            <Bookmark className="h-[18px] w-[18px]" strokeWidth={2.4} />
           </button>
-          <p className="flex-1 text-center font-['Helvetica_Neue',Helvetica,Arial,sans-serif] text-[21px] font-bold tracking-[-0.02em]">
+          <p className="flex-1 text-center font-['Helvetica_Neue',Helvetica,Arial,sans-serif] text-lg font-bold tracking-[-0.02em]">
             Anyloc<span className="text-[#f472b6]">.io</span>
           </p>
           <Link
             href="/dashboard?tab=account"
             aria-label="Réglages"
-            className="flex h-11 w-11 items-center justify-center text-[#c4c4ca]"
+            className="flex h-10 w-10 items-center justify-center text-[#c4c4ca]"
           >
-            <Settings className="h-5 w-5" strokeWidth={2.2} />
+            <Settings className="h-[18px] w-[18px]" strokeWidth={2.2} />
           </Link>
         </div>
 
@@ -629,18 +644,18 @@ export function RemoteView() {
         {showHomeHint ? <AddToHomeScreenHint onDismiss={dismissHomeHint} /> : null}
       </div>
 
-      <div className="relative z-[1000] mt-auto px-3 pb-[max(env(safe-area-inset-bottom),0.375rem)]">
-        <div className="rounded-[28px] border border-[#25252b] bg-[#0c0c0e]/[0.97] px-4 pb-4 pt-2.5 shadow-[0_-6px_20px_rgba(0,0,0,0.4)]">
+      <div className="relative z-[1000] mt-auto px-2.5 pb-[max(env(safe-area-inset-bottom),0.375rem)]">
+        <div className="rounded-[20px] border border-[#25252b] bg-[#0c0c0e]/[0.97] px-3 pb-2.5 pt-1 shadow-[0_-6px_20px_rgba(0,0,0,0.4)]">
           <button
             type="button"
             onClick={() => setCollapsed((value) => !value)}
             aria-label={collapsed ? "Déplier" : "Replier"}
-            className="flex w-full justify-center pb-3.5"
+            className="flex w-full justify-center pb-1.5 pt-0.5"
           >
-            <span className="h-[5px] w-10 rounded-full bg-[#303038]" />
+            <span className="h-1 w-9 rounded-full bg-[#303038]" />
           </button>
 
-          <div className="flex gap-1 rounded-[15px] border border-[#25252b] bg-[#070708] p-1">
+          <div className="flex gap-1 rounded-xl border border-[#25252b] bg-[#070708] p-[3px]">
             {(
               [
                 { value: "teleport", label: "Téléporter", Icon: Navigation },
@@ -652,7 +667,7 @@ export function RemoteView() {
                 type="button"
                 onClick={() => setMode(value)}
                 className={cn(
-                  "flex h-[42px] flex-1 items-center justify-center gap-2 rounded-[11px] text-base font-medium transition-colors",
+                  "flex h-8 flex-1 items-center justify-center gap-1.5 rounded-[9px] text-sm font-medium transition-colors",
                   mode === value
                     ? "bg-[#ec4899]/[0.13] text-[#f472b6]"
                     : "text-[#c4c4ca]"
@@ -660,7 +675,7 @@ export function RemoteView() {
               >
                 <Icon
                   className={cn(
-                    "h-[18px] w-[18px]",
+                    "h-[15px] w-[15px]",
                     value === "teleport" && "fill-current"
                   )}
                 />
@@ -670,16 +685,18 @@ export function RemoteView() {
           </div>
 
           {collapsed ? null : mode === "teleport" ? (
-            <div className="pt-3.5">
+            <div className="pt-2.5">
               {selected ? (
-                <div className="flex items-center gap-2.5">
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <Caption text={statusText} error={offline} />
-                    <p className="truncate text-xl font-semibold">
+                <div className="flex items-center gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline gap-2">
+                      <Caption text={statusText} error={offline} />
+                      <p className="truncate font-mono text-[11px] text-[#8b8b94]">
+                        {formatCoords(selected.lat, selected.lng)}
+                      </p>
+                    </div>
+                    <p className="truncate text-[17px] font-semibold leading-tight">
                       {selected.name}
-                    </p>
-                    <p className="font-mono text-sm text-[#8b8b94]">
-                      {formatCoords(selected.lat, selected.lng)}
                     </p>
                   </div>
                   <SquareIconButton
@@ -687,7 +704,7 @@ export function RemoteView() {
                     onClick={() => toggleFavorite(selected)}
                   >
                     <Bookmark
-                      className={cn("h-5 w-5", isFavorite && "fill-current")}
+                      className={cn("h-[18px] w-[18px]", isFavorite && "fill-current")}
                       strokeWidth={2.4}
                     />
                   </SquareIconButton>
@@ -695,19 +712,19 @@ export function RemoteView() {
                     label="Recentrer"
                     onClick={() => setRecenterKey((key) => key + 1)}
                   >
-                    <Navigation2 className="h-5 w-5 fill-current" />
+                    <Navigation2 className="h-[18px] w-[18px] fill-current" />
                   </SquareIconButton>
                 </div>
               ) : (
-                <div className="space-y-1">
+                <div>
                   <Caption text={readyLabel} error={offline} />
-                  <p className="text-[17px] font-medium text-[#c4c4ca]">
+                  <p className="text-[15px] font-medium text-[#c4c4ca]">
                     Touche la carte ou cherche un lieu
                   </p>
                 </div>
               )}
 
-              <div className="my-3.5 h-px bg-[#25252b]" />
+              <div className="h-2.5" />
 
               {isSelectedActive && activeSince ? (
                 <ActiveLocationBar
@@ -722,12 +739,12 @@ export function RemoteView() {
                     disabled={selected == null || isBusy || offline}
                     onClick={() => selected && void teleport(selected)}
                     data-track="remote_teleport"
-                    className="flex h-14 w-full items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-br from-[#ec4899] to-[#a855f7] text-[17px] font-semibold text-white shadow-[0_8px_14px_rgba(236,72,153,0.45)] disabled:opacity-45 disabled:shadow-none"
+                    className="flex h-11 w-full items-center justify-center gap-2 rounded-[14px] bg-gradient-to-br from-[#ec4899] to-[#a855f7] text-base font-semibold text-white shadow-[0_6px_12px_rgba(236,72,153,0.4)] disabled:opacity-45 disabled:shadow-none"
                   >
                     {isBusy ? (
-                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <Loader2 className="h-[18px] w-[18px] animate-spin" />
                     ) : (
-                      <Crosshair className="h-5 w-5" strokeWidth={2.4} />
+                      <Crosshair className="h-[18px] w-[18px]" strokeWidth={2.4} />
                     )}
                     Définir cette position
                   </button>
@@ -736,7 +753,7 @@ export function RemoteView() {
                       type="button"
                       disabled={isBusy}
                       onClick={() => void stop()}
-                      className="w-full pt-3 text-sm font-medium text-[#8b8b94]"
+                      className="w-full pt-2 text-[13px] font-medium text-[#8b8b94]"
                     >
                       Revenir à ma vraie position
                     </button>
@@ -747,7 +764,7 @@ export function RemoteView() {
               {shownStatus ? (
                 <p
                   className={cn(
-                    "pt-2.5 text-center text-[13px] font-semibold",
+                    "pt-2 text-center text-[13px] font-semibold",
                     shownStatus.error ? "text-[#f87171]" : "text-[#f472b6]"
                   )}
                 >
@@ -757,7 +774,7 @@ export function RemoteView() {
             </div>
           ) : (
             <div>
-              <div className="-mx-4 flex gap-2 overflow-x-auto px-4 py-3 [scrollbar-width:none]">
+              <div className="-mx-3 flex gap-2 overflow-x-auto px-3 py-2.5 [scrollbar-width:none]">
                 {REMOTE_SPOT_CATEGORIES.map((category) => {
                   const on = spotCategory === category.id;
                   return (
@@ -777,7 +794,7 @@ export function RemoteView() {
                   );
                 })}
               </div>
-              <div className="h-[330px] overflow-y-auto [scrollbar-width:none]">
+              <div className="h-[min(240px,32dvh)] overflow-y-auto [scrollbar-width:none]">
                 {REMOTE_SPOTS.filter(
                   (spot) =>
                     spotCategory === "all" || spot.category === spotCategory
@@ -829,6 +846,7 @@ export function RemoteView() {
         <TeleportShowcase
           destination={showcase.destination}
           step={showcase.step}
+          closing={showcase.closing ?? false}
         />
       ) : null}
     </div>
