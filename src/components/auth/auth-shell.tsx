@@ -18,9 +18,9 @@ export function AuthShell({
   return (
     <div className="relative flex min-h-screen flex-col items-center overflow-hidden bg-background px-2 pt-2 pb-12 sm:px-4 sm:pt-3">
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute top-1/4 left-1/2 h-[480px] w-[720px] -translate-x-1/2 rounded-full bg-pink-500/10 blur-[120px]" />
-        <div className="absolute top-0 right-0 h-[280px] w-[360px] rounded-full bg-violet-500/10 blur-[100px]" />
-        <div className="absolute bottom-0 left-0 h-[220px] w-[320px] rounded-full bg-violet-500/8 blur-[100px]" />
+        <div className="absolute top-1/4 left-1/2 h-[480px] w-[720px] -translate-x-1/2 bg-[radial-gradient(closest-side,rgb(236_72_153/0.12),transparent)]" />
+        <div className="absolute top-0 right-0 h-[280px] w-[360px] bg-[radial-gradient(closest-side,rgb(139_92_246/0.12),transparent)]" />
+        <div className="absolute bottom-0 left-0 h-[220px] w-[320px] bg-[radial-gradient(closest-side,rgb(139_92_246/0.1),transparent)]" />
       </div>
 
       {/* Same floating pill as the landing header. */}

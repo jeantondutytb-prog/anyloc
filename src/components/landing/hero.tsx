@@ -12,9 +12,9 @@ export function Hero() {
   return (
     <section data-track-section="hero" className="relative overflow-hidden pt-[120px] pb-20 sm:pt-28 sm:pb-28">
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute top-1/4 left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-pink-500/10 blur-[120px]" />
-        <div className="absolute top-0 right-0 h-[300px] w-[400px] rounded-full bg-violet-500/10 blur-[100px]" />
-        <div className="absolute bottom-0 left-0 h-[250px] w-[350px] rounded-full bg-violet-500/8 blur-[100px]" />
+        <div className="absolute top-1/4 left-1/2 h-[500px] w-[800px] -translate-x-1/2 bg-[radial-gradient(closest-side,rgb(236_72_153/0.12),transparent)]" />
+        <div className="absolute top-0 right-0 h-[300px] w-[400px] bg-[radial-gradient(closest-side,rgb(139_92_246/0.12),transparent)]" />
+        <div className="absolute bottom-0 left-0 h-[250px] w-[350px] bg-[radial-gradient(closest-side,rgb(139_92_246/0.1),transparent)]" />
       </div>
 
       <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
