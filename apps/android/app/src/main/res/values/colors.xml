@@ -6,4 +6,34 @@
     <color name="anyloc_text_muted">#71717A</color>
     <color name="anyloc_border">#E4E4E7</color>
     <color name="anyloc_card_stroke">#FBCFE8</color>
+
+    <!-- Dark map palette, same values as Theme.Dark on iOS. -->
+    <color name="dark_bg">#0A0A0C</color>
+    <color name="dark_sheet">#F70C0C0E</color>
+    <color name="dark_float">#ED0A0A0C</color>
+    <color name="dark_panel">#16161A</color>
+    <color name="dark_panel_high">#1C1C21</color>
+    <color name="dark_line">#25252B</color>
+    <color name="dark_line_strong">#303038</color>
+    <color name="dark_text">#F4F4F5</color>
+    <color name="dark_text_soft">#C4C4CA</color>
+    <color name="dark_muted">#8B8B94</color>
+    <color name="dark_dim">#55555D</color>
+    <color name="dark_accent">#F472B6</color>
+    <color name="dark_accent_bg">#21EC4899</color>
+    <color name="accent_start">#EC4899</color>
+    <color name="accent_end">#A855F7</color>
+    <color name="error">#F87171</color>
+    <color name="dark_well">#070708</color>
+    <color name="dark_accent_line">#6BEC4899</color>
+
+    <!-- Light palette of the profile page, same values as Theme on iOS. -->
+    <color name="light_bg">#FFF9FB</color>
+    <color name="light_surface">#FFFFFF</color>
+    <color name="light_surface_hover">#FDF2F8</color>
+    <color name="light_border">#E4E4E7</color>
+    <color name="light_text">#18181B</color>
+    <color name="light_muted">#71717A</color>
+    <color name="light_dim">#76767E</color>
+    <color name="success">#34D399</color>
 </resources>
