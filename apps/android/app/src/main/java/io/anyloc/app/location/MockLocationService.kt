@@ -122,9 +122,10 @@ class MockLocationService : Service() {
                     }
                     else -> {
                         if (currentTarget != null) {
+                            // Hand the real providers back; pushMockLocation re-adds
+                            // the test providers when a spot is active again.
                             currentTarget = null
                             removeTestProviders()
-                            ensureTestProviders()
                         }
                         updateNotification("En pause")
                     }
