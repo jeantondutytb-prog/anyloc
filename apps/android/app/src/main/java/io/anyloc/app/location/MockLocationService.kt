@@ -20,6 +20,8 @@ import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import io.anyloc.app.R
 import io.anyloc.app.SubscriptionInactiveActivity
 import io.anyloc.app.AppErrorReporter
@@ -37,6 +39,12 @@ class MockLocationService : Service() {
     private var pollJob: Job? = null
     private var pushJob: Job? = null
     private var locationManager: LocationManager? = null
+
+    // Google Maps and most apps read Play Services' fused location, which has
+    // its own Wi-Fi/cell positioning that the platform test providers don't
+    // reach. Its mock mode is the only way to silence the real fixes there.
+    private var fusedClient: FusedLocationProviderClient? = null
+    private var gmsMockMode = false
 
     // Last spot returned by the API, re-injected every second so the real
     // network/fused fixes never get a window to show up between two polls.
@@ -73,6 +81,7 @@ class MockLocationService : Service() {
         }
 
         locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        fusedClient = runCatching { LocationServices.getFusedLocationProviderClient(this) }.getOrNull()
 
         if (!MockLocationHelper.isMockLocationAllowed(this)) {
             Log.w(TAG, "Anyloc is not selected as mock location app")
@@ -126,6 +135,7 @@ class MockLocationService : Service() {
                             // the test providers when a spot is active again.
                             currentTarget = null
                             removeTestProviders()
+                            setGmsMockMode(false)
                         }
                         updateNotification("En pause")
                     }
@@ -143,6 +153,7 @@ class MockLocationService : Service() {
         pushJob?.cancel()
         currentTarget = null
         removeTestProviders()
+        setGmsMockMode(false)
         super.onDestroy()
     }
 
@@ -235,6 +246,35 @@ class MockLocationService : Service() {
                 }
             }
         }
+
+        pushGmsMockLocation(target)
+    }
+
+    @Suppress("MissingPermission")
+    private fun pushGmsMockLocation(target: Target) {
+        val client = fusedClient ?: return
+        try {
+            if (!gmsMockMode) {
+                client.setMockMode(true)
+                    .addOnSuccessListener { gmsMockMode = true }
+                    .addOnFailureListener { Log.w(TAG, "Play Services mock mode refused", it) }
+            }
+            client.setMockLocation(buildLocation("fused", target))
+        } catch (error: Exception) {
+            // Play Services missing or mock app not selected.
+            Log.w(TAG, "Play Services mock location failed", error)
+        }
+    }
+
+    @Suppress("MissingPermission")
+    private fun setGmsMockMode(enabled: Boolean) {
+        val client = fusedClient ?: return
+        try {
+            client.setMockMode(enabled)
+        } catch (_: Exception) {
+            // Ignore: Play Services unavailable.
+        }
+        gmsMockMode = enabled
     }
 
     private fun buildLocation(provider: String, target: Target): Location {
