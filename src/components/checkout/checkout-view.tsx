@@ -30,7 +30,7 @@ export function CheckoutView({
   initialPlanId,
   canceled,
   stripePublishableKey,
-  recoveryOffer,
+  offerEndsAt,
   focusPayment: initialFocusPayment,
   returning,
   fromQuiz,
@@ -39,7 +39,8 @@ export function CheckoutView({
   initialPlanId: string;
   canceled?: boolean;
   stripePublishableKey: string;
-  recoveryOffer?: boolean;
+  /** End of the -50 % welcome offer (ISO), while it runs. */
+  offerEndsAt?: string | null;
   focusPayment?: boolean;
   returning?: ReturningCustomer | null;
   /** Arrived from the quiz onboarding: its recommendation shapes the paywall. */
@@ -98,7 +99,7 @@ export function CheckoutView({
           stripePublishableKey={stripePublishableKey}
           destination={destination}
           canceled={canceled}
-          recoveryOffer={recoveryOffer}
+          offerEndsAt={offerEndsAt}
           focusPayment={focusPayment}
           onShowAllPlans={() => setFocusPayment(false)}
           returning={returning}

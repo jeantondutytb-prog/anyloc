@@ -41,14 +41,25 @@ function toState(row: RecoveryRow): RecoveryState {
   };
 }
 
-/** Starts the sequence the first time a logged-in user opens the payment form. */
+/**
+ * Starts the welcome offer and the emails the first time a logged-in user
+ * sees the paywall (first_checkout_at is that first view). Later views keep
+ * the first deadline.
+ */
 export async function enrollInCheckoutRecovery(user: User, planId: string) {
   if (!user.email || !isSupabaseAdminConfigured()) return;
 
+  const now = new Date();
   const { error } = await createAdminClient()
     .from("checkout_recoveries")
     .upsert(
-      { user_id: user.id, email: user.email, plan_id: planId },
+      {
+        user_id: user.id,
+        email: user.email,
+        plan_id: planId,
+        first_checkout_at: now.toISOString(),
+        offer_expires_at: getRecoveryOfferExpiry(now).toISOString(),
+      },
       { onConflict: "user_id", ignoreDuplicates: true }
     );
 
@@ -57,9 +68,9 @@ export async function enrollInCheckoutRecovery(user: User, planId: string) {
   }
 }
 
-/** Coupon to apply to this user's checkout, when the email offer is live and the plan is eligible. */
-export async function getRecoveryCouponForUser(userId: string, planId: string) {
-  if (planId !== RECOVERY_OFFER_PLAN_ID || !isSupabaseAdminConfigured()) return null;
+/** When this user's welcome offer ends, or null once it is over (or never started). */
+export async function getActiveRecoveryOfferExpiry(userId: string) {
+  if (!isSupabaseAdminConfigured()) return null;
 
   const { data, error } = await createAdminClient()
     .from("checkout_recoveries")
@@ -68,11 +79,14 @@ export async function getRecoveryCouponForUser(userId: string, planId: string) {
     .maybeSingle<RecoveryRow>();
 
   if (error || !data) return null;
-  return isRecoveryOfferActive(toState(data), new Date()) ? RECOVERY_COUPON_ID : null;
+  const state = toState(data);
+  return isRecoveryOfferActive(state, new Date()) ? state.offerExpiresAt : null;
 }
 
-export async function hasActiveRecoveryOffer(userId: string) {
-  return (await getRecoveryCouponForUser(userId, RECOVERY_OFFER_PLAN_ID)) !== null;
+/** Coupon to apply to this user's checkout, when the offer is live and the plan is eligible. */
+export async function getRecoveryCouponForUser(userId: string, planId: string) {
+  if (planId !== RECOVERY_OFFER_PLAN_ID) return null;
+  return (await getActiveRecoveryOfferExpiry(userId)) ? RECOVERY_COUPON_ID : null;
 }
 
 export async function unsubscribeFromCheckoutRecovery(userId: string) {
@@ -88,17 +102,12 @@ export async function unsubscribeFromCheckoutRecovery(userId: string) {
 async function sendRecoveryStep(row: RecoveryRow, step: RecoveryStep) {
   const admin = createAdminClient();
   const state = toState(row);
-  const offerExpiresAt =
-    step >= 2 ? state.offerExpiresAt ?? getRecoveryOfferExpiry(state.firstCheckoutAt) : null;
+  const offerExpiresAt = isRecoveryOfferActive(state, new Date()) ? state.offerExpiresAt : null;
 
   // Claim the step first: a concurrent run matching the old steps_sent updates nothing.
   const { data: claimed, error: claimError } = await admin
     .from("checkout_recoveries")
-    .update({
-      steps_sent: step,
-      last_sent_at: new Date().toISOString(),
-      ...(offerExpiresAt ? { offer_expires_at: offerExpiresAt.toISOString() } : {}),
-    })
+    .update({ steps_sent: step, last_sent_at: new Date().toISOString() })
     .eq("user_id", row.user_id)
     .eq("steps_sent", row.steps_sent)
     .select("user_id");
@@ -133,7 +142,7 @@ async function sendRecoveryStep(row: RecoveryRow, step: RecoveryStep) {
     // Release the claim so the next run retries this step.
     await admin
       .from("checkout_recoveries")
-      .update({ steps_sent: row.steps_sent, offer_expires_at: row.offer_expires_at })
+      .update({ steps_sent: row.steps_sent })
       .eq("user_id", row.user_id);
     throw error;
   }
@@ -141,7 +150,7 @@ async function sendRecoveryStep(row: RecoveryRow, step: RecoveryStep) {
   await capturePostHogEvent({
     distinctId: row.user_id,
     event: "recovery_email_sent",
-    properties: { step, plan: row.plan_id, offer: step >= 2 },
+    properties: { step, plan: row.plan_id, offer: offerExpiresAt !== null },
   });
   return true;
 }

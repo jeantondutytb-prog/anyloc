@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { PLANS } from "@/lib/constants";
 import {
+  getEffectivePriceDisplayVariant,
   getMonthlyDisplayPrice,
   parsePriceDisplayVariant,
   pickPriceDisplayVariant,
@@ -12,6 +13,14 @@ describe("price display experiment", () => {
   it("splits visitors in two halves", () => {
     assert.equal(pickPriceDisplayVariant(0.2), "per_day");
     assert.equal(pickPriceDisplayVariant(0.7), "per_month");
+  });
+
+  it("shows per day to everyone while the test is off", (t) => {
+    assert.equal(getEffectivePriceDisplayVariant("per_month"), "per_day");
+    t.after(() => delete process.env.NEXT_PUBLIC_PRICE_DISPLAY_EXPERIMENT);
+    process.env.NEXT_PUBLIC_PRICE_DISPLAY_EXPERIMENT = "on";
+    assert.equal(getEffectivePriceDisplayVariant("per_month"), "per_month");
+    assert.equal(getEffectivePriceDisplayVariant(undefined), "per_day");
   });
 
   it("rejects unknown cookie values", () => {

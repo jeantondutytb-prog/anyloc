@@ -4,23 +4,26 @@ import { RECOVERY_OFFER_PLAN_ID } from "@/lib/checkout-recovery-plan";
 export { RECOVERY_OFFER_PLAN_ID };
 
 /**
- * Relance des inscrits qui ouvrent le paiement sans payer.
- * Step 1 rappelle sans remise ; steps 2 et 3 offrent -50 % sur le 1er mois
- * (coupon Stripe RELANCE50, mensuel uniquement) jusqu'à `offerExpiresAt`.
+ * Offre de bienvenue et relance des inscrits qui voient le paywall sans payer.
+ * Dès le 1er paywall : -50 % sur le 1er mois (coupon Stripe RELANCE50, mensuel
+ * uniquement) jusqu'au lendemain minuit, heure de Paris (`offerExpiresAt`),
+ * puis prix normal. Step 1 (1 h) annonce l'offre, step 2 la rappelle les
+ * dernières heures, step 3 (72 h) relance sans remise.
+ *
+ * Un délai court fait agir (bons valables 3 semaines utilisés deux fois plus
+ * que ceux de 2 mois, Shu & Gneezy 2010) et les achats se font surtout juste
+ * avant l'échéance ; un jour entier laisse le temps de trouver l'argent, quand
+ * la moitié des refus de carte sont des comptes vides.
  */
 
 const HOUR_MS = 60 * 60 * 1000;
 
-export const RECOVERY_STEPS = [
-  { step: 1, delayMs: 1 * HOUR_MS },
-  { step: 2, delayMs: 24 * HOUR_MS },
-  { step: 3, delayMs: 72 * HOUR_MS },
-] as const;
+export type RecoveryStep = 1 | 2 | 3;
 
-export type RecoveryStep = (typeof RECOVERY_STEPS)[number]["step"];
-
-/** The -50 % lasts until the end of the day one day after the last email. */
-export const RECOVERY_OFFER_WINDOW_MS = 96 * HOUR_MS;
+const FIRST_EMAIL_DELAY_MS = 1 * HOUR_MS;
+/** The last call goes out this long before the offer ends (18:00 Paris). */
+const LAST_CALL_BEFORE_EXPIRY_MS = 6 * HOUR_MS;
+const LAST_EMAIL_DELAY_MS = 72 * HOUR_MS;
 
 /** Past this, a stalled sequence is dropped rather than resumed. */
 export const RECOVERY_MAX_AGE_MS = 7 * 24 * HOUR_MS;
@@ -39,7 +42,8 @@ export type RecoveryState = {
 
 /**
  * The step to send now, or null. When the cron fell behind, only the latest
- * due step goes out, so nobody gets two emails in the same hour.
+ * due step goes out, so nobody gets two emails in the same hour. The last
+ * call only goes out while the offer runs: never for an offer already gone.
  */
 export function getDueRecoveryStep(state: RecoveryState, now: Date): RecoveryStep | null {
   if (state.convertedAt || state.unsubscribedAt) return null;
@@ -47,13 +51,19 @@ export function getDueRecoveryStep(state: RecoveryState, now: Date): RecoverySte
   const elapsed = now.getTime() - state.firstCheckoutAt.getTime();
   if (elapsed > RECOVERY_MAX_AGE_MS) return null;
 
-  let due: RecoveryStep | null = null;
-  for (const { step, delayMs } of RECOVERY_STEPS) {
-    if (step > state.stepsSent && elapsed >= delayMs) {
-      due = step;
-    }
+  const expiry = state.offerExpiresAt?.getTime();
+  const due = {
+    1: elapsed >= FIRST_EMAIL_DELAY_MS,
+    2:
+      expiry !== undefined &&
+      now.getTime() >= expiry - LAST_CALL_BEFORE_EXPIRY_MS &&
+      now.getTime() < expiry,
+    3: elapsed >= LAST_EMAIL_DELAY_MS,
+  };
+  for (const step of [3, 2, 1] as const) {
+    if (step > state.stepsSent && due[step]) return step;
   }
-  return due;
+  return null;
 }
 
 const PARIS = "Europe/Paris";
@@ -78,11 +88,11 @@ function getParisOffsetMinutes(date: Date) {
 }
 
 /**
- * End (23:59:59 Paris) of the day 96 h after the first checkout: emails only
- * name the day, so the offer lasts that whole day.
+ * End (23:59:59 Paris) of the day after the first paywall: "jusqu'à demain
+ * minuit", between 24 and 48 h.
  */
 export function getRecoveryOfferExpiry(firstCheckoutAt: Date) {
-  const target = new Date(firstCheckoutAt.getTime() + RECOVERY_OFFER_WINDOW_MS);
+  const target = new Date(firstCheckoutAt.getTime() + 24 * HOUR_MS);
   const offset = getParisOffsetMinutes(target);
   const parisWallClock = new Date(target.getTime() + offset * 60000);
   const endOfDayWallClock = Date.UTC(
@@ -97,12 +107,7 @@ export function getRecoveryOfferExpiry(firstCheckoutAt: Date) {
 }
 
 export function isRecoveryOfferActive(state: RecoveryState, now: Date) {
-  return (
-    !state.convertedAt &&
-    state.stepsSent >= 2 &&
-    state.offerExpiresAt !== null &&
-    now < state.offerExpiresAt
-  );
+  return !state.convertedAt && state.offerExpiresAt !== null && now < state.offerExpiresAt;
 }
 
 function getUnsubscribeSecret() {
@@ -158,42 +163,45 @@ export function buildRecoveryEmail({
   offerExpiresAt: Date | null;
   unsubscribeUrl: string;
 }): RecoveryEmail {
-  const checkoutPlan = step === 1 ? planId : RECOVERY_OFFER_PLAN_ID;
+  // Steps 1 and 2 carry the welcome offer when it runs; step 3 comes after it.
+  const offer = step < 3 && offerExpiresAt !== null;
+  const checkoutPlan = offer ? RECOVERY_OFFER_PLAN_ID : planId;
   const ctaUrl =
     `${appUrl}/checkout?plan=${encodeURIComponent(checkoutPlan)}&paiement=1` +
     `&utm_source=email&utm_medium=email&utm_campaign=checkout_recovery&utm_content=step${step}`;
   const deadline = offerExpiresAt ? formatOfferDeadline(offerExpiresAt) : null;
 
-  const content = {
-    1: {
-      subject: "Ton accès Anyloc t'attend",
-      paragraphs: [
-        "Salut,",
-        "Ton compte Anyloc est prêt, il ne manque plus que le paiement pour débloquer ton accès.",
-        "Change ta localisation sur Snap, Insta, Tinder et tous tes jeux en quelques secondes, depuis ton PC ou ton Mac.",
-      ],
-      cta: "Débloquer mon accès",
-    },
-    2: {
-      subject: `Ton 1er mois à ${RECOVERY_OFFER_PRICE}`,
-      paragraphs: [
-        "Salut,",
-        `Pour t'aider à te lancer : -50 % sur ton premier mois, soit ${RECOVERY_OFFER_PRICE} au lieu de ${RECOVERY_FULL_PRICE}.`,
-        "Plus de 10 000 utilisateurs, noté 4,6/5 sur Trustpilot. Sans engagement, tu annules en 1 clic depuis ton compte.",
-        deadline ? `L'offre est valable jusqu'à ${deadline}.` : "L'offre est valable quelques jours.",
-      ],
-      cta: `Mon 1er mois à ${RECOVERY_OFFER_PRICE}`,
-    },
-    3: {
-      subject: `Dernier jour pour ton mois à ${RECOVERY_OFFER_PRICE}`,
-      paragraphs: [
-        "Salut,",
-        `Petit rappel : ton premier mois à ${RECOVERY_OFFER_PRICE} au lieu de ${RECOVERY_FULL_PRICE} expire ${deadline ? `${deadline} à minuit` : "bientôt"}.`,
-        "Après, ce sera le prix normal. Sans engagement, annulable en 1 clic.",
-      ],
-      cta: "Profiter de -50 %",
-    },
-  }[step];
+  const reminder = {
+    subject: "Ton accès Anyloc t'attend",
+    paragraphs: [
+      "Salut,",
+      "Ton compte Anyloc est prêt, il ne manque plus que le paiement pour débloquer ton accès.",
+      "Change ta localisation sur Snap, Insta, Tinder et tous tes jeux en quelques secondes, depuis ton PC ou ton Mac.",
+    ],
+    cta: "Débloquer mon accès",
+  };
+  const content = !offer
+    ? reminder
+    : step === 1
+      ? {
+          subject: `Ton 1er mois à ${RECOVERY_OFFER_PRICE}, pour peu de temps`,
+          paragraphs: [
+            "Salut,",
+            `Ton compte Anyloc est prêt. Pour t'aider à te lancer : -50 % sur ton premier mois, soit ${RECOVERY_OFFER_PRICE} au lieu de ${RECOVERY_FULL_PRICE}.`,
+            "Plus de 10 000 utilisateurs, noté 4,6/5 sur Trustpilot. Sans engagement, tu annules en 1 clic depuis ton compte.",
+            `L'offre est valable jusqu'à ${deadline} à minuit. Après, ce sera le prix normal.`,
+          ],
+          cta: `Mon 1er mois à ${RECOVERY_OFFER_PRICE}`,
+        }
+      : {
+          subject: `Ce soir minuit : fin de ton mois à ${RECOVERY_OFFER_PRICE}`,
+          paragraphs: [
+            "Salut,",
+            `Dernières heures : ton premier mois à ${RECOVERY_OFFER_PRICE} au lieu de ${RECOVERY_FULL_PRICE} expire ce soir à minuit.`,
+            "Après, ce sera le prix normal. Sans engagement, annulable en 1 clic.",
+          ],
+          cta: "Profiter de -50 %",
+        };
 
   const signature = "Une question ? Réponds simplement à ce mail, je lis tout.\n\nJean, fondateur d'Anyloc";
   const footer =

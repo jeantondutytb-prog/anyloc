@@ -4,7 +4,10 @@ import { CheckoutView } from "@/components/checkout/checkout-view";
 import { PriceDisplayExperimentExposure } from "@/components/pricing/price-display-experiment-exposure";
 import { PricingExperimentExposure } from "@/components/pricing/pricing-experiment-exposure";
 import type { ReturningCustomer } from "@/lib/checkout-copy";
-import { hasActiveRecoveryOffer } from "@/lib/checkout-recovery-server";
+import {
+  enrollInCheckoutRecovery,
+  getActiveRecoveryOfferExpiry,
+} from "@/lib/checkout-recovery-server";
 import { DEFAULT_PLAN_ID, getCheckoutUrl, getPlanDisplayName, isValidPlanId } from "@/lib/constants";
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 import { getSubscriptionInactiveReason } from "@/lib/subscription-inactive";
@@ -18,7 +21,12 @@ import {
   planIdForVariant,
   PRICING_VARIANT_COOKIE,
 } from "@/lib/pricing-experiment";
-import { parsePriceDisplayVariant, PRICE_DISPLAY_COOKIE } from "@/lib/price-display-experiment";
+import {
+  getEffectivePriceDisplayVariant,
+  isPriceDisplayExperimentEnabled,
+  parsePriceDisplayVariant,
+  PRICE_DISPLAY_COOKIE,
+} from "@/lib/price-display-experiment";
 
 export default async function CheckoutPage({
   searchParams,
@@ -30,11 +38,12 @@ export default async function CheckoutPage({
     paiement?: string;
     pricing?: string;
     retour?: string;
+    offre?: string;
     parcours?: string;
     prix?: string;
   }>;
 }) {
-  const { plan, canceled, preview, paiement, pricing, retour, parcours, prix } =
+  const { plan, canceled, preview, paiement, pricing, retour, parcours, prix, offre } =
     await searchParams;
   // Email links (?paiement=1) open straight on the payment form.
   const focusPayment = paiement === "1";
@@ -54,15 +63,17 @@ export default async function CheckoutPage({
   // Per day or per month: the dev preview can force it with &prix=per_month.
   const priceDisplay =
     (devPreview && parsePriceDisplayVariant(prix)) ||
-    parsePriceDisplayVariant((await cookies()).get(PRICE_DISPLAY_COOKIE)?.value) ||
-    "per_day";
+    getEffectivePriceDisplayVariant((await cookies()).get(PRICE_DISPLAY_COOKIE)?.value);
   // Show the plan in the visitor's price grid; email links keep the plan
   // (and coupon) they announced.
   const planId = focusPayment
     ? requestedPlanId
     : planIdForVariant(requestedPlanId, pricingVariant);
 
-  let recoveryOffer = false;
+  // End of the -50 % welcome offer, while it runs. The dev preview can show
+  // it ending in 90 s: /checkout?preview=1&offre=1.
+  let offerEndsAt: string | null =
+    devPreview && offre === "1" ? new Date(Date.now() + 90_000).toISOString() : null;
   // The dev preview can show the welcome-back copy: /checkout?preview=1&retour=1.
   let returning: ReturningCustomer | null =
     devPreview && retour === "1" ? { paymentFailed: false, previousPlanName: "6 mois" } : null;
@@ -89,7 +100,10 @@ export default async function CheckoutPage({
       redirect("/dashboard");
     }
 
-    recoveryOffer = await hasActiveRecoveryOffer(user.id).catch(() => false);
+    // The first paywall view starts the welcome offer (and its emails).
+    await enrollInCheckoutRecovery(user, planId);
+    offerEndsAt =
+      (await getActiveRecoveryOfferExpiry(user.id).catch(() => null))?.toISOString() ?? null;
 
     // A former subscriber gets welcome-back copy; a first purchase stays as is.
     if (isSupabaseAdminConfigured()) {
@@ -113,11 +127,13 @@ export default async function CheckoutPage({
       {isPricingExperimentEnabled() ? (
         <PricingExperimentExposure variant={pricingVariant} />
       ) : null}
-      <PriceDisplayExperimentExposure variant={priceDisplay} />
+      {isPriceDisplayExperimentEnabled() ? (
+        <PriceDisplayExperimentExposure variant={priceDisplay} />
+      ) : null}
       <CheckoutView
         initialPlanId={planId}
         canceled={canceled === "true"}
-        recoveryOffer={recoveryOffer}
+        offerEndsAt={offerEndsAt}
         focusPayment={focusPayment}
         stripePublishableKey={getStripePublishableKey()}
         returning={returning}
