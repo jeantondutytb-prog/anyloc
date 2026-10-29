@@ -1,176 +1,885 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Main screen, laid out like the iOS app: full-screen dark map, floating top bar
+     and search, bottom panel with the selected place and the teleport button. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/dark_bg">
 
-    <ScrollView
-        android:id="@+id/mainScroll"
+    <org.maplibre.android.maps.MapView
+        android:id="@+id/mapView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:padding="24dp">
+        android:layout_height="match_parent" />
+
+    <!-- Top: wordmark bar + search -->
+    <LinearLayout
+        android:id="@+id/topColumn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="14dp"
+        android:paddingTop="6dp"
+        android:paddingEnd="14dp">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="58dp"
+            android:background="@drawable/bg_float"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp">
+
+            <TextView
+                android:id="@+id/wordmark"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:fontFamily="sans-serif"
+                android:letterSpacing="-0.02"
+                android:text="@string/app_name"
+                android:textColor="@color/dark_text"
+                android:textSize="21sp"
+                android:textStyle="bold" />
+
+            <ImageButton
+                android:id="@+id/settingsButton"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_gravity="end|center_vertical"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Réglages"
+                android:src="@drawable/ic_settings"
+                app:tint="@color/dark_text_soft" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="54dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_float"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="18dp"
+            android:paddingEnd="12dp">
+
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_search"
+                app:tint="@color/dark_text_soft" />
+
+            <EditText
+                android:id="@+id/searchInput"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:background="@null"
+                android:hint="Rechercher une ville, une adresse, un lieu"
+                android:imeOptions="actionSearch"
+                android:inputType="text"
+                android:maxLines="1"
+                android:textColor="@color/dark_text"
+                android:textColorHint="@color/dark_muted"
+                android:textCursorDrawable="@null"
+                android:textSize="16sp" />
+
+            <ImageButton
+                android:id="@+id/clearSearchButton"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Effacer"
+                android:padding="6dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_close"
+                android:visibility="gone"
+                app:tint="@color/dark_muted" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/searchResultsContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/bg_float"
+            android:orientation="vertical"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <!-- Bottom panel -->
+    <LinearLayout
+        android:id="@+id/sheet"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:layout_marginBottom="6dp"
+        android:background="@drawable/bg_sheet"
+        android:elevation="12dp"
+        android:orientation="vertical"
+        android:paddingStart="16dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="16dp">
+
+        <View
+            android:layout_width="40dp"
+            android:layout_height="5dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="14dp"
+            android:background="@drawable/bg_handle" />
+
+        <!-- Téléporter / Explorer, like DarkSegmented on iOS -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_segment"
+            android:orientation="horizontal"
+            android:padding="4dp">
+
+            <LinearLayout
+                android:id="@+id/tabTeleport"
+                android:layout_width="0dp"
+                android:layout_height="42dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:id="@+id/tabTeleportIcon"
+                    android:layout_width="17dp"
+                    android:layout_height="17dp"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_navigation" />
+
+                <TextView
+                    android:id="@+id/tabTeleportText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="Téléporter"
+                    android:textSize="16sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/tabExplore"
+                android:layout_width="0dp"
+                android:layout_height="42dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:id="@+id/tabExploreIcon"
+                    android:layout_width="17dp"
+                    android:layout_height="17dp"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_globe" />
+
+                <TextView
+                    android:id="@+id/tabExploreText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="Explorer"
+                    android:textSize="16sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/teleportPanel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingTop="14dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/app_name"
-                android:textSize="28sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="Cherche une ville, appuie, ta loc change."
-                android:textSize="14sp" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:text="Où veux-tu apparaître ?"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-
-            <EditText
-                android:id="@+id/searchInput"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:hint="Marbella, Paris, Miami..."
-                android:imeOptions="actionSearch"
-                android:inputType="text" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <LinearLayout
-                android:id="@+id/searchResultsContainer"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:orientation="vertical"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/captionText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:letterSpacing="0.075"
+                    android:text="PRÊT"
+                    android:textColor="@color/dark_accent"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/placeNameText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:ellipsize="end"
+                    android:fontFamily="sans-serif-medium"
+                    android:maxLines="1"
+                    android:text="Touche la carte ou cherche un lieu"
+                    android:textColor="@color/dark_text_soft"
+                    android:textSize="17sp" />
+
+                <TextView
+                    android:id="@+id/coordsText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:fontFamily="monospace"
+                    android:textColor="@color/dark_muted"
+                    android:textSize="14sp"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+            <ImageButton
+                android:id="@+id/recenterButton"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:layout_marginStart="10dp"
+                android:background="@drawable/bg_accent_square"
+                android:contentDescription="Centrer"
+                android:src="@drawable/ic_navigation"
+                android:visibility="gone"
+                app:tint="@color/dark_accent" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="14dp"
+            android:layout_marginBottom="14dp"
+            android:background="@color/dark_line" />
+
+        <LinearLayout
+            android:id="@+id/teleportButton"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:background="@drawable/bg_gradient_cta"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <ProgressBar
+                android:id="@+id/teleportProgress"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:indeterminateTint="@android:color/white"
                 android:visibility="gone" />
 
-            <TextView
-                android:id="@+id/currentLocationText"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="Aucune position active"
-                android:textSize="14sp" />
-
-            <Button
-                android:id="@+id/pauseButton"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="Mettre en pause"
-                android:visibility="gone" />
+            <ImageView
+                android:id="@+id/teleportIcon"
+                android:layout_width="21dp"
+                android:layout_height="21dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_scope"
+                app:tint="@android:color/white" />
 
             <TextView
-                android:id="@+id/statusText"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="Ouvre Anyloc depuis le site, ou autorise la fausse position."
-                android:textSize="14sp" />
+                android:layout_marginStart="10dp"
+                android:fontFamily="sans-serif-medium"
+                android:text="Définir cette position"
+                android:textColor="@android:color/white"
+                android:textSize="17sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/activeBar"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:background="@drawable/bg_active_bar"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/bg_accent_square"
+                android:importantForAccessibility="no"
+                android:padding="10dp"
+                android:src="@drawable/ic_navigation"
+                app:tint="@color/dark_accent" />
 
             <LinearLayout
-                android:id="@+id/advancedConfig"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="Position simulée"
+                    android:textColor="@color/dark_muted"
+                    android:textSize="13sp" />
+
+                <Chronometer
+                    android:id="@+id/activeTimer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:textColor="@color/dark_accent"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/stopButton"
+                android:layout_width="wrap_content"
+                android:layout_height="44dp"
+                android:background="@drawable/bg_field"
+                android:gravity="center"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:text="Arrêter"
+                android:textColor="@color/dark_text"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/pauseButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:paddingTop="12dp"
+            android:text="Revenir à ma vraie position"
+            android:textColor="@color/dark_muted"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/statusText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:paddingTop="10dp"
+            android:textColor="@color/dark_accent"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/explorePanel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="32dp"
-                android:orientation="vertical"
-                android:visibility="gone">
+                android:paddingTop="12dp"
+                android:paddingBottom="12dp"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:id="@+id/spotCategoriesContainer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal" />
+            </HorizontalScrollView>
+
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="330dp"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:id="@+id/spotsContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+            </ScrollView>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Profile page (gear), same sections as SettingsView on iOS -->
+    <LinearLayout
+        android:id="@+id/settingsOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/light_bg"
+        android:clickable="true"
+        android:elevation="24dp"
+        android:focusable="true"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <!-- Fixed header, like iOS: the close button never scrolls away -->
+        <FrameLayout
+            android:id="@+id/settingsHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="16dp"
+            android:paddingTop="16dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="4dp">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Mon Profil"
+                    android:textColor="@color/light_text"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Gérez vos informations et préférences."
+                    android:textColor="@color/light_dim"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <ImageButton
+                android:id="@+id/closeSettingsButton"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_gravity="end|center_vertical"
+                android:background="@drawable/bg_close_light"
+                android:contentDescription="Fermer"
+                android:padding="9dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_close"
+                app:tint="@color/light_muted" />
+        </FrameLayout>
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:fillViewport="true">
+
+        <LinearLayout
+            android:id="@+id/settingsContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="40dp">
+
+            <!-- Informations personnelles -->
+            <TextView style="@style/Profile.SectionTitle" android:text="Informations Personnelles" />
+
+            <LinearLayout style="@style/Profile.Card">
+
+                <LinearLayout style="@style/Profile.Row">
+                    <TextView style="@style/Profile.Label" android:text="Email" />
+                    <TextView android:id="@+id/profileEmail" style="@style/Profile.Value" android:text="—" />
+                </LinearLayout>
+
+                <View style="@style/Profile.Divider" />
+
+                <LinearLayout style="@style/Profile.Row">
+                    <TextView style="@style/Profile.Label" android:text="Rôle" />
+                    <TextView android:id="@+id/profileRole" style="@style/Profile.Value" android:text="Utilisateur" />
+                </LinearLayout>
+
+                <View style="@style/Profile.Divider" />
+
+                <LinearLayout style="@style/Profile.Row">
+                    <TextView style="@style/Profile.Label" android:text="Mode" />
+                    <TextView style="@style/Profile.Value" android:text="Application Android" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Abonnement -->
+            <TextView style="@style/Profile.SectionTitle" android:text="Abonnement" />
+
+            <LinearLayout style="@style/Profile.Card">
+
+                <LinearLayout style="@style/Profile.Row">
+
+                    <ImageView
+                        android:layout_width="26dp"
+                        android:layout_height="26dp"
+                        android:layout_marginEnd="12dp"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_crown"
+                        app:tint="@color/accent_start" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Plan actuel"
+                            android:textColor="@color/light_dim"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/planName"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="—"
+                            android:textColor="@color/light_text"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Upgrade plans, only for accounts without a paid plan (filled in code). -->
+                <LinearLayout
+                    android:id="@+id/planCards"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+            <!-- Gestion sécurisée -->
+            <TextView style="@style/Profile.SectionTitle" android:text="Gestion Sécurisée" />
+
+            <LinearLayout style="@style/Profile.Card" android:padding="12dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        style="@style/Profile.Icon"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_marginEnd="8dp"
+                        android:src="@drawable/ic_shield"
+                        app:tint="@color/success" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Paiements sécurisés par Stripe"
+                        android:textColor="@color/light_text"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Réglages avancés"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
+                    android:layout_marginTop="8dp"
+                    android:text="Vous pouvez annuler votre abonnement ou modifier vos informations de paiement à tout moment via le portail client."
+                    android:textColor="@color/light_dim"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <!-- Vidéos -->
+            <TextView style="@style/Profile.SectionTitle" android:text="Vidéos" />
+
+            <LinearLayout style="@style/Profile.Card" android:padding="12dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView style="@style/Profile.Icon" android:src="@drawable/ic_video" app:tint="@color/accent_start" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Mode tournage"
+                        android:textColor="@color/light_text"
+                        android:textSize="15sp" />
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/filmingSwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:thumbTint="@android:color/white"
+                        app:trackTint="@color/filming_track" />
+                </LinearLayout>
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:text="URL API"
-                    android:textStyle="bold" />
+                    android:layout_marginTop="6dp"
+                    android:text="Affiche un écran anyloc.io en plein écran à chaque téléportation, pour tes vidéos."
+                    android:textColor="@color/light_dim"
+                    android:textSize="11sp" />
+            </LinearLayout>
 
-                <EditText
-                    android:id="@+id/apiBaseUrlInput"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="https://anyloc.io"
-                    android:inputType="textUri" />
+            <!-- Application -->
+            <TextView style="@style/Profile.SectionTitle" android:text="Application" />
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:text="Code de liaison"
-                    android:textStyle="bold" />
+            <LinearLayout style="@style/Profile.Card">
+
+                <LinearLayout style="@style/Profile.Row">
+                    <TextView style="@style/Profile.Label" android:text="Version" />
+                    <TextView android:id="@+id/profileVersion" style="@style/Profile.Value" />
+                </LinearLayout>
+
+                <View style="@style/Profile.Divider" />
+
+                <LinearLayout style="@style/Profile.Row">
+                    <TextView style="@style/Profile.Label" android:text="Appareil" />
+                    <TextView android:id="@+id/profileDevice" style="@style/Profile.Value" />
+                </LinearLayout>
+
+                <View style="@style/Profile.Divider" />
+
+                <LinearLayout
+                    android:id="@+id/journalButton"
+                    style="@style/Profile.Row"
+                    android:background="?attr/selectableItemBackground">
+
+                    <ImageView style="@style/Profile.Icon" android:src="@drawable/ic_doc" app:tint="@color/light_muted" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Envoyer le journal au support"
+                        android:textColor="@color/light_text"
+                        android:textSize="15sp" />
+
+                    <ImageView
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_share"
+                        app:tint="@color/light_dim" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Liaison: Android pairs with a code instead of a login -->
+            <TextView style="@style/Profile.SectionTitle" android:text="Liaison de l'appareil" />
+
+            <LinearLayout style="@style/Profile.Card" android:padding="12dp">
 
                 <EditText
                     android:id="@+id/tokenInput"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="anyloc_..."
+                    style="@style/Profile.Field"
+                    android:hint="Code de liaison (anyloc_...)"
                     android:inputType="textPassword" />
 
-                <Button
+                <EditText
+                    android:id="@+id/apiBaseUrlInput"
+                    style="@style/Profile.Field"
+                    android:layout_marginTop="8dp"
+                    android:hint="https://anyloc.io"
+                    android:inputType="textUri"
+                    android:visibility="gone" />
+
+                <TextView
                     android:id="@+id/testButton"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:text="Tester la connexion" />
+                    android:layout_height="46dp"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_gradient_cta"
+                    android:fontFamily="sans-serif-medium"
+                    android:gravity="center"
+                    android:text="Tester la connexion"
+                    android:textColor="@android:color/white"
+                    android:textSize="15sp" />
 
-                <Button
-                    android:id="@+id/startButton"
+                <TextView
+                    android:id="@+id/settingsStatusText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text="Activer le GPS" />
-
-                <Button
-                    android:id="@+id/stopButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text="Arrêter" />
+                    android:gravity="center"
+                    android:textColor="@color/light_muted"
+                    android:textSize="13sp" />
             </LinearLayout>
 
-            <Button
-                android:id="@+id/toggleAdvancedButton"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:backgroundTint="@android:color/transparent"
-                android:text="Réglages avancés"
-                android:textAllCaps="false"
-                android:textColor="@color/anyloc_text_muted" />
-        </LinearLayout>
-    </ScrollView>
+            <!-- Actions -->
+            <TextView style="@style/Profile.SectionTitle" android:text="Actions" />
 
+            <LinearLayout style="@style/Profile.Card">
+
+                <LinearLayout
+                    android:id="@+id/logoutButton"
+                    style="@style/Profile.Row"
+                    android:background="?attr/selectableItemBackground">
+
+                    <ImageView style="@style/Profile.Icon" android:src="@drawable/ic_logout" app:tint="@color/error" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Déconnexion"
+                        android:textColor="@color/error"
+                        android:textSize="15sp" />
+
+                    <ImageView
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_chevron_right"
+                        app:tint="@color/light_dim" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+        </ScrollView>
+    </LinearLayout>
+
+    <!-- Filming mode: branded full-screen card during a teleport, for videos -->
+    <FrameLayout
+        android:id="@+id/showcaseOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/bg_showcase"
+        android:clickable="true"
+        android:elevation="30dp"
+        android:focusable="true"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp">
+
+            <FrameLayout
+                android:id="@+id/showcaseLogoGroup"
+                android:layout_width="match_parent"
+                android:layout_height="220dp">
+
+                <View android:id="@+id/showcaseRing1" android:layout_width="150dp" android:layout_height="150dp" android:layout_gravity="center" android:background="@drawable/bg_ring" />
+                <View android:id="@+id/showcaseRing2" android:layout_width="150dp" android:layout_height="150dp" android:layout_gravity="center" android:background="@drawable/bg_ring" />
+                <View android:id="@+id/showcaseRing3" android:layout_width="150dp" android:layout_height="150dp" android:layout_gravity="center" android:background="@drawable/bg_ring" />
+
+                <ImageView
+                    android:id="@+id/showcaseLogo"
+                    android:layout_width="140dp"
+                    android:layout_height="140dp"
+                    android:layout_gravity="center"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/logo" />
+            </FrameLayout>
+
+            <TextView
+                android:id="@+id/showcaseWordmark"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="28dp"
+                android:fontFamily="sans-serif-black"
+                android:maxLines="1"
+                android:textColor="@android:color/white"
+                android:textSize="56sp" />
+
+            <LinearLayout
+                android:id="@+id/showcaseStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="50dp"
+                android:layout_marginTop="28dp"
+                android:background="@drawable/bg_capsule_dark"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp">
+
+                <ProgressBar
+                    android:id="@+id/showcaseProgress"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:indeterminateTint="@color/dark_accent" />
+
+                <ImageView
+                    android:id="@+id/showcaseCheck"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_check"
+                    android:visibility="gone"
+                    app:tint="@color/dark_accent" />
+
+                <TextView
+                    android:id="@+id/showcaseStepText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:ellipsize="end"
+                    android:fontFamily="sans-serif-medium"
+                    android:maxLines="1"
+                    android:textColor="@color/dark_text_soft"
+                    android:textSize="18sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </FrameLayout>
+
+    <!-- First-run setup: pairing, then mock location app -->
     <LinearLayout
         android:id="@+id/setupOverlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/anyloc_pink_light"
-        android:gravity="center"
+        android:background="@color/dark_bg"
+        android:clickable="true"
+        android:elevation="24dp"
+        android:focusable="true"
+        android:gravity="center_vertical"
         android:orientation="vertical"
         android:padding="28dp"
         android:visibility="gone">
+
+        <ImageView
+            android:id="@+id/setupLogo"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:background="@drawable/bg_accent_square"
+            android:importantForAccessibility="no"
+            android:src="@mipmap/ic_launcher" />
+
+        <TextView
+            android:id="@+id/setupCaption"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:letterSpacing="0.075"
+            android:text="CONFIGURATION"
+            android:textColor="@color/dark_accent"
+            android:textSize="12sp"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/setupTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
             android:text="Encore 1 étape"
-            android:textColor="@color/anyloc_text"
-            android:textSize="26sp"
+            android:textColor="@color/dark_text"
+            android:textSize="28sp"
             android:textStyle="bold" />
 
         <TextView
@@ -179,29 +888,38 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:lineSpacingExtra="4dp"
-            android:text="Android a besoin qu'Anyloc soit l'app de localisation fictive. L'app t'ouvre le bon menu."
-            android:textColor="@color/anyloc_text_muted"
+            android:textColor="@color/dark_text_soft"
             android:textSize="16sp" />
 
-        <Button
+        <TextView
             android:id="@+id/setupPrimaryButton"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
-            android:text="Ouvrir les options développeur" />
+            android:layout_height="56dp"
+            android:layout_marginTop="32dp"
+            android:background="@drawable/bg_gradient_cta"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="center"
+            android:textColor="@android:color/white"
+            android:textSize="17sp" />
 
-        <Button
+        <TextView
             android:id="@+id/setupSecondaryButton"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Ouvrir À propos du téléphone" />
+            android:layout_height="52dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_secondary"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="center"
+            android:textColor="@color/dark_text"
+            android:textSize="16sp" />
 
-        <Button
+        <TextView
             android:id="@+id/setupDoneButton"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="C'est fait, vérifier" />
+            android:layout_height="48dp"
+            android:layout_marginTop="6dp"
+            android:gravity="center"
+            android:textColor="@color/dark_muted"
+            android:textSize="15sp" />
     </LinearLayout>
 </FrameLayout>

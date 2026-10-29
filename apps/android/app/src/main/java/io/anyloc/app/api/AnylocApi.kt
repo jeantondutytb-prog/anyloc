@@ -22,6 +22,13 @@ data class LocationFetchResult(
     val inactiveDetails: SubscriptionInactiveDetails? = null,
 )
 
+/** Account shown on the profile page (GET /api/device/me). */
+data class DeviceProfile(
+    val email: String?,
+    val planId: String?,
+    val isTrial: Boolean,
+)
+
 data class GeocodeResult(
     val id: String,
     val name: String,
@@ -104,6 +111,30 @@ class AnylocApi(
         }
     }
 
+    fun fetchProfile(): DeviceProfile? {
+        val request = Request.Builder()
+            .url("$baseUrl/api/device/me")
+            .header("Authorization", "Bearer $deviceToken")
+            .get()
+            .build()
+
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) {
+                return null
+            }
+
+            val json = JSONObject(response.body?.string().orEmpty())
+            val subscription = json.optJSONObject("subscription")
+            val active = subscription?.optBoolean("active", false) == true
+
+            return DeviceProfile(
+                email = json.optJSONObject("user")?.stringOrNull("email"),
+                planId = if (active) subscription?.stringOrNull("planId") else null,
+                isTrial = active && subscription?.optBoolean("isTrial", false) == true,
+            )
+        }
+    }
+
     fun searchPlaces(query: String): List<GeocodeResult> {
         if (query.length < 2) {
             return emptyList()
@@ -150,3 +181,7 @@ class AnylocApi(
         )
     }
 }
+
+/** `optString` turns a JSON null into the text "null". */
+private fun JSONObject.stringOrNull(key: String): String? =
+    if (isNull(key)) null else optString(key).ifBlank { null }

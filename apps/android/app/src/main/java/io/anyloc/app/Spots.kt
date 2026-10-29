@@ -1,0 +1,83 @@
+package io.anyloc.app
+
+/** Destinations of the "Explorer" tab, same list as the iOS app (Spots.swift). */
+data class SpotCategory(val id: String, val label: String)
+
+data class Spot(
+    val name: String,
+    val country: String,
+    val lat: Double,
+    val lng: Double,
+    val category: String,
+    val emoji: String,
+)
+
+val spotCategories = listOf(
+    SpotCategory("all", "Tout"),
+    SpotCategory("villes", "Villes"),
+    SpotCategory("plages", "Plages"),
+    SpotCategory("fetes", "Fêtes"),
+    SpotCategory("luxe", "Luxe"),
+    SpotCategory("asie", "Asie"),
+    SpotCategory("aeroports", "Aéroports"),
+)
+
+val allSpots = listOf(
+    // Les 50 destinations les plus populaires.
+    Spot("Paris", "France", 48.8584, 2.2945, "villes", "🇫🇷"),
+    Spot("Londres", "Royaume-Uni", 51.5007, -0.1246, "villes", "🇬🇧"),
+    Spot("New York", "États-Unis", 40.758, -73.9855, "villes", "🇺🇸"),
+    Spot("Dubai Marina", "Émirats", 25.0805, 55.1403, "luxe", "🇦🇪"),
+    Spot("Burj Khalifa", "Émirats", 25.1972, 55.2744, "luxe", "🇦🇪"),
+    Spot("Tokyo", "Japon", 35.6595, 139.7005, "asie", "🇯🇵"),
+    Spot("Kyoto", "Japon", 35.0116, 135.7681, "asie", "🇯🇵"),
+    Spot("Bangkok", "Thaïlande", 13.7397, 100.5599, "asie", "🇹🇭"),
+    Spot("Phuket", "Thaïlande", 7.8966, 98.2969, "plages", "🇹🇭"),
+    Spot("Bali", "Indonésie", -8.6912, 115.1682, "plages", "🇮🇩"),
+    Spot("Singapour", "Singapour", 1.2834, 103.8607, "asie", "🇸🇬"),
+    Spot("Séoul", "Corée du Sud", 37.5665, 126.978, "asie", "🇰🇷"),
+    Spot("Hong Kong", "Hong Kong", 22.2819, 114.1581, "asie", "🇭🇰"),
+    Spot("Maldives", "Maldives", 4.1755, 73.5093, "luxe", "🇲🇻"),
+    Spot("Rome", "Italie", 41.8902, 12.4922, "villes", "🇮🇹"),
+    Spot("Venise", "Italie", 45.4341, 12.3388, "villes", "🇮🇹"),
+    Spot("Florence", "Italie", 43.7731, 11.256, "villes", "🇮🇹"),
+    Spot("Positano", "Italie", 40.6281, 14.485, "plages", "🇮🇹"),
+    Spot("Barcelone", "Espagne", 41.3784, 2.1925, "villes", "🇪🇸"),
+    Spot("Madrid", "Espagne", 40.4168, -3.7038, "villes", "🇪🇸"),
+    Spot("Ibiza", "Espagne", 38.9067, 1.4206, "fetes", "🇪🇸"),
+    Spot("Marbella", "Espagne", 36.5099, -4.8862, "plages", "🇪🇸"),
+    Spot("Lisbonne", "Portugal", 38.7077, -9.1365, "villes", "🇵🇹"),
+    Spot("Amsterdam", "Pays-Bas", 52.3731, 4.8926, "villes", "🇳🇱"),
+    Spot("Berlin", "Allemagne", 52.5163, 13.3777, "fetes", "🇩🇪"),
+    Spot("Prague", "Tchéquie", 50.0875, 14.4213, "villes", "🇨🇿"),
+    Spot("Dubrovnik", "Croatie", 42.6407, 18.1077, "villes", "🇭🇷"),
+    Spot("Mykonos", "Grèce", 37.4467, 25.3289, "fetes", "🇬🇷"),
+    Spot("Santorin", "Grèce", 36.4618, 25.3753, "plages", "🇬🇷"),
+    Spot("Monaco", "Monaco", 43.7384, 7.4246, "luxe", "🇲🇨"),
+    Spot("Saint-Tropez", "France", 43.2727, 6.6407, "luxe", "🇫🇷"),
+    Spot("Courchevel", "France", 45.4151, 6.6347, "luxe", "🇫🇷"),
+    Spot("Nice", "France", 43.6947, 7.2653, "plages", "🇫🇷"),
+    Spot("Istanbul", "Turquie", 41.0086, 28.9802, "villes", "🇹🇷"),
+    Spot("Marrakech", "Maroc", 31.6258, -7.9891, "villes", "🇲🇦"),
+    Spot("Pyramides de Gizeh", "Égypte", 29.9792, 31.1342, "villes", "🇪🇬"),
+    Spot("Zanzibar", "Tanzanie", -6.1622, 39.1921, "plages", "🇹🇿"),
+    Spot("Le Cap", "Afrique du Sud", -33.9249, 18.4241, "villes", "🇿🇦"),
+    Spot("Miami Beach", "États-Unis", 25.7907, -80.13, "plages", "🇺🇸"),
+    Spot("Los Angeles", "États-Unis", 34.0195, -118.4912, "villes", "🇺🇸"),
+    Spot("Las Vegas", "États-Unis", 36.1147, -115.1728, "fetes", "🇺🇸"),
+    Spot("San Francisco", "États-Unis", 37.788, -122.4075, "villes", "🇺🇸"),
+    Spot("Hawaï", "États-Unis", 21.2793, -157.8292, "plages", "🇺🇸"),
+    Spot("Cancún", "Mexique", 21.1619, -86.8515, "fetes", "🇲🇽"),
+    Spot("Tulum", "Mexique", 20.2114, -87.4654, "plages", "🇲🇽"),
+    Spot("Rio de Janeiro", "Brésil", -22.9711, -43.1822, "plages", "🇧🇷"),
+    Spot("Buenos Aires", "Argentine", -34.6037, -58.3816, "villes", "🇦🇷"),
+    Spot("Sydney", "Australie", -33.8915, 151.2767, "plages", "🇦🇺"),
+    Spot("Bora Bora", "Polynésie française", -16.5004, -151.7497, "luxe", "🇵🇫"),
+    Spot("Reykjavik", "Islande", 64.1417, -21.9266, "villes", "🇮🇸"),
+    // Aéroports
+    Spot("CDG Paris", "France", 49.0097, 2.5479, "aeroports", "✈️"),
+    Spot("JFK New York", "États-Unis", 40.6413, -73.7781, "aeroports", "✈️"),
+    Spot("LAX Los Angeles", "États-Unis", 33.9425, -118.408, "aeroports", "✈️"),
+    Spot("DXB Dubai", "Émirats", 25.2532, 55.3657, "aeroports", "✈️"),
+    Spot("Heathrow", "Royaume-Uni", 51.47, -0.4543, "aeroports", "✈️"),
+)
