@@ -76,6 +76,27 @@ function subscribeToNothing() {
   return () => {};
 }
 
+/** Milliseconds until `endsAt`, ticking every second; null before hydration. */
+function useOfferTimeLeft(endsAt: string | null | undefined) {
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => {
+    if (!endsAt) return;
+    const tick = () => setNow(Date.now());
+    tick();
+    const timer = setInterval(tick, 1000);
+    return () => clearInterval(timer);
+  }, [endsAt]);
+  if (!endsAt) return 0;
+  return now === null ? null : Math.max(0, new Date(endsAt).getTime() - now);
+}
+
+/** 26 h 3 min 9 s -> "26:03:09". */
+function formatTimeLeft(ms: number) {
+  const seconds = Math.floor(ms / 1000);
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${pad(Math.floor(seconds / 3600))}:${pad(Math.floor(seconds / 60) % 60)}:${pad(seconds % 60)}`;
+}
+
 /** Small line under the daily price: what is actually billed, and for how long. */
 const BILLING_PERIOD_LABELS: Record<string, string> = {
   monthly: "1 mois",
@@ -94,7 +115,7 @@ export function AnyLocCheckoutPanel({
   googleAuthRedirectTo,
   onBack,
   canceled,
-  recoveryOffer,
+  offerEndsAt,
   focusPayment,
   onShowAllPlans,
   returning,
@@ -108,8 +129,8 @@ export function AnyLocCheckoutPanel({
   googleAuthRedirectTo?: string;
   onBack?: () => void;
   canceled?: boolean;
-  /** The recovery email offer is live: the monthly checkout carries the -50 % coupon. */
-  recoveryOffer?: boolean;
+  /** End (ISO) of the -50 % welcome offer: until then the monthly checkout carries the coupon. */
+  offerEndsAt?: string | null;
   /** Arrived from an email: only the selected plan and the payment popup, no sales page. */
   focusPayment?: boolean;
   onShowAllPlans?: () => void;
@@ -121,6 +142,9 @@ export function AnyLocCheckoutPanel({
   priceDisplay?: PriceDisplayVariant;
 }) {
   const copy = CHECKOUT_COPY;
+  const offerTimeLeft = useOfferTimeLeft(offerEndsAt);
+  // The server only grants the coupon before the end: past it, back to full price.
+  const recoveryOffer = offerTimeLeft === null || offerTimeLeft > 0;
   // The plans of the selected plan's price grid (see lib/pricing-experiment).
   const checkoutPlans = getGridPlans(getPlanGrid(selectedPlanId));
   const selectedPlan =
@@ -166,8 +190,7 @@ export function AnyLocCheckoutPanel({
   // Offered once per visit, when the popup of a pricier plan is closed.
   const [downsellOpen, setDownsellOpen] = useState(false);
   const downsellShownRef = useRef(false);
-  // Closing the popup offers the clipper programme, once per visit. While the
-  // -50 % test is on, half of the visitors get -50 % on the 1st month instead.
+  // A/B test (stopped): half of the visitors closing the popup get -50 % on the 1st month.
   const [closeOfferSessionId, setCloseOfferSessionId] = useState<string | null>(null);
   const [clipperOfferOpen, setClipperOfferOpen] = useState(false);
   const closeOfferDrawnRef = useRef(false);
@@ -180,13 +203,8 @@ export function AnyLocCheckoutPanel({
     setModalOpen(false);
     // Already discounted: nothing more to offer.
     if (offerSessionId) return;
-    if (sessionId && !closeOfferDrawnRef.current) {
+    if (isCloseOfferExperimentEnabled() && sessionId && !closeOfferDrawnRef.current) {
       closeOfferDrawnRef.current = true;
-      if (!isCloseOfferExperimentEnabled()) {
-        track("clipper_offer_shown", { plan: selectedPlanId });
-        setClipperOfferOpen(true);
-        return;
-      }
       const variant = getOrPickCloseOfferVariant();
       registerPostHogProperties({ close_offer_variant: variant });
       track("close_offer_experiment_exposed", {
@@ -455,6 +473,11 @@ export function AnyLocCheckoutPanel({
                   ? "Sans engagement"
                   : `${plan.price.replace("€", " €")} / ${BILLING_PERIOD_LABELS[plan.id]}`}
               </span>
+              {offerEndsAt && recoveryOffer && plan.id === RECOVERY_OFFER_PLAN_ID ? (
+                <span className="mt-0.5 block whitespace-nowrap text-xs font-bold tabular-nums text-pink-600">
+                  {copy.focusOfferNote}
+                </span>
+              ) : null}
             </span>
           </button>
         );
@@ -488,12 +511,24 @@ export function AnyLocCheckoutPanel({
         </p>
       )}
 
-      {recoveryOffer ? (
-        <p className="mb-4 rounded-xl border border-pink-200 bg-pink-50 px-4 py-3 text-center text-sm font-semibold text-pink-700">
+      {offerEndsAt && recoveryOffer ? (
+        <button
+          type="button"
+          onClick={() => selectPlan(RECOVERY_OFFER_PLAN_ID)}
+          disabled={selectedPlanId === RECOVERY_OFFER_PLAN_ID}
+          data-track="checkout_welcome_offer_clicked"
+          className="mb-4 block w-full rounded-xl border border-pink-200 bg-pink-50 px-4 py-3 text-center text-sm font-semibold text-pink-700 transition enabled:hover:bg-pink-100"
+        >
           {selectedPlanId === RECOVERY_OFFER_PLAN_ID
             ? copy.recoveryOfferApplied
             : copy.recoveryOfferPickMonthly}
-        </p>
+          {offerTimeLeft !== null ? (
+            <span className="mt-1 block text-xs font-medium text-pink-600">
+              {copy.recoveryOfferEndsIn}{" "}
+              <span className="font-bold tabular-nums">{formatTimeLeft(offerTimeLeft)}</span>
+            </span>
+          ) : null}
+        </button>
       ) : null}
 
       {/* The whole box opens the conditions: visitors tapped it expecting details.
@@ -722,6 +757,7 @@ export function AnyLocCheckoutPanel({
           offerSessionId={
             offerSessionId && selectedPlan.id === entryPlanId ? offerSessionId : undefined
           }
+          welcomeOffer={recoveryOffer && selectedPlan.id === RECOVERY_OFFER_PLAN_ID}
           onDeclineOffer={acceptDeclineOffer}
           stripePublishableKey={stripePublishableKey}
           hostedRedirecting={redirecting}
@@ -749,6 +785,11 @@ export function AnyLocCheckoutPanel({
         <CheckoutDownsellSheet
           plan={selectedPlan}
           offerPlan={downgradePlan}
+          firstMonthPrice={
+            recoveryOffer && downgradePlan.id === RECOVERY_OFFER_PLAN_ID
+              ? getFirstMonthOfferPrice(downgradePlan.price)
+              : undefined
+          }
           onAccept={acceptDownsell}
           onDismiss={dismissDownsell}
         />

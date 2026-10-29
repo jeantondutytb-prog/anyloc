@@ -26,6 +26,7 @@ export function CheckoutPaymentModal({
   plan,
   offerPlan,
   offerSessionId,
+  welcomeOffer,
   onDeclineOffer,
   stripePublishableKey,
   hostedRedirecting,
@@ -39,6 +40,8 @@ export function CheckoutPaymentModal({
   offerPlan: Plan;
   /** This popup is the discounted checkout: the refused (or closed) one it comes from. */
   offerSessionId?: string;
+  /** The welcome offer already takes -50 % off this plan's 1st month. */
+  welcomeOffer?: boolean;
   onDeclineOffer: (declinedSessionId: string) => void;
   stripePublishableKey: string;
   /** The hosted-page fallback is loading. */
@@ -111,7 +114,7 @@ export function CheckoutPaymentModal({
   // Stripe's form doesn't tell the page why a card was refused: the webhook
   // stamps it on the session, read back here. Once discounted, no second offer.
   useEffect(() => {
-    if (!sessionId || declined || offerSessionId) return;
+    if (!sessionId || declined || offerSessionId || welcomeOffer) return;
     const controller = new AbortController();
     const timer = setInterval(() => {
       if (document.visibilityState !== "visible") return;
@@ -130,7 +133,7 @@ export function CheckoutPaymentModal({
       clearInterval(timer);
       controller.abort();
     };
-  }, [sessionId, declined, offerSessionId, plan.id, offerPlan.id]);
+  }, [sessionId, declined, offerSessionId, welcomeOffer, plan.id, offerPlan.id]);
 
   useEffect(() => {
     closeRef.current?.focus();
@@ -212,7 +215,9 @@ export function CheckoutPaymentModal({
         <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
           <p className="text-sm font-bold text-zinc-900">
             {plan.name} ·{" "}
-            {offerSessionId ? copy.firstMonthOfferHeader(getFirstMonthOfferPrice(plan.price)) : price}
+            {offerSessionId || welcomeOffer
+              ? copy.firstMonthOfferHeader(getFirstMonthOfferPrice(plan.price))
+              : price}
           </p>
           <button
             ref={closeRef}

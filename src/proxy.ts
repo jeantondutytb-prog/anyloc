@@ -15,6 +15,7 @@ import {
   PRICING_VARIANT_MAX_AGE,
 } from "@/lib/pricing-experiment";
 import {
+  isPriceDisplayExperimentEnabled,
   parsePriceDisplayVariant,
   pickPriceDisplayVariant,
   PRICE_DISPLAY_COOKIE,
@@ -49,11 +50,11 @@ export async function proxy(request: NextRequest) {
     request.cookies.set(ONBOARDING_VARIANT_COOKIE, newOnboardingVariant);
   }
   // And for the checkout price display (per day or per month).
-  const newPriceDisplayVariant = !parsePriceDisplayVariant(
-    request.cookies.get(PRICE_DISPLAY_COOKIE)?.value
-  )
-    ? pickPriceDisplayVariant()
-    : null;
+  const newPriceDisplayVariant =
+    isPriceDisplayExperimentEnabled() &&
+    !parsePriceDisplayVariant(request.cookies.get(PRICE_DISPLAY_COOKIE)?.value)
+      ? pickPriceDisplayVariant()
+      : null;
   if (newPriceDisplayVariant) {
     request.cookies.set(PRICE_DISPLAY_COOKIE, newPriceDisplayVariant);
   }

@@ -105,9 +105,10 @@ export const CHECKOUT_COPY = {
   focusOfferNote: "1er mois à 4,95 €",
   focusShowAllPlans: "Voir tous les plans",
   recoveryOfferApplied:
-    "🎁 Ton offre est appliquée : ton 1er mois à 4,95 € au lieu de 9,90 €.",
+    "🎁 Offre appliquée : ton 1er mois à 4,95 € au lieu de 9,90 €.",
   recoveryOfferPickMonthly:
-    "🎁 Ton offre -50 % sur le 1er mois est valable sur le plan Mensuel.",
+    "🎁 -50 % sur ton 1er mois : choisis le Mensuel à 4,95 € au lieu de 9,90 €",
+  recoveryOfferEndsIn: "L'offre se termine dans",
   errNetwork:
     "Le paiement n'a pas pu se charger : ta connexion a coupé. Vérifie ton réseau puis réessaie.",
 } as const;

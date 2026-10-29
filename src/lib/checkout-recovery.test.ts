@@ -25,21 +25,31 @@ function state(overrides: Partial<RecoveryState> = {}): RecoveryState {
   };
 }
 
+// Sat 3 Oct 12:00 Paris: the offer ends Sun 4 Oct 23:59:59 Paris (21:59:59 UTC), at(36) - 1 s.
+const offerExpiresAt = getRecoveryOfferExpiry(start);
+
 describe("getDueRecoveryStep", () => {
   it("waits one hour before the first email", () => {
-    assert.equal(getDueRecoveryStep(state(), at(0.5)), null);
-    assert.equal(getDueRecoveryStep(state(), at(1)), 1);
+    assert.equal(getDueRecoveryStep(state({ offerExpiresAt }), at(0.5)), null);
+    assert.equal(getDueRecoveryStep(state({ offerExpiresAt }), at(1)), 1);
   });
 
-  it("sends steps 2 and 3 at 24 h and 72 h", () => {
-    assert.equal(getDueRecoveryStep(state({ stepsSent: 1 }), at(23)), null);
-    assert.equal(getDueRecoveryStep(state({ stepsSent: 1 }), at(24)), 2);
-    assert.equal(getDueRecoveryStep(state({ stepsSent: 2 }), at(72)), 3);
-    assert.equal(getDueRecoveryStep(state({ stepsSent: 3 }), at(100)), null);
+  it("sends the last call in the 6 h before the offer ends, then the reminder at 72 h", () => {
+    assert.equal(getDueRecoveryStep(state({ stepsSent: 1, offerExpiresAt }), at(29.9)), null);
+    assert.equal(getDueRecoveryStep(state({ stepsSent: 1, offerExpiresAt }), at(30)), 2);
+    assert.equal(getDueRecoveryStep(state({ stepsSent: 2, offerExpiresAt }), at(71)), null);
+    assert.equal(getDueRecoveryStep(state({ stepsSent: 2, offerExpiresAt }), at(72)), 3);
+    assert.equal(getDueRecoveryStep(state({ stepsSent: 3, offerExpiresAt }), at(100)), null);
+  });
+
+  it("never sends the last call once the offer is over", () => {
+    assert.equal(getDueRecoveryStep(state({ stepsSent: 1, offerExpiresAt }), at(36)), null);
+    assert.equal(getDueRecoveryStep(state({ stepsSent: 1 }), at(30)), null);
+    assert.equal(getDueRecoveryStep(state({ stepsSent: 1 }), at(72)), 3);
   });
 
   it("only sends the latest due step when the cron fell behind", () => {
-    assert.equal(getDueRecoveryStep(state(), at(30)), 2);
+    assert.equal(getDueRecoveryStep(state({ offerExpiresAt }), at(31)), 2);
   });
 
   it("stops for buyers, unsubscribed users and stale sequences", () => {
@@ -50,30 +60,29 @@ describe("getDueRecoveryStep", () => {
 });
 
 describe("isRecoveryOfferActive", () => {
-  const offerExpiresAt = getRecoveryOfferExpiry(start);
-
-  it("ends at midnight Paris on the day 96 h after the first checkout", () => {
-    // 2026-10-03 10:00 UTC + 96 h = Wed 7 Oct 12:00 Paris → 23:59:59 Paris (21:59:59 UTC).
-    assert.equal(offerExpiresAt.toISOString(), "2026-10-07T21:59:59.000Z");
-    // Winter time: 2026-11-02 10:00 UTC + 96 h → Fri 6 Nov 23:59:59 Paris (22:59:59 UTC).
+  it("ends at midnight Paris the day after the first paywall", () => {
+    assert.equal(offerExpiresAt.toISOString(), "2026-10-04T21:59:59.000Z");
+    // Late at night it still runs the whole next day: Sat 23:30 Paris -> Sun 23:59:59.
+    assert.equal(
+      getRecoveryOfferExpiry(new Date("2026-10-03T21:30:00Z")).toISOString(),
+      "2026-10-04T21:59:59.000Z"
+    );
+    // Winter time: Mon 2 Nov 11:00 Paris -> Tue 3 Nov 23:59:59 Paris (22:59:59 UTC).
     assert.equal(
       getRecoveryOfferExpiry(new Date("2026-11-02T10:00:00Z")).toISOString(),
-      "2026-11-06T22:59:59.000Z"
+      "2026-11-03T22:59:59.000Z"
     );
   });
 
-  it("opens with the second email and closes at the expiry", () => {
-    assert.equal(isRecoveryOfferActive(state({ stepsSent: 1, offerExpiresAt }), at(25)), false);
-    assert.equal(isRecoveryOfferActive(state({ stepsSent: 2, offerExpiresAt }), at(25)), true);
-    assert.equal(isRecoveryOfferActive(state({ stepsSent: 3, offerExpiresAt }), at(107)), true);
-    assert.equal(isRecoveryOfferActive(state({ stepsSent: 3, offerExpiresAt }), at(108)), false);
+  it("runs from the first paywall until the expiry", () => {
+    assert.equal(isRecoveryOfferActive(state({ offerExpiresAt }), at(0)), true);
+    assert.equal(isRecoveryOfferActive(state({ stepsSent: 2, offerExpiresAt }), at(35.9)), true);
+    assert.equal(isRecoveryOfferActive(state({ stepsSent: 2, offerExpiresAt }), at(36)), false);
+    assert.equal(isRecoveryOfferActive(state(), at(1)), false);
   });
 
   it("is off once the user paid", () => {
-    assert.equal(
-      isRecoveryOfferActive(state({ stepsSent: 2, offerExpiresAt, convertedAt: at(30) }), at(30)),
-      false
-    );
+    assert.equal(isRecoveryOfferActive(state({ offerExpiresAt, convertedAt: at(3) }), at(3)), false);
   });
 });
 
@@ -93,22 +102,27 @@ describe("buildRecoveryEmail", () => {
     unsubscribeUrl: "https://www.anyloc.io/api/email/unsubscribe?u=1&t=x",
   };
 
-  it("keeps the chosen plan and gives no discount in the first email", () => {
-    const email = buildRecoveryEmail({ ...base, step: 1, offerExpiresAt: null });
-    assert.match(email.text, /checkout\?plan=annual&paiement=1&utm_source=email/);
-    assert.doesNotMatch(email.text, /4,95/);
+  it("announces the offer in the first email, on the monthly checkout, with its deadline", () => {
+    const email = buildRecoveryEmail({ ...base, step: 1, offerExpiresAt });
+    assert.match(email.subject, /4,95/);
+    assert.match(email.text, /checkout\?plan=monthly&paiement=1&.*utm_content=step1/);
+    assert.match(email.text, /valable jusqu'à dimanche 4 octobre à minuit\./);
     assert.match(email.html, /Ne plus recevoir ces emails/);
   });
 
-  it("sends the offer emails to the monthly checkout with the deadline", () => {
-    const email = buildRecoveryEmail({
-      ...base,
-      step: 2,
-      offerExpiresAt: getRecoveryOfferExpiry(start),
-    });
-    assert.match(email.subject, /4,95/);
-    assert.match(email.text, /checkout\?plan=monthly&.*utm_content=step2/);
-    // 96 h after 2026-10-03 10:00 UTC, day only.
-    assert.match(email.text, /valable jusqu'à mercredi 7 octobre\./);
+  it("sends the last call for tonight", () => {
+    const email = buildRecoveryEmail({ ...base, step: 2, offerExpiresAt });
+    assert.match(email.subject, /Ce soir minuit/);
+    assert.match(email.text, /utm_content=step2/);
+  });
+
+  it("keeps the chosen plan and gives no discount once the offer is over", () => {
+    for (const step of [1, 3] as const) {
+      const email = buildRecoveryEmail({ ...base, step, offerExpiresAt: null });
+      assert.match(email.text, /checkout\?plan=annual&paiement=1&utm_source=email/);
+      assert.doesNotMatch(email.text, /4,95/);
+    }
+    const last = buildRecoveryEmail({ ...base, step: 3, offerExpiresAt });
+    assert.doesNotMatch(last.text, /4,95/);
   });
 });
