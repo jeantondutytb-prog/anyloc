@@ -29,6 +29,13 @@ data class DeviceProfile(
     val isTrial: Boolean,
 )
 
+/** Latest APK published by CI (GET /api/device/app-update). */
+data class AppUpdate(
+    val versionCode: Long,
+    val versionName: String,
+    val downloadUrl: String,
+)
+
 data class GeocodeResult(
     val id: String,
     val name: String,
@@ -131,6 +138,29 @@ class AnylocApi(
                 email = json.optJSONObject("user")?.stringOrNull("email"),
                 planId = if (active) subscription?.stringOrNull("planId") else null,
                 isTrial = active && subscription?.optBoolean("isTrial", false) == true,
+            )
+        }
+    }
+
+    fun fetchLatestVersion(): AppUpdate? {
+        val request = Request.Builder()
+            .url("$baseUrl/api/device/app-update")
+            .header("Authorization", "Bearer $deviceToken")
+            .get()
+            .build()
+
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) {
+                return null
+            }
+
+            val json = JSONObject(response.body?.string().orEmpty())
+            val url = json.stringOrNull("downloadUrl") ?: return null
+
+            return AppUpdate(
+                versionCode = json.optLong("versionCode"),
+                versionName = json.optString("versionName"),
+                downloadUrl = url,
             )
         }
     }

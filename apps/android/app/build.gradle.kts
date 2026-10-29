@@ -13,14 +13,30 @@ android {
         applicationId = "io.anyloc.app"
         minSdk = 29
         targetSdk = 34
-        versionCode = 3
-        versionName = "0.1.2"
+        // CI passes the build number: each release gets a higher versionCode, which
+        // Android needs to install it over the previous one (in-app updates).
+        val buildNumber = System.getenv("ANDROID_VERSION_CODE")?.toIntOrNull() ?: 3
+        versionCode = buildNumber
+        versionName = "0.1.$buildNumber"
+
+        // Phones only: the x86 builds of the map library doubled the APK size.
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+        }
     }
 
     signingConfigs {
         create("release") {
+            // Always the same key (secrets in CI, keystore.properties locally):
+            // Android refuses an update signed with another key.
+            val ciKeystore = System.getenv("ANDROID_KEYSTORE_FILE")
             val keystorePropertiesFile = rootProject.file("keystore.properties")
-            if (keystorePropertiesFile.exists()) {
+            if (!ciKeystore.isNullOrBlank()) {
+                storeFile = file(ciKeystore)
+                storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+            } else if (keystorePropertiesFile.exists()) {
                 val keystoreProperties = Properties().apply {
                     keystorePropertiesFile.inputStream().use { load(it) }
                 }
@@ -40,7 +56,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = if (rootProject.file("keystore.properties").exists()) {
+            val hasReleaseKey = !System.getenv("ANDROID_KEYSTORE_FILE").isNullOrBlank() ||
+                rootProject.file("keystore.properties").exists()
+            signingConfig = if (hasReleaseKey) {
                 signingConfigs.getByName("release")
             } else {
                 signingConfigs.getByName("debug")
