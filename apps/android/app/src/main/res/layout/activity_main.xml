@@ -656,6 +656,31 @@
                 <View style="@style/Profile.Divider" />
 
                 <LinearLayout
+                    android:id="@+id/updateButton"
+                    style="@style/Profile.Row"
+                    android:background="?attr/selectableItemBackground">
+
+                    <ImageView style="@style/Profile.Icon" android:src="@drawable/ic_update" app:tint="@color/light_muted" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Rechercher une mise à jour"
+                        android:textColor="@color/light_text"
+                        android:textSize="15sp" />
+
+                    <ImageView
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_chevron_right"
+                        app:tint="@color/light_dim" />
+                </LinearLayout>
+
+                <View style="@style/Profile.Divider" />
+
+                <LinearLayout
                     android:id="@+id/journalButton"
                     style="@style/Profile.Row"
                     android:background="?attr/selectableItemBackground">

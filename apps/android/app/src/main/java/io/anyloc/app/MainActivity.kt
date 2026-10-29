@@ -91,6 +91,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var spotCategoriesContainer: LinearLayout
     private lateinit var spotsContainer: LinearLayout
     private lateinit var showcase: TeleportShowcase
+    private val updater = AppUpdater(this)
 
     private lateinit var settingsOverlay: LinearLayout
     private lateinit var profileEmail: TextView
@@ -192,6 +193,14 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<View>(R.id.testButton).setOnClickListener { testConnection() }
         findViewById<View>(R.id.journalButton).setOnClickListener { sendJournal() }
+        findViewById<View>(R.id.updateButton).setOnClickListener {
+            val credentials = readCredentials()
+            if (credentials == null) {
+                Toast.makeText(this, "Relie d'abord l'app à ton compte", Toast.LENGTH_SHORT).show()
+            } else {
+                updater.check(credentials, manual = true)
+            }
+        }
         findViewById<View>(R.id.logoutButton).setOnClickListener { confirmLogout() }
         findViewById<TextView>(R.id.profileVersion).text = appVersion()
         findViewById<TextView>(R.id.profileDevice).text = deviceName()
@@ -252,6 +261,8 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         mapView.onResume()
+        updater.resumePendingInstall()
+        readCredentials()?.let { updater.check(it) }
         refreshCurrentLocation()
         refreshSetupUi(startIfReady = true)
     }

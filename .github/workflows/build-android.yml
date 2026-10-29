@@ -31,8 +31,25 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Restore release signing key
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          # Without the fixed key the APK cannot update existing installs: never publish one.
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "ANDROID_KEYSTORE_BASE64 manquant — build annulé"
+            exit 1
+          fi
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/anyloc-release.keystore"
+
       - name: Build release APK
         working-directory: apps/android
+        env:
+          ANDROID_KEYSTORE_FILE: ${{ runner.temp }}/anyloc-release.keystore
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_VERSION_CODE: ${{ github.run_number }}
         run: chmod +x gradlew && ./gradlew assembleRelease
 
       - name: Normalize APK filename
