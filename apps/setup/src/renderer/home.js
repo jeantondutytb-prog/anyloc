@@ -501,12 +501,14 @@
     $("applying").hidden = true;
   }
 
-  function settleApply(state, loc, message = "") {
+  // `reason` only says why it failed, for PostHog: never the message or the place.
+  function settleApply(state, loc, message = "", reason = "sync") {
     clearTimeout(applyTimer);
     const waiting = S.applying;
     S.applying = false;
     setApplyState(state, loc, message);
     if (state === "error") {
+      if (waiting) void window.anylocSetup.track?.("desktop_location_failed", { reason });
       if (waiting || !$("applying").hidden) showApplyDialog("error", message);
       else toast(message, "error");
       return;
@@ -514,6 +516,7 @@
     if (!waiting && $("applying").hidden) return;
     let firstTime = true;
     try { firstTime = !localStorage.getItem(FIRST_APPLY_KEY); localStorage.setItem(FIRST_APPLY_KEY, "1"); } catch {}
+    void window.anylocSetup.track?.("desktop_location_applied", { first_time: firstTime });
     if (firstTime) {
       showApplyDialog("applied");
     } else {
@@ -532,7 +535,7 @@
     render();
     const ok = await upsertLocation({ name: p.name, lat: p.lat, lng: p.lng, isActive: true });
     if (!ok) {
-      settleApply("error", p, "Impossible d'envoyer la position. Vérifie la connexion internet de cet ordinateur, puis réessaie.");
+      settleApply("error", p, "Impossible d'envoyer la position. Vérifie la connexion internet de cet ordinateur, puis réessaie.", "network");
       render();
       return;
     }
@@ -540,7 +543,7 @@
     clearTimeout(applyTimer);
     applyTimer = setTimeout(() => {
       if (S.apply.state !== "sending" || !sameSpot(S.apply, p)) return;
-      settleApply("error", p, "Ton iPhone n'a pas répondu. Vérifie qu'il est branché et déverrouillé, puis réessaie.");
+      settleApply("error", p, "Ton iPhone n'a pas répondu. Vérifie qu'il est branché et déverrouillé, puis réessaie.", "timeout");
       render();
     }, APPLY_TIMEOUT_MS);
   }

@@ -58,6 +58,7 @@ contextBridge.exposeInMainWorld("anylocSetup", {
   iphoneAppRegister: (payload) => ipcRenderer.invoke("setup:iphone-app-register", payload),
   iphoneAppInstall: (payload) => ipcRenderer.invoke("setup:iphone-app-install", payload),
   getVersion: () => ipcRenderer.invoke("setup:get-version"),
+  track: (name, properties, onceKey) => ipcRenderer.invoke("setup:track", name, properties, onceKey),
   onShowGuide: (callback) => {
     const listener = () => callback();
     ipcRenderer.on("app:show-guide", listener);
