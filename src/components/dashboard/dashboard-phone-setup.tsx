@@ -52,6 +52,14 @@ function detectPlatform(): Platform {
   return /android/i.test(navigator.userAgent) ? "android" : "ios";
 }
 
+function detectOnPhone() {
+  if (typeof navigator === "undefined") {
+    return false;
+  }
+
+  return /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+
 function detectIsMac() {
   if (typeof navigator === "undefined") {
     return true;
@@ -129,6 +137,7 @@ export function DashboardPhoneSetup({
 
   const linkedForPlatform = devices.find((device) => device.platform === platform);
   const isMac = detectIsMac();
+  const onPhone = detectOnPhone();
 
   const createToken = useCallback(async () => {
     setCreating(true);
@@ -423,7 +432,7 @@ export function DashboardPhoneSetup({
               </StepBox>
 
               <StepBox number={2} title="Lie l'app à ton compte">
-                {lockedPlatform ? (
+                {onPhone ? (
                   <>
                     <p>
                       Une fois l&apos;app installée, reviens ici et appuie sur le
