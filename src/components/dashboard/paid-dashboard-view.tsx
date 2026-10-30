@@ -1,88 +1,35 @@
 "use client";
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Apple, Check, Download, Loader2, Monitor, Smartphone } from "lucide-react";
+import { Apple, Check, ChevronDown, Loader2, Monitor, Smartphone } from "lucide-react";
 import { DashboardAppHeader } from "@/components/dashboard/dashboard-app-header";
-import { DashboardPhoneSetup } from "@/components/dashboard/dashboard-phone-setup";
 import { IphoneInstallView } from "@/components/dashboard/iphone-install-view";
 import { SetupPasswordForm } from "@/components/dashboard/setup-password-form";
 import {
+  AndroidOpenHelp,
   MacOpenHelp,
-  WrongDeviceNotice,
 } from "@/components/dashboard/setup-open-help";
 import { WindowsOpenHelp } from "@/components/dashboard/windows-open-help";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAccount } from "@/hooks/use-account";
-import { useDeviceStatus } from "@/hooks/use-device-status";
 import { useDownloads, type DownloadAssetInfo } from "@/hooks/use-downloads";
 import { usePaymentSuccess } from "@/hooks/use-payment-success";
 import { track as trackEvent } from "@/lib/analytics/track";
 import { formatSubscriptionStatusLabel } from "@/lib/account-billing-types";
 import { getPlanDisplayName } from "@/lib/constants";
-import { cn } from "@/lib/utils";
 import { dashboardHref, getDashboardBasePath } from "@/lib/dashboard-paths";
 import {
-  detectMacArch,
-  getClientDeviceSnapshot,
-  SERVER_CLIENT_DEVICE,
-  type DesktopOs,
-  type MacArch,
-} from "@/lib/platform";
+  buildMobileSetupLink,
+  getPendingTokenStorageKey,
+  getPublicApiBaseUrl,
+} from "@/lib/device-setup-link";
+import { getClientDeviceSnapshot, SERVER_CLIENT_DEVICE } from "@/lib/platform";
 
-/** L'abonnement du client inclut-il l'app iPhone ? L'appareil décide ensuite quelle app on montre. */
+/** L'abonnement du client inclut-il l'app iPhone sans ordi ? */
 export type InstallTrack = "iphone" | "desktop";
-
-type InstallTarget = "desktop" | "android" | "iphone";
-
-const INSTALL_TARGETS: { id: InstallTarget; label: string; icon: typeof Monitor }[] = [
-  { id: "desktop", label: "Ordi (Mac / PC)", icon: Monitor },
-  { id: "android", label: "Android", icon: Smartphone },
-  { id: "iphone", label: "iPhone", icon: Apple },
-];
-
-function InstallTargetPicker({
-  targets,
-  value,
-  onChange,
-}: {
-  targets: InstallTarget[];
-  value: InstallTarget;
-  onChange: (target: InstallTarget) => void;
-}) {
-  return (
-    <div
-      role="tablist"
-      aria-label="Où installer Anyloc"
-      className="mt-6 flex gap-1 rounded-2xl border border-zinc-200 bg-white p-1"
-    >
-      {INSTALL_TARGETS.filter((target) => targets.includes(target.id)).map(
-        ({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            aria-selected={value === id}
-            data-track="install_target_selected"
-            data-track-target={id}
-            onClick={() => onChange(id)}
-            className={cn(
-              "flex flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-sm font-medium transition-colors",
-              value === id
-                ? "bg-pink-50 text-pink-700 ring-1 ring-pink-200"
-                : "text-zinc-600 hover:bg-zinc-50"
-            )}
-          >
-            <Icon className="h-4 w-4 shrink-0" />
-            {label}
-          </button>
-        )
-      )}
-    </div>
-  );
-}
 
 const PREVIEW_ASSETS: DownloadAssetInfo[] = [
   {
@@ -101,120 +48,118 @@ const PREVIEW_ASSETS: DownloadAssetInfo[] = [
     available: true,
     downloadPath: "#",
   },
+  {
+    id: "apk",
+    label: "Anyloc (Android)",
+    description: "Android 8 ou plus récent",
+    filename: "Anyloc.apk",
+    available: true,
+    downloadPath: "#",
+  },
 ];
 
-const DESKTOP_STEPS = [
-  "Télécharge Anyloc sur ton ordi",
-  "Ouvre l'app et branche ton iPhone en USB",
-  "Choisis ta ville — c'est tout, vérifie dans Snap",
-];
-
-function getDashboardUrl() {
-  if (typeof window === "undefined") {
-    return "https://anyloc.io/dashboard";
-  }
-
-  return `${window.location.origin}/dashboard`;
+function StepCard({
+  number,
+  title,
+  text,
+  children,
+}: {
+  number: number;
+  title: string;
+  text: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <li className="rounded-2xl border border-zinc-200 bg-white p-5">
+      <div className="flex items-start gap-3">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-pink-500 text-sm font-bold text-white">
+          {number}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold text-zinc-900">{title}</p>
+          <p className="mt-1 text-sm text-zinc-600">{text}</p>
+          {children ? <div className="mt-4">{children}</div> : null}
+        </div>
+      </div>
+    </li>
+  );
 }
 
-function DesktopDownloadCard({
-  preview,
-  hasAccess,
-  desktopOs,
-  onDesktopOsChange,
-  macArch,
-  mac,
-  macIntel,
-  windows,
-  windowsZip,
+function DownloadButton({
+  asset,
+  label,
+  icon: Icon,
+  enabled,
   onDownload,
 }: {
-  preview: boolean;
-  hasAccess: boolean;
-  desktopOs: DesktopOs;
-  onDesktopOsChange: (os: DesktopOs) => void;
-  macArch: MacArch;
-  mac?: DownloadAssetInfo;
-  macIntel?: DownloadAssetInfo;
-  windows?: DownloadAssetInfo;
-  windowsZip?: DownloadAssetInfo;
+  asset?: DownloadAssetInfo;
+  label: string;
+  icon: typeof Monitor;
+  enabled: boolean;
   onDownload: (platform: string) => void;
 }) {
-  const intelFirst = macArch === "intel" && Boolean(macIntel?.available);
-  const macPrimary = intelFirst ? macIntel : mac;
-  const macSecondary = intelFirst ? mac : macIntel;
-  const asset = desktopOs === "win" ? windows : macPrimary;
-  const href = preview ? "#" : hasAccess ? asset?.downloadPath : undefined;
+  if (!enabled || !asset?.available) {
+    return (
+      <Button size="lg" variant="secondary" className="w-full" disabled>
+        <Icon className="h-4 w-4" />
+        {label}
+      </Button>
+    );
+  }
 
   return (
-    <Card className="border-pink-200 bg-white p-6 sm:p-8">
-      <div className="mx-auto max-w-lg text-center">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-pink-50 text-pink-600">
-          <Monitor className="h-7 w-7" />
-        </div>
-        <div className="mt-6">
-          {preview || (asset?.available && href) ? (
-            <a href={href} onClick={() => onDownload(asset?.id ?? "setup")} className="block">
-              <Button size="lg" className="w-full">
-                <Download className="h-4 w-4" />
-                {desktopOs === "win"
-                  ? "Télécharger Anyloc pour Windows"
-                  : "Télécharger Anyloc pour Mac"}
-              </Button>
-            </a>
-          ) : (
-            <Button size="lg" className="w-full" disabled>
-              Bientôt disponible
-            </Button>
-          )}
-        </div>
-        <button
-          type="button"
-          className="mt-4 text-xs font-medium text-pink-600 underline-offset-2 hover:underline"
-          onClick={() => onDesktopOsChange(desktopOs === "mac" ? "win" : "mac")}
-        >
-          {desktopOs === "mac" ? "J'ai un PC Windows" : "J'ai un Mac"}
-        </button>
-        {desktopOs === "mac" && hasAccess && !preview && macSecondary?.available ? (
-          <p className="mt-2 text-xs text-zinc-500">
-            {intelFirst ? "Mac avec puce Apple (M1, M2…) ?" : "Mac avec processeur Intel ?"}{" "}
-            <a
-              href={macSecondary.downloadPath}
-              onClick={() => onDownload(macSecondary.id)}
-              className="font-medium text-pink-600 underline-offset-2 hover:underline"
-            >
-              Télécharger cette version
-            </a>
-          </p>
-        ) : null}
-        {desktopOs === "win" ? (
-          <div className="mt-4 text-left">
-            <WindowsOpenHelp compact zipDownloadPath={windowsZip?.downloadPath} />
-          </div>
-        ) : (
-          <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-4 text-left">
-            <p className="font-semibold text-zinc-900">
-              Après le téléchargement, ouvre le fichier comme ça
-            </p>
-            <MacOpenHelp />
-          </div>
-        )}
-        {hasAccess && !preview ? (
-          <div className="mt-6 border-t border-zinc-100 pt-5">
-            <p className="text-sm text-zinc-600">
-              App installée ? Connecte-la à ton compte en un clic.
-            </p>
-            {/* Route handler, pas une page : un <Link> le préchargerait. */}
-            <a href="/desktop/connect" className="mt-3 inline-block">
-              <Button size="sm" variant="secondary">
-                Ouvrir et connecter Anyloc
-              </Button>
-            </a>
-          </div>
-        ) : null}
-      </div>
-    </Card>
+    <a href={asset.downloadPath} onClick={() => onDownload(asset.id)} className="block">
+      <Button size="lg" className="w-full">
+        <Icon className="h-4 w-4" />
+        {label}
+      </Button>
+    </a>
   );
+}
+
+function HelpItem({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <details className="group border-t border-zinc-100 py-3 first:border-t-0">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-medium text-zinc-800 [&::-webkit-details-marker]:hidden">
+        {title}
+        <ChevronDown className="h-4 w-4 shrink-0 text-zinc-400 transition-transform group-open:rotate-180" />
+      </summary>
+      <div className="mt-3 text-sm text-zinc-600">{children}</div>
+    </details>
+  );
+}
+
+type PendingToken = { token: string; apiBaseUrl: string };
+
+/** The Android app links to the account through a one-time token, not a login. */
+async function openAndroidApp() {
+  const storageKey = getPendingTokenStorageKey("android");
+  let pending: PendingToken | null = null;
+  try {
+    const cached = sessionStorage.getItem(storageKey);
+    if (cached) pending = JSON.parse(cached) as PendingToken;
+  } catch {
+    pending = null;
+  }
+
+  if (!pending?.token?.startsWith("anyloc_")) {
+    const response = await fetch("/api/device", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ platform: "android", deviceName: "Mon Android" }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error ?? "Impossible de connecter l'app.");
+    }
+    pending = { token: data.token, apiBaseUrl: data.apiBaseUrl ?? getPublicApiBaseUrl() };
+    try {
+      sessionStorage.setItem(storageKey, JSON.stringify({ ...pending, platform: "android" }));
+    } catch {}
+    trackEvent("device_link_created", { platform: "android", source: "dashboard" });
+  }
+
+  window.location.href = buildMobileSetupLink(pending.token, pending.apiBaseUrl);
 }
 
 export function PaidDashboardView({
@@ -229,48 +174,27 @@ export function PaidDashboardView({
   const paymentSuccess = usePaymentSuccess();
   const { data, loading, error } = useDownloads();
   const { data: account } = useAccount();
+  // Only decides where the "connect" button sends: the steps stay the same for everyone.
   const device = useSyncExternalStore(
     () => () => {},
     getClientDeviceSnapshot,
     () => SERVER_CLIENT_DEVICE
   );
-  const [desktopOs, setDesktopOs] = useState<DesktopOs>(device.desktopOs);
-  const [macArch, setMacArch] = useState<MacArch>("unknown");
-  useEffect(() => {
-    if (device.isPhone || device.desktopOs !== "mac") return;
-    let active = true;
-    void detectMacArch().then((arch) => {
-      if (active) setMacArch(arch);
-    });
-    return () => {
-      active = false;
-    };
-  }, [device.isPhone, device.desktopOs]);
-  // The Android app installs from the phone itself, on every plan; the
-  // iPhone app only comes with the plans that include it.
-  const targets: InstallTarget[] =
-    track === "iphone" ? ["desktop", "android", "iphone"] : ["desktop", "android"];
-  const detectedTarget: InstallTarget =
-    track === "iphone" && device.isIos
-      ? "iphone"
-      : device.isAndroid
-        ? "android"
-        : "desktop";
-  const [pickedTarget, setPickedTarget] = useState<InstallTarget | null>(null);
-  const target = pickedTarget ?? detectedTarget;
-  const showIphoneInstall = target === "iphone";
-  const showAndroidInstall = target === "android";
-  const { devices, phoneOnline } = useDeviceStatus();
+  const [connecting, setConnecting] = useState(false);
+  const [connectError, setConnectError] = useState<string | null>(null);
 
   const assets = preview ? PREVIEW_ASSETS : data?.assets ?? [];
   const hasAccess = preview || (data?.hasAccess ?? false);
   const needsSetupPassword = !preview && Boolean(data?.needsSetupPassword);
   const mac = assets.find((asset) => asset.id === "setup-mac");
-  const macIntel = assets.find((asset) => asset.id === "setup-mac-intel");
+  const macIntel = assets.find(
+    (asset) => asset.id === "setup-mac-intel" && asset.available
+  );
   const windows = assets.find((asset) => asset.id === "setup-win");
   const windowsZip = assets.find(
     (asset) => asset.id === "setup-win-zip" && asset.available
   );
+  const android = assets.find((asset) => asset.id === "apk");
 
   const planLabel = useMemo(() => {
     if (preview) {
@@ -298,28 +222,22 @@ export function PaidDashboardView({
     trackEvent("app_downloaded", { platform, source: "dashboard" });
   }
 
-  const desktopCard =
-    loading && !preview ? (
-      <div className="flex items-center justify-center gap-2 py-12 text-sm text-zinc-500">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        Préparation…
-      </div>
-    ) : error && !preview ? (
-      <p className="text-center text-sm text-red-600">{error}</p>
-    ) : (
-      <DesktopDownloadCard
-        preview={preview}
-        hasAccess={hasAccess}
-        desktopOs={desktopOs}
-        onDesktopOsChange={setDesktopOs}
-        macArch={macArch}
-        mac={mac}
-        macIntel={macIntel}
-        windows={windows}
-        windowsZip={windowsZip}
-        onDownload={handleDownload}
-      />
-    );
+  async function handleConnect() {
+    if (preview) return;
+    setConnecting(true);
+    setConnectError(null);
+    try {
+      await openAndroidApp();
+    } catch (connectFailure) {
+      setConnectError(
+        connectFailure instanceof Error
+          ? connectFailure.message
+          : "Impossible de connecter l'app."
+      );
+    } finally {
+      setConnecting(false);
+    }
+  }
 
   return (
     // clip, not hidden: overflow-hidden would stop the header from sticking.
@@ -335,7 +253,7 @@ export function PaidDashboardView({
         activeTab="home"
       />
 
-      <main className="relative mx-auto max-w-2xl px-4 pt-8 pb-8 sm:px-6 sm:pt-12 sm:pb-12">
+      <main className="relative mx-auto max-w-xl px-4 pt-8 pb-8 sm:px-6 sm:pt-12 sm:pb-12">
         {paymentSuccess ? (
           <div className="mb-6 flex items-center gap-3 rounded-2xl border border-pink-200 bg-pink-50 px-4 py-3">
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-pink-500 to-purple-500 text-white">
@@ -349,24 +267,12 @@ export function PaidDashboardView({
 
         <div className="text-center">
           <h1 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
-            {showIphoneInstall
-              ? "Installe Anyloc sur ton iPhone"
-              : showAndroidInstall
-                ? "Installe Anyloc sur ton Android"
-                : "Installe Anyloc sur ton ordi"}
+            Installe Anyloc
           </h1>
           <p className="mt-3 text-sm text-zinc-600 sm:text-base">
-            {showIphoneInstall || showAndroidInstall
-              ? "Directement sur le téléphone, sans ordi ni câble."
-              : "3 étapes, 10 minutes. Ensuite tout se passe dans l'app."}
+            3 étapes, c&apos;est tout.
           </p>
         </div>
-
-        <InstallTargetPicker
-          targets={targets}
-          value={target}
-          onChange={setPickedTarget}
-        />
 
         {needsSetupPassword ? (
           <div className="mt-8">
@@ -374,86 +280,128 @@ export function PaidDashboardView({
           </div>
         ) : null}
 
-        {showIphoneInstall ? (
-          device.isIos ? (
-            <div className="mt-8">
-              <IphoneInstallView embedded />
-            </div>
-          ) : (
-            <div className="mt-8">
-              <WrongDeviceNotice
-                title="Ouvre cette page sur ton iPhone"
-                href={getDashboardUrl()}
-                copyLabel="Copier le lien"
-                qrLabel="Scanne avec l'appareil photo"
-                preview={preview}
-                emailLink={false}
+        <ol className="mt-8 space-y-3">
+          <StepCard
+            number={1}
+            title="Télécharge l'app"
+            text="iPhone : prends la version Mac ou Windows (sur ton ordi). Android : prends la version Android (sur ton téléphone)."
+          >
+            {loading && !preview ? (
+              <div className="flex items-center gap-2 text-sm text-zinc-500">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Préparation…
+              </div>
+            ) : error && !preview ? (
+              <p className="text-sm text-red-600">{error}</p>
+            ) : (
+              <div className="grid gap-2 sm:grid-cols-3">
+                <DownloadButton
+                  asset={mac}
+                  label="Mac"
+                  icon={Apple}
+                  enabled={hasAccess}
+                  onDownload={handleDownload}
+                />
+                <DownloadButton
+                  asset={windows}
+                  label="Windows"
+                  icon={Monitor}
+                  enabled={hasAccess}
+                  onDownload={handleDownload}
+                />
+                <DownloadButton
+                  asset={android}
+                  label="Android"
+                  icon={Smartphone}
+                  enabled={hasAccess}
+                  onDownload={handleDownload}
+                />
+              </div>
+            )}
+          </StepCard>
+
+          <StepCard
+            number={2}
+            title="Ouvre l'app et connecte-la"
+            text="Une fois l'app installée, appuie ici depuis le même appareil : Anyloc s'ouvre déjà connectée à ton compte."
+          >
+            {device.isAndroid ? (
+              <Button
+                size="lg"
+                variant="secondary"
+                className="w-full"
+                disabled={connecting || !hasAccess}
+                onClick={() => void handleConnect()}
               >
-                <p>L&apos;app iPhone s&apos;installe depuis le téléphone lui-même.</p>
-              </WrongDeviceNotice>
-            </div>
-          )
-        ) : showAndroidInstall ? (
-          <>
-            {/* On a computer the APK is still downloadable, but it has to end
-                up on the phone: opening this page there is the easy way. */}
-            {!device.isAndroid ? (
-              <div className="mt-8">
-                <WrongDeviceNotice
-                  title="Le plus simple : ouvre cette page sur ton Android"
-                  href={getDashboardUrl()}
-                  copyLabel="Copier le lien"
-                  qrLabel="Scanne avec l'appareil photo"
-                  preview={preview}
-                  emailLink={false}
-                >
-                  <p>L&apos;app Android (fichier Anyloc.apk) s&apos;installe directement sur le téléphone.</p>
-                </WrongDeviceNotice>
-              </div>
+                {connecting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                Connecter Anyloc à mon compte
+              </Button>
+            ) : (
+              // Route handler, pas une page : un <Link> le préchargerait.
+              <a href={preview ? "#" : "/desktop/connect"} className="block">
+                <Button size="lg" variant="secondary" className="w-full" disabled={!hasAccess}>
+                  Connecter Anyloc à mon compte
+                </Button>
+              </a>
+            )}
+            {connectError ? (
+              <p className="mt-2 text-sm text-red-600">{connectError}</p>
             ) : null}
-            <Card className="mt-8 border-pink-200 bg-white p-5 sm:p-6">
-              <DashboardPhoneSetup
-                devices={devices}
-                phoneOnline={phoneOnline}
-                lockedPlatform="android"
-              />
-            </Card>
-          </>
-        ) : (
-          <>
-            {/* On a phone the download is no use: sending the page to the
-                computer is the one thing to do, so it comes first. */}
-            {device.isPhone ? (
-              <div className="mt-8">
-                <WrongDeviceNotice
-                  title="Ouvre cette page sur ton Mac ou PC"
-                  href={getDashboardUrl()}
-                  copyLabel="Copier le lien"
-                  preview={preview}
-                >
-                  <p>L&apos;app Anyloc s&apos;installe sur un ordinateur.</p>
-                </WrongDeviceNotice>
-              </div>
-            ) : null}
+          </StepCard>
 
-            <ol className="mt-8 space-y-3">
-              {DESKTOP_STEPS.map((step, index) => (
-                <li
-                  key={step}
-                  className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3"
+          <StepCard
+            number={3}
+            title="Choisis ta ville"
+            text="Dans l'app, choisis une ville. C'est fait — vérifie dans Snap."
+          />
+        </ol>
+
+        <Card className="mt-8 border-zinc-200 bg-white px-5 py-2">
+          <p className="pt-3 pb-1 text-xs font-medium uppercase tracking-wide text-zinc-500">
+            Ça bloque ?
+          </p>
+          <HelpItem title="Sur Mac, le fichier ne s'ouvre pas">
+            <MacOpenHelp />
+            {macIntel ? (
+              <p className="mt-3 text-xs text-zinc-500">
+                Vieux Mac avec processeur Intel ?{" "}
+                <a
+                  href={macIntel.downloadPath}
+                  onClick={() => handleDownload(macIntel.id)}
+                  className="font-medium text-pink-600 underline-offset-2 hover:underline"
                 >
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-pink-500 text-xs font-bold text-white">
-                    {index + 1}
-                  </span>
-                  <p className="text-sm font-medium text-zinc-900">{step}</p>
-                </li>
-              ))}
+                  Prends cette version
+                </a>
+              </p>
+            ) : null}
+          </HelpItem>
+          <HelpItem title="Sur Windows, « Faites attention » s'affiche">
+            <WindowsOpenHelp compact embedded zipDownloadPath={windowsZip?.downloadPath} />
+          </HelpItem>
+          <HelpItem title="Sur Android, l'app ne s'installe pas">
+            <AndroidOpenHelp downloaded={false} />
+          </HelpItem>
+          <HelpItem title="Sur Android, la position ne change pas">
+            <ol className="list-decimal space-y-1.5 pl-5">
+              <li>
+                <strong>Paramètres → À propos du téléphone</strong> → tape 7 fois sur{" "}
+                <strong>Numéro de build</strong>
+              </li>
+              <li>
+                <strong>Options pour les développeurs</strong> → active-les
+              </li>
+              <li>
+                <strong>Application de localisation fictive</strong> → choisis{" "}
+                <strong>Anyloc</strong>
+              </li>
             </ol>
-
-            <div className="mt-8">{desktopCard}</div>
-
-          </>
-        )}
+          </HelpItem>
+          {track === "iphone" ? (
+            <HelpItem title="J'ai un iPhone mais pas d'ordi">
+              <IphoneInstallView embedded />
+            </HelpItem>
+          ) : null}
+        </Card>
 
         <p className="mt-8 text-center text-sm text-zinc-500">
           Factures et abonnement dans{" "}
