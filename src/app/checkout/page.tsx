@@ -28,6 +28,11 @@ import {
   PRICE_DISPLAY_COOKIE,
 } from "@/lib/price-display-experiment";
 
+/** Server page: rendered once per request, so reading the clock is fine. */
+function previewOfferEnd() {
+  return new Date(Date.now() + 90_000).toISOString();
+}
+
 export default async function CheckoutPage({
   searchParams,
 }: {
@@ -73,7 +78,7 @@ export default async function CheckoutPage({
   // End of the -50 % welcome offer, while it runs. The dev preview can show
   // it ending in 90 s: /checkout?preview=1&offre=1.
   let offerEndsAt: string | null =
-    devPreview && offre === "1" ? new Date(Date.now() + 90_000).toISOString() : null;
+    devPreview && offre === "1" ? previewOfferEnd() : null;
   // The dev preview can show the welcome-back copy: /checkout?preview=1&retour=1.
   let returning: ReturningCustomer | null =
     devPreview && retour === "1" ? { paymentFailed: false, previousPlanName: "6 mois" } : null;
