@@ -5,6 +5,7 @@ import {
   getDueRecoveryStep,
   getRecoveryOfferExpiry,
   isRecoveryOfferActive,
+  isWelcomeOfferEnabled,
   RECOVERY_COUPON_ID,
   RECOVERY_OFFER_PLAN_ID,
   signUnsubscribeToken,
@@ -42,9 +43,9 @@ function toState(row: RecoveryRow): RecoveryState {
 }
 
 /**
- * Starts the welcome offer and the emails the first time a logged-in user
- * sees the paywall (first_checkout_at is that first view). Later views keep
- * the first deadline.
+ * Starts the emails (and the welcome offer, while WELCOME_OFFER is on) the
+ * first time a logged-in user sees the paywall (first_checkout_at is that
+ * first view). Later views keep the first deadline.
  */
 export async function enrollInCheckoutRecovery(user: User, planId: string) {
   if (!user.email || !isSupabaseAdminConfigured()) return;
@@ -58,7 +59,8 @@ export async function enrollInCheckoutRecovery(user: User, planId: string) {
         email: user.email,
         plan_id: planId,
         first_checkout_at: now.toISOString(),
-        offer_expires_at: getRecoveryOfferExpiry(now).toISOString(),
+        // Offers already started keep their deadline.
+        offer_expires_at: isWelcomeOfferEnabled() ? getRecoveryOfferExpiry(now).toISOString() : null,
       },
       { onConflict: "user_id", ignoreDuplicates: true }
     );
