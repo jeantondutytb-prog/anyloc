@@ -3,6 +3,9 @@
 
   track.py backfill  -> vues par date de publication jusqu'à hier, et pose la base
   track.py daily     -> vues gagnées depuis le dernier relevé, datées de la veille
+  track.py videos    -> chaque vidéo avec ses vues, likes, commentaires et partages, pour l'onglet
+                        « Vidéos » de HQ (POST /api/ingest/videos). Se lance quand on veut, et toutes les heures
+                        de 9h à 22h, plus à 0h, par com.anyloc.tiktok-videos.plist.
 
 Sort du JSON sur stdout ; l'état (dernier cumul par compte) est dans state.json.
 
@@ -18,10 +21,15 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 ACCOUNTS = ["kyliantropa", "tristanpauki", "mariusgreto", "gabrielhelau"]  # depuis le 16/10/2026 (gabrielhelau depuis le 26/10) ; anciens : antoine.ckts chloe.rtps emma.ftpl emma.srtp margaux.fgts mateo.ltpr
+ACCOUNTS += ["introuvable........1", "moracle09"]  # TikTok des clippeurs : Ben depuis le 29/10, Matis depuis le 30/10
+ACCOUNTS += ["yt:mariusgreto", "yt:tristanpauki", "yt:Kylian-q6u"]  # Shorts YouTube, depuis le 29/10 ; même liste que SCANNED_ACCOUNTS dans anyloc-hq
 TZ = ZoneInfo("Europe/Paris")
 STATE = Path(__file__).with_name("state.json")
 HQ_ENV = Path(__file__).with_name(".env")
 HQ_PENDING = Path(__file__).with_name("hq_pending.json")
+YT_DATES = Path(__file__).with_name("youtube_dates.json")
+# Un Short plus jeune que ça est relu en entier à chaque passage (vues exactes) ; au-delà, la liste suffit.
+YT_FRESH_DAYS = 14
 
 
 MONTHS = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
@@ -105,14 +113,46 @@ def send_to_hq(days):
     return "échec : " + " ; ".join(errors) + (f" — {len(kept)} jour(s) en attente" if kept else "")
 
 
+def ytdlp(*args):
+    """Les entrées JSON de yt-dlp et son stderr."""
+    out = subprocess.run(["yt-dlp", *args], capture_output=True, text=True, timeout=300)
+    return [json.loads(line) for line in out.stdout.splitlines() if line.strip()], out.stderr
+
+
+def fetch_raw(account):
+    """Les vidéos du compte telles que yt-dlp les lit, ou None si rien n'a été renvoyé.
+    Un compte sans aucune vidéo (pas encore posté) donne [] : ce n'est pas un échec."""
+    if account.startswith("yt:"):
+        return fetch_youtube(account[3:])
+    videos, err = ytdlp("--flat-playlist", "-j", f"https://www.tiktok.com/@{account}")
+    if not videos and "does not have any videos" in err:
+        return []
+    return videos or None
+
+
+def fetch_youtube(handle):
+    """Les Shorts de la chaîne. La liste n'a ni date ni likes, et des vues arrondies (1,1 k) :
+    chaque Short récent ou jamais vu est relu en entier, sa date gardée dans youtube_dates.json."""
+    listed, err = ytdlp("--flat-playlist", "-j", f"https://www.youtube.com/@{handle}/shorts")
+    if not listed:
+        return [] if "does not have a shorts tab" in err else None
+    dates = json.loads(YT_DATES.read_text()) if YT_DATES.exists() else {}
+    fresh = datetime.now(TZ).timestamp() - YT_FRESH_DAYS * 86400
+    to_read = [v["id"] for v in listed if dates.get(v["id"], fresh + 1) > fresh]
+    full = {}
+    if to_read:
+        read, _ = ytdlp("-j", "--skip-download", *[f"https://www.youtube.com/shorts/{i}" for i in to_read])
+        full = {v["id"]: v for v in read if v.get("timestamp")}
+        dates.update({i: v["timestamp"] for i, v in full.items()})
+        YT_DATES.write_text(json.dumps(dates, indent=2))
+    # Un Short pas encore daté (relecture ratée) attend le prochain passage.
+    return [full.get(v["id"]) or {**v, "timestamp": dates[v["id"]]} for v in listed if v["id"] in full or v["id"] in dates]
+
+
 def fetch(account):
     """Liste (date de publication, vues) de chaque vidéo, ou None si TikTok n'a rien renvoyé."""
-    out = subprocess.run(
-        ["yt-dlp", "--flat-playlist", "-j", f"https://www.tiktok.com/@{account}"],
-        capture_output=True, text=True, timeout=300,
-    ).stdout
-    videos = [json.loads(line) for line in out.splitlines() if line.strip()]
-    if not videos:
+    videos = fetch_raw(account)
+    if videos is None:
         return None
     return [(datetime.fromtimestamp(v["timestamp"], TZ).date(), v.get("view_count") or 0) for v in videos]
 
@@ -149,7 +189,8 @@ def daily():
             row[a], errors = "", errors + [a]
             continue
         total = sum(views for _, views in videos)
-        row[a] = total - state["cumul"].get(a, 0)
+        # Un compte ajouté depuis le dernier relevé part de son cumul actuel, sans tout créditer à hier.
+        row[a] = total - state["cumul"].get(a, total)
         state["cumul"][a] = total
     state["date"] = datetime.now(TZ).date().isoformat()
     STATE.write_text(json.dumps(state, indent=2))
@@ -160,5 +201,37 @@ def daily():
                       "cumul": state["cumul"], "hq": hq}, ensure_ascii=False))
 
 
+VIDEO_FIELDS = ["id", "timestamp", "view_count", "like_count", "comment_count", "repost_count", "duration", "title"]
+
+
+def videos():
+    """Envoie à HQ chaque vidéo de chaque compte. Un compte qui ne répond pas est signalé, pas compté à 0."""
+    config = hq_config()
+    if config is None:
+        sys.exit("HQ non configuré (HQ_URL / HQ_INGEST_TOKEN)")
+    accounts, failed = {}, []
+    for a in ACCOUNTS:
+        raw = fetch_raw(a)
+        if raw is None:
+            failed.append(a)
+            continue
+        accounts[a] = [{k: v.get(k) for k in VIDEO_FIELDS} for v in raw if v.get("timestamp")]
+    url, token = config
+    request = urllib.request.Request(
+        f"{url}/api/ingest/videos",
+        data=json.dumps({"accounts": accounts, "failed": failed}).encode(),
+        headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=60) as response:
+            hq = json.loads(response.read())
+    except urllib.error.HTTPError as e:
+        hq = f"HTTP {e.code} {e.read().decode(errors='replace')[:200]}"
+    except (urllib.error.URLError, TimeoutError) as e:
+        hq = f"échec : {e}"
+    print(json.dumps({"videos": {a: len(v) for a, v in accounts.items()}, "failed": failed, "hq": hq}, ensure_ascii=False))
+
+
 if __name__ == "__main__":
-    {"backfill": backfill, "daily": daily}[sys.argv[1]]()
+    {"backfill": backfill, "daily": daily, "videos": videos}[sys.argv[1]]()
