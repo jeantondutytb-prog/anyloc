@@ -1,15 +1,33 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Check, ChevronDown, Copy, Mail, Monitor } from "lucide-react";
+import { Check, ChevronDown, Copy, Loader2, Mail, Monitor } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SetupQrCode } from "@/components/dashboard/setup-qr-code";
 import { WindowsOpenHelp } from "@/components/dashboard/windows-open-help";
+import { track } from "@/lib/analytics/track";
 import type { DesktopOs } from "@/lib/platform";
 import { cn } from "@/lib/utils";
 
-function CopyPageLink({ href, label }: { href: string; label: string }) {
+type EmailState =
+  | { status: "idle" | "sending" }
+  | { status: "sent"; email: string | null }
+  | { status: "error"; message: string };
+
+function CopyPageLink({
+  href,
+  label,
+  preview = false,
+  emailLink = true,
+}: {
+  href: string;
+  label: string;
+  preview?: boolean;
+  /** The email says "open it on your computer": only for the desktop app. */
+  emailLink?: boolean;
+}) {
   const [copied, setCopied] = useState(false);
+  const [emailState, setEmailState] = useState<EmailState>({ status: "idle" });
 
   const copy = async () => {
     await navigator.clipboard.writeText(href);
@@ -17,20 +35,70 @@ function CopyPageLink({ href, label }: { href: string; label: string }) {
     window.setTimeout(() => setCopied(false), 2000);
   };
 
-  const mailHref = `mailto:?subject=${encodeURIComponent("Anyloc — ouvre ça sur l'ordinateur")}&body=${encodeURIComponent(`Ouvre ce lien sur ton Mac ou PC :\n${href}`)}`;
+  const sendEmail = async () => {
+    track("desktop_link_email_clicked", { source: "dashboard" });
+
+    if (preview) {
+      setEmailState({ status: "sent", email: null });
+      return;
+    }
+
+    setEmailState({ status: "sending" });
+
+    try {
+      const res = await fetch("/api/account/desktop-link-email", { method: "POST" });
+      const body = (await res.json().catch(() => null)) as
+        | { email?: string; error?: string }
+        | null;
+
+      if (!res.ok) {
+        setEmailState({
+          status: "error",
+          message: body?.error ?? "L'email n'a pas pu partir. Copie le lien à la place.",
+        });
+        return;
+      }
+
+      setEmailState({ status: "sent", email: body?.email ?? null });
+    } catch {
+      setEmailState({
+        status: "error",
+        message: "Pas de connexion. Réessaie ou copie le lien.",
+      });
+    }
+  };
+
+  const sending = emailState.status === "sending";
+  const sent = emailState.status === "sent";
 
   return (
-    <div className="flex flex-col gap-2 sm:flex-row">
-      <Button type="button" size="sm" onClick={() => void copy()}>
-        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-        {copied ? "Lien copié" : label}
-      </Button>
-      <a href={mailHref} className="sm:w-auto">
-        <Button type="button" size="sm" variant="secondary" className="w-full">
-          <Mail className="h-4 w-4" />
-          Se l&apos;envoyer par mail
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row">
+        {emailLink ? (
+          <Button type="button" size="sm" onClick={() => void sendEmail()} disabled={sending || sent}>
+            {sending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : sent ? (
+              <Check className="h-4 w-4" />
+            ) : (
+              <Mail className="h-4 w-4" />
+            )}
+            {sent ? "Lien envoyé" : "M'envoyer le lien par email"}
+          </Button>
+        ) : null}
+        <Button type="button" size="sm" variant={emailLink ? "secondary" : "default"} onClick={() => void copy()}>
+          {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          {copied ? "Lien copié" : label}
         </Button>
-      </a>
+      </div>
+      {sent ? (
+        <p className="text-xs text-zinc-600">
+          C&apos;est parti{emailState.email ? <> à <strong>{emailState.email}</strong></> : null}. Ouvre ce mail sur ton ordi (pense à regarder les spams).
+        </p>
+      ) : null}
+      {emailState.status === "error" ? (
+        <p className="text-xs text-red-600">{emailState.message}</p>
+      ) : null}
     </div>
   );
 }
@@ -41,19 +109,23 @@ export function WrongDeviceNotice({
   href,
   copyLabel,
   qrLabel,
+  preview,
+  emailLink,
 }: {
   title: string;
   children: ReactNode;
   href: string;
   copyLabel: string;
   qrLabel?: string;
+  preview?: boolean;
+  emailLink?: boolean;
 }) {
   return (
     <div className="rounded-2xl border border-pink-200 bg-pink-50 px-4 py-4 text-sm text-zinc-900">
       <p className="font-semibold">{title}</p>
       <div className="mt-2 space-y-2 text-zinc-600">{children}</div>
       <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start">
-        <CopyPageLink href={href} label={copyLabel} />
+        <CopyPageLink href={href} label={copyLabel} preview={preview} emailLink={emailLink} />
         {qrLabel ? (
           <SetupQrCode value={href} label={qrLabel} />
         ) : null}

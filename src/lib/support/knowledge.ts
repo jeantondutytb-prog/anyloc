@@ -21,7 +21,7 @@ const SUPPORT_PLAYBOOK = `
 
 ## Installation Android (aucun ordinateur)
 1. Sur l'espace anyloc.io/dashboard, depuis le téléphone : « Télécharger l'app Anyloc ». Le fichier arrive dans Téléchargements : appuie dessus et autorise l'installation si Android bloque (« installer des apps inconnues »).
-2. Lie l'app au compte : scanne le carré (QR code) affiché sur l'espace, ou appuie sur « Ouvrir Anyloc sur mon tel ».
+2. Lie l'app au compte : une fois l'app installée, reviens sur l'espace depuis le téléphone et appuie sur « Ouvrir Anyloc sur mon tel ». L'app s'ouvre déjà connectée. Depuis un ordinateur, scanne le carré (QR code) affiché sur l'espace.
 3. Autorise la fausse position, une seule fois : Paramètres → À propos du téléphone → tape 7 fois sur « Numéro de build » → reviens dans « Options pour les développeurs », active-les → « Application de localisation fictive » → choisis Anyloc.
 L'espace a aussi un « Guide complet avec photos et dépannage ».
 
@@ -37,6 +37,7 @@ L'espace a aussi un « Guide complet avec photos et dépannage ».
 - Windows : Chrome ou Edge dit « Faites attention » → petite flèche à droite du fichier → « Conserver ». Écran bleu « Windows a protégé votre ordinateur » → « Informations complémentaires » → « Exécuter quand même ». Ce n'est pas un virus : Windows l'affiche pour toutes les apps hors Microsoft Store.
 - iPhone non détecté par l'ordinateur → câble d'origine qui transfère les données, iPhone déverrouillé, appuyer « Se fier à cet ordinateur », essayer un autre port USB, relancer Anyloc sur l'ordi.
 - La loc ne change pas → d'abord tester dans Plans (iPhone) ou Google Maps (Android). Si la carte montre la nouvelle position, Anyloc marche : fermer complètement l'app concernée (Snap, etc.) et la rouvrir, certaines gardent l'ancienne position quelques minutes.
+- Android : le client a un fichier « Anyloc-Setup.exe » ou « Anyloc.dmg » qui ne s'ouvre pas → c'est la version ordinateur (pour iPhone), elle ne marche pas sur Android : il peut la supprimer. Le bon fichier s'appelle Anyloc.apk, il le trouve en ouvrant anyloc.io/dashboard sur le téléphone.
 - Sur Android, si même Google Maps ne bouge pas → vérifier qu'Anyloc est bien choisie dans « Application de localisation fictive ».
 - Sur iPhone, si même Plans ne bouge pas → vérifier que l'app Anyloc est ouverte et la position activée ; si l'app ne s'ouvre plus, passe la main à l'équipe.
 - Pas de bug connu en ce moment. Si un problème ne se règle pas avec ces étapes, passe la main : l'équipe corrige vite.

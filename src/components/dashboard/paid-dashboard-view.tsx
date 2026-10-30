@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Check, Download, Loader2, Monitor } from "lucide-react";
+import { Apple, Check, Download, Loader2, Monitor, Smartphone } from "lucide-react";
 import { DashboardAppHeader } from "@/components/dashboard/dashboard-app-header";
+import { DashboardPhoneSetup } from "@/components/dashboard/dashboard-phone-setup";
 import { IphoneInstallView } from "@/components/dashboard/iphone-install-view";
 import { SetupPasswordForm } from "@/components/dashboard/setup-password-form";
 import {
@@ -15,11 +16,13 @@ import { WindowsOpenHelp } from "@/components/dashboard/windows-open-help";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAccount } from "@/hooks/use-account";
+import { useDeviceStatus } from "@/hooks/use-device-status";
 import { useDownloads, type DownloadAssetInfo } from "@/hooks/use-downloads";
 import { usePaymentSuccess } from "@/hooks/use-payment-success";
 import { track as trackEvent } from "@/lib/analytics/track";
 import { formatSubscriptionStatusLabel } from "@/lib/account-billing-types";
 import { getPlanDisplayName } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 import { dashboardHref, getDashboardBasePath } from "@/lib/dashboard-paths";
 import {
   detectMacArch,
@@ -31,6 +34,55 @@ import {
 
 /** L'abonnement du client inclut-il l'app iPhone ? L'appareil décide ensuite quelle app on montre. */
 export type InstallTrack = "iphone" | "desktop";
+
+type InstallTarget = "desktop" | "android" | "iphone";
+
+const INSTALL_TARGETS: { id: InstallTarget; label: string; icon: typeof Monitor }[] = [
+  { id: "desktop", label: "Ordi (Mac / PC)", icon: Monitor },
+  { id: "android", label: "Android", icon: Smartphone },
+  { id: "iphone", label: "iPhone", icon: Apple },
+];
+
+function InstallTargetPicker({
+  targets,
+  value,
+  onChange,
+}: {
+  targets: InstallTarget[];
+  value: InstallTarget;
+  onChange: (target: InstallTarget) => void;
+}) {
+  return (
+    <div
+      role="tablist"
+      aria-label="Où installer Anyloc"
+      className="mt-6 flex gap-1 rounded-2xl border border-zinc-200 bg-white p-1"
+    >
+      {INSTALL_TARGETS.filter((target) => targets.includes(target.id)).map(
+        ({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={value === id}
+            data-track="install_target_selected"
+            data-track-target={id}
+            onClick={() => onChange(id)}
+            className={cn(
+              "flex flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-sm font-medium transition-colors",
+              value === id
+                ? "bg-pink-50 text-pink-700 ring-1 ring-pink-200"
+                : "text-zinc-600 hover:bg-zinc-50"
+            )}
+          >
+            <Icon className="h-4 w-4 shrink-0" />
+            {label}
+          </button>
+        )
+      )}
+    </div>
+  );
+}
 
 const PREVIEW_ASSETS: DownloadAssetInfo[] = [
   {
@@ -194,7 +246,21 @@ export function PaidDashboardView({
       active = false;
     };
   }, [device.isPhone, device.desktopOs]);
-  const showIphoneInstall = track === "iphone" && device.isIos;
+  // The Android app installs from the phone itself, on every plan; the
+  // iPhone app only comes with the plans that include it.
+  const targets: InstallTarget[] =
+    track === "iphone" ? ["desktop", "android", "iphone"] : ["desktop", "android"];
+  const detectedTarget: InstallTarget =
+    track === "iphone" && device.isIos
+      ? "iphone"
+      : device.isAndroid
+        ? "android"
+        : "desktop";
+  const [pickedTarget, setPickedTarget] = useState<InstallTarget | null>(null);
+  const target = pickedTarget ?? detectedTarget;
+  const showIphoneInstall = target === "iphone";
+  const showAndroidInstall = target === "android";
+  const { devices, phoneOnline } = useDeviceStatus();
 
   const assets = preview ? PREVIEW_ASSETS : data?.assets ?? [];
   const hasAccess = preview || (data?.hasAccess ?? false);
@@ -285,14 +351,22 @@ export function PaidDashboardView({
           <h1 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
             {showIphoneInstall
               ? "Installe Anyloc sur ton iPhone"
-              : "Installe Anyloc sur ton ordi"}
+              : showAndroidInstall
+                ? "Installe Anyloc sur ton Android"
+                : "Installe Anyloc sur ton ordi"}
           </h1>
           <p className="mt-3 text-sm text-zinc-600 sm:text-base">
-            {showIphoneInstall
+            {showIphoneInstall || showAndroidInstall
               ? "Directement sur le téléphone, sans ordi ni câble."
               : "3 étapes, 10 minutes. Ensuite tout se passe dans l'app."}
           </p>
         </div>
+
+        <InstallTargetPicker
+          targets={targets}
+          value={target}
+          onChange={setPickedTarget}
+        />
 
         {needsSetupPassword ? (
           <div className="mt-8">
@@ -301,9 +375,50 @@ export function PaidDashboardView({
         ) : null}
 
         {showIphoneInstall ? (
-          <div className="mt-8">
-            <IphoneInstallView embedded />
-          </div>
+          device.isIos ? (
+            <div className="mt-8">
+              <IphoneInstallView embedded />
+            </div>
+          ) : (
+            <div className="mt-8">
+              <WrongDeviceNotice
+                title="Ouvre cette page sur ton iPhone"
+                href={getDashboardUrl()}
+                copyLabel="Copier le lien"
+                qrLabel="Scanne avec l'appareil photo"
+                preview={preview}
+                emailLink={false}
+              >
+                <p>L&apos;app iPhone s&apos;installe depuis le téléphone lui-même.</p>
+              </WrongDeviceNotice>
+            </div>
+          )
+        ) : showAndroidInstall ? (
+          <>
+            {/* On a computer the APK is still downloadable, but it has to end
+                up on the phone: opening this page there is the easy way. */}
+            {!device.isAndroid ? (
+              <div className="mt-8">
+                <WrongDeviceNotice
+                  title="Le plus simple : ouvre cette page sur ton Android"
+                  href={getDashboardUrl()}
+                  copyLabel="Copier le lien"
+                  qrLabel="Scanne avec l'appareil photo"
+                  preview={preview}
+                  emailLink={false}
+                >
+                  <p>L&apos;app Android (fichier Anyloc.apk) s&apos;installe directement sur le téléphone.</p>
+                </WrongDeviceNotice>
+              </div>
+            ) : null}
+            <Card className="mt-8 border-pink-200 bg-white p-5 sm:p-6">
+              <DashboardPhoneSetup
+                devices={devices}
+                phoneOnline={phoneOnline}
+                lockedPlatform="android"
+              />
+            </Card>
+          </>
         ) : (
           <>
             {/* On a phone the download is no use: sending the page to the
@@ -314,6 +429,7 @@ export function PaidDashboardView({
                   title="Ouvre cette page sur ton Mac ou PC"
                   href={getDashboardUrl()}
                   copyLabel="Copier le lien"
+                  preview={preview}
                 >
                   <p>L&apos;app Anyloc s&apos;installe sur un ordinateur.</p>
                 </WrongDeviceNotice>
@@ -335,14 +451,6 @@ export function PaidDashboardView({
             </ol>
 
             <div className="mt-8">{desktopCard}</div>
-
-            {track === "iphone" && !device.isPhone ? (
-              <p className="mt-4 text-center text-sm text-zinc-500">
-                Tu as aussi l&apos;app iPhone : ouvre{" "}
-                <span className="font-medium text-zinc-700">anyloc.io/dashboard</span>{" "}
-                sur ton iPhone.
-              </p>
-            ) : null}
 
           </>
         )}
