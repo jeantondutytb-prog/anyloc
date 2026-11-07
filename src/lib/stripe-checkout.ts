@@ -107,7 +107,8 @@ async function buildAuthenticatedCheckoutParams(
 
   return {
     mode: "subscription",
-    payment_method_types: ["card"],
+    // No payment_method_types: Stripe offers the methods switched on in the
+    // Dashboard that can pay a subscription (card, Apple Pay, Link, Revolut Pay...).
     line_items: [{ price: plan.stripePriceId!, quantity: 1 }],
     client_reference_id: user.id,
     metadata: {
@@ -134,7 +135,7 @@ function buildGuestCheckoutParams(
 ): Stripe.Checkout.SessionCreateParams {
   return {
     mode: "subscription",
-    payment_method_types: ["card"],
+    // Same methods as the signed-in checkout above.
     line_items: [{ price: plan.stripePriceId!, quantity: 1 }],
     metadata: {
       plan_id: plan.id,

@@ -8,7 +8,7 @@ import { StripeEmbeddedCheckout } from "@/components/checkout/stripe-embedded-ch
 import { isCrispHiddenPath, setCrispBubbleHidden } from "@/components/crisp/crisp-visibility";
 import { track } from "@/lib/analytics/track";
 import { CHECKOUT_COPY } from "@/lib/checkout-copy";
-import { getFirstMonthOfferPrice } from "@/lib/checkout-first-month-offer";
+import { type DeclineKind, getFirstMonthOfferPrice } from "@/lib/checkout-first-month-offer";
 import { isNetworkError, requestCheckoutSession } from "@/lib/checkout-request";
 import { GUARANTEE, type Plan } from "@/lib/constants";
 
@@ -58,7 +58,9 @@ export function CheckoutPaymentModal({
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [declined, setDeclined] = useState(false);
+  const [declined, setDeclined] = useState<DeclineKind | null>(null);
+  // Already on a discounted first month: a refusal gets no second discount.
+  const discounted = Boolean(offerSessionId || welcomeOffer);
   // Closing a drawn form first asks why, in place of the form.
   const [askingExitReason, setAskingExitReason] = useState(false);
   // Read by the Escape handler, which is set up once.
@@ -112,20 +114,23 @@ export function CheckoutPaymentModal({
   }, [plan.id, attempt, copy, offerSessionId]);
 
   // Stripe's form doesn't tell the page why a card was refused: the webhook
-  // stamps it on the session, read back here. Once discounted, no second offer.
+  // stamps it on the session, read back here.
   useEffect(() => {
-    if (!sessionId || declined || offerSessionId || welcomeOffer) return;
+    if (!sessionId || declined) return;
     const controller = new AbortController();
     const timer = setInterval(() => {
       if (document.visibilityState !== "visible") return;
       fetch(`/api/stripe/checkout-decline?session_id=${encodeURIComponent(sessionId)}`, {
         signal: controller.signal,
       })
-        .then((res) => res.json() as Promise<{ declined?: boolean }>)
+        .then((res) => res.json() as Promise<{ kind?: DeclineKind | null }>)
         .then((data) => {
-          if (!data.declined) return;
-          setDeclined(true);
-          track("checkout_decline_offer_shown", { plan: plan.id, offer_plan: offerPlan.id });
+          if (!data.kind) return;
+          setDeclined(data.kind);
+          track(
+            data.kind === "funds" && !discounted ? "checkout_decline_offer_shown" : "checkout_decline_switch_shown",
+            { plan: plan.id, offer_plan: offerPlan.id, decline_kind: data.kind }
+          );
         })
         .catch(() => {});
     }, DECLINE_POLL_MS);
@@ -133,7 +138,7 @@ export function CheckoutPaymentModal({
       clearInterval(timer);
       controller.abort();
     };
-  }, [sessionId, declined, offerSessionId, welcomeOffer, plan.id, offerPlan.id]);
+  }, [sessionId, declined, discounted, plan.id, offerPlan.id]);
 
   useEffect(() => {
     closeRef.current?.focus();
@@ -215,7 +220,7 @@ export function CheckoutPaymentModal({
         <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
           <p className="text-sm font-bold text-zinc-900">
             {plan.name} ·{" "}
-            {offerSessionId || welcomeOffer
+            {discounted
               ? copy.firstMonthOfferHeader(getFirstMonthOfferPrice(plan.price))
               : price}
           </p>
@@ -278,7 +283,17 @@ export function CheckoutPaymentModal({
           </div>
           <p className="mt-2 text-xs text-zinc-500">{copy.modalCancelAnytime}</p>
 
-          {declined && sessionId ? (
+          {/* Once discounted, no second offer: only the way out through another method. */}
+          {declined && sessionId && (declined === "card" || discounted) ? (
+            <div className="mt-3 rounded-2xl border border-pink-200 bg-pink-50 p-3">
+              <p className="text-sm font-bold text-zinc-900">
+                {declined === "card" ? copy.declineCardTitle : copy.declineOfferTitle}
+              </p>
+              <p className="mt-0.5 text-xs text-zinc-600">
+                {declined === "card" ? copy.declineCardLead : copy.declineFundsSwitchLead}
+              </p>
+            </div>
+          ) : declined === "funds" && sessionId ? (
             <div className="mt-3 rounded-2xl border border-pink-200 bg-pink-50 p-3">
               <p className="text-sm font-bold text-zinc-900">{copy.declineOfferTitle}</p>
               <p className="mt-0.5 text-xs text-zinc-600">
