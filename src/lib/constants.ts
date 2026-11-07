@@ -186,7 +186,7 @@ export const PLANS = [
     description: "Sans engagement, tu paies mois par mois.",
     savings: undefined,
     features: PLAN_VALUE_STACK,
-    popular: false,
+    popular: true,
     ctaLabel: CHECKOUT_CTA_LABEL,
     stripePriceId: process.env.STRIPE_PRICE_MONTHLY,
   },
@@ -226,7 +226,7 @@ export const PLANS = [
     description: "Le meilleur deal si t'es un habitué.",
     savings: "Tu gardes 69 € sur l'année · -59 % vs mensuel",
     features: PLAN_VALUE_STACK,
-    popular: true,
+    popular: false,
     ctaLabel: CHECKOUT_CTA_LABEL,
     stripePriceId: process.env.STRIPE_PRICE_ANNUAL,
   },
@@ -298,9 +298,10 @@ export type Plan = (typeof PLANS)[number];
 
 /**
  * Plan preselected across the funnel (landing CTAs → onboarding → signup →
- * checkout). Annual: the only plan with the mobile app, and the best value.
+ * checkout). Monthly: checkouts opened on annual almost never end in a payment
+ * (Stripe, October–November 2026).
  */
-export const DEFAULT_PLAN_ID = "annual";
+export const DEFAULT_PLAN_ID = "monthly";
 
 export const PLAN_IDS = PLANS.map((plan) => plan.id);
 
