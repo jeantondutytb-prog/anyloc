@@ -48,9 +48,14 @@ export const CHECKOUT_COPY = {
     { id: "other", label: "Autre chose" },
   ],
   exitQuestionSkip: "Fermer sans répondre",
-  declineOfferTitle: "Paiement refusé : solde insuffisant",
+  declineOfferTitle: "Paiement refusé : pas assez sur ta carte",
   declineOfferLead: (name: string, offerPrice: string, price: string) =>
-    `Pas de souci : ton 1er mois de formule ${name} passe à ${offerPrice} au lieu de ${price}. Sans engagement.`,
+    `Pas de souci : ton 1er mois de formule ${name} passe à ${offerPrice} au lieu de ${price}. Sans engagement. Ou choisis un autre moyen de paiement juste en dessous.`,
+  declineFundsSwitchLead:
+    "Choisis un autre moyen de paiement juste en dessous, ou recharge ta carte et réessaie.",
+  declineCardTitle: "Ta carte refuse ce paiement",
+  declineCardLead:
+    "Réessayer avec la même carte ne changera rien. Choisis un autre moyen de paiement juste en dessous, ou une autre carte.",
   declineOfferCta: (offerPrice: string) => `Payer ${offerPrice} le 1er mois`,
   firstMonthOfferHeader: (offerPrice: string) => `${offerPrice} le 1er mois`,
   closeOfferTitle: "Attends ! -50 % sur ton 1er mois",

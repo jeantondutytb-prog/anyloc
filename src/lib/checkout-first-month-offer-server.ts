@@ -2,8 +2,8 @@ import { RECOVERY_COUPON_ID } from "@/lib/checkout-recovery";
 import {
   type CloseOfferVariant,
   DECLINE_METADATA_KEY,
+  declineKind,
   getFirstMonthOfferReason,
-  isDeclineOfferCode,
 } from "@/lib/checkout-first-month-offer";
 import { stripe } from "@/lib/stripe";
 
@@ -12,7 +12,7 @@ import { stripe } from "@/lib/stripe";
  * see why Stripe's form refused a card, so the payment popup reads it back here.
  */
 export async function markCheckoutSessionDeclined(sessionId: string, declineCode: string) {
-  if (!stripe || !isDeclineOfferCode(declineCode)) return;
+  if (!stripe || !declineKind(declineCode)) return;
   await stripe.checkout.sessions.update(sessionId, {
     metadata: { [DECLINE_METADATA_KEY]: declineCode },
   });
@@ -28,10 +28,10 @@ async function getOfferSourceSession(sessionId: string) {
   };
 }
 
-/** Whether this checkout was refused for lack of funds, so the popup can offer the discount. */
-export async function isCheckoutSessionDeclined(sessionId: string) {
+/** How this checkout was refused, so the popup can say what to do next (and offer the discount for lack of funds). */
+export async function getCheckoutDeclineKind(sessionId: string) {
   const source = await getOfferSourceSession(sessionId);
-  return isDeclineOfferCode(source?.declineCode);
+  return declineKind(source?.declineCode);
 }
 
 /**

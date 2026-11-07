@@ -4,7 +4,7 @@ import {
   syncProfileFromCheckoutSession,
   syncProfileFromSubscription,
 } from "@/lib/billing";
-import { isDeclineOfferCode } from "@/lib/checkout-first-month-offer";
+import { declineKind } from "@/lib/checkout-first-month-offer";
 import { markCheckoutSessionDeclined } from "@/lib/checkout-first-month-offer-server";
 import { chargeSubscriptionInvoiceImmediately } from "@/lib/trial-billing";
 import {
@@ -136,9 +136,10 @@ async function trackCheckoutPaymentAttempt(
   }
 
   const error = paymentIntent.last_payment_error;
-  // Lets the payment popup offer the -50 % first month; never worth failing the webhook over.
+  // Lets the payment popup say what to do next (-50 % for lack of funds, another
+  // payment method for a blocked card); never worth failing the webhook over.
   const declineCode = error?.decline_code;
-  if (declineCode && isDeclineOfferCode(declineCode)) {
+  if (declineCode && declineKind(declineCode)) {
     await markCheckoutSessionDeclined(session.id, declineCode).catch((markError) =>
       logError("stripe-webhook/mark-declined", markError, { stripe_object_id: session.id })
     );
