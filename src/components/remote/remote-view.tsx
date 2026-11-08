@@ -51,8 +51,13 @@ type Place = { name: string; lat: number; lng: number };
 type Mode = "teleport" | "explore";
 type Banner = { kind: "flying" | "arrived"; name: string };
 type ShowcaseStep = "connecting" | "sending" | "done";
-// Fade length of the branded card, in and out (the iOS app uses 0.7 s).
-const SHOWCASE_FADE_MS = 600;
+/** Loading of the filming versions: /app/v1 is "heavy", /app/v2 is "fast". */
+export type ShowcaseSpeed = "heavy" | "fast";
+// fadeMs is the branded card's fade, in and out (the iOS app uses 0.7 s).
+const SHOWCASE_TIMINGS = {
+  heavy: { connectingMs: 2200, minimumMs: 4200, doneMs: 1600, fadeMs: 600 },
+  fast: { connectingMs: 0, minimumMs: 600, doneMs: 500, fadeMs: 250 },
+} satisfies Record<ShowcaseSpeed, Record<string, number>>;
 
 const FAVORITES_KEY = "anyloc.remote.favorites";
 // Spot teleported to before paying: picked again once the subscription is on.
@@ -283,11 +288,16 @@ function TeleportShowcase({
   destination,
   step,
   closing,
+  speed,
 }: {
   destination: string;
   step: ShowcaseStep;
   closing: boolean;
+  speed: ShowcaseSpeed;
 }) {
+  // The staggered entrance lasts longer than the whole fast loading.
+  const enter = (animation: string) =>
+    speed === "fast" ? undefined : { animation };
   const stepText =
     step === "connecting"
       ? "Connexion à l'iPhone…"
@@ -299,13 +309,13 @@ function TeleportShowcase({
     <div
       className="fixed inset-0 z-[2000] flex flex-col items-center justify-center gap-7 bg-[#0a0a0c]/95 px-6"
       style={{
-        animation: `${closing ? "showcase-fade-out" : "showcase-fade-in"} ${SHOWCASE_FADE_MS}ms ease-in-out both`,
+        animation: `${closing ? "showcase-fade-out" : "showcase-fade-in"} ${SHOWCASE_TIMINGS[speed].fadeMs}ms ease-in-out both`,
       }}
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(236,72,153,0.35),transparent_320px)]" />
       <div
         className="relative flex h-[220px] w-[220px] items-center justify-center"
-        style={{ animation: "showcase-enter 0.7s 0.25s both" }}
+        style={enter("showcase-enter 0.7s 0.25s both")}
       >
         {[0, 1, 2].map((i) => (
           <span
@@ -328,11 +338,11 @@ function TeleportShowcase({
       </div>
       <Wordmark
         className="relative text-[clamp(40px,15vw,60px)]"
-        style={{ animation: "showcase-enter 0.6s 0.75s both" }}
+        style={enter("showcase-enter 0.6s 0.75s both")}
       />
       <div
         className="relative flex h-[50px] max-w-full items-center gap-2.5 rounded-full border border-[#ec4899]/40 bg-[#16161a] px-5 text-[19px] font-semibold text-[#c4c4ca]"
-        style={{ animation: "showcase-enter 0.5s 1.2s both" }}
+        style={enter("showcase-enter 0.5s 1.2s both")}
       >
         {step === "done" ? (
           <CheckCircle2 className="h-5 w-5 shrink-0 text-[#ec4899]" />
@@ -609,6 +619,7 @@ export function RemoteView({
   installTrack,
   planId,
   stripePublishableKey,
+  showcaseSpeed,
 }: {
   hasAccess: boolean;
   /** Back from a payment made in the plans sheet: opens the setup popup. */
@@ -617,6 +628,8 @@ export function RemoteView({
   /** Plan preselected in the plans sheet, mapped to the visitor's price grid. */
   planId: string;
   stripePublishableKey: string;
+  /** Set on the filming versions: always plays the branded card, at this pace. */
+  showcaseSpeed?: ShowcaseSpeed;
 }) {
   const { location, loading, saving, error, saveLocation } = useLocationSync({
     pollIntervalMs: POLL_INTERVAL_MS,
@@ -788,7 +801,7 @@ export function RemoteView({
         }
       );
 
-      const filming = readFilmingMode();
+      const filming = showcaseSpeed !== undefined || readFilmingMode();
       track("remote_teleport_started", {
         destination: place.name,
         has_access: hasAccess,
@@ -796,22 +809,25 @@ export function RemoteView({
       });
 
       if (filming) {
-        // The branded card stays at least ~4 s so it reads on camera.
+        // Heavy: the branded card stays at least ~4 s so it reads on camera.
+        const timing = SHOWCASE_TIMINGS[showcaseSpeed ?? "heavy"];
         const start = Date.now();
-        setShowcase({ destination: place.name, step: "connecting" });
-        await sleep(2200);
+        if (timing.connectingMs > 0) {
+          setShowcase({ destination: place.name, step: "connecting" });
+          await sleep(timing.connectingMs);
+        }
         setShowcase({ destination: place.name, step: "sending" });
         const ok = await apply;
-        const remaining = 4200 - (Date.now() - start);
+        const remaining = timing.minimumMs - (Date.now() - start);
         if (remaining > 0) await sleep(remaining);
         if (ok) {
           setShowcase({ destination: place.name, step: "done" });
-          await sleep(1600);
+          await sleep(timing.doneMs);
         }
         // Start the descent behind the card so it fades straight into it.
         if (ok) setLandingKey((key) => key + 1);
         setShowcase((current) => current && { ...current, closing: true });
-        await sleep(SHOWCASE_FADE_MS);
+        await sleep(timing.fadeMs);
         setShowcase(null);
         if (ok && !hasAccess) await showPaywall();
         return;
@@ -832,7 +848,7 @@ export function RemoteView({
           : current
       );
     },
-    [hasAccess, saveLocation, flash, waitForCameraSettled]
+    [hasAccess, saveLocation, flash, waitForCameraSettled, showcaseSpeed]
   );
 
   const stop = useCallback(async () => {
@@ -1212,6 +1228,7 @@ export function RemoteView({
           destination={showcase.destination}
           step={showcase.step}
           closing={showcase.closing ?? false}
+          speed={showcaseSpeed ?? "heavy"}
         />
       ) : null}
     </div>
