@@ -8,7 +8,7 @@ import { openCrispChat } from "@/components/crisp/crisp-loader";
 /** Pages where the chat bubble covers the content (the onboarding phone). */
 const HIDDEN_PATH_PREFIXES = ["/onboarding"];
 /** The iPhone remote: the bubble sits on the "Définir cette position" button. */
-const HIDDEN_PATHS = ["/app"];
+const HIDDEN_PATHS = ["/app", "/app/v1", "/app/v2"];
 
 const BUBBLE_EVENT = "anyloc:crisp-bubble-hidden";
 
