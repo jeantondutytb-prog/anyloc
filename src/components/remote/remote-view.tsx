@@ -56,7 +56,7 @@ export type ShowcaseSpeed = "heavy" | "fast";
 // fadeMs is the branded card's fade, in and out (the iOS app uses 0.7 s).
 const SHOWCASE_TIMINGS = {
   heavy: { connectingMs: 2200, minimumMs: 4200, doneMs: 1600, fadeMs: 600 },
-  fast: { connectingMs: 0, minimumMs: 600, doneMs: 500, fadeMs: 250 },
+  fast: { connectingMs: 0, minimumMs: 900, doneMs: 600, fadeMs: 400 },
 } satisfies Record<ShowcaseSpeed, Record<string, number>>;
 
 const FAVORITES_KEY = "anyloc.remote.favorites";
@@ -295,9 +295,22 @@ function TeleportShowcase({
   closing: boolean;
   speed: ShowcaseSpeed;
 }) {
-  // The staggered entrance lasts longer than the whole fast loading.
-  const enter = (animation: string) =>
-    speed === "fast" ? undefined : { animation };
+  const fast = speed === "fast";
+  // The heavy entrance lasts longer than the whole fast loading.
+  const enter = (heavy: string, fastDelay: number) => ({
+    animation: fast
+      ? `showcase-enter 0.4s ${fastDelay}s cubic-bezier(0.22,1,0.36,1) both`
+      : heavy,
+  });
+  // Fast: no entrance to hide them, so the rings are already moving at the start.
+  const ring = (i: number) =>
+    fast
+      ? `showcase-ring 1.35s ${-i * 0.45}s ease-out infinite`
+      : `showcase-ring 1.8s ${i * 0.6}s ease-out infinite`;
+  // Fast: each step fades in instead of snapping to the next one.
+  const stepFade = fast
+    ? { animation: "showcase-fade-in 250ms ease-out both" }
+    : undefined;
   const stepText =
     step === "connecting"
       ? "Connexion à l'iPhone…"
@@ -315,15 +328,13 @@ function TeleportShowcase({
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(236,72,153,0.35),transparent_320px)]" />
       <div
         className="relative flex h-[220px] w-[220px] items-center justify-center"
-        style={enter("showcase-enter 0.7s 0.25s both")}
+        style={enter("showcase-enter 0.7s 0.25s both", 0)}
       >
         {[0, 1, 2].map((i) => (
           <span
             key={i}
             className="absolute h-[150px] w-[150px] rounded-full border-2 border-[#ec4899]"
-            style={{
-              animation: `showcase-ring 1.8s ${i * 0.6}s ease-out infinite`,
-            }}
+            style={{ animation: ring(i) }}
           />
         ))}
         <Image
@@ -338,18 +349,31 @@ function TeleportShowcase({
       </div>
       <Wordmark
         className="relative text-[clamp(40px,15vw,60px)]"
-        style={enter("showcase-enter 0.6s 0.75s both")}
+        style={enter("showcase-enter 0.6s 0.75s both", 0.05)}
       />
       <div
-        className="relative flex h-[50px] max-w-full items-center gap-2.5 rounded-full border border-[#ec4899]/40 bg-[#16161a] px-5 text-[19px] font-semibold text-[#c4c4ca]"
-        style={enter("showcase-enter 0.5s 1.2s both")}
+        className={cn(
+          "relative flex h-[50px] max-w-full items-center gap-2.5 rounded-full border border-[#ec4899]/40 bg-[#16161a] px-5 text-[19px] font-semibold text-[#c4c4ca]",
+          // Fixed width: the pill would jump when the shorter last step arrives.
+          fast && "w-[340px] justify-center"
+        )}
+        style={enter("showcase-enter 0.5s 1.2s both", 0.1)}
       >
         {step === "done" ? (
-          <CheckCircle2 className="h-5 w-5 shrink-0 text-[#ec4899]" />
+          <CheckCircle2
+            key="done"
+            className="h-5 w-5 shrink-0 text-[#ec4899]"
+            style={stepFade}
+          />
         ) : (
-          <Loader2 className="h-5 w-5 shrink-0 animate-spin text-[#f472b6]" />
+          <Loader2
+            key="loading"
+            className="h-5 w-5 shrink-0 animate-spin text-[#f472b6]"
+          />
         )}
-        <span className="truncate">{stepText}</span>
+        <span key={`text-${step}`} className="truncate" style={stepFade}>
+          {stepText}
+        </span>
       </div>
     </div>
   );
