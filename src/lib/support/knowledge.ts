@@ -30,7 +30,7 @@ L'espace a aussi un « Guide complet avec photos et dépannage ».
 1. Sur l'ordinateur : télécharge Anyloc depuis l'espace anyloc.io/dashboard et ouvre-le (il est dans Téléchargements, il ne s'ouvre pas tout seul). Il guide pas à pas : brancher l'iPhone en USB, l'installer, choisir une première ville.
 2. Sur l'iPhone : ouvre Anyloc, connecte-toi avec le même compte, puis choisis une ville. Pas de code à coller.
 - Aucun renouvellement : Anyloc a une licence Apple Developer, l'app iPhone ne s'arrête plus au bout de 7 jours. Ne parle jamais de « renouveler » l'app.
-- Formule 1 an : l'app iPhone peut s'installer directement depuis le téléphone, sans ordinateur (page « L'app Anyloc sur ton iPhone » de l'espace : « Préparer mon iPhone », 2 à 5 minutes de préparation, puis « Installer »).
+- Formule 1 an : l'app iPhone peut s'installer directement depuis le téléphone, sans ordinateur (page « L'app Anyloc sur ton iPhone » de l'espace : « Préparer mon iPhone », puis « Installer » quand l'app est prête). Après l'enregistrement de l'iPhone, Apple doit le valider : ça prend en général 1 à 2 jours. Si le client attend sur « Ton iPhone est enregistré » depuis moins de 2 jours, c'est normal : rassure-le, il n'a rien à refaire, l'app sera prête à son retour sur l'espace. Au-delà de 2 jours, transmets à l'équipe.
 
 ## Problèmes fréquents et réponses
 - Mac : « Anyloc ne peut pas être ouvert » → Réglages Système → Confidentialité et sécurité → tout en bas → « Ouvrir quand même », puis le mot de passe du Mac. Une seule fois.
