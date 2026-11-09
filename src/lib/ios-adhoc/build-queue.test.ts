@@ -79,26 +79,44 @@ describe("getIosInstallState", () => {
 });
 
 describe("needsNewBuild", () => {
+  // Registered long before the builds below, unless a test says otherwise.
+  const phone = (udid: string, msAgo = 2 * 60 * 60_000) => ({ udid, registered_at: iso(msAgo) });
+
   it("false when every registered UDID is already signed", () => {
-    assert.equal(needsNewBuild({ registeredUdids: ["U1"], latestBuild: build(), latestSucceededBuild: build(), now: NOW }), false);
+    assert.equal(needsNewBuild({ registeredDevices: [phone("U1")], latestBuild: build(), latestSucceededBuild: build(), now: NOW }), false);
   });
 
-  it("true when a UDID is missing and nothing is queued", () => {
-    assert.equal(needsNewBuild({ registeredUdids: ["U1", "U2"], latestBuild: build(), latestSucceededBuild: build(), now: NOW }), true);
-    assert.equal(needsNewBuild({ registeredUdids: ["U1"], latestBuild: null, latestSucceededBuild: null, now: NOW }), true);
+  it("true when an iPhone registered after the latest build, or nothing was built yet", () => {
+    const fresh = phone("U2", 30_000);
+    assert.equal(needsNewBuild({ registeredDevices: [phone("U1"), fresh], latestBuild: build(), latestSucceededBuild: build(), now: NOW }), true);
+    assert.equal(needsNewBuild({ registeredDevices: [phone("U1")], latestBuild: null, latestSucceededBuild: null, now: NOW }), true);
+  });
+
+  // Apple can take 1 to 2 days to list a new iPhone: the build succeeds without
+  // it. Relaunching right away looped every minute for as long as Apple took.
+  it("waits 30 minutes before retrying an iPhone Apple left out of the latest build", () => {
+    const missing = phone("U2", 10 * 60_000);
+    const justBuilt = build({ id: "b2", created_at: iso(60_000) });
+    assert.equal(needsNewBuild({ registeredDevices: [missing], latestBuild: justBuilt, latestSucceededBuild: justBuilt, now: NOW }), false);
+
+    const almost = build({ id: "b2", created_at: iso(29 * 60_000) });
+    assert.equal(needsNewBuild({ registeredDevices: [phone("U2")], latestBuild: almost, latestSucceededBuild: almost, now: NOW }), false);
+
+    const old = build({ id: "b2", created_at: iso(31 * 60_000) });
+    assert.equal(needsNewBuild({ registeredDevices: [phone("U2")], latestBuild: old, latestSucceededBuild: old, now: NOW }), true);
   });
 
   it("waits for a fresh queued build, retries a stale one", () => {
     const queued = build({ id: "b2", status: "queued", udids: [], created_at: iso(60_000) });
-    assert.equal(needsNewBuild({ registeredUdids: ["U2"], latestBuild: queued, latestSucceededBuild: build(), now: NOW }), false);
+    assert.equal(needsNewBuild({ registeredDevices: [phone("U2")], latestBuild: queued, latestSucceededBuild: build(), now: NOW }), false);
     const stale = { ...queued, created_at: iso(46 * 60_000) };
-    assert.equal(needsNewBuild({ registeredUdids: ["U2"], latestBuild: stale, latestSucceededBuild: build(), now: NOW }), true);
+    assert.equal(needsNewBuild({ registeredDevices: [phone("U2")], latestBuild: stale, latestSucceededBuild: build(), now: NOW }), true);
   });
 
   it("backs off 2 minutes after a failed build", () => {
     const failed = build({ id: "b3", status: "failed", udids: [], created_at: iso(60_000) });
-    assert.equal(needsNewBuild({ registeredUdids: ["U2"], latestBuild: failed, latestSucceededBuild: build(), now: NOW }), false);
+    assert.equal(needsNewBuild({ registeredDevices: [phone("U2")], latestBuild: failed, latestSucceededBuild: build(), now: NOW }), false);
     const old = { ...failed, created_at: iso(3 * 60_000) };
-    assert.equal(needsNewBuild({ registeredUdids: ["U2"], latestBuild: old, latestSucceededBuild: build(), now: NOW }), true);
+    assert.equal(needsNewBuild({ registeredDevices: [phone("U2")], latestBuild: old, latestSucceededBuild: build(), now: NOW }), true);
   });
 });

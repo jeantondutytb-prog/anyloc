@@ -151,13 +151,13 @@ export async function registerIosDeviceFromDesktop(
 }
 
 export async function ensureBuildForPendingDevices(now: Date) {
-  const [registeredUdids, latestBuild, latestSucceededBuild] = await Promise.all([
-    store.listRegisteredUdids(),
+  const [registeredDevices, latestBuild, latestSucceededBuild] = await Promise.all([
+    store.listRegisteredDevices(),
     store.getLatestBuild(),
     store.getLatestSucceededBuild(),
   ]);
 
-  if (!needsNewBuild({ registeredUdids, latestBuild, latestSucceededBuild, now: now.getTime() })) {
+  if (!needsNewBuild({ registeredDevices, latestBuild, latestSucceededBuild, now: now.getTime() })) {
     return;
   }
 
