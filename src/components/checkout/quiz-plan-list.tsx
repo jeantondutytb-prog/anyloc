@@ -6,6 +6,7 @@ import { GuaranteeSheet } from "@/components/checkout/guarantee-sheet";
 import { CHECKOUT_COPY } from "@/lib/checkout-copy";
 import { getWorryReassurance } from "@/lib/onboarding-quiz";
 import type { Plan } from "@/lib/constants";
+import { getPlanMonths } from "@/lib/price-display-experiment";
 import { getPayTodayLine, getPerMonthPrice, getPlanValueCard } from "@/lib/quiz-paywall";
 import { cn } from "@/lib/utils";
 
@@ -24,7 +25,9 @@ export function QuizPlanCta({
   worry?: string;
   onContinue: () => void;
 }) {
-  const reassurance = getWorryReassurance(worry);
+  // A 1-month plan's value card already is the 48 h guarantee: don't say it twice.
+  const repeatsValueCard = worry === "price" && getPlanMonths(plan.id) <= 1;
+  const reassurance = repeatsValueCard ? null : getWorryReassurance(worry);
   return (
     <>
       {reassurance ? (
