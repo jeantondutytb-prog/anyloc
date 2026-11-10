@@ -26,6 +26,9 @@ const BILLING_PERIOD_LABELS: Record<string, string> = {
   month_v2: "1 mois",
   quarter_v2: "3 mois",
   year_v2: "12 mois",
+  monthly_v3: "1 mois",
+  annual_v3: "12 mois",
+  lifetime: "toujours",
 };
 
 /**
@@ -225,15 +228,17 @@ export function RemotePlansSheet({
                   </span>
                   <span className="shrink-0 text-right">
                     <span className="block whitespace-nowrap text-lg font-bold tabular-nums text-[#f4f4f5]">
-                      {getMonthlyDisplayPrice(plan)} €
+                      {plan.oneTime ? plan.price.replace("€", "") : getMonthlyDisplayPrice(plan)} €
                       <span className="text-xs font-medium text-[#8b8b94]">
-                        /mois
+                        {plan.oneTime ? " une fois" : "/mois"}
                       </span>
                     </span>
                     <span className="block whitespace-nowrap text-xs tabular-nums text-[#8b8b94]">
-                      {BILLING_PERIOD_LABELS[plan.id] === "1 mois"
-                        ? "Sans engagement"
-                        : `${plan.price.replace("€", " €")} / ${BILLING_PERIOD_LABELS[plan.id]}`}
+                      {plan.oneTime
+                        ? "Sans abonnement"
+                        : BILLING_PERIOD_LABELS[plan.id] === "1 mois"
+                          ? "Sans engagement"
+                          : `${plan.price.replace("€", " €")} / ${BILLING_PERIOD_LABELS[plan.id]}`}
                     </span>
                   </span>
                 </button>

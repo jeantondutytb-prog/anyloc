@@ -62,7 +62,7 @@ export default async function CheckoutPage({
     redirect(getCheckoutUrl(DEFAULT_PLAN_ID));
   }
 
-  // The dev preview can force a grid: /checkout?preview=1&pricing=grid_v2.
+  // The dev preview can force a grid: /checkout?preview=1&pricing=lifetime.
   const pricingVariant =
     devPreview && parsePricingVariant(pricing)
       ? parsePricingVariant(pricing)!

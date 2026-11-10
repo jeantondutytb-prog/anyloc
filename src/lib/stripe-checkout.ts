@@ -71,15 +71,22 @@ export async function createSubscriptionCheckoutSession({
 
   const returnUrl = getCheckoutReturnUrl();
 
-  const [baseParams, coupon] = await Promise.all([
+  const [subscriptionParams, coupon] = await Promise.all([
     user?.id ? buildAuthenticatedCheckoutParams(plan, user) : buildGuestCheckoutParams(plan),
     couponId,
   ]);
 
+  // The lifetime plan is paid once: no subscription, and none of the offers
+  // and coupons, which are all made for a subscription plan.
+  const oneTime = Boolean(plan.oneTime);
+  const baseParams = oneTime ? toOneTimePaymentParams(subscriptionParams) : subscriptionParams;
+
   const sharedParams = {
-    ...withCheckoutOffer(withAnalyticsId(baseParams, analyticsId), offer ?? null),
+    ...(oneTime
+      ? withAnalyticsId(baseParams, analyticsId)
+      : withCheckoutOffer(withAnalyticsId(baseParams, analyticsId), offer ?? null)),
     ...getDeviceRequirementParams(),
-    ...(coupon ? { discounts: [{ coupon }] } : {}),
+    ...(coupon && !oneTime ? { discounts: [{ coupon }] } : {}),
   };
 
   if (uiMode === "embedded_page") {
@@ -96,6 +103,26 @@ export async function createSubscriptionCheckoutSession({
     success_url: returnUrl,
     cancel_url: `${getAppUrl()}/checkout?plan=${plan.id}&canceled=true`,
   });
+}
+
+/**
+ * Turns the subscription params of a plan into a one-time payment: same
+ * customer and metadata, the metadata copied on the PaymentIntent, and a
+ * Stripe customer created for a guest so the dashboard can show the receipt.
+ */
+export function toOneTimePaymentParams(
+  params: Stripe.Checkout.SessionCreateParams
+): Stripe.Checkout.SessionCreateParams {
+  const { subscription_data, ...rest } = params;
+  const metadata = { ...subscription_data?.metadata, ...rest.metadata, checkout_type: "one_time" };
+
+  return {
+    ...rest,
+    mode: "payment",
+    metadata,
+    payment_intent_data: { metadata },
+    ...(rest.customer ? {} : { customer_creation: "always" as const }),
+  };
 }
 
 async function buildAuthenticatedCheckoutParams(

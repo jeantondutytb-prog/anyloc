@@ -44,6 +44,8 @@ const PLAN_MONTHS: Record<string, number> = {
   month_v2: 1,
   quarter_v2: 3,
   year_v2: 12,
+  monthly_v3: 1,
+  annual_v3: 12,
 };
 
 /** Months covered by one payment of a plan (1 for an unknown id). */

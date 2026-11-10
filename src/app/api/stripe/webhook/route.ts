@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import {
   syncProfileFromCheckoutSession,
+  revokeRefundedOneTimePurchase,
   syncProfileFromSubscription,
 } from "@/lib/billing";
 import { declineKind } from "@/lib/checkout-first-month-offer";
@@ -236,6 +237,9 @@ export async function POST(request: Request) {
           event.data.object as Stripe.PaymentIntent,
           "failed"
         );
+        break;
+      case "charge.refunded":
+        await revokeRefundedOneTimePurchase(event.data.object as Stripe.Charge);
         break;
       case "invoice.created":
         // Bypass Stripe's ~1h draft window so renewal charges
