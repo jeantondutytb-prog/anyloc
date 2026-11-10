@@ -11,8 +11,10 @@ import {
 import {
   getAppSignupUrl,
   getQuizSignupUrl,
+  getSignupUrlForOnboardingVariant,
   isOnboardingQuizPath,
   isRemoteAppPath,
+  parseOnboardingVariant,
   pickOnboardingVariant,
 } from "./onboarding-experiment";
 
@@ -74,9 +76,22 @@ describe("quiz copy", () => {
 });
 
 describe("onboarding experiment", () => {
-  it("splits visitors in half", () => {
+  it("redraws visitors from retired variants", () => {
+    assert.equal(parseOnboardingVariant("app"), null);
+    assert.equal(parseOnboardingVariant("quiz"), null);
     assert.equal(pickOnboardingVariant(0.2), "control");
-    assert.equal(pickOnboardingVariant(0.7), "app");
+    assert.equal(pickOnboardingVariant(0.7), "questions");
+  });
+
+  it("sends the questions half to the quiz after signup", () => {
+    assert.equal(
+      getSignupUrlForOnboardingVariant("questions", "annual"),
+      "/signup?plan=annual&next=%2Fonboarding%2Fquiz%3Fplan%3Dannual"
+    );
+    assert.equal(
+      getSignupUrlForOnboardingVariant("control", "annual"),
+      "/signup?plan=annual&next=%2Fcheckout%3Fplan%3Dannual"
+    );
   });
 
   it("sends the app half to signup, then to the web remote", () => {

@@ -10,9 +10,12 @@ import { OnboardingAhaMoment } from "@/components/onboarding/onboarding-aha-mome
 import { Logo } from "@/components/ui/logo";
 import {
   DEFAULT_PLAN_ID,
-  getPostOnboardingSignupUrl,
   isValidPlanId,
 } from "@/lib/constants";
+import {
+  getSignupUrlForOnboardingVariant,
+  type OnboardingVariant,
+} from "@/lib/onboarding-experiment";
 import {
   mergeOnboardingSearchResults,
   ONBOARDING_ACTIVATION_PENDING_KEY,
@@ -298,8 +301,10 @@ function readStoredDestination(): OnboardingDestination | null {
 
 function OnboardingViewContent({
   visitorLocation,
+  onboardingVariant,
 }: {
   visitorLocation: VisitorLocation | null;
+  onboardingVariant: OnboardingVariant;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -327,9 +332,9 @@ function OnboardingViewContent({
   // hand-off after the exit animation is instant.
   useEffect(() => {
     if (step === 2) {
-      router.prefetch(getPostOnboardingSignupUrl(selectedPlanId));
+      router.prefetch(getSignupUrlForOnboardingVariant(onboardingVariant, selectedPlanId));
     }
-  }, [router, step, selectedPlanId]);
+  }, [router, step, selectedPlanId, onboardingVariant]);
 
   useEffect(() => {
     const stepNames = {
@@ -348,9 +353,9 @@ function OnboardingViewContent({
       stepParam === "3" || stepParam === "6" || stepParam === String(ONBOARDING_TOTAL_STEPS + 1);
 
     if (legacyTrialStep) {
-      router.replace(getPostOnboardingSignupUrl(selectedPlanId));
+      router.replace(getSignupUrlForOnboardingVariant(onboardingVariant, selectedPlanId));
     }
-  }, [router, searchParams, selectedPlanId]);
+  }, [router, searchParams, selectedPlanId, onboardingVariant]);
 
   function persistDestination(next: OnboardingDestination) {
     setDestination(next);
@@ -397,7 +402,7 @@ function OnboardingViewContent({
     setLeaving(true);
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     window.setTimeout(
-      () => router.push(getPostOnboardingSignupUrl(selectedPlanId)),
+      () => router.push(getSignupUrlForOnboardingVariant(onboardingVariant, selectedPlanId)),
       reducedMotion ? 0 : LEAVE_DURATION_MS
     );
   }
@@ -473,9 +478,12 @@ function OnboardingViewContent({
 /** The onboarding: pick a destination, then watch the pin fly there from your city. */
 export function OnboardingTwoStepView({
   visitorLocation = null,
+  onboardingVariant,
 }: {
   /** City from the visitor's IP: the step-2 pin starts there. */
   visitorLocation?: VisitorLocation | null;
+  /** Which half of the A/B test: decides where signup leads. */
+  onboardingVariant: OnboardingVariant;
 }) {
   return (
     <Suspense
@@ -486,7 +494,7 @@ export function OnboardingTwoStepView({
         </div>
       }
     >
-      <OnboardingViewContent visitorLocation={visitorLocation} />
+      <OnboardingViewContent visitorLocation={visitorLocation} onboardingVariant={onboardingVariant} />
     </Suspense>
   );
 }
