@@ -138,9 +138,15 @@ export function QuizPlanList({
                     </span>
                   ) : null}
                 </span>
-                <span className="mt-0.5 block text-xs leading-snug text-zinc-500">
-                  {recommended && recommendationReason ? recommendationReason : plan.perk}
-                </span>
+                {/* Only lines that help choose: the recommendation or the mobile app
+                    (« Sur PC et Mac » was noise on the cards). */}
+                {recommended && recommendationReason ? (
+                  <span className="mt-0.5 block text-xs leading-snug text-zinc-500">
+                    {recommendationReason}
+                  </span>
+                ) : plan.mobileApp ? (
+                  <span className="mt-0.5 block text-xs leading-snug text-zinc-500">{plan.perk}</span>
+                ) : null}
               </span>
               <span className="shrink-0 text-right">
                 <span className="block whitespace-nowrap text-lg font-semibold tabular-nums text-zinc-900">
