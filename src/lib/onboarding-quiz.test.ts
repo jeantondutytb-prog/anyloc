@@ -7,6 +7,8 @@ import {
   getMainQuizApp,
   OTHER_APP_MAX_LENGTH,
   getQuizFinalSteps,
+  getFinalizingTimeline,
+  FINALIZING_TOTAL_MS,
   getQuizRecommendation,
   getQuizSequence,
   getQuizTimingLine,
@@ -294,5 +296,26 @@ describe("onboarding experiment", () => {
     assert.equal(getQuizSignupUrl("annual"), "/signup?plan=annual&next=%2Fonboarding%2Fquiz%3Fplan%3Dannual");
     assert.ok(isOnboardingQuizPath("/onboarding/quiz?plan=annual"));
     assert.ok(!isOnboardingQuizPath("/onboarding"));
+  });
+});
+
+describe("getFinalizingTimeline", () => {
+  it("finishes in under 3 seconds whatever the number of lines", () => {
+    for (const count of [3, 4, 5, 6]) {
+      const { stepMs, holdMs } = getFinalizingTimeline(count, 40);
+      assert.ok(stepMs * count + holdMs < 3000, `${count} lines`);
+      assert.ok(FINALIZING_TOTAL_MS < 3000);
+    }
+  });
+
+  it("climbs by uneven steps from the questions' percent to 100", () => {
+    const { percents } = getFinalizingTimeline(5, 40);
+    assert.equal(percents.length, 6);
+    assert.equal(percents[0], 40);
+    assert.equal(percents.at(-1), 100);
+    const jumps = percents.slice(1).map((value, index) => value - percents[index]);
+    assert.ok(jumps.every((jump) => jump > 0));
+    // A big first jump, smaller ones near the end: it feels fast, then precise.
+    assert.ok(jumps[0] > jumps.at(-1)!);
   });
 });

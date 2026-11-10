@@ -28,6 +28,7 @@ import {
 } from "@/lib/onboarding-destinations";
 import {
   cleanOtherApp,
+  getFinalizingTimeline,
   getMainQuizApp,
   getQuizAppChips,
   getQuizFinalSteps,
@@ -70,8 +71,6 @@ const ICONS: Record<QuizIcon, ReactNode> = {
   ),
 };
 
-// Long enough for the position to feel prepared, not so long it feels stuck.
-const FINAL_STEP_MS = 3800;
 // « Continuer avec … »: the plan sheet slides away and the screen fades out
 // this long before navigating to /checkout (payment popup), which then eases in on its
 // own (see .paywall-rise): one continuous move.
@@ -336,20 +335,22 @@ function FinalizingScreen({
   onDone: () => void;
 }) {
   const [doneCount, setDoneCount] = useState(0);
+  // Under 3 s in all, whatever the number of lines (see getFinalizingTimeline).
+  const { stepMs, holdMs, percents } = getFinalizingTimeline(steps.length, startPercent);
 
   useEffect(() => {
     if (doneCount >= steps.length) {
-      const timer = window.setTimeout(onDone, 900);
+      const timer = window.setTimeout(onDone, holdMs);
       return () => window.clearTimeout(timer);
     }
-    const timer = window.setTimeout(() => setDoneCount((count) => count + 1), FINAL_STEP_MS);
+    const timer = window.setTimeout(() => setDoneCount((count) => count + 1), stepMs);
     return () => window.clearTimeout(timer);
     // Only the step count drives the timers, not a new callback identity.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doneCount]);
 
-  // Picks up where the questions left the pill, and ends at 100 %.
-  const percent = Math.round(startPercent + ((100 - startPercent) * doneCount) / steps.length);
+  // Picks up where the questions left the pill, and climbs by steps to 100 %.
+  const percent = percents[Math.min(doneCount, percents.length - 1)];
 
   return (
     <div className="mx-auto w-full max-w-md text-center">
@@ -367,7 +368,7 @@ function FinalizingScreen({
             strokeDasharray={276}
             initial={{ strokeDashoffset: 276 - (276 * startPercent) / 100 }}
             animate={{ strokeDashoffset: 276 - (276 * percent) / 100 }}
-            transition={{ duration: FINAL_STEP_MS / 1000, ease: "linear" }}
+            transition={{ duration: (stepMs * 0.8) / 1000, ease: "easeOut" }}
           />
           <defs>
             <linearGradient id="prep-gradient">

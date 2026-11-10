@@ -284,6 +284,31 @@ export function getMainQuizApp(answers: QuizAnswers, otherApp?: string) {
   return namedApps(answers, otherApp)[0] ?? null;
 }
 
+/** Whole "On finalise ta loc" screen, last line and final hold included: under 3 s. */
+export const FINALIZING_TOTAL_MS = 2700;
+const FINALIZING_HOLD_MS = 300;
+
+/**
+ * Pace of the finalising screen: each checklist line gets an equal share of
+ * the time left after the final hold, so 3 or 6 lines both end under 3 s.
+ * The percent climbs by uneven steps (big first, small last) from where the
+ * questions left the pill to 100 %.
+ */
+export function getFinalizingTimeline(stepCount: number, startPercent: number) {
+  const count = Math.max(1, stepCount);
+  const stepMs = Math.floor((FINALIZING_TOTAL_MS - FINALIZING_HOLD_MS) / count);
+  const weights = Array.from({ length: count }, (_, index) => count - index + 1);
+  const total = weights.reduce((sum, weight) => sum + weight, 0);
+  const start = Math.round(startPercent);
+  let reached = 0;
+  const percents = [start];
+  for (const weight of weights) {
+    reached += weight;
+    percents.push(Math.round(start + ((100 - start) * reached) / total));
+  }
+  return { stepMs, holdMs: FINALIZING_HOLD_MS, percents };
+}
+
 /** The "finalising" checklist: each line is something the answers set up. */
 export function getQuizFinalSteps(answers: QuizAnswers, destination: OnboardingDestination, otherApp?: string) {
   const device = answers.device?.[0];
