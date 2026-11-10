@@ -77,7 +77,8 @@ export function CheckoutView({
 
   function selectPlan(planId: string) {
     setSelectedPlanId(planId);
-    router.replace(`/checkout?plan=${planId}`, { scroll: false });
+    // The quiz arm keeps its marker, so the server render stays on the order page.
+    router.replace(`/checkout?plan=${planId}${fromQuiz ? "&parcours=quiz" : ""}`, { scroll: false });
   }
 
   return (

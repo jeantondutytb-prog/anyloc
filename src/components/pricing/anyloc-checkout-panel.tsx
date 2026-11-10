@@ -23,7 +23,7 @@ import { CheckoutClipperSheet } from "@/components/checkout/checkout-clipper-she
 import { CheckoutDownsellSheet } from "@/components/checkout/checkout-downsell-sheet";
 import { CheckoutPaymentModal } from "@/components/checkout/checkout-payment-modal";
 import { CheckoutProofVideo } from "@/components/checkout/checkout-proof-video";
-import { QuizPaywall } from "@/components/checkout/quiz-paywall";
+import { QuizOrder } from "@/components/checkout/quiz-order";
 import {
   CHECKOUT_COPY,
   CHECKOUT_REVIEWS,
@@ -57,7 +57,7 @@ import {
   PLAN_VALUE_DETAILS,
   PLAN_VALUE_STACK,
 } from "@/lib/constants";
-import { atCity, type OnboardingDestination } from "@/lib/onboarding-destinations";
+import type { OnboardingDestination } from "@/lib/onboarding-destinations";
 import type { QuizResult } from "@/lib/onboarding-quiz";
 import { registerPostHogProperties } from "@/lib/posthog/browser";
 import { getStripe } from "@/lib/stripe-browser";
@@ -489,27 +489,14 @@ export function AnyLocCheckoutPanel({
   }, []);
 
   const headline = getCheckoutHeadline(destination?.city, returning);
-  // From the quiz: "Active ta loc à Marbella sur Snap" and its recommended plan.
+  // From the quiz: its recommended plan (the plan list itself was the quiz's sheet).
   const recommendedPlan = quiz
     ? checkoutPlans.find((plan) => plan.id === quiz.recommendedPlanId)
     : undefined;
-  const quizHeadline =
-    quiz && destination
-      ? {
-          before: "Active ta loc",
-          highlight: atCity(destination.city),
-          after: quiz.mainApp ? ` sur ${quiz.mainApp}` : "",
-        }
-      : null;
-  // Visitors from the quiz get their own paywall (components/checkout/quiz-paywall);
+  // Visitors from the quiz get the order page (components/checkout/quiz-order);
   // everything below it in this file is the control arm. An email link that
   // focuses the payment popup keeps the focused view.
   const quizArm = (Boolean(quiz) || fromQuiz) && !focusPayment;
-  const quizPaywallTitle = quizHeadline ?? {
-    before: headline.before,
-    highlight: headline.highlight,
-    after: "",
-  };
   // The quiz result is read after hydration, so it gets its own event.
   useEffect(() => {
     if (!quiz) return;
@@ -674,20 +661,23 @@ export function AnyLocCheckoutPanel({
       ) : null}
 
       {quizArm ? (
-        <QuizPaywall
-          title={quizPaywallTitle}
+        <QuizOrder
           plans={checkoutPlans}
           selectedPlan={selectedPlan}
           referencePlan={entryPlan}
-          recommendedPlanId={recommendedPlan?.id}
-          recommendationReason={quiz?.reason}
+          planLine={
+            recommendedPlan?.id === selectedPlan.id && quiz?.reason ? quiz.reason : selectedPlan.perk
+          }
           welcomeOfferPrice={
             recoveryOffer && selectedPlan.id === RECOVERY_OFFER_PLAN_ID
               ? getFirstMonthOfferPrice(selectedPlan.price)
               : undefined
           }
+          annualExitOfferPrice={
+            annualExitAccepted ? ANNUAL_EXIT_OFFERS[selectedPlan.id]?.offerPrice : undefined
+          }
           onSelectPlan={selectPlan}
-          onContinue={() => openPaymentModal("main")}
+          onOrder={() => openPaymentModal("main")}
         />
       ) : (
         <>
