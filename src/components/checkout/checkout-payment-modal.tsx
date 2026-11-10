@@ -80,7 +80,7 @@ export function CheckoutPaymentModal({
       "/api/stripe/embedded-checkout",
       plan.id,
       controller.signal,
-      offerSessionId
+      { offerSessionId }
     )
       .then((data) => {
         if (!data.clientSecret) {

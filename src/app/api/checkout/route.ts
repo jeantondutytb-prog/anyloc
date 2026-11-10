@@ -5,6 +5,9 @@ import {
   getRecoveryCouponForUser,
 } from "@/lib/checkout-recovery-server";
 import { PLANS } from "@/lib/constants";
+import { isAnnualExitOfferEnabled } from "@/lib/annual-exit-offer";
+import { getAnnualExitOfferCoupon } from "@/lib/annual-exit-offer-server";
+import { CHECKOUT_OFFER_ANNUAL_EXIT } from "@/lib/checkout-offer";
 import { capturePostHogEvent, parsePostHogDistinctId } from "@/lib/posthog/server";
 import { publicErrorMessage } from "@/lib/errors";
 import { limitByIp } from "@/lib/rate-limit";
@@ -41,8 +44,27 @@ export async function POST(request: Request) {
     userId = user?.id;
     const analyticsId = parsePostHogDistinctId(body?.analyticsId);
 
+    // The annual exit offer: checked here, never trusted from the browser.
+    // It wins over the recovery coupon (never two discounts).
+    let annualExitCoupon: string | null = null;
+    if (body?.annualExitOffer === true) {
+      if (!user) {
+        return NextResponse.json({ error: "Connexion requise." }, { status: 401 });
+      }
+      annualExitCoupon = isAnnualExitOfferEnabled()
+        ? await getAnnualExitOfferCoupon(user.id, plan.id)
+        : null;
+      if (!annualExitCoupon) {
+        return NextResponse.json({ error: "Cette offre a expiré." }, { status: 409 });
+      }
+    }
+
     // Looked up while Stripe finds the customer: every round trip delays the payment form.
-    const couponPromise = user ? getRecoveryCouponForUser(user.id, plan.id) : null;
+    const couponPromise = annualExitCoupon
+      ? Promise.resolve(annualExitCoupon)
+      : user
+        ? getRecoveryCouponForUser(user.id, plan.id)
+        : null;
 
     // The paywall's "Continuer" button: Stripe-hosted payment page.
     const session = await createSubscriptionCheckoutSession({
@@ -51,6 +73,7 @@ export async function POST(request: Request) {
       analyticsId,
       uiMode: "hosted_page",
       couponId: couponPromise,
+      offer: annualExitCoupon ? CHECKOUT_OFFER_ANNUAL_EXIT : null,
     });
     const couponId = await couponPromise;
 
@@ -68,7 +91,8 @@ export async function POST(request: Request) {
             guest_checkout: !user,
             ui_mode: "hosted",
             checkout_variant: "direct",
-            recovery_offer: Boolean(couponId),
+            recovery_offer: Boolean(couponId) && !annualExitCoupon,
+            offer: annualExitCoupon ? CHECKOUT_OFFER_ANNUAL_EXIT : null,
           },
         });
       } catch (error) {

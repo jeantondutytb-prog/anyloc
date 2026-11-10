@@ -40,18 +40,25 @@ async function parseJsonResponse(res: Response) {
   }
 }
 
+export type CheckoutSessionOptions = {
+  /** The checkout refused for lack of funds (or closed) that unlocks -50 %. */
+  offerSessionId?: string;
+  /** Asks for the annual exit offer; the server checks it before applying. */
+  annualExitOffer?: boolean;
+};
+
 /**
  * Creates a Stripe checkout session for `planId`: `/api/stripe/embedded-checkout`
  * answers a client secret (payment popup), `/api/checkout` a hosted page URL.
  * Retries when the network drops the request; `networkRetries` is reported
- * for analytics. `offerSessionId`: the checkout refused for lack of funds (or
+ * for analytics. `options.offerSessionId`: the checkout refused for lack of funds (or
  * closed, in the A/B test) that unlocks -50 % on the 1st month.
  */
 export async function requestCheckoutSession(
   endpoint: "/api/stripe/embedded-checkout" | "/api/checkout",
   planId: string,
   signal: AbortSignal,
-  offerSessionId?: string
+  options: CheckoutSessionOptions = {}
 ) {
   let attempt = 0;
 
@@ -61,7 +68,12 @@ export async function requestCheckoutSession(
         method: "POST",
         headers: { "Content-Type": "application/json" },
         // Lets the webhook tie a purchase made without an account to this visit.
-        body: JSON.stringify({ planId, analyticsId: getPostHogDistinctId(), offerSessionId }),
+        body: JSON.stringify({
+          planId,
+          analyticsId: getPostHogDistinctId(),
+          offerSessionId: options.offerSessionId,
+          annualExitOffer: options.annualExitOffer,
+        }),
         signal,
       });
       const data = await parseJsonResponse(res);
