@@ -10,6 +10,8 @@ import {
   getFinalizingTimeline,
   FINALIZING_TOTAL_MS,
   getQuizRecommendation,
+  getQuizVisibleLine,
+  getWorryReassurance,
   getQuizSequence,
   getQuizTimingLine,
   listQuizApps,
@@ -111,27 +113,69 @@ describe("quiz sequence", () => {
 });
 
 describe("getQuizRecommendation", () => {
-  it("recommends the plan with the iPhone app to iPhone users, in either grid", () => {
-    assert.equal(getQuizRecommendation({ device: ["iphone"] }, "v1").planId, "annual");
-    assert.equal(getQuizRecommendation({ device: ["iphone"] }, "v2").planId, "year_v2");
+  const ids = (grid: "v1" | "v2") => (grid === "v1" ? ["monthly", "6months", "annual"] : ["month_v2", "quarter_v2", "year_v2"]);
+
+  it("follows the frequency, in either grid", () => {
+    for (const grid of ["v1", "v2"] as const) {
+      const [short, middle, long] = ids(grid);
+      assert.equal(getQuizRecommendation({ frequency: ["once"] }, grid).planId, short);
+      assert.equal(getQuizRecommendation({ frequency: ["sometimes"] }, grid).planId, middle);
+      assert.equal(getQuizRecommendation({ frequency: ["often"] }, grid).planId, long);
+      assert.equal(getQuizRecommendation({ frequency: ["always"] }, grid).planId, long);
+    }
   });
 
-  it("recommends the plan with the mobile app otherwise", () => {
-    assert.equal(getQuizRecommendation({ device: ["android"] }, "v1").planId, "annual");
-    assert.equal(getQuizRecommendation({ device: ["android"] }, "v2").planId, "year_v2");
-  });
-
-  it("explains the choice by how often the position is used", () => {
-    assert.equal(getQuizRecommendation({ device: ["iphone"], frequency: ["often"] }, "v1").reason, "App iPhone incluse");
+  it("gives each frequency its reason", () => {
+    assert.equal(getQuizRecommendation({ frequency: ["once"] }, "v1").reason, "Parfait pour un coup");
+    assert.equal(getQuizRecommendation({ frequency: ["sometimes"] }, "v1").reason, "Le bon équilibre");
     assert.equal(getQuizRecommendation({ frequency: ["often"] }, "v1").reason, "La moins chère au mois");
     assert.equal(getQuizRecommendation({ frequency: ["always"] }, "v1").reason, "La moins chère au mois");
-    assert.equal(getQuizRecommendation({ frequency: ["once"] }, "v1").reason, "Le meilleur prix au mois");
+  });
+
+  it("lets the frequency win over the device", () => {
+    const once = getQuizRecommendation({ device: ["iphone"], frequency: ["once"] }, "v1");
+    assert.deepEqual(once, { planId: "monthly", reason: "Parfait pour un coup" });
+  });
+
+  it("without a frequency, recommends the plan with the mobile app, by device", () => {
+    assert.deepEqual(getQuizRecommendation({ device: ["iphone"] }, "v1"), { planId: "annual", reason: "App iPhone incluse" });
+    assert.deepEqual(getQuizRecommendation({ device: ["iphone"] }, "v2"), { planId: "year_v2", reason: "App iPhone incluse" });
+    assert.deepEqual(getQuizRecommendation({ device: ["android"] }, "v1"), { planId: "annual", reason: "Le meilleur prix au mois" });
+    assert.deepEqual(getQuizRecommendation({}, "v2"), { planId: "year_v2", reason: "Le meilleur prix au mois" });
   });
 
   it("keeps the reason to one short line", () => {
-    for (const answers of [{ device: ["iphone"] }, { frequency: ["often"] }, {}] as QuizAnswers[]) {
+    for (const answers of [{ device: ["iphone"] }, { frequency: ["often"] }, { frequency: ["once"] }, { frequency: ["sometimes"] }, {}] as QuizAnswers[]) {
       assert.ok(getQuizRecommendation(answers, "v1").reason.length <= 30);
     }
+  });
+});
+
+describe("worry reassurance", () => {
+  it("has one line for detect, ban, install and price", () => {
+    assert.match(getWorryReassurance("detect")!, /position normale/);
+    assert.match(getWorryReassurance("ban")!, /ne touche pas/);
+    assert.match(getWorryReassurance("install")!, /chat/);
+    assert.match(getWorryReassurance("price")!, /remboursé/);
+  });
+
+  it("has none for nothing, Autre or a missing worry", () => {
+    for (const worry of ["none", "other", "unknown", "", undefined, null]) assert.equal(getWorryReassurance(worry), null);
+  });
+});
+
+describe("visible line (ready screen)", () => {
+  it("names the first audience picked", () => {
+    assert.equal(getQuizVisibleLine({ apps: ["snap"], audience: ["friends", "ex"] }), "Visible par tes potes sur Snap dès que tu l'actives.");
+    assert.equal(getQuizVisibleLine({ apps: ["snap", "insta"], audience: ["ex"] }), "Visible par ton ex sur Snap et Instagram dès que tu l'actives.");
+    assert.match(getQuizVisibleLine({ audience: ["family"] }), /par ta famille sur tes apps/);
+    assert.match(getQuizVisibleLine({ audience: ["matches"] }), /par tes matchs/);
+    assert.match(getQuizVisibleLine({ audience: ["followers"] }), /par tes abonnés/);
+  });
+
+  it("keeps today's wording for Autre or no audience", () => {
+    assert.equal(getQuizVisibleLine({ apps: ["snap"], audience: ["other"] }), "Visible sur Snap dès que tu l'actives.");
+    assert.equal(getQuizVisibleLine({ apps: ["snap"] }), "Visible sur Snap dès que tu l'actives.");
   });
 });
 
@@ -241,7 +285,9 @@ describe("French typography", () => {
     }
     for (const timing of ["today", "week", "later"]) strings.push(getQuizTimingLine({ timing: [timing] }) ?? "");
     strings.push(...getQuizFinalSteps(everyAnswer, marbella));
-    for (const answers of [everyAnswer, { frequency: ["once"] }, { device: ["android"] }]) {
+    for (const worry of ["detect", "ban", "install", "price"]) strings.push(getWorryReassurance(worry) ?? "");
+    strings.push(getQuizVisibleLine({ ...everyAnswer, audience: ["friends"] }));
+    for (const answers of [everyAnswer, { frequency: ["once"] }, { frequency: ["sometimes"] }, { device: ["android"] }]) {
       strings.push(getQuizRecommendation(answers, "v1").reason, getQuizRecommendation(answers, "v2").reason);
     }
     for (const text of strings) assert.ok(!bad.test(text), text);

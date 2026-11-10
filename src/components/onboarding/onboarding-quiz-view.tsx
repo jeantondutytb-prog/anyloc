@@ -35,7 +35,7 @@ import {
   getQuizRecommendation,
   getQuizSequence,
   getQuizTimingLine,
-  listQuizApps,
+  getQuizVisibleLine,
   OTHER_APP_MAX_LENGTH,
   storeQuizResult,
   type QuizAnswers,
@@ -457,7 +457,7 @@ function ReadyScreen({
         Ta loc <span className="gradient-text">{atCity(destination.city)}</span> est prête.
       </h1>
       <p className="mt-2 text-center text-sm text-zinc-500">
-        Visible sur {listQuizApps(answers, otherApp)} dès que tu l&apos;actives.
+        {getQuizVisibleLine(answers, otherApp)}
       </p>
       {timingLine && <p className="mt-1 text-center text-sm font-medium text-zinc-700">{timingLine}</p>}
       <div className="relative mt-6">
@@ -532,6 +532,7 @@ export function OnboardingQuizView({
     recommendedPlanId: string;
     reason: string;
     mainApp: string | null;
+    worry?: string;
   } | null>(null);
 
   const otherAppName = cleanOtherApp(otherApp);
@@ -636,6 +637,7 @@ export function OnboardingQuizView({
       recommendedPlanId: recommendation.planId,
       reason: recommendation.reason,
       mainApp,
+      worry: answers.worry?.[0],
     });
     try {
       window.sessionStorage.setItem(ONBOARDING_DESTINATION_KEY, JSON.stringify(destination));
@@ -662,6 +664,7 @@ export function OnboardingQuizView({
       recommendedPlanId: recommendation.planId,
       reason: recommendation.reason,
       mainApp,
+      worry: answers.worry?.[0],
     });
     router.prefetch(checkoutUrl(planId, true));
   }
@@ -805,6 +808,7 @@ export function OnboardingQuizView({
           referencePlan={sheetReferencePlan}
           recommendedPlanId={plansSheet.recommendedPlanId}
           recommendationReason={plansSheet.reason}
+          worry={plansSheet.worry}
           onSelectPlan={selectSheetPlan}
           onContinue={continueToOrder}
           onClose={() => setPlansSheet({ ...plansSheet, open: false })}

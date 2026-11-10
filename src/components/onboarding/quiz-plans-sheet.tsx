@@ -44,6 +44,7 @@ export function QuizPlansSheet({
   referencePlan,
   recommendedPlanId,
   recommendationReason,
+  worry,
   onSelectPlan,
   onContinue,
   onClose,
@@ -55,6 +56,8 @@ export function QuizPlansSheet({
   referencePlan: Plan;
   recommendedPlanId?: string;
   recommendationReason?: string;
+  /** The worry picked in the quiz: one reassurance line above the button. */
+  worry?: string;
   onSelectPlan: (planId: string) => void;
   onContinue: () => void;
   onClose: () => void;
@@ -181,7 +184,7 @@ export function QuizPlansSheet({
               className="border-t border-zinc-100 bg-background px-4 pt-3 sm:rounded-b-[28px] sm:px-6"
               style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)" }}
             >
-              <QuizPlanCta plan={selectedPlan} onContinue={onContinue} />
+              <QuizPlanCta plan={selectedPlan} worry={worry} onContinue={onContinue} />
             </div>
           </motion.div>
         </motion.div>

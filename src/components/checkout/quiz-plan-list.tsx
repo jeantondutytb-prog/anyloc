@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Check, Lock, Plus, ShieldCheck, TrendingDown } from "lucide-react";
 import { GuaranteeSheet } from "@/components/checkout/guarantee-sheet";
 import { CHECKOUT_COPY } from "@/lib/checkout-copy";
+import { getWorryReassurance } from "@/lib/onboarding-quiz";
 import type { Plan } from "@/lib/constants";
 import { getPayTodayLine, getPerMonthPrice, getPlanValueCard } from "@/lib/quiz-paywall";
 import { cn } from "@/lib/utils";
@@ -13,9 +14,25 @@ import { cn } from "@/lib/utils";
  * due today and the payment reassurance. Shared by the quiz's plan sheet and
  * the plan list page of /checkout (after the payment popup is closed).
  */
-export function QuizPlanCta({ plan, onContinue }: { plan: Plan; onContinue: () => void }) {
+export function QuizPlanCta({
+  plan,
+  worry,
+  onContinue,
+}: {
+  plan: Plan;
+  /** The worry picked in the quiz: its reassurance line sits just above the button. */
+  worry?: string;
+  onContinue: () => void;
+}) {
+  const reassurance = getWorryReassurance(worry);
   return (
     <>
+      {reassurance ? (
+        <p className="mb-2.5 flex items-center justify-center gap-1.5 text-center text-sm text-zinc-700">
+          <ShieldCheck className="h-4 w-4 shrink-0 text-pink-500" aria-hidden />
+          {reassurance}
+        </p>
+      ) : null}
       <button
         type="button"
         onClick={onContinue}

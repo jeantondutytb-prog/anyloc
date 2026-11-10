@@ -330,20 +330,56 @@ export function getQuizFinalSteps(answers: QuizAnswers, destination: OnboardingD
 export type QuizRecommendation = { planId: string; reason: string };
 
 /**
- * Always the plan of the visitor's price grid that includes the mobile app
- * (the annual one); only the reason changes with the answers.
+ * The plan follows how often the position is used: once -> the shortest plan,
+ * sometimes -> the middle one, often/always -> the plan with the mobile app.
+ * Without a frequency, the mobile-app plan, with a reason that depends on the
+ * device. Frequency wins over device.
  */
 export function getQuizRecommendation(answers: QuizAnswers, grid: PricingGrid): QuizRecommendation {
   const plans = getGridPlans(grid);
-  const plan = plans.find((candidate) => candidate.mobileApp) ?? plans[plans.length - 1];
-  if (answers.device?.[0] === "iphone") {
-    return { planId: plan.id, reason: "App iPhone incluse" };
+  const appPlan = plans.find((candidate) => candidate.mobileApp) ?? plans[plans.length - 1];
+  switch (answers.frequency?.[0]) {
+    case "once":
+      return { planId: plans[0].id, reason: "Parfait pour un coup" };
+    case "sometimes":
+      return { planId: plans[Math.floor((plans.length - 1) / 2)].id, reason: "Le bon équilibre" };
+    case "often":
+    case "always":
+      return { planId: appPlan.id, reason: "La moins chère au mois" };
+    default:
+      return {
+        planId: appPlan.id,
+        reason: answers.device?.[0] === "iphone" ? "App iPhone incluse" : "Le meilleur prix au mois",
+      };
   }
-  const frequency = answers.frequency?.[0];
-  if (frequency === "often" || frequency === "always") {
-    return { planId: plan.id, reason: "La moins chère au mois" };
-  }
-  return { planId: plan.id, reason: "Le meilleur prix au mois" };
+}
+
+const AUDIENCE_LABELS: Record<string, string> = {
+  friends: "tes potes",
+  ex: "ton ex",
+  family: "ta famille",
+  matches: "tes matchs",
+  followers: "tes abonnés",
+};
+
+/** « Visible par tes potes sur Snap dès que tu l'actives. » (first audience picked); no « par … » for Autre or nothing. */
+export function getQuizVisibleLine(answers: QuizAnswers, otherApp?: string) {
+  const who = (answers.audience ?? []).map((id) => AUDIENCE_LABELS[id]).find(Boolean);
+  const apps = listQuizApps(answers, otherApp);
+  return nbsp(`Visible${who ? ` par ${who}` : ""} sur ${apps} dès que tu l'actives.`);
+}
+
+const WORRY_REASSURANCES: Record<string, string> = {
+  detect: "Pour tes potes, c'est une position normale.",
+  ban: "Anyloc ne touche pas à tes apps.",
+  install: "Le chat t'aide en direct si tu bloques.",
+  price: "Si ça ne marche pas, ton 1er paiement est remboursé.",
+};
+
+/** One reassurance line for the paywall, from the visitor's biggest worry; null for none, Autre or unknown. */
+export function getWorryReassurance(worry: string | null | undefined): string | null {
+  const line = worry ? WORRY_REASSURANCES[worry] : undefined;
+  return line ? nbsp(line) : null;
 }
 
 /** What the quiz hands over to the checkout, through sessionStorage. */
@@ -351,6 +387,8 @@ export type QuizResult = {
   recommendedPlanId: string;
   reason: string;
   mainApp: string | null;
+  /** The worry picked in the quiz (older stored results have none). */
+  worry?: string;
 };
 
 export const QUIZ_RESULT_KEY = "anyloc-onboarding-quiz-result";

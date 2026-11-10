@@ -683,6 +683,7 @@ export function AnyLocCheckoutPanel({
           referencePlan={entryPlan}
           recommendedPlanId={quiz?.recommendedPlanId}
           recommendationReason={quiz?.reason}
+          worry={quiz?.worry}
           welcomeOfferPrice={
             recoveryOffer && selectedPlan.id === RECOVERY_OFFER_PLAN_ID
               ? getFirstMonthOfferPrice(selectedPlan.price)

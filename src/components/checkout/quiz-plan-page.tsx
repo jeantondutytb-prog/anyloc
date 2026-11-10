@@ -18,6 +18,7 @@ export function QuizPlanPage({
   referencePlan,
   recommendedPlanId,
   recommendationReason,
+  worry,
   welcomeOfferPrice,
   hidden,
   onSelectPlan,
@@ -29,6 +30,7 @@ export function QuizPlanPage({
   referencePlan: Plan;
   recommendedPlanId?: string;
   recommendationReason?: string;
+  worry?: string;
   welcomeOfferPrice?: string;
   /** Invisible until the popup is up, so arriving from the sheet shows no intermediate page. */
   hidden?: boolean;
@@ -59,7 +61,7 @@ export function QuizPlanPage({
         className="sticky bottom-0 z-20 -mx-4 border-t border-zinc-200/80 bg-white/90 px-4 pt-3 backdrop-blur-md sm:mx-0 sm:rounded-t-3xl sm:border-x sm:px-5"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)" }}
       >
-        <QuizPlanCta plan={selectedPlan} onContinue={onContinue} />
+        <QuizPlanCta plan={selectedPlan} worry={worry} onContinue={onContinue} />
       </div>
     </div>
   );
