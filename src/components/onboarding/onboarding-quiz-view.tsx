@@ -83,7 +83,7 @@ const ICONS: Record<QuizIcon, ReactNode> = {
 // Long enough for the position to feel prepared, not so long it feels stuck.
 const FINAL_STEP_MS = 3800;
 // « Continuer avec … »: the plan sheet slides away and the screen fades out
-// this long before navigating to the order page, which then eases in on its
+// this long before navigating to /checkout (payment popup), which then eases in on its
 // own (see .paywall-rise): one continuous move.
 const LEAVE_FADE_MS = 250;
 
@@ -603,8 +603,8 @@ export function OnboardingQuizView({
     }
   }
 
-  function checkoutUrl(planId: string) {
-    return `/checkout?plan=${planId}&parcours=quiz${checkoutPreview ? "&preview=1" : ""}`;
+  function checkoutUrl(planId: string, pay = false) {
+    return `/checkout?plan=${planId}&parcours=quiz${checkoutPreview ? "&preview=1" : ""}${pay ? "&payer=1" : ""}`;
   }
 
   /** « Débloquer ma loc »: opens the plan picker over the ready screen (step 1). */
@@ -646,7 +646,7 @@ export function OnboardingQuizView({
       reason: recommendation.reason,
       mainApp,
     });
-    router.prefetch(checkoutUrl(planId));
+    router.prefetch(checkoutUrl(planId, true));
   }
 
   function selectSheetPlan(planId: string) {
@@ -655,14 +655,14 @@ export function OnboardingQuizView({
     if (planId !== plansSheet.planId) setPlansSheet({ ...plansSheet, planId });
   }
 
-  /** « Continuer avec … »: the sheet slides away while the screen fades, then the order page (step 2). */
+  /** « Continuer avec … »: the sheet slides away while the screen fades, then /checkout opens the payment popup. */
   function continueToOrder() {
     if (!plansSheet || leaving) return;
     const planId = plansSheet.planId;
     track("quiz_plans_continue", { plan: planId });
     setLeaving(true);
     setPlansSheet({ ...plansSheet, open: false });
-    window.setTimeout(() => router.push(checkoutUrl(planId)), LEAVE_FADE_MS);
+    window.setTimeout(() => router.push(checkoutUrl(planId, true)), LEAVE_FADE_MS);
   }
 
   const sheetPlans = plansSheet ? getGridPlans(getPlanGrid(plansSheet.recommendedPlanId)) : [];

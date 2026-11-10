@@ -23,7 +23,7 @@ import { CheckoutClipperSheet } from "@/components/checkout/checkout-clipper-she
 import { CheckoutDownsellSheet } from "@/components/checkout/checkout-downsell-sheet";
 import { CheckoutPaymentModal } from "@/components/checkout/checkout-payment-modal";
 import { CheckoutProofVideo } from "@/components/checkout/checkout-proof-video";
-import { QuizOrder } from "@/components/checkout/quiz-order";
+import { QuizPlanPage } from "@/components/checkout/quiz-plan-page";
 import {
   CHECKOUT_COPY,
   CHECKOUT_REVIEWS,
@@ -58,6 +58,7 @@ import {
   PLAN_VALUE_STACK,
 } from "@/lib/constants";
 import type { OnboardingDestination } from "@/lib/onboarding-destinations";
+import { atCity } from "@/lib/onboarding-destinations";
 import type { QuizResult } from "@/lib/onboarding-quiz";
 import { registerPostHogProperties } from "@/lib/posthog/browser";
 import { getStripe } from "@/lib/stripe-browser";
@@ -131,6 +132,7 @@ export function AnyLocCheckoutPanel({
   returning,
   quiz,
   fromQuiz = false,
+  autoPay = false,
   priceDisplay = "per_day",
   previewAnnualExit = false,
 }: {
@@ -152,6 +154,8 @@ export function AnyLocCheckoutPanel({
   quiz?: QuizResult | null;
   /** Arriving from the quiz: the paywall eases in from the first paint, before the quiz result is read. */
   fromQuiz?: boolean;
+  /** Quiz arm, coming from the plan sheet (?payer=1): the payment popup opens on arrival. */
+  autoPay?: boolean;
   /** A/B test: plans priced per day or per month (see lib/price-display-experiment). */
   priceDisplay?: PriceDisplayVariant;
   /** Dev preview only (/checkout?preview=1&sortie=1): open on the annual exit offer sheet. */
@@ -185,9 +189,19 @@ export function AnyLocCheckoutPanel({
   }, [stripePublishableKey]);
 
   // Email links (?paiement=1) land straight on the payment popup.
-  const [modalOpen, setModalOpen] = useState(Boolean(focusPayment));
+  // The quiz's plan sheet (?payer=1) does too, for the plan it picked.
+  const [modalOpen, setModalOpen] = useState(Boolean(focusPayment) || autoPay);
   // The popup is portaled to <body>: only render it once in the browser.
   const hydrated = useSyncExternalStore(subscribeToNothing, () => true, () => false);
+
+  const autoPayTrackedRef = useRef(false);
+  useEffect(() => {
+    if (!autoPay || autoPayTrackedRef.current) return;
+    autoPayTrackedRef.current = true;
+    track("checkout_continue_clicked", { plan: selectedPlanId, source: "quiz_sheet" });
+    // Once, on arrival from the sheet.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function openPaymentModal(source: "main" | "resume" | "apple_pay_badge") {
     track("checkout_continue_clicked", { plan: selectedPlanId, source });
@@ -489,12 +503,9 @@ export function AnyLocCheckoutPanel({
   }, []);
 
   const headline = getCheckoutHeadline(destination?.city, returning);
-  // From the quiz: its recommended plan (the plan list itself was the quiz's sheet).
-  const recommendedPlan = quiz
-    ? checkoutPlans.find((plan) => plan.id === quiz.recommendedPlanId)
-    : undefined;
-  // Visitors from the quiz get the order page (components/checkout/quiz-order);
-  // everything below it in this file is the control arm. An email link that
+  // Visitors from the quiz get the plan list of the quiz's sheet as the page
+  // (components/checkout/quiz-plan-page); everything below it in this file is
+  // the control arm. An email link that
   // focuses the payment popup keeps the focused view.
   const quizArm = (Boolean(quiz) || fromQuiz) && !focusPayment;
   // The quiz result is read after hydration, so it gets its own event.
@@ -661,23 +672,25 @@ export function AnyLocCheckoutPanel({
       ) : null}
 
       {quizArm ? (
-        <QuizOrder
+        <QuizPlanPage
+          title={{
+            before: "Active ta loc",
+            highlight: destination ? atCity(destination.city) : "",
+            after: quiz?.mainApp ? ` sur ${quiz.mainApp}` : "",
+          }}
           plans={checkoutPlans}
           selectedPlan={selectedPlan}
           referencePlan={entryPlan}
-          planLine={
-            recommendedPlan?.id === selectedPlan.id && quiz?.reason ? quiz.reason : selectedPlan.perk
-          }
+          recommendedPlanId={quiz?.recommendedPlanId}
+          recommendationReason={quiz?.reason}
           welcomeOfferPrice={
             recoveryOffer && selectedPlan.id === RECOVERY_OFFER_PLAN_ID
               ? getFirstMonthOfferPrice(selectedPlan.price)
               : undefined
           }
-          annualExitOfferPrice={
-            annualExitAccepted ? ANNUAL_EXIT_OFFERS[selectedPlan.id]?.offerPrice : undefined
-          }
+          hidden={autoPay && !hydrated}
           onSelectPlan={selectPlan}
-          onOrder={() => openPaymentModal("main")}
+          onContinue={() => openPaymentModal("main")}
         />
       ) : (
         <>

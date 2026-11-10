@@ -35,6 +35,7 @@ export function CheckoutView({
   focusPayment: initialFocusPayment,
   returning,
   fromQuiz,
+  autoPay,
   priceDisplay,
   previewAnnualExit,
 }: {
@@ -47,6 +48,8 @@ export function CheckoutView({
   returning?: ReturningCustomer | null;
   /** Arrived from the quiz onboarding: its recommendation shapes the paywall. */
   fromQuiz?: boolean;
+  /** Quiz arm, from the plan sheet (?payer=1): the payment popup opens on arrival. */
+  autoPay?: boolean;
   /** A/B test: plans priced per day or per month. */
   priceDisplay?: PriceDisplayVariant;
   /** Dev preview only: open on the annual exit offer sheet. */
@@ -75,9 +78,17 @@ export function CheckoutView({
     }
   }, [fromQuiz]);
 
+  // The handoff is one-shot: a reload shows the plan list, not the popup.
+  useEffect(() => {
+    if (!autoPay) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("payer");
+    window.history.replaceState(window.history.state, "", url);
+  }, [autoPay]);
+
   function selectPlan(planId: string) {
     setSelectedPlanId(planId);
-    // The quiz arm keeps its marker, so the server render stays on the order page.
+    // The quiz arm keeps its marker, so the server render stays on the plan list.
     router.replace(`/checkout?plan=${planId}${fromQuiz ? "&parcours=quiz" : ""}`, { scroll: false });
   }
 
@@ -111,6 +122,7 @@ export function CheckoutView({
           returning={returning}
           quiz={quiz}
           fromQuiz={fromQuiz}
+          autoPay={autoPay}
           priceDisplay={priceDisplay}
           previewAnnualExit={previewAnnualExit}
         />

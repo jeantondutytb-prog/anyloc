@@ -3,10 +3,9 @@
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Lock, X } from "lucide-react";
-import { QuizPlanList } from "@/components/checkout/quiz-plan-list";
+import { X } from "lucide-react";
+import { QuizPlanCta, QuizPlanList } from "@/components/checkout/quiz-plan-list";
 import type { Plan } from "@/lib/constants";
-import { getPayTodayLine } from "@/lib/quiz-paywall";
 
 function subscribeToNothing() {
   return () => {};
@@ -35,7 +34,7 @@ const EASE = [0.22, 1, 0.36, 1] as const;
  * Step 1 of the quiz arm's purchase: the plan picker, over the quiz's ready
  * screen. Full-height sheet on a phone, centred modal from 640 px. The cross,
  * Escape and the backdrop close it; "Continuer avec …" hands over to the
- * order page (/checkout?plan=…&parcours=quiz). Portaled to <body>.
+ * payment popup (/checkout?plan=…&parcours=quiz&payer=1). Portaled to <body>.
  */
 export function QuizPlansSheet({
   open,
@@ -182,20 +181,7 @@ export function QuizPlansSheet({
               className="border-t border-zinc-100 bg-background px-4 pt-3 sm:rounded-b-[28px] sm:px-6"
               style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)" }}
             >
-              <button
-                type="button"
-                onClick={onContinue}
-                className="btn-gradient flex h-12 w-full items-center justify-center rounded-full text-[15px] font-bold text-white transition hover:opacity-90"
-              >
-                Continuer avec {selectedPlan.name}
-              </button>
-              <p className="mt-2 text-center text-xs text-zinc-500">
-                {getPayTodayLine(selectedPlan)}
-              </p>
-              <p className="mt-1 flex items-center justify-center gap-1 text-[11px] text-zinc-400">
-                <Lock className="h-3 w-3" aria-hidden />
-                Paiement sécurisé · Carte bancaire · Apple Pay
-              </p>
+              <QuizPlanCta plan={selectedPlan} onContinue={onContinue} />
             </div>
           </motion.div>
         </motion.div>

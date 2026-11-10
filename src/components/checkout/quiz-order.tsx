@@ -16,6 +16,11 @@ import {
 } from "@/lib/quiz-paywall";
 import { cn } from "@/lib/utils";
 
+// NOT RENDERED for now: the order page was removed from the quiz flow (the
+// plan sheet's « Continuer » opens the payment popup directly). Kept, with its
+// helpers in lib/quiz-paywall.ts and their tests, for the Pack Voyageur lot
+// (add-ons), which will need an order step again.
+
 /**
  * Slot for the optional add-ons of the order (lot 3: the « Pack Voyageur »),
  * between the plan card and the payment bar. Renders nothing until they exist:

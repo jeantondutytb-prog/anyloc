@@ -45,11 +45,12 @@ export default async function CheckoutPage({
     retour?: string;
     offre?: string;
     parcours?: string;
+    payer?: string;
     prix?: string;
     sortie?: string;
   }>;
 }) {
-  const { plan, canceled, preview, paiement, pricing, retour, parcours, prix, offre, sortie } =
+  const { plan, canceled, preview, paiement, pricing, retour, parcours, payer, prix, offre, sortie } =
     await searchParams;
   // Email links (?paiement=1) open straight on the payment form.
   const focusPayment = paiement === "1";
@@ -144,6 +145,8 @@ export default async function CheckoutPage({
         stripePublishableKey={getStripePublishableKey()}
         returning={returning}
         fromQuiz={parcours === "quiz" && !returning}
+        // From the quiz's plan sheet (?payer=1): open the payment popup on arrival.
+        autoPay={parcours === "quiz" && !returning && !focusPayment && payer === "1"}
         priceDisplay={priceDisplay}
         // The dev preview can open the annual exit offer: /checkout?preview=1&sortie=1.
         previewAnnualExit={devPreview && sortie === "1"}

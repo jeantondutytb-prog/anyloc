@@ -1,17 +1,41 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Plus, ShieldCheck, TrendingDown } from "lucide-react";
+import { Check, Lock, Plus, ShieldCheck, TrendingDown } from "lucide-react";
 import { GuaranteeSheet } from "@/components/checkout/guarantee-sheet";
 import { CHECKOUT_COPY } from "@/lib/checkout-copy";
 import type { Plan } from "@/lib/constants";
-import { getPerMonthPrice, getPlanValueCard } from "@/lib/quiz-paywall";
+import { getPayTodayLine, getPerMonthPrice, getPlanValueCard } from "@/lib/quiz-paywall";
 import { cn } from "@/lib/utils";
 
 /**
+ * The pinned « Continuer avec … » button of the plan picker, with the amount
+ * due today and the payment reassurance. Shared by the quiz's plan sheet and
+ * the plan list page of /checkout (after the payment popup is closed).
+ */
+export function QuizPlanCta({ plan, onContinue }: { plan: Plan; onContinue: () => void }) {
+  return (
+    <>
+      <button
+        type="button"
+        onClick={onContinue}
+        className="btn-gradient flex h-12 w-full items-center justify-center rounded-full text-[15px] font-bold text-white transition hover:opacity-90"
+      >
+        Continuer avec {plan.name}
+      </button>
+      <p className="mt-2 text-center text-xs text-zinc-500">{getPayTodayLine(plan)}</p>
+      <p className="mt-1 flex items-center justify-center gap-1 text-[11px] text-zinc-400">
+        <Lock className="h-3 w-3" aria-hidden />
+        Paiement sécurisé · Carte bancaire · Apple Pay
+      </p>
+    </>
+  );
+}
+
+/**
  * The plan picker of visitors coming from the quiz, shown in the sheet that
- * opens over the quiz's ready screen (components/onboarding/quiz-plans-sheet):
- * title, plans, one value card, what the plan unlocks, questions, fine print.
+ * opens over the quiz's ready screen (components/onboarding/quiz-plans-sheet)
+ * and as the page of /checkout behind the payment popup: title, plans, one value card, what the plan unlocks, questions, fine print.
  * Renders and reports taps only; the parent owns the selection and the CTA.
  */
 export function QuizPlanList({
