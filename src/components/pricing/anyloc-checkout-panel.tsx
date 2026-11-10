@@ -31,6 +31,7 @@ import {
   getReturningSubline,
   type ReturningCustomer,
 } from "@/lib/checkout-copy";
+import type { BackResult } from "@/lib/back-interception";
 import { useBackInterception } from "@/hooks/use-back-interception";
 import {
   ANNUAL_EXIT_OFFERS,
@@ -314,7 +315,11 @@ export function AnyLocCheckoutPanel({
       !annualExitAttempted &&
       !offerSessionId &&
       getAnnualExitOfferPlanId(selectedPlanId) !== null,
-    () => offerAnnualExit("back")
+    async (): Promise<BackResult> => {
+      if (await offerAnnualExit("back")) return "shown";
+      // The popup opened while the offer was being fetched: stay, don't navigate.
+      return modalOpenRef.current ? "aborted" : "declined";
+    }
   );
 
   function acceptAnnualExit() {
