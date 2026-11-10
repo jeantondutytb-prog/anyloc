@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, Check, Laptop, Loader2, Lock, Monitor, MoreHorizontal } from "lucide-react";
 import {
   AndroidLogo,
@@ -628,6 +628,13 @@ export function OnboardingQuizView({
 
   const canGoBack = screen.name === "intro" || screen.name === "step";
   const stepKey = screen.name === "step" ? `step-${screen.index}` : screen.name;
+  // Arriving from the signup card (which faded out): the first screen eases in
+  // with a soft fade and a small rise, with no wait on the empty loading
+  // screen; every later screen keeps the sideways slide.
+  const reducedMotion = useReducedMotion();
+  const [trail, setTrail] = useState({ key: stepKey, from: "" });
+  if (trail.key !== stepKey) setTrail({ key: stepKey, from: trail.key });
+  const firstEntry = trail.from === "loading";
 
   return (
     <div
@@ -663,10 +670,20 @@ export function OnboardingQuizView({
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={stepKey}
-            initial={{ opacity: 0, x: 32 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -32 }}
-            transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
+            initial={
+              firstEntry ? { opacity: 0, y: reducedMotion ? 0 : 10 } : { opacity: 0, x: 32 }
+            }
+            animate={{ opacity: 1, x: 0, y: 0 }}
+            exit={
+              screen.name === "loading"
+                ? { opacity: 0, transition: { duration: 0 } }
+                : { opacity: 0, x: -32 }
+            }
+            transition={
+              firstEntry
+                ? { duration: 0.3, ease: [0.22, 1, 0.36, 1] }
+                : { duration: 0.28, ease: [0.4, 0, 0.2, 1] }
+            }
           >
             {screen.name === "destination" && (
               <StepDestination query={query} onQueryChange={setQuery} onSelect={selectDestination} />

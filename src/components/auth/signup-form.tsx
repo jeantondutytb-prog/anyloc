@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { track } from "@/lib/analytics/track";
 import { stashAuthEmail } from "@/lib/auth-email-handoff";
 import { DEFAULT_PLAN_ID, getCheckoutUrl } from "@/lib/constants";
+import { isOnboardingQuizPath } from "@/lib/onboarding-experiment";
 import { MIN_PASSWORD_LENGTH } from "@/lib/password-policy";
 
 const initialState: AuthState = {};
@@ -34,8 +35,12 @@ export function SignupForm({
   const destination = redirectTo ?? getCheckoutUrl(plan);
   const loginHref = `/login?plan=${plan}&next=${encodeURIComponent(destination)}`;
 
+  // Going on to the quiz: once the account is being created the card fades out
+  // (see AuthShell) and the quiz intro eases in, one continuous move.
+  const handingOver = pending && isOnboardingQuizPath(destination);
+
   return (
-    <div>
+    <div data-leaving={handingOver || undefined}>
       <form
         action={formAction}
         onSubmit={() => track("auth_submitted", { flow: "signup", method: "password", plan })}
