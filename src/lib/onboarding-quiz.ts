@@ -22,7 +22,7 @@ export type QuizOption = {
   id: string;
   label: string;
   icon?: QuizIcon;
-  /** Shown under the cards once picked (single-choice questions only). */
+  /** Shown in the card under the options once picked (the last pick, for multi-select). */
   note?: string;
   soon?: boolean;
 };
@@ -55,12 +55,12 @@ const RAW_QUIZ_QUESTIONS: QuizQuestion[] = [
     title: (city) => `Sur quelles apps tu dois apparaître ${atCity(city)} ?`,
     multi: true,
     options: [
-      { id: "snap", label: "Snap", icon: "snap" },
-      { id: "findmy", label: "Localiser", icon: "findmy" },
-      { id: "insta", label: "Instagram", icon: "instagram" },
-      { id: "life360", label: "Life360", icon: "life360" },
-      { id: "gmaps", label: "Google Maps", icon: "gmaps" },
-      { id: "other", label: "Autre", icon: "other" },
+      { id: "snap", label: "Snap", icon: "snap", note: "Ton Bitmoji apparaît là-bas sur la Snap Map." },
+      { id: "findmy", label: "Localiser", icon: "findmy", note: "Tes proches te voient là-bas dans Localiser." },
+      { id: "insta", label: "Instagram", icon: "instagram", note: "Tes stories et tes posts sont localisés là-bas." },
+      { id: "life360", label: "Life360", icon: "life360", note: "Ton cercle Life360 te voit là-bas." },
+      { id: "gmaps", label: "Google Maps", icon: "gmaps", note: "Google Maps te place exactement là-bas." },
+      { id: "other", label: "Autre", icon: "other", note: "Anyloc change le GPS de tout ton tel : toutes tes apps suivent." },
     ],
   },
   {
@@ -69,12 +69,12 @@ const RAW_QUIZ_QUESTIONS: QuizQuestion[] = [
     title: () => "Qui doit y croire ?",
     multi: true,
     options: [
-      { id: "friends", label: "Mes potes", note: "Ils verront ta position bouger en direct sur la carte." },
+      { id: "friends", label: "Mes potes", note: "Tes potes te voient bouger en direct sur la carte." },
       { id: "ex", label: "Mon ex", note: "Ta position reste là-bas aussi longtemps que tu veux." },
       { id: "family", label: "Ma famille", note: "Toutes tes apps affichent la même ville : rien ne cloche." },
       { id: "matches", label: "Mes matchs", note: "Tu matches avec des gens de là-bas, comme si tu y étais." },
       { id: "followers", label: "Mes abonnés", note: "Tes stories et tes posts sont localisés là-bas." },
-      { id: "other", label: "Autre", note: "Pas de souci, ta loc marche pour tout le monde." },
+      { id: "other", label: "Autre", note: "Ta loc marche pour tout le monde, sans exception." },
     ],
   },
   {
@@ -82,10 +82,10 @@ const RAW_QUIZ_QUESTIONS: QuizQuestion[] = [
     kicker: "Ton usage",
     title: () => "Tu changerais de position à quelle fréquence ?",
     options: [
-      { id: "once", label: "Une fois, pour un coup", note: "Pratique pour un coup : tu la mets, et elle reste là." },
-      { id: "sometimes", label: "De temps en temps", note: "Tu la changes quand l'envie te prend, depuis ton téléphone." },
-      { id: "often", label: "Souvent", note: "Tu changes de ville quand tu veux, sans tout refaire." },
-      { id: "always", label: "Tout le temps", note: "Elle reste active en arrière-plan, tu n'as rien à relancer." },
+      { id: "once", label: "Juste une fois", note: "Tu la poses, elle reste là. Rien d'autre à faire." },
+      { id: "sometimes", label: "De temps en temps", note: "Tu changes de ville quand tu veux, depuis ton tel." },
+      { id: "often", label: "Souvent", note: "Change de ville autant que tu veux : c'est illimité." },
+      { id: "always", label: "Tout le temps", note: "Elle reste active en arrière-plan, rien à relancer." },
     ],
   },
   {
@@ -93,9 +93,9 @@ const RAW_QUIZ_QUESTIONS: QuizQuestion[] = [
     kicker: "Ton téléphone",
     title: () => "Tu as quel téléphone ?",
     options: [
-      { id: "iphone", label: "iPhone", icon: "apple", note: "Ça marche sur tous les iPhone récents, sans rien modifier." },
-      { id: "android", label: "Android", icon: "android", note: "Tout se fait directement sur ton téléphone." },
-      { id: "other", label: "Autre", icon: "other", note: "On regarde avec toi si ton téléphone est compatible." },
+      { id: "iphone", label: "iPhone", icon: "apple", note: "Marche sur les iPhone récents, sans rien modifier." },
+      { id: "android", label: "Android", icon: "android", note: "Tout se fait directement depuis ton tel." },
+      { id: "other", label: "Autre", icon: "other", note: "On vérifie avec toi que ton tel est compatible." },
     ],
   },
   {
@@ -103,21 +103,21 @@ const RAW_QUIZ_QUESTIONS: QuizQuestion[] = [
     kicker: "Ta position",
     title: () => "Tu veux que ta position bouge ?",
     options: [
-      { id: "fixed", label: "Non, elle reste au même endroit", note: "Simple : ta position reste posée là où tu l'as mise." },
-      { id: "walk", label: "Oui, je me balade à pied", note: "Ta position se déplace dans les rues, comme si tu marchais." },
+      { id: "fixed", label: "Non, elle reste au même endroit", note: "Ta position reste posée là où tu l'as mise." },
+      { id: "walk", label: "Oui, je me balade à pied", note: "Ta position avance dans les rues, comme si tu marchais." },
       { id: "travel", label: "En voiture, train ou avion", soon: true, note: "Bientôt dispo : on te prévient dès que c'est prêt." },
     ],
   },
   {
     id: "tried",
-    kicker: "Ton historique",
+    kicker: "Ton expérience",
     title: () => "Tu as déjà essayé autre chose ?",
     multi: true,
     options: [
-      { id: "vpn", label: "Un VPN", note: "Un VPN ne change pas ton GPS : les apps le voient toujours." },
-      { id: "fakegps", label: "Une app Fake GPS", note: "Ces apps ne changent pas ta position pour toutes les apps." },
+      { id: "vpn", label: "Un VPN", note: "Un VPN change ton IP, pas ton GPS : les apps te voient toujours." },
+      { id: "fakegps", label: "Une app Fake GPS", note: "Une app Fake GPS ne trompe pas toutes tes apps. Anyloc, si." },
       { id: "nothing", label: "Non, jamais", note: "Aucun souci : le guide te prend par la main." },
-      { id: "other", label: "Autre chose", note: "Anyloc agit sur le GPS de tout ton téléphone." },
+      { id: "other", label: "Autre chose", note: "Anyloc change le GPS de tout ton tel, pas d'une seule app." },
     ],
   },
   {
@@ -125,10 +125,10 @@ const RAW_QUIZ_QUESTIONS: QuizQuestion[] = [
     kicker: "Ce qui te freine",
     title: () => "Qu'est-ce qui t'inquiète le plus ?",
     options: [
-      { id: "detect", label: "Qu'on voie que c'est faux", note: "Tes potes voient une position normale, comme si tu y étais." },
+      { id: "detect", label: "Qu'on voie que c'est faux", note: "Pour tes potes, c'est une position normale." },
       { id: "ban", label: "Me faire bannir", note: "Anyloc ne touche pas à tes apps : elles lisent juste ta position." },
       { id: "install", label: "L'installation", note: "Un guide pas à pas, et le chat t'aide en direct si tu bloques." },
-      { id: "price", label: "Payer pour rien", note: "Si ça ne marche pas, ton 1er paiement est remboursé (garantie 48 h)." },
+      { id: "price", label: "Payer pour rien", note: "Si ça ne marche pas, ton 1er paiement est remboursé." },
       { id: "none", label: "Rien, je veux tester", note: "Parfait : ta loc est presque prête." },
       { id: "other", label: "Autre", note: "Le chat répond à toutes tes questions, même avant de payer." },
     ],
@@ -139,8 +139,8 @@ const RAW_QUIZ_QUESTIONS: QuizQuestion[] = [
     title: () => "Tu en as besoin pour quand ?",
     options: [
       { id: "today", label: "Aujourd'hui", note: "L'installation prend 5 minutes, une seule fois." },
-      { id: "week", label: "Cette semaine", note: "Tu as le temps : un guide pas à pas t'accompagne." },
-      { id: "later", label: "Plus tard", note: "Aucune pression : ta loc sera prête quand tu le seras." },
+      { id: "week", label: "Cette semaine", note: "Tu as le temps : le guide t'accompagne pas à pas." },
+      { id: "later", label: "Plus tard", note: "Aucune pression : ta loc t'attend." },
     ],
   },
 ];

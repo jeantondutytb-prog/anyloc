@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowLeft, Check, Loader2, Lock, MoreHorizontal } from "lucide-react";
+import { ArrowLeft, Check, Loader2, Lock, MoreHorizontal, Sparkles } from "lucide-react";
 import {
   AndroidLogo,
   AppleLogo,
@@ -194,6 +194,7 @@ function QuestionScreen({
   question,
   city,
   selected,
+  lastPicked,
   otherApp,
   onOtherAppChange,
   onToggle,
@@ -202,6 +203,8 @@ function QuestionScreen({
   question: QuizQuestion;
   city: string;
   selected: string[];
+  /** The option the visitor selected last (multi-select questions). */
+  lastPicked: string | null;
   /** The app typed for "Autre" (apps question only). */
   otherApp: string;
   onOtherAppChange: (value: string) => void;
@@ -209,7 +212,12 @@ function QuestionScreen({
   onContinue: () => void;
 }) {
   const askOtherApp = question.id === "apps" && selected.includes("other");
-  // No note box under the answers: it changed text on every click (owner's call).
+  const reducedMotion = useReducedMotion();
+  // Single choice: the picked option. Multi-select: the last one picked that is still selected.
+  const noteOption = question.options.find(
+    (option) => option.id === (selected.includes(lastPicked ?? "") ? lastPicked : selected.at(-1))
+  );
+  const note = noteOption?.note;
   const withIcons = question.options.some((option) => option.icon);
 
   return (
@@ -245,6 +253,38 @@ function QuestionScreen({
             </button>
           );
         })}
+      </div>
+      {/* Height reserved for two lines, so the page never jumps as the note comes and goes. */}
+      <div className="mt-4 min-h-[4.25rem]">
+        <AnimatePresence initial={false}>
+          {note && (
+          <motion.div
+            key="answer-note"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            className="flex min-h-[4.25rem] items-center gap-3 rounded-2xl border border-zinc-100 bg-white px-4 py-3 text-left shadow-sm"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-pink-500 to-violet-500 text-white">
+              <Sparkles className="h-[18px] w-[18px]" aria-hidden />
+            </span>
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.p
+                key={noteOption?.id}
+                initial={{ opacity: 0, y: reducedMotion ? 0 : 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.18 }}
+                aria-live="polite"
+                className="text-sm font-medium leading-snug text-zinc-800"
+              >
+                {note}
+              </motion.p>
+            </AnimatePresence>
+          </motion.div>
+          )}
+        </AnimatePresence>
       </div>
       <AnimatePresence initial={false}>
         {askOtherApp && (
@@ -482,6 +522,8 @@ export function OnboardingQuizView({
   const [query, setQuery] = useState("");
   const [answers, setAnswers] = useState<QuizAnswers>({});
   const [otherApp, setOtherApp] = useState("");
+  // Last option selected per multi-select question, for the note under the cards.
+  const [lastPicked, setLastPicked] = useState<Record<string, string>>({});
   const [leaving, setLeaving] = useState(false);
   // Step 1 of the purchase: the plan picker over the ready screen.
   const [plansSheet, setPlansSheet] = useState<{
@@ -549,6 +591,9 @@ export function OnboardingQuizView({
         : [optionId];
       return { ...current, [question.id]: value };
     });
+    if (question.multi && !(answers[question.id] ?? []).includes(optionId)) {
+      setLastPicked((current) => ({ ...current, [question.id]: optionId }));
+    }
     // Deselecting "Autre" in the apps question hides the field and forgets what was typed.
     if (question.id === "apps" && optionId === "other" && (answers.apps ?? []).includes("other")) {
       setOtherApp("");
@@ -716,6 +761,7 @@ export function OnboardingQuizView({
                 question={currentStep.question}
                 city={destination.city}
                 selected={answers[currentStep.question.id] ?? []}
+                lastPicked={lastPicked[currentStep.question.id] ?? null}
                 otherApp={otherApp}
                 onOtherAppChange={setOtherApp}
                 onToggle={(optionId) => toggle(currentStep.question, optionId)}
