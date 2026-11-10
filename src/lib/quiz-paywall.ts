@@ -1,7 +1,7 @@
 import type { Plan } from "@/lib/constants";
 import { getPlanMonths } from "@/lib/price-display-experiment";
 
-type PricedPlan = Pick<Plan, "id" | "price">;
+type PricedPlan = Pick<Plan, "id" | "price"> & { oneTime?: boolean };
 
 /** "49,00€" -> 49 ; "9,90 €" -> 9.9. */
 function parsePrice(price: string) {
@@ -43,6 +43,7 @@ export function getBillingCadence(planId: string) {
 /** Line under the paywall button: what is charged now and when it renews. */
 export function getPayTodayLine(plan: PricedPlan, firstPayment?: string) {
   const amount = firstPayment ?? plan.price.replace("€", " €");
+  if (plan.oneTime) return `${amount} à payer une seule fois · Pas d'abonnement`;
   return `${amount} à payer aujourd'hui, puis ${getBillingCadence(plan.id)} · Résiliable en 1 clic`;
 }
 
@@ -98,6 +99,6 @@ export function getPlanValueCard(
   return {
     kind: "savings",
     title: `${getPerMonthPrice(plan)} € par mois ${span}`,
-    text: `${percent} % moins cher que le mensuel${plan.mobileApp ? ", et l'app mobile est incluse" : ""}.`,
+    text: `${percent} % moins cher que le mensuel${plan.mobileApp ? ", et l'iPhone s'installe sans ordi" : ""}.`,
   };
 }

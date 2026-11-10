@@ -6,7 +6,7 @@ export const CHECKOUT_MARKETING_LINE =
   "Active Anyloc sur le plan de ton choix — Snap, Insta, Tinder et toutes tes apps.";
 
 export const CHECKOUT_SELECT_SUBLINE =
-  "Même accès complet sur tous les plans — Snap, Insta, Tinder et toutes tes apps. Seule la durée facturée change.";
+  "Même accès complet sur tous les plans — Snap, Insta, Tinder et toutes tes apps.";
 
 export const CHECKOUT_HEADLINE =
   "Paiement sécurisé — ta carte est débitée tout de suite, accès immédiat.";
@@ -174,7 +174,7 @@ export const PLANS = [
     id: "monthly",
     grid: "v1",
     mobileApp: false,
-    perk: "Sur PC et Mac",
+    perk: "iPhone et Android",
     name: "Mensuel",
     price: "9,90€",
     period: "/mois",
@@ -194,7 +194,7 @@ export const PLANS = [
     id: "6months",
     grid: "v1",
     mobileApp: false,
-    perk: "Sur PC et Mac",
+    perk: "iPhone et Android",
     name: "6 mois",
     price: "34,90€",
     period: "/6 mois",
@@ -214,7 +214,7 @@ export const PLANS = [
     id: "annual",
     grid: "v1",
     mobileApp: true,
-    perk: "App mobile incluse",
+    perk: "iPhone installé sans ordi",
     name: "Annuel",
     price: "49,00€",
     period: "/an",
@@ -235,7 +235,7 @@ export const PLANS = [
     id: "month_v2",
     grid: "v2",
     mobileApp: false,
-    perk: "Sur PC et Mac",
+    perk: "iPhone et Android",
     name: "1 mois",
     price: "19€",
     period: "/mois",
@@ -255,7 +255,7 @@ export const PLANS = [
     id: "quarter_v2",
     grid: "v2",
     mobileApp: false,
-    perk: "PC et Mac + prix bloqué",
+    perk: "iPhone et Android + prix bloqué",
     name: "3 mois",
     price: "29€",
     period: "/3 mois",
@@ -275,7 +275,7 @@ export const PLANS = [
     id: "year_v2",
     grid: "v2",
     mobileApp: true,
-    perk: "PC et Mac + app iPhone",
+    perk: "iPhone installé sans ordi",
     name: "1 an",
     price: "79€",
     period: "/an",
@@ -299,7 +299,7 @@ export const PLANS = [
     id: "monthly_v3",
     grid: "v3",
     mobileApp: false,
-    perk: "Sur PC et Mac",
+    perk: "iPhone et Android",
     name: "Mensuel",
     price: "9,90€",
     period: "/mois",
@@ -319,7 +319,7 @@ export const PLANS = [
     id: "annual_v3",
     grid: "v3",
     mobileApp: true,
-    perk: "App mobile incluse",
+    perk: "iPhone installé sans ordi",
     name: "Annuel",
     price: "49,00€",
     period: "/an",
@@ -340,14 +340,14 @@ export const PLANS = [
     grid: "v3",
     mobileApp: false,
     oneTime: true,
-    perk: "Sur PC et Mac, pour toujours",
+    perk: "iPhone et Android, pour toujours",
     name: "À vie",
     price: "89€",
     period: " une fois",
     perDay: "89",
     perDayLabel: "€ une fois",
     billedNote:
-      "Payé 89 € une seule fois. Pas d'abonnement, rien ne se renouvelle. L'app iPhone n'est pas incluse.",
+      "Payé 89 € une seule fois. Pas d'abonnement, rien ne se renouvelle. Sur iPhone, un ordi est nécessaire une fois pour installer.",
     compare: "Le prix de 9 mois, pour toujours",
     description: "Tu paies une fois, Anyloc est à toi.",
     savings: "Plus jamais d'abonnement",
