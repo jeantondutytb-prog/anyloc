@@ -2,8 +2,12 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { PLANS } from "@/lib/constants";
 import {
+  formatOrderPrice,
   getBillingCadence,
+  getOrderPayToday,
+  getOrderRenewalLine,
   getPayTodayLine,
+  getPeriodLabel,
   getPerMonthPrice,
   getPlanValueCard,
   getSavingsPercent,
@@ -65,5 +69,37 @@ describe("quiz paywall helpers", () => {
       title: "Garantie 48 h",
       text: "Si ta loc ne bouge pas, ton 1er paiement est remboursé.",
     });
+  });
+
+  it("formats the order page's amounts and periods", () => {
+    assert.equal(formatOrderPrice("49,00€"), "49 €");
+    assert.equal(formatOrderPrice("9,90€"), "9,90 €");
+    assert.equal(formatOrderPrice("29 €"), "29 €");
+    assert.equal(formatOrderPrice("4,95 €"), "4,95 €");
+    assert.equal(getPeriodLabel("monthly"), "1 mois");
+    assert.equal(getPeriodLabel("6months"), "6 mois");
+    assert.equal(getPeriodLabel("annual"), "12 mois");
+    assert.equal(getPeriodLabel("quarter_v2"), "3 mois");
+  });
+
+  it("writes what is paid today and how it renews", () => {
+    assert.equal(getOrderPayToday(plan("monthly")), "9,90 €");
+    assert.equal(getOrderRenewalLine(plan("monthly")), "puis 9,90 € chaque mois");
+    assert.equal(getOrderPayToday(plan("6months")), "34,90 €");
+    assert.equal(getOrderRenewalLine(plan("6months")), "puis 34,90 € tous les 6 mois");
+    assert.equal(getOrderPayToday(plan("annual")), "49 €");
+    assert.equal(getOrderRenewalLine(plan("annual")), "puis 49 € tous les 12 mois");
+  });
+
+  it("charges the welcome offer today, then the full monthly price", () => {
+    const offers = { welcomeOfferPrice: "4,95 €" };
+    assert.equal(getOrderPayToday(plan("monthly"), offers), "4,95 €");
+    assert.equal(getOrderRenewalLine(plan("monthly"), offers), "puis 9,90 € chaque mois");
+  });
+
+  it("keeps the annual exit offer price at renewal", () => {
+    const offers = { annualExitOfferPrice: "29 €" };
+    assert.equal(getOrderPayToday(plan("annual"), offers), "29 €");
+    assert.equal(getOrderRenewalLine(plan("annual"), offers), "puis 29 € tous les 12 mois");
   });
 });

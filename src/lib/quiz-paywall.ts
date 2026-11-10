@@ -46,6 +46,38 @@ export function getPayTodayLine(plan: PricedPlan, firstPayment?: string) {
   return `${amount} à payer aujourd'hui, puis ${getBillingCadence(plan.id)} · Résiliable en 1 clic`;
 }
 
+/** "49,00€" -> "49 €", "9,90€" -> "9,90 €", "29 €" -> "29 €": the order page's amounts. */
+export function formatOrderPrice(price: string) {
+  return `${price.replace("€", "").trim().replace(/,00$/, "")} €`;
+}
+
+/** "1 mois", "6 mois", "12 mois": the order page's period switcher. */
+export function getPeriodLabel(planId: string) {
+  return `${getPlanMonths(planId)} mois`;
+}
+
+export type OrderOffers = {
+  /** "4,95 €" while the -50 % welcome offer applies to this plan's 1st month. */
+  welcomeOfferPrice?: string;
+  /** "29 €": the accepted annual exit offer, kept at every renewal. */
+  annualExitOfferPrice?: string;
+};
+
+/** Big amount of the order page's bar: what the card is charged today. */
+export function getOrderPayToday(plan: PricedPlan, offers: OrderOffers = {}) {
+  return formatOrderPrice(offers.annualExitOfferPrice ?? offers.welcomeOfferPrice ?? plan.price);
+}
+
+/**
+ * Line under that amount: "puis 9,90 € chaque mois". The welcome offer only
+ * discounts the 1st month, so it renews at the plan price; the annual exit
+ * offer keeps its price: "puis 29 € tous les 12 mois".
+ */
+export function getOrderRenewalLine(plan: PricedPlan, offers: OrderOffers = {}) {
+  const renewal = formatOrderPrice(offers.annualExitOfferPrice ?? plan.price);
+  return `puis ${renewal} ${getBillingCadence(plan.id)}`;
+}
+
 export type PlanValueCard = { kind: "savings" | "guarantee"; title: string; text: string };
 
 /** The one value card under the plans: savings on a long plan, the guarantee on a monthly one. */
