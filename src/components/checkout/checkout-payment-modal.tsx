@@ -11,6 +11,7 @@ import { CHECKOUT_COPY } from "@/lib/checkout-copy";
 import { type DeclineKind, getFirstMonthOfferPrice } from "@/lib/checkout-first-month-offer";
 import { CheckoutRequestError, isNetworkError, requestCheckoutSession } from "@/lib/checkout-request";
 import { GUARANTEE, type Plan } from "@/lib/constants";
+import { getOrderRenewalLine } from "@/lib/quiz-paywall";
 
 /**
  * Payment popup opened by the paywall's "Continuer": Stripe's embedded
@@ -31,7 +32,7 @@ export function CheckoutPaymentModal({
   onAnnualExitOfferExpired,
   onDeclineOffer,
   stripePublishableKey,
-  fromQuiz = false,
+  variant,
   hostedRedirecting,
   hostedError,
   onHostedFallback,
@@ -51,8 +52,8 @@ export function CheckoutPaymentModal({
   onAnnualExitOfferExpired?: () => void;
   onDeclineOffer: (declinedSessionId: string) => void;
   stripePublishableKey: string;
-  /** Arrived from the quiz: the guarantee block shrinks to one discreet line. */
-  fromQuiz?: boolean;
+  /** "quiz": the quiz arm's popup, a squarer card whose header shows the amount charged today. */
+  variant?: "quiz";
   /** The hosted-page fallback is loading. */
   hostedRedirecting: boolean;
   hostedError?: string | null;
@@ -63,6 +64,7 @@ export function CheckoutPaymentModal({
   zIndexClassName?: string;
 }) {
   const copy = CHECKOUT_COPY;
+  const isQuiz = variant === "quiz";
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -223,6 +225,14 @@ export function CheckoutPaymentModal({
   const price = plan.price.replace("€", " €");
   const offerPrice = getFirstMonthOfferPrice(offerPlan.price);
 
+  // Quiz header: what the card is charged today and what renews after.
+  const quizPayToday = annualExitOffer
+    ? annualExitOffer.offerPrice
+    : discounted
+      ? getFirstMonthOfferPrice(plan.price)
+      : price;
+  const quizRenewalLine = getOrderRenewalLine(plan, { annualExitOfferPrice: annualExitOffer?.offerPrice });
+
   function retry() {
     setError(null);
     setAttempt((count) => count + 1);
@@ -238,8 +248,33 @@ export function CheckoutPaymentModal({
         aria-modal="true"
         aria-label={copy.modalTitle}
         onClick={(event) => event.stopPropagation()}
-        className="flex cursor-auto max-h-[calc(100dvh-2rem)] w-full max-w-md animate-[checkoutModalIn_.25s_ease-out] flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
+        className={
+          isQuiz
+            ? "flex cursor-auto max-h-[90dvh] w-full max-w-md animate-[checkoutModalIn_.2s_ease-out] flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+            : "flex cursor-auto max-h-[calc(100dvh-2rem)] w-full max-w-md animate-[checkoutModalIn_.25s_ease-out] flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
+        }
       >
+        {isQuiz ? (
+          <div className="flex items-start justify-between gap-3 px-5 pb-3 pt-5">
+            <p className="min-w-0 text-2xl font-bold leading-tight text-zinc-900">{plan.name}</p>
+            <div className="flex shrink-0 items-start gap-3">
+              <div className="text-right">
+                <p className="text-xs text-zinc-500">À payer aujourd&apos;hui</p>
+                <p className="text-2xl font-bold leading-tight text-zinc-900">{quizPayToday}</p>
+                <p className="text-xs text-zinc-500">{quizRenewalLine}</p>
+              </div>
+              <button
+                ref={closeRef}
+                type="button"
+                onClick={requestClose}
+                aria-label="Fermer"
+                className="-mr-2 -mt-1 flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 transition hover:text-zinc-900"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        ) : (
         <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
           <p className="text-sm font-bold text-zinc-900">
             {plan.name} ·{" "}
@@ -259,6 +294,7 @@ export function CheckoutPaymentModal({
             <X className="h-4 w-4" />
           </button>
         </div>
+        )}
 
         {askingExitReason ? (
           <div className="px-4 pb-5 pt-4">
@@ -291,19 +327,8 @@ export function CheckoutPaymentModal({
             askingExitReason ? "hidden" : "overflow-y-auto overscroll-contain px-4 pb-4 pt-3"
           }
         >
-          {fromQuiz ? (
-            <p className="text-xs text-zinc-500">
-              {copy.modalGuaranteeLine}{" "}
-              <Link
-                href="/politique-de-remboursement"
-                target="_blank"
-                rel="noreferrer"
-                className="whitespace-nowrap underline"
-              >
-                {copy.guaranteeConditionsToggle}
-              </Link>
-            </p>
-          ) : (
+          {isQuiz ? null : (
+            <>
             <div className="flex items-start gap-2 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs leading-snug text-emerald-900/80">
               <Check className="mt-px h-3.5 w-3.5 shrink-0 text-emerald-600" strokeWidth={3} />
               <p>
@@ -319,8 +344,9 @@ export function CheckoutPaymentModal({
                 </Link>
               </p>
             </div>
+          <p className="mt-2 text-xs text-zinc-500">{copy.modalCancelAnytime}</p>
+            </>
           )}
-          <p className={fromQuiz ? "mt-1 text-xs text-zinc-500" : "mt-2 text-xs text-zinc-500"}>{copy.modalCancelAnytime}</p>
 
           {/* Once discounted, no second offer: only the way out through another method. */}
           {declined && sessionId && (declined === "card" || discounted) ? (

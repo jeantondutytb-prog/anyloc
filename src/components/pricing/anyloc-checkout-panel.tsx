@@ -906,7 +906,7 @@ export function AnyLocCheckoutPanel({
           onAnnualExitOfferExpired={leaveAnnualExitOffer}
           onDeclineOffer={acceptDeclineOffer}
           stripePublishableKey={stripePublishableKey}
-          fromQuiz={Boolean(quiz)}
+          variant={quiz ? "quiz" : undefined}
           hostedRedirecting={redirecting}
           hostedError={error}
           onHostedFallback={() => void goToHostedPayment()}
