@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { preconnect } from "react-dom";
-import { Monitor, ShieldCheck, Smartphone, X } from "lucide-react";
+import { ShieldCheck, X } from "lucide-react";
 import { CheckoutPaymentModal } from "@/components/checkout/checkout-payment-modal";
 import { track } from "@/lib/analytics/track";
 import { CHECKOUT_RETURN_APP_COOKIE } from "@/lib/checkout-intent-cookie";
@@ -209,21 +209,6 @@ export function RemotePlansSheet({
                   <span className="min-w-0 flex-1">
                     <span className="block font-semibold text-[#f4f4f5]">
                       {plan.name}
-                    </span>
-                    <span
-                      className={cn(
-                        "mt-0.5 flex items-center gap-1 text-xs",
-                        plan.mobileApp
-                          ? "font-semibold text-[#f472b6]"
-                          : "text-[#8b8b94]",
-                      )}
-                    >
-                      {plan.mobileApp ? (
-                        <Smartphone className="h-3.5 w-3.5" />
-                      ) : (
-                        <Monitor className="h-3.5 w-3.5" />
-                      )}
-                      {plan.perk}
                     </span>
                   </span>
                   <span className="shrink-0 text-right">

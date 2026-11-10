@@ -11,9 +11,7 @@ import {
   CircleCheck,
   CreditCard,
   LockKeyhole,
-  Monitor,
   ShieldCheck,
-  Smartphone,
   Star,
 } from "lucide-react";
 import { AuthDivider } from "@/components/auth/auth-divider";
@@ -587,19 +585,6 @@ export function AnyLocCheckoutPanel({
                   </span>
                 ) : null}
               </span>
-              <span
-                className={cn(
-                  "mt-0.5 flex items-center gap-1 text-xs",
-                  plan.mobileApp ? "font-semibold text-pink-600" : "text-zinc-500"
-                )}
-              >
-                {plan.mobileApp ? (
-                  <Smartphone className="h-3.5 w-3.5" />
-                ) : (
-                  <Monitor className="h-3.5 w-3.5" />
-                )}
-                {plan.perk}
-              </span>
             </span>
             <span className="shrink-0 text-right">
               <span className="block whitespace-nowrap text-lg font-bold tabular-nums text-zinc-900">
@@ -759,7 +744,7 @@ export function AnyLocCheckoutPanel({
             {renderContinueButton("main")}
             <p className="mt-2 flex items-center justify-center gap-1.5 text-xs font-semibold text-emerald-700">
               <ShieldCheck className="h-3.5 w-3.5" />
-              {copy.payReassurance}
+              {selectedPlan.oneTime ? copy.payReassuranceOneTime : copy.payReassurance}
             </p>
           </div>
 

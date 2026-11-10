@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { Check, Monitor, Smartphone, X } from "lucide-react";
+import { Check, Monitor } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -85,18 +85,10 @@ export function Pricing() {
 
               {/* Only what differs between plans; the rest is listed once above. */}
               <ul className="mt-5 flex-1 space-y-2 border-t border-zinc-100 pt-5 text-sm">
-                <li className="flex items-start gap-2 font-semibold text-zinc-900">
-                  {plan.mobileApp ? (
-                    <Smartphone className="mt-0.5 h-4 w-4 shrink-0 text-pink-600" />
-                  ) : (
-                    <Monitor className="mt-0.5 h-4 w-4 shrink-0 text-pink-600" />
-                  )}
-                  {plan.perk}
-                </li>
                 {!plan.mobileApp && (
-                  <li className="flex items-start gap-2 text-zinc-400">
-                    <X className="mt-0.5 h-4 w-4 shrink-0" />
-                    App mobile non disponible
+                  <li className="flex items-start gap-2 text-zinc-500">
+                    <Monitor className="mt-0.5 h-4 w-4 shrink-0" />
+                    iPhone : un ordi une fois pour installer
                   </li>
                 )}
               </ul>

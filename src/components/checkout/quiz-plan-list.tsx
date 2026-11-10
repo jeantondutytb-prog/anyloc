@@ -158,14 +158,11 @@ export function QuizPlanList({
                     </span>
                   ) : null}
                 </span>
-                {/* Only lines that help choose: the recommendation or the mobile app
-                    (« Sur PC et Mac » was noise on the cards). */}
+                {/* Only the recommendation: the platform lines were noise on the cards. */}
                 {recommended && recommendationReason ? (
                   <span className="mt-0.5 block text-xs leading-snug text-zinc-500">
                     {recommendationReason}
                   </span>
-                ) : plan.mobileApp ? (
-                  <span className="mt-0.5 block text-xs leading-snug text-zinc-500">{plan.perk}</span>
                 ) : null}
               </span>
               <span className="shrink-0 text-right">
@@ -230,8 +227,9 @@ export function QuizPlanList({
       </div>
 
       <p className="mt-5 px-2 text-center text-xs leading-relaxed text-zinc-400">
-        Renouvellement automatique au prix affiché jusqu&apos;à résiliation. Résiliable en 1 clic
-        depuis ton espace.
+        {selectedPlan.oneTime
+          ? "Paiement unique : rien ne se renouvelle."
+          : "Renouvellement automatique au prix affiché jusqu'à résiliation. Résiliable en 1 clic depuis ton espace."}
       </p>
 
       <GuaranteeSheet open={guaranteeOpen} onClose={() => setGuaranteeOpen(false)} />

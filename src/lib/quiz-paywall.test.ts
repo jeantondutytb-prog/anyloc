@@ -57,7 +57,7 @@ describe("quiz paywall helpers", () => {
     assert.deepEqual(getPlanValueCard(plan("annual"), monthly), {
       kind: "savings",
       title: "4,08 € par mois avec l'annuel",
-      text: "59 % moins cher que le mensuel, et l'app mobile est incluse.",
+      text: "59 % moins cher que le mensuel, et l'iPhone s'installe sans ordi.",
     });
     assert.deepEqual(getPlanValueCard(plan("6months"), monthly), {
       kind: "savings",
