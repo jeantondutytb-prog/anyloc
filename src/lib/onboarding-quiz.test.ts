@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   getAskedQuestions,
+  cleanOtherApp,
+  getQuizAppChips,
   getMainQuizApp,
+  OTHER_APP_MAX_LENGTH,
   getQuizFinalSteps,
   getQuizRecommendation,
   getQuizSequence,
@@ -117,8 +120,16 @@ describe("getQuizRecommendation", () => {
   });
 
   it("explains the choice by how often the position is used", () => {
-    assert.match(getQuizRecommendation({ frequency: ["often"] }, "v1").reason, /souvent/);
-    assert.match(getQuizRecommendation({ frequency: ["once"] }, "v1").reason, /meilleur prix/);
+    assert.equal(getQuizRecommendation({ device: ["iphone"], frequency: ["often"] }, "v1").reason, "App iPhone incluse");
+    assert.equal(getQuizRecommendation({ frequency: ["often"] }, "v1").reason, "La moins chère au mois");
+    assert.equal(getQuizRecommendation({ frequency: ["always"] }, "v1").reason, "La moins chère au mois");
+    assert.equal(getQuizRecommendation({ frequency: ["once"] }, "v1").reason, "Le meilleur prix au mois");
+  });
+
+  it("keeps the reason to one short line", () => {
+    for (const answers of [{ device: ["iphone"] }, { frequency: ["often"] }, {}] as QuizAnswers[]) {
+      assert.ok(getQuizRecommendation(answers, "v1").reason.length <= 30);
+    }
   });
 });
 
@@ -131,6 +142,30 @@ describe("quiz copy", () => {
     assert.equal(getMainQuizApp({ apps: ["life360"] }), "Life360");
     assert.equal(getMainQuizApp({ apps: ["other", "insta"] }), "Instagram");
     assert.equal(getMainQuizApp({ apps: ["other"] }), null);
+  });
+
+  it("names the free-text app typed for Autre, only while Autre is picked", () => {
+    assert.equal(listQuizApps({ apps: ["other"] }, "  Tinder "), "Tinder");
+    assert.equal(listQuizApps({ apps: ["snap", "other"] }, "Tinder"), "Snap et Tinder");
+    assert.equal(listQuizApps({ apps: ["snap", "insta", "other"] }, "Tinder"), "Snap, Instagram et Tinder");
+    assert.equal(listQuizApps({ apps: ["snap"] }, "Tinder"), "Snap");
+    assert.equal(listQuizApps({ apps: ["other"] }, "   "), "tes apps");
+    assert.equal(getMainQuizApp({ apps: ["other"] }, "Tinder"), "Tinder");
+    assert.equal(getMainQuizApp({ apps: ["insta", "other"] }, "Tinder"), "Instagram");
+    assert.equal(getMainQuizApp({ apps: ["snap"] }, "Tinder"), "Snap");
+  });
+
+  it("gives short chips for the picked apps", () => {
+    assert.deepEqual(getQuizAppChips({ apps: ["snap", "insta", "gmaps", "findmy"] }), ["Snap", "Insta", "Maps", "Localiser"]);
+    assert.deepEqual(getQuizAppChips({ apps: ["snap", "other"] }, "Tinder"), ["Snap", "Tinder"]);
+    assert.deepEqual(getQuizAppChips({ apps: ["other"] }), []);
+    assert.deepEqual(getQuizAppChips({}), []);
+  });
+
+  it("cleans and caps the free-text app", () => {
+    assert.equal(cleanOtherApp("  Be   Real  "), "Be Real");
+    assert.equal(cleanOtherApp(undefined), "");
+    assert.equal(cleanOtherApp("x".repeat(60)).length, OTHER_APP_MAX_LENGTH);
   });
 
   it("builds the checklist from the answers", () => {

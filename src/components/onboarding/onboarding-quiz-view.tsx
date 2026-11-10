@@ -25,12 +25,15 @@ import {
   type OnboardingDestination,
 } from "@/lib/onboarding-destinations";
 import {
+  cleanOtherApp,
   getMainQuizApp,
+  getQuizAppChips,
   getQuizFinalSteps,
   getQuizRecommendation,
   getQuizSequence,
   getQuizTimingLine,
   listQuizApps,
+  OTHER_APP_MAX_LENGTH,
   storeQuizResult,
   type QuizAnswers,
   type QuizFact,
@@ -77,8 +80,9 @@ const ICONS: Record<QuizIcon, ReactNode> = {
 
 // Long enough for the position to feel prepared, not so long it feels stuck.
 const FINAL_STEP_MS = 3800;
-// The screen fades out this long before navigating to the paywall.
-const LEAVE_FADE_MS = 320;
+// The whole screen fades out this long before navigating to the paywall,
+// which then eases in on its own (see .paywall-rise): one continuous move.
+const LEAVE_FADE_MS = 250;
 
 type Screen =
   /** Before the stored destination is read: renders nothing, never tracked. */
@@ -198,15 +202,21 @@ function QuestionScreen({
   question,
   city,
   selected,
+  otherApp,
+  onOtherAppChange,
   onToggle,
   onContinue,
 }: {
   question: QuizQuestion;
   city: string;
   selected: string[];
+  /** The app typed for "Autre" (apps question only). */
+  otherApp: string;
+  onOtherAppChange: (value: string) => void;
   onToggle: (optionId: string) => void;
   onContinue: () => void;
 }) {
+  const askOtherApp = question.id === "apps" && selected.includes("other");
   const note = !question.multi
     ? question.options.find((option) => option.id === selected[0])?.note
     : undefined;
@@ -260,6 +270,35 @@ function QuestionScreen({
           >
             {note}
           </motion.p>
+        )}
+      </AnimatePresence>
+      <AnimatePresence initial={false}>
+        {askOtherApp && (
+          <motion.div
+            key="other-app"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="mt-4"
+          >
+            <input
+              type="text"
+              value={otherApp}
+              maxLength={OTHER_APP_MAX_LENGTH}
+              onChange={(event) => onOtherAppChange(event.target.value)}
+              onFocus={(event) => {
+                // Lets the mobile keyboard open first, then keeps the field in view.
+                const input = event.currentTarget;
+                window.setTimeout(() => input.scrollIntoView({ block: "center", behavior: "smooth" }), 300);
+              }}
+              placeholder="Quelle app ?"
+              aria-label="Quelle app ?"
+              autoComplete="off"
+              enterKeyHint="done"
+              className="h-12 w-full rounded-2xl border border-zinc-200 bg-white px-4 text-base text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-400 focus:border-pink-400 focus:ring-2 focus:ring-pink-200"
+            />
+          </motion.div>
         )}
       </AnimatePresence>
       <div className="mt-6">
@@ -381,12 +420,14 @@ function ReadyScreen({
   destination,
   visitorLocation,
   answers,
+  otherApp,
   leaving,
   onUnlock,
 }: {
   destination: OnboardingDestination;
   visitorLocation: VisitorLocation | null;
   answers: QuizAnswers;
+  otherApp: string;
   leaving: boolean;
   onUnlock: () => void;
 }) {
@@ -400,7 +441,7 @@ function ReadyScreen({
         Ta loc <span className="gradient-text">{atCity(destination.city)}</span> est prête.
       </h1>
       <p className="mt-2 text-center text-sm text-zinc-500">
-        Visible sur {listQuizApps(answers)} dès que tu l&apos;actives.
+        Visible sur {listQuizApps(answers, otherApp)} dès que tu l&apos;actives.
       </p>
       {timingLine && <p className="mt-1 text-center text-sm font-medium text-zinc-700">{timingLine}</p>}
       <div className="relative mt-6">
@@ -418,6 +459,7 @@ function ReadyScreen({
               track("onboarding_teleport_clicked", { destination_city: destination.city, onboarding_variant: "quiz" })
             }
             onDone={() => setTeleported(true)}
+            apps={getQuizAppChips(answers, otherApp)}
           />
         </motion.div>
         <AnimatePresence>
@@ -463,8 +505,10 @@ export function OnboardingQuizView({
   const [destination, setDestination] = useState<OnboardingDestination>(TRENDING_DESTINATIONS[1]);
   const [query, setQuery] = useState("");
   const [answers, setAnswers] = useState<QuizAnswers>({});
+  const [otherApp, setOtherApp] = useState("");
   const [leaving, setLeaving] = useState(false);
 
+  const otherAppName = cleanOtherApp(otherApp);
   const sequence = useMemo(() => getQuizSequence(answers), [answers]);
   const currentStep = screen.name === "step" ? sequence[screen.index] : undefined;
   const answeredCount =
@@ -521,6 +565,10 @@ export function OnboardingQuizView({
         : [optionId];
       return { ...current, [question.id]: value };
     });
+    // Deselecting "Autre" in the apps question hides the field and forgets what was typed.
+    if (question.id === "apps" && optionId === "other" && (answers.apps ?? []).includes("other")) {
+      setOtherApp("");
+    }
   }
 
   function nextStep(index: number) {
@@ -529,6 +577,7 @@ export function OnboardingQuizView({
       track("onboarding_quiz_answered", {
         question: step.question.id,
         answer: (answers[step.question.id] ?? []).join(","),
+        ...(step.question.id === "apps" ? { other_app: otherAppName || undefined } : {}),
       });
     }
     const next = index + 1;
@@ -552,7 +601,7 @@ export function OnboardingQuizView({
     storeQuizResult({
       recommendedPlanId: recommendation.planId,
       reason: recommendation.reason,
-      mainApp: getMainQuizApp(answers),
+      mainApp: getMainQuizApp(answers, otherApp),
     });
     try {
       window.sessionStorage.setItem(ONBOARDING_DESTINATION_KEY, JSON.stringify(destination));
@@ -561,6 +610,7 @@ export function OnboardingQuizView({
       destination_city: destination.city,
       recommended_plan: recommendation.planId,
       apps: (answers.apps ?? []).join(","),
+      other_app: (answers.apps ?? []).includes("other") ? otherAppName || undefined : undefined,
       device: answers.device?.[0],
       computer: answers.computer?.[0],
       movement: answers.movement?.[0],
@@ -580,7 +630,12 @@ export function OnboardingQuizView({
   const stepKey = screen.name === "step" ? `step-${screen.index}` : screen.name;
 
   return (
-    <div className="relative min-h-screen bg-background">
+    <div
+      className={cn(
+        "relative min-h-screen bg-background transition-opacity duration-[250ms] ease-out motion-reduce:transition-none",
+        leaving && "pointer-events-none opacity-0"
+      )}
+    >
       <header className="sticky top-0 z-20 px-2 pt-2 sm:px-4 sm:pt-3">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-3 rounded-full border border-zinc-200/80 bg-white/85 pl-3 pr-4 shadow-lg shadow-zinc-900/5 backdrop-blur-md">
           <div className="flex items-center gap-2">
@@ -599,12 +654,7 @@ export function OnboardingQuizView({
         </div>
       </header>
 
-      <main
-        className={cn(
-          "px-4 py-8 transition-opacity duration-300 ease-out motion-reduce:transition-none sm:px-6 sm:py-12",
-          leaving && "pointer-events-none opacity-0"
-        )}
-      >
+      <main className="px-4 py-8 sm:px-6 sm:py-12">
         {showPrep && (
           <div className="mb-8">
             <PrepPill percent={prepPercent} />
@@ -629,6 +679,8 @@ export function OnboardingQuizView({
                 question={currentStep.question}
                 city={destination.city}
                 selected={answers[currentStep.question.id] ?? []}
+                otherApp={otherApp}
+                onOtherAppChange={setOtherApp}
                 onToggle={(optionId) => toggle(currentStep.question, optionId)}
                 onContinue={() => nextStep(screen.index)}
               />
@@ -638,7 +690,7 @@ export function OnboardingQuizView({
             )}
             {screen.name === "finalizing" && (
               <FinalizingScreen
-                steps={getQuizFinalSteps(answers, destination)}
+                steps={getQuizFinalSteps(answers, destination, otherApp)}
                 startPercent={prepPercent}
                 onDone={() => setScreen({ name: "ready" })}
               />
@@ -648,6 +700,7 @@ export function OnboardingQuizView({
                 destination={destination}
                 visitorLocation={visitorLocation}
                 answers={answers}
+                otherApp={otherApp}
                 leaving={leaving}
                 onUnlock={unlock}
               />

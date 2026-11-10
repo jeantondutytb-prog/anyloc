@@ -257,21 +257,48 @@ export function getAskedQuestions(answers: QuizAnswers) {
   return QUIZ_QUESTIONS.filter((question) => !question.when || question.when(answers));
 }
 
-/** "Snap, Instagram et Google Maps", or "tes apps" when only "Autre" was picked. */
-export function listQuizApps(answers: QuizAnswers) {
-  const apps = (answers.apps ?? []).map((id) => APP_LABELS[id]).filter(Boolean);
+export const OTHER_APP_MAX_LENGTH = 40;
+
+/** What the visitor typed for "Autre" in the apps question: trimmed, spaces collapsed, capped. */
+export function cleanOtherApp(text: string | undefined) {
+  return (text ?? "").replace(/\s+/g, " ").trim().slice(0, OTHER_APP_MAX_LENGTH);
+}
+
+/** The apps named by the visitor, in order; the free-text "Autre" app comes last, only if "Autre" is picked. */
+function namedApps(answers: QuizAnswers, otherApp?: string) {
+  const picked = answers.apps ?? [];
+  const apps = picked.map((id) => APP_LABELS[id]).filter(Boolean);
+  const other = picked.includes("other") ? cleanOtherApp(otherApp) : "";
+  return other ? [...apps, other] : apps;
+}
+
+/**
+ * "Snap, Instagram et Google Maps", or "tes apps" when nothing is named
+ * (only "Autre" picked without typing the app).
+ */
+export function listQuizApps(answers: QuizAnswers, otherApp?: string) {
+  const apps = namedApps(answers, otherApp);
   if (apps.length <= 1) return apps[0] ?? "tes apps";
   return `${apps.slice(0, -1).join(", ")} et ${apps.at(-1)}`;
 }
 
+const APP_CHIPS: Record<string, string> = { ...APP_LABELS, insta: "Insta", gmaps: "Maps" };
+
+/** Short chip labels of the picked apps, for the phone mock-up; empty when none is named. */
+export function getQuizAppChips(answers: QuizAnswers, otherApp?: string) {
+  const picked = answers.apps ?? [];
+  const chips = picked.map((id) => APP_CHIPS[id]).filter(Boolean);
+  const other = picked.includes("other") ? cleanOtherApp(otherApp) : "";
+  return other ? [...chips, other] : chips;
+}
+
 /** The first named app picked, for the paywall headline ("… sur Snap"). */
-export function getMainQuizApp(answers: QuizAnswers) {
-  const id = (answers.apps ?? []).find((app) => APP_LABELS[app]);
-  return id ? APP_LABELS[id] : null;
+export function getMainQuizApp(answers: QuizAnswers, otherApp?: string) {
+  return namedApps(answers, otherApp)[0] ?? null;
 }
 
 /** The "finalising" checklist: each line is something the answers set up. */
-export function getQuizFinalSteps(answers: QuizAnswers, destination: OnboardingDestination) {
+export function getQuizFinalSteps(answers: QuizAnswers, destination: OnboardingDestination, otherApp?: string) {
   const device = answers.device?.[0];
   const computer = answers.computer?.[0];
   const guide =
@@ -284,7 +311,7 @@ export function getQuizFinalSteps(answers: QuizAnswers, destination: OnboardingD
           : "On prépare ton guide d'installation";
   return [
     `On place ta position ${atPlace(destination)}`,
-    `On la connecte à ${listQuizApps(answers)}`,
+    `On la connecte à ${listQuizApps(answers, otherApp)}`,
     answers.movement?.[0] === "walk" ? `On trace tes balades ${atCity(destination.city)}` : "On fixe ta position",
     guide,
     "Dernière vérification",
@@ -301,13 +328,13 @@ export function getQuizRecommendation(answers: QuizAnswers, grid: PricingGrid): 
   const plans = getGridPlans(grid);
   const plan = plans.find((candidate) => candidate.mobileApp) ?? plans[plans.length - 1];
   if (answers.device?.[0] === "iphone") {
-    return { planId: plan.id, reason: nbsp("App iPhone incluse : tu changes de ville depuis ton tel") };
+    return { planId: plan.id, reason: "App iPhone incluse" };
   }
   const frequency = answers.frequency?.[0];
   if (frequency === "often" || frequency === "always") {
-    return { planId: plan.id, reason: nbsp("Tu t'en sers souvent : c'est la formule la moins chère au mois") };
+    return { planId: plan.id, reason: "La moins chère au mois" };
   }
-  return { planId: plan.id, reason: "Le meilleur prix au mois, app mobile incluse" };
+  return { planId: plan.id, reason: "Le meilleur prix au mois" };
 }
 
 /** What the quiz hands over to the checkout, through sessionStorage. */
