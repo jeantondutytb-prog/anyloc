@@ -15,8 +15,10 @@ import {
 } from "@/components/onboarding/brand-logos";
 import { OnboardingAhaMoment } from "@/components/onboarding/onboarding-aha-moment";
 import { StepDestination } from "@/components/onboarding/onboarding-two-step-view";
+import { QuizPlansSheet } from "@/components/onboarding/quiz-plans-sheet";
 import { Logo } from "@/components/ui/logo";
 import { track } from "@/lib/analytics/track";
+import { getGridEntryPlanId, getGridPlans, getPlanGrid } from "@/lib/constants";
 import {
   atCity,
   ONBOARDING_DESTINATION_KEY,
@@ -80,8 +82,9 @@ const ICONS: Record<QuizIcon, ReactNode> = {
 
 // Long enough for the position to feel prepared, not so long it feels stuck.
 const FINAL_STEP_MS = 3800;
-// The whole screen fades out this long before navigating to the paywall,
-// which then eases in on its own (see .paywall-rise): one continuous move.
+// « Continuer avec … »: the plan sheet slides away and the screen fades out
+// this long before navigating to the order page, which then eases in on its
+// own (see .paywall-rise): one continuous move.
 const LEAVE_FADE_MS = 250;
 
 type Screen =
@@ -507,6 +510,14 @@ export function OnboardingQuizView({
   const [answers, setAnswers] = useState<QuizAnswers>({});
   const [otherApp, setOtherApp] = useState("");
   const [leaving, setLeaving] = useState(false);
+  // Step 1 of the purchase: the plan picker over the ready screen.
+  const [plansSheet, setPlansSheet] = useState<{
+    open: boolean;
+    planId: string;
+    recommendedPlanId: string;
+    reason: string;
+    mainApp: string | null;
+  } | null>(null);
 
   const otherAppName = cleanOtherApp(otherApp);
   const sequence = useMemo(() => getQuizSequence(answers), [answers]);
@@ -592,39 +603,76 @@ export function OnboardingQuizView({
     }
   }
 
+  function checkoutUrl(planId: string) {
+    return `/checkout?plan=${planId}&parcours=quiz${checkoutPreview ? "&preview=1" : ""}`;
+  }
+
+  /** « Débloquer ma loc »: opens the plan picker over the ready screen (step 1). */
   function unlock() {
     if (leaving) return;
-    setLeaving(true);
     // The plan of the visitor's own price grid (see lib/pricing-experiment).
     const grid = readPricingVariantCookie() === "grid_v2" ? "v2" : "v1";
     const recommendation = getQuizRecommendation(answers, grid);
+    const mainApp = getMainQuizApp(answers, otherApp);
     storeQuizResult({
       recommendedPlanId: recommendation.planId,
       reason: recommendation.reason,
-      mainApp: getMainQuizApp(answers, otherApp),
+      mainApp,
     });
     try {
       window.sessionStorage.setItem(ONBOARDING_DESTINATION_KEY, JSON.stringify(destination));
     } catch {}
-    track("onboarding_quiz_completed", {
-      destination_city: destination.city,
-      recommended_plan: recommendation.planId,
-      apps: (answers.apps ?? []).join(","),
-      other_app: (answers.apps ?? []).includes("other") ? otherAppName || undefined : undefined,
-      device: answers.device?.[0],
-      computer: answers.computer?.[0],
-      movement: answers.movement?.[0],
-      worry: answers.worry?.[0],
-      audience: (answers.audience ?? []).join(","),
-      tried: (answers.tried ?? []).join(","),
+    // Reopening the sheet keeps the plan picked before closing it.
+    const planId = plansSheet?.planId ?? recommendation.planId;
+    if (!plansSheet) {
+      track("onboarding_quiz_completed", {
+        destination_city: destination.city,
+        recommended_plan: recommendation.planId,
+        apps: (answers.apps ?? []).join(","),
+        other_app: (answers.apps ?? []).includes("other") ? otherAppName || undefined : undefined,
+        device: answers.device?.[0],
+        computer: answers.computer?.[0],
+        movement: answers.movement?.[0],
+        worry: answers.worry?.[0],
+        audience: (answers.audience ?? []).join(","),
+        tried: (answers.tried ?? []).join(","),
+      });
+    }
+    track("quiz_plans_viewed", { plan: planId, recommended_plan: recommendation.planId });
+    setPlansSheet({
+      open: true,
+      planId,
+      recommendedPlanId: recommendation.planId,
+      reason: recommendation.reason,
+      mainApp,
     });
-    const preview = checkoutPreview ? "&preview=1" : "";
-    // The screen fades out (see `leaving` on <main>) before the paywall fades in.
-    window.setTimeout(
-      () => router.push(`/checkout?plan=${recommendation.planId}&parcours=quiz${preview}`),
-      LEAVE_FADE_MS
-    );
+    router.prefetch(checkoutUrl(planId));
   }
+
+  function selectSheetPlan(planId: string) {
+    if (!plansSheet) return;
+    track("checkout_plan_selected", { plan: planId, previous_plan: plansSheet.planId });
+    if (planId !== plansSheet.planId) setPlansSheet({ ...plansSheet, planId });
+  }
+
+  /** « Continuer avec … »: the sheet slides away while the screen fades, then the order page (step 2). */
+  function continueToOrder() {
+    if (!plansSheet || leaving) return;
+    const planId = plansSheet.planId;
+    track("quiz_plans_continue", { plan: planId });
+    setLeaving(true);
+    setPlansSheet({ ...plansSheet, open: false });
+    window.setTimeout(() => router.push(checkoutUrl(planId)), LEAVE_FADE_MS);
+  }
+
+  const sheetPlans = plansSheet ? getGridPlans(getPlanGrid(plansSheet.recommendedPlanId)) : [];
+  const sheetSelectedPlan = plansSheet
+    ? sheetPlans.find((plan) => plan.id === plansSheet.planId) ?? sheetPlans[0]
+    : undefined;
+  const sheetReferencePlan = plansSheet
+    ? sheetPlans.find((plan) => plan.id === getGridEntryPlanId(plansSheet.recommendedPlanId)) ??
+      sheetPlans[0]
+    : undefined;
 
   const canGoBack = screen.name === "intro" || screen.name === "step";
   const stepKey = screen.name === "step" ? `step-${screen.index}` : screen.name;
@@ -725,6 +773,25 @@ export function OnboardingQuizView({
           </motion.div>
         </AnimatePresence>
       </main>
+
+      {plansSheet && sheetSelectedPlan && sheetReferencePlan ? (
+        <QuizPlansSheet
+          open={plansSheet.open}
+          title={{
+            before: "Active ta loc",
+            highlight: atCity(destination.city),
+            after: plansSheet.mainApp ? ` sur ${plansSheet.mainApp}` : "",
+          }}
+          plans={sheetPlans}
+          selectedPlan={sheetSelectedPlan}
+          referencePlan={sheetReferencePlan}
+          recommendedPlanId={plansSheet.recommendedPlanId}
+          recommendationReason={plansSheet.reason}
+          onSelectPlan={selectSheetPlan}
+          onContinue={continueToOrder}
+          onClose={() => setPlansSheet({ ...plansSheet, open: false })}
+        />
+      ) : null}
     </div>
   );
 }
