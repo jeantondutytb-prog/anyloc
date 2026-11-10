@@ -233,14 +233,10 @@ function QuestionScreen({
               className={cn(
                 "relative flex flex-col items-center justify-center gap-2.5 rounded-2xl border bg-white px-3 text-center text-sm font-semibold text-zinc-900 shadow-sm transition-all",
                 withIcons ? "py-5" : "min-h-[76px] py-4",
-                active ? "border-pink-400 ring-2 ring-pink-200" : "border-zinc-200 hover:border-pink-200"
+                // Selected: pink border, ring and tint, no corner check mark.
+                active ? "border-pink-400 bg-pink-50/60 ring-2 ring-pink-200" : "border-zinc-200 hover:border-pink-200"
               )}
             >
-              {active && (
-                <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-pink-500">
-                  <Check className="h-3 w-3 text-white" />
-                </span>
-              )}
               {option.icon ? ICONS[option.icon] : null}
               <span>{option.label}</span>
               {option.soon && (
