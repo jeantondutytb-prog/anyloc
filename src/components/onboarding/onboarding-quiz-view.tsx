@@ -78,6 +78,8 @@ const ICONS: Record<QuizIcon, ReactNode> = {
 const FINAL_STEP_MS = 3800;
 
 type Screen =
+  /** Before the stored destination is read: renders nothing, never tracked. */
+  | { name: "loading" }
   | { name: "destination" }
   | { name: "intro" }
   | { name: "step"; index: number }
@@ -454,7 +456,7 @@ export function OnboardingQuizView({
   checkoutPreview?: boolean;
 }) {
   const router = useRouter();
-  const [screen, setScreen] = useState<Screen>({ name: "destination" });
+  const [screen, setScreen] = useState<Screen>({ name: "loading" });
   const [destination, setDestination] = useState<OnboardingDestination>(TRENDING_DESTINATIONS[1]);
   const [query, setQuery] = useState("");
   const [answers, setAnswers] = useState<QuizAnswers>({});
@@ -463,7 +465,8 @@ export function OnboardingQuizView({
   const sequence = useMemo(() => getQuizSequence(answers), [answers]);
   const currentStep = screen.name === "step" ? sequence[screen.index] : undefined;
   const answeredCount =
-    screen.name === "step" ? screen.index : screen.name === "destination" || screen.name === "intro" ? 0 : sequence.length;
+    screen.name === "step" ? screen.index : screen.name === "loading" || screen.name === "destination" || screen.name === "intro"
+      ? 0 : sequence.length;
   const showPrep = screen.name === "intro" || screen.name === "step";
   const prepPercent = usePrepPercent(showPrep, answeredCount, sequence.length);
   const stepName = currentStep
@@ -473,19 +476,24 @@ export function OnboardingQuizView({
     : screen.name;
 
   // Resume the destination picked before signup. Read after mount, so the
-  // server-rendered markup and the first client render still match.
+  // server-rendered markup and the first client render still match; the
+  // neutral "loading" screen then becomes intro or destination in one step.
   useEffect(() => {
     let stored: OnboardingDestination | null = null;
     try {
       stored = parseStoredDestination(window.sessionStorage.getItem(ONBOARDING_DESTINATION_KEY));
     } catch {}
-    if (!stored) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-off read of sessionStorage after mount
-    setDestination(stored);
-    setScreen((current) => (current.name === "destination" ? { name: "intro" } : current));
+    if (stored) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-off read of sessionStorage after mount
+      setDestination(stored);
+    }
+    setScreen((current) =>
+      current.name === "loading" ? { name: stored ? "intro" : "destination" } : current
+    );
   }, []);
 
   useEffect(() => {
+    if (stepName === "loading") return;
     window.scrollTo({ top: 0 });
     track("onboarding_quiz_step_viewed", { step_name: stepName });
   }, [stepName]);

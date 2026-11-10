@@ -29,6 +29,15 @@ export async function POST(request: Request) {
 
     const variant = parseAnnualExitOfferVariant((await cookies()).get(ANNUAL_EXIT_OFFER_COOKIE)?.value);
 
+    if (isAnnualExitOfferEnabled() && !ANNUAL_EXIT_COUPON_ID) {
+      // Launch misconfiguration: stands out from a plain "not eligible".
+      await logError(
+        "annual-exit-offer",
+        new Error("annual exit offer is on but STRIPE_COUPON_ANNUAL_EXIT is unset"),
+        { userId }
+      );
+    }
+
     if (!isAnnualExitOfferEnabled() || !ANNUAL_EXIT_COUPON_ID || variant !== "offer") {
       return NextResponse.json({ error: "Offre indisponible" }, { status: 404 });
     }

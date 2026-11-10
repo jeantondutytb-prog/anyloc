@@ -26,14 +26,21 @@ export function AnnualExitOfferSheet({
   const copy = CHECKOUT_COPY;
   const acceptRef = useRef<HTMLButtonElement>(null);
 
+  // The latest handler, read at key press: the focus below must run once, not
+  // again each time the parent hands down a new function.
+  const onDismissRef = useRef(onDismiss);
+  useEffect(() => {
+    onDismissRef.current = onDismiss;
+  });
+
   useEffect(() => {
     acceptRef.current?.focus();
     function handleKey(event: KeyboardEvent) {
-      if (event.key === "Escape") onDismiss();
+      if (event.key === "Escape") onDismissRef.current();
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [onDismiss]);
+  }, []);
 
   return createPortal(
     <div

@@ -8,8 +8,7 @@ import {
 import { CLOSE_OFFER_COOKIE, parseCloseOfferVariant } from "@/lib/checkout-first-month-offer";
 import { getFirstMonthOfferCoupon } from "@/lib/checkout-first-month-offer-server";
 import { PLANS } from "@/lib/constants";
-import { isAnnualExitOfferEnabled } from "@/lib/annual-exit-offer";
-import { getAnnualExitOfferCoupon } from "@/lib/annual-exit-offer-server";
+import { resolveAnnualExitCoupon } from "@/lib/annual-exit-coupon";
 import { CHECKOUT_OFFER_ANNUAL_EXIT } from "@/lib/checkout-offer";
 import { capturePostHogEvent, parsePostHogDistinctId } from "@/lib/posthog/server";
 import { publicErrorMessage } from "@/lib/errors";
@@ -52,18 +51,15 @@ export async function POST(request: Request) {
 
     // The annual exit offer: checked here, never trusted from the browser.
     // It wins over the -50 % and the recovery coupon (never two discounts).
-    let annualExitCoupon: string | null = null;
-    if (body?.annualExitOffer === true) {
-      if (!user) {
-        return NextResponse.json({ error: "Connexion requise." }, { status: 401 });
-      }
-      annualExitCoupon = isAnnualExitOfferEnabled()
-        ? await getAnnualExitOfferCoupon(user.id, plan.id)
-        : null;
-      if (!annualExitCoupon) {
-        return NextResponse.json({ error: "Cette offre a expiré." }, { status: 409 });
-      }
+    const gate = await resolveAnnualExitCoupon({
+      requested: body?.annualExitOffer === true,
+      userId: user?.id ?? null,
+      planId: plan.id,
+    });
+    if (gate.kind === "error") {
+      return NextResponse.json({ error: gate.error }, { status: gate.status });
     }
+    const annualExitCoupon = gate.kind === "coupon" ? gate.couponId : null;
 
     // Looked up while Stripe finds the customer: every round trip delays the payment form.
     const offerPromise =

@@ -9,7 +9,7 @@ import { isCrispHiddenPath, setCrispBubbleHidden } from "@/components/crisp/cris
 import { track } from "@/lib/analytics/track";
 import { CHECKOUT_COPY } from "@/lib/checkout-copy";
 import { type DeclineKind, getFirstMonthOfferPrice } from "@/lib/checkout-first-month-offer";
-import { isNetworkError, requestCheckoutSession } from "@/lib/checkout-request";
+import { CheckoutRequestError, isNetworkError, requestCheckoutSession } from "@/lib/checkout-request";
 import { GUARANTEE, type Plan } from "@/lib/constants";
 
 /**
@@ -28,6 +28,7 @@ export function CheckoutPaymentModal({
   offerSessionId,
   welcomeOffer,
   annualExitOffer,
+  onAnnualExitOfferExpired,
   onDeclineOffer,
   stripePublishableKey,
   hostedRedirecting,
@@ -45,6 +46,8 @@ export function CheckoutPaymentModal({
   welcomeOffer?: boolean;
   /** The annual exit offer: the server checks it, the header shows `offerPrice`. */
   annualExitOffer?: { offerPrice: string };
+  /** The server answered 409 to the offer: the parent leaves offer mode, so a retry asks the normal price. */
+  onAnnualExitOfferExpired?: () => void;
   onDeclineOffer: (declinedSessionId: string) => void;
   stripePublishableKey: string;
   /** The hosted-page fallback is loading. */
@@ -65,6 +68,16 @@ export function CheckoutPaymentModal({
   // Already on a discounted first month: a refusal gets no second discount.
   const discounted = Boolean(offerSessionId || welcomeOffer);
   const hasAnnualExitOffer = Boolean(annualExitOffer);
+  // Read when a request starts, not a dependency: leaving offer mode after a
+  // 409 must keep the message on screen until the visitor retries.
+  const annualExitOfferRef = useRef(hasAnnualExitOffer);
+  useEffect(() => {
+    annualExitOfferRef.current = hasAnnualExitOffer;
+  });
+  const onAnnualExitOfferExpiredRef = useRef(onAnnualExitOfferExpired);
+  useEffect(() => {
+    onAnnualExitOfferExpiredRef.current = onAnnualExitOfferExpired;
+  });
   // Closing a drawn form first asks why, in place of the form.
   const [askingExitReason, setAskingExitReason] = useState(false);
   // Read by the Escape handler, which is set up once.
@@ -84,7 +97,7 @@ export function CheckoutPaymentModal({
       "/api/stripe/embedded-checkout",
       plan.id,
       controller.signal,
-      { offerSessionId, annualExitOffer: hasAnnualExitOffer || undefined }
+      { offerSessionId, annualExitOffer: annualExitOfferRef.current || undefined }
     )
       .then((data) => {
         if (!data.clientSecret) {
@@ -102,6 +115,9 @@ export function CheckoutPaymentModal({
       })
       .catch((err) => {
         if (controller.signal.aborted) return;
+        if (err instanceof CheckoutRequestError && err.status === 409 && annualExitOfferRef.current) {
+          onAnnualExitOfferExpiredRef.current?.();
+        }
         const networkError = isNetworkError(err);
         setError(
           networkError ? copy.errNetwork : err instanceof Error ? err.message : copy.errGeneric
@@ -115,7 +131,7 @@ export function CheckoutPaymentModal({
       });
 
     return () => controller.abort();
-  }, [plan.id, attempt, copy, offerSessionId, hasAnnualExitOffer]);
+  }, [plan.id, attempt, copy, offerSessionId]);
 
   // Stripe's form doesn't tell the page why a card was refused: the webhook
   // stamps it on the session, read back here.

@@ -1,4 +1,4 @@
-import { getGridPlans, getPlanGrid, isValidPlanId } from "@/lib/constants";
+import { getGridPlans, getPlanGrid, isValidPlanId, PLANS } from "@/lib/constants";
 
 /**
  * Offre annuelle de sortie : l'annuel de la grille v1 à 29 € au lieu de 49 €,
@@ -37,9 +37,14 @@ export function getOrPickAnnualExitOfferVariant(random = Math.random()): AnnualE
   return variant;
 }
 
+/** "49,00€" -> "49 €", "9,90€" -> "9,90 €": the way the paywall writes whole prices. */
+function formatPlanPrice(price: string): string {
+  return `${price.replace("€", "").trim().replace(/,00$/, "")} €`;
+}
+
 /** Prices shown for each plan that can receive the offer. Only the v1 annual is listed. */
 export const ANNUAL_EXIT_OFFERS: Record<string, { offerPrice: string; fullPrice: string }> = {
-  annual: { offerPrice: "29 €", fullPrice: "49 €" },
+  annual: { offerPrice: "29 €", fullPrice: formatPlanPrice(PLANS.find((plan) => plan.id === "annual")?.price ?? "") },
 };
 
 /**

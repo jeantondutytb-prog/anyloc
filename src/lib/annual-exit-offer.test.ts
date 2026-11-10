@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { PLANS } from "./constants";
 import {
+  ANNUAL_EXIT_OFFERS,
   ANNUAL_EXIT_OFFER_WINDOW_MS,
   formatAnnualExitExpiry,
   getAnnualExitOfferExpiry,
@@ -14,6 +16,14 @@ import {
 describe("annual exit offer", () => {
   const start = new Date("2026-11-10T18:00:00Z");
   const at = (ms: number) => new Date(start.getTime() + ms);
+
+  it("derives the full price from the annual plan", () => {
+    const annual = PLANS.find((plan) => plan.id === "annual");
+    assert.ok(annual);
+    const digits = (value: string) => value.replace(/[^\d,]/g, "").replace(/,00$/, "");
+    assert.equal(digits(ANNUAL_EXIT_OFFERS.annual.fullPrice), digits(annual.price));
+    assert.match(ANNUAL_EXIT_OFFERS.annual.fullPrice, / €$/);
+  });
 
   it("offers the annual plan of the v1 grid only", () => {
     assert.equal(getAnnualExitOfferPlanId("monthly"), "annual");

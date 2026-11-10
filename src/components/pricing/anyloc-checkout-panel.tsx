@@ -46,7 +46,7 @@ import {
   isCloseOfferExperimentEnabled,
 } from "@/lib/checkout-first-month-offer";
 import { RECOVERY_OFFER_PLAN_ID } from "@/lib/checkout-recovery-plan";
-import { isNetworkError, requestCheckoutSession } from "@/lib/checkout-request";
+import { CheckoutRequestError, isNetworkError, requestCheckoutSession } from "@/lib/checkout-request";
 import { getMonthlyDisplayPrice, type PriceDisplayVariant } from "@/lib/price-display-experiment";
 import {
   getGridEntryPlanId,
@@ -322,7 +322,9 @@ export function AnyLocCheckoutPanel({
     }
   );
 
-  function acceptAnnualExit() {
+  const leaveAnnualExitOffer = useCallback(() => setAnnualExitAccepted(false), []);
+
+  const acceptAnnualExit = useCallback(() => {
     const annualPlanId = getAnnualExitOfferPlanId(selectedPlanId);
     if (!annualPlanId) return;
     track("annual_exit_offer_accepted", { plan: selectedPlanId, offer_plan: annualPlanId });
@@ -331,9 +333,10 @@ export function AnyLocCheckoutPanel({
     if (annualPlanId !== selectedPlanId) onPlanChange(annualPlanId);
     setError(null);
     setModalOpen(true);
-  }
+  }, [selectedPlanId, onPlanChange]);
 
   // Declined: only the monthly downsell, no -50 % and no clipper offer.
+  // Not a useCallback: the React Compiler memoizes it, and refuses a manual one that depends on the downgrade plan.
   function dismissAnnualExit() {
     track("annual_exit_offer_dismissed", { plan: selectedPlanId });
     setAnnualExit(null);
@@ -422,6 +425,10 @@ export function AnyLocCheckoutPanel({
       window.location.assign(data.url);
     } catch (err) {
       if (controller.signal.aborted) return;
+      // The offer is gone: the next attempt asks the normal price.
+      if (err instanceof CheckoutRequestError && err.status === 409 && annualExitAccepted) {
+        setAnnualExitAccepted(false);
+      }
       const networkError = isNetworkError(err);
       setError(
         networkError ? copy.errNetwork : err instanceof Error ? err.message : copy.errGeneric
@@ -880,7 +887,7 @@ export function AnyLocCheckoutPanel({
       {modalOpen && hydrated ? (
         <CheckoutPaymentModal
           // A new plan or the discount needs a new Stripe session: remount the popup.
-          key={`${selectedPlan.id}:${offerSessionId ?? ""}:${annualExitAccepted ? "annual-exit" : ""}`}
+          key={`${selectedPlan.id}:${offerSessionId ?? ""}`}
           plan={selectedPlan}
           offerPlan={entryPlan}
           offerSessionId={
@@ -892,6 +899,7 @@ export function AnyLocCheckoutPanel({
               ? { offerPrice: ANNUAL_EXIT_OFFERS[selectedPlan.id].offerPrice }
               : undefined
           }
+          onAnnualExitOfferExpired={leaveAnnualExitOffer}
           onDeclineOffer={acceptDeclineOffer}
           stripePublishableKey={stripePublishableKey}
           hostedRedirecting={redirecting}

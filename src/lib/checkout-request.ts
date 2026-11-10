@@ -40,6 +40,17 @@ async function parseJsonResponse(res: Response) {
   }
 }
 
+/** The server refused the request: `status` is its HTTP status, `message` its user-facing text. */
+export class CheckoutRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status: number
+  ) {
+    super(message);
+    this.name = "CheckoutRequestError";
+  }
+}
+
 export type CheckoutSessionOptions = {
   /** The checkout refused for lack of funds (or closed) that unlocks -50 %. */
   offerSessionId?: string;
@@ -78,7 +89,7 @@ export async function requestCheckoutSession(
       });
       const data = await parseJsonResponse(res);
       if (!res.ok) {
-        throw new Error(data.error ?? "Impossible de démarrer le paiement.");
+        throw new CheckoutRequestError(data.error ?? "Impossible de démarrer le paiement.", res.status);
       }
       return { ...data, networkRetries: attempt };
     } catch (err) {
