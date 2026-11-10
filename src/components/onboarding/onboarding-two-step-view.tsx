@@ -20,6 +20,7 @@ import {
   mergeOnboardingSearchResults,
   ONBOARDING_ACTIVATION_PENDING_KEY,
   ONBOARDING_DESTINATION_KEY,
+  parseStoredDestination,
   searchOnboardingDestinations,
   TRENDING_DESTINATIONS,
   type OnboardingDestination,
@@ -288,12 +289,7 @@ function readStoredDestination(): OnboardingDestination | null {
   }
 
   try {
-    const stored = window.sessionStorage.getItem(ONBOARDING_DESTINATION_KEY);
-    if (!stored) {
-      return null;
-    }
-
-    return JSON.parse(stored) as OnboardingDestination;
+    return parseStoredDestination(window.sessionStorage.getItem(ONBOARDING_DESTINATION_KEY));
   } catch {
     return null;
   }

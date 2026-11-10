@@ -19,17 +19,20 @@ import { Logo } from "@/components/ui/logo";
 import { track } from "@/lib/analytics/track";
 import {
   ONBOARDING_DESTINATION_KEY,
+  parseStoredDestination,
   TRENDING_DESTINATIONS,
   type OnboardingDestination,
 } from "@/lib/onboarding-destinations";
 import {
-  getAskedQuestions,
   getMainQuizApp,
   getQuizFinalSteps,
   getQuizRecommendation,
+  getQuizSequence,
+  getQuizTimingLine,
   listQuizApps,
   storeQuizResult,
   type QuizAnswers,
+  type QuizFact,
   type QuizIcon,
   type QuizQuestion,
 } from "@/lib/onboarding-quiz";
@@ -77,7 +80,7 @@ const FINAL_STEP_MS = 3800;
 type Screen =
   | { name: "destination" }
   | { name: "intro" }
-  | { name: "question"; index: number }
+  | { name: "step"; index: number }
   | { name: "finalizing" }
   | { name: "ready" };
 
@@ -263,6 +266,29 @@ function QuestionScreen({
   );
 }
 
+function FactScreen({
+  fact,
+  answers,
+  onContinue,
+}: {
+  fact: QuizFact;
+  answers: QuizAnswers;
+  onContinue: () => void;
+}) {
+  return (
+    <div className="mx-auto w-full max-w-md text-center">
+      <p className="text-xs font-bold uppercase tracking-widest text-pink-600">Bon à savoir</p>
+      <h1 className="mt-2 text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">{fact.title(answers)}</h1>
+      <p className="mt-4 rounded-2xl border border-pink-100 bg-pink-50 px-4 py-3 text-zinc-700">
+        {fact.body(answers)}
+      </p>
+      <div className="mt-8">
+        <PrimaryButton onClick={onContinue}>Continuer</PrimaryButton>
+      </div>
+    </div>
+  );
+}
+
 function FinalizingScreen({
   steps,
   startPercent,
@@ -360,6 +386,7 @@ function ReadyScreen({
   onUnlock: () => void;
 }) {
   const [teleported, setTeleported] = useState(false);
+  const timingLine = getQuizTimingLine(answers);
 
   return (
     <div className="mx-auto w-full max-w-xl">
@@ -370,6 +397,7 @@ function ReadyScreen({
       <p className="mt-2 text-center text-sm text-zinc-500">
         Visible sur {listQuizApps(answers)} dès que tu l&apos;actives.
       </p>
+      {timingLine && <p className="mt-1 text-center text-sm font-medium text-zinc-700">{timingLine}</p>}
       <div className="relative mt-6">
         {/* Once it has landed, the whole phone blurs behind the unlock button. */}
         <motion.div
@@ -432,12 +460,30 @@ export function OnboardingQuizView({
   const [answers, setAnswers] = useState<QuizAnswers>({});
   const [leaving, setLeaving] = useState(false);
 
-  const askedQuestions = useMemo(() => getAskedQuestions(answers), [answers]);
+  const sequence = useMemo(() => getQuizSequence(answers), [answers]);
+  const currentStep = screen.name === "step" ? sequence[screen.index] : undefined;
   const answeredCount =
-    screen.name === "question" ? screen.index : screen.name === "destination" || screen.name === "intro" ? 0 : askedQuestions.length;
-  const showPrep = screen.name === "intro" || screen.name === "question";
-  const prepPercent = usePrepPercent(showPrep, answeredCount, askedQuestions.length);
-  const stepName = screen.name === "question" ? askedQuestions[screen.index]?.id : screen.name;
+    screen.name === "step" ? screen.index : screen.name === "destination" || screen.name === "intro" ? 0 : sequence.length;
+  const showPrep = screen.name === "intro" || screen.name === "step";
+  const prepPercent = usePrepPercent(showPrep, answeredCount, sequence.length);
+  const stepName = currentStep
+    ? currentStep.kind === "question"
+      ? currentStep.question.id
+      : `fact:${currentStep.fact.id}`
+    : screen.name;
+
+  // Resume the destination picked before signup. Read after mount, so the
+  // server-rendered markup and the first client render still match.
+  useEffect(() => {
+    let stored: OnboardingDestination | null = null;
+    try {
+      stored = parseStoredDestination(window.sessionStorage.getItem(ONBOARDING_DESTINATION_KEY));
+    } catch {}
+    if (!stored) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-off read of sessionStorage after mount
+    setDestination(stored);
+    setScreen((current) => (current.name === "destination" ? { name: "intro" } : current));
+  }, []);
 
   useEffect(() => {
     window.scrollTo({ top: 0 });
@@ -466,16 +512,21 @@ export function OnboardingQuizView({
     });
   }
 
-  function nextQuestion(index: number) {
-    const question = askedQuestions[index];
-    track("onboarding_quiz_answered", { question: question.id, answer: (answers[question.id] ?? []).join(",") });
+  function nextStep(index: number) {
+    const step = sequence[index];
+    if (step?.kind === "question") {
+      track("onboarding_quiz_answered", {
+        question: step.question.id,
+        answer: (answers[step.question.id] ?? []).join(","),
+      });
+    }
     const next = index + 1;
-    setScreen(next < askedQuestions.length ? { name: "question", index: next } : { name: "finalizing" });
+    setScreen(next < sequence.length ? { name: "step", index: next } : { name: "finalizing" });
   }
 
   function back() {
-    if (screen.name === "question") {
-      setScreen(screen.index === 0 ? { name: "intro" } : { name: "question", index: screen.index - 1 });
+    if (screen.name === "step") {
+      setScreen(screen.index === 0 ? { name: "intro" } : { name: "step", index: screen.index - 1 });
     } else if (screen.name === "intro") {
       setScreen({ name: "destination" });
     }
@@ -509,8 +560,8 @@ export function OnboardingQuizView({
     router.push(`/checkout?plan=${recommendation.planId}&parcours=quiz${preview}`);
   }
 
-  const canGoBack = screen.name === "intro" || screen.name === "question";
-  const stepKey = screen.name === "question" ? `question-${screen.index}` : screen.name;
+  const canGoBack = screen.name === "intro" || screen.name === "step";
+  const stepKey = screen.name === "step" ? `step-${screen.index}` : screen.name;
 
   return (
     <div className="relative min-h-screen bg-background">
@@ -550,16 +601,19 @@ export function OnboardingQuizView({
               <StepDestination query={query} onQueryChange={setQuery} onSelect={selectDestination} />
             )}
             {screen.name === "intro" && (
-              <IntroScreen city={destination.city} onStart={() => setScreen({ name: "question", index: 0 })} />
+              <IntroScreen city={destination.city} onStart={() => setScreen({ name: "step", index: 0 })} />
             )}
-            {screen.name === "question" && askedQuestions[screen.index] && (
+            {screen.name === "step" && currentStep?.kind === "question" && (
               <QuestionScreen
-                question={askedQuestions[screen.index]}
+                question={currentStep.question}
                 city={destination.city}
-                selected={answers[askedQuestions[screen.index].id] ?? []}
-                onToggle={(optionId) => toggle(askedQuestions[screen.index], optionId)}
-                onContinue={() => nextQuestion(screen.index)}
+                selected={answers[currentStep.question.id] ?? []}
+                onToggle={(optionId) => toggle(currentStep.question, optionId)}
+                onContinue={() => nextStep(screen.index)}
               />
+            )}
+            {screen.name === "step" && currentStep?.kind === "fact" && (
+              <FactScreen fact={currentStep.fact} answers={answers} onContinue={() => nextStep(screen.index)} />
             )}
             {screen.name === "finalizing" && (
               <FinalizingScreen

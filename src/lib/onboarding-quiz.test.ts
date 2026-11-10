@@ -6,10 +6,12 @@ import {
   getQuizFinalSteps,
   getQuizRecommendation,
   getQuizSequence,
+  getQuizTimingLine,
   listQuizApps,
   QUIZ_FACTS,
   QUIZ_QUESTIONS,
 } from "./onboarding-quiz";
+import { parseStoredDestination } from "./onboarding-destinations";
 import {
   getAppSignupUrl,
   getQuizSignupUrl,
@@ -49,6 +51,16 @@ describe("quiz sequence", () => {
     );
     assert.deepEqual(kinds, [
       "apps", "audience", "frequency", "device", "fact:install",
+      "movement", "tried", "fact:compare", "worry", "timing",
+    ]);
+  });
+
+  it("puts the install fact after the computer question on iPhone", () => {
+    const kinds = getQuizSequence({ device: ["iphone"] }).map((s) =>
+      s.kind === "question" ? s.question.id : `fact:${s.fact.id}`
+    );
+    assert.deepEqual(kinds, [
+      "apps", "audience", "frequency", "device", "computer", "fact:install",
       "movement", "tried", "fact:compare", "worry", "timing",
     ]);
   });
@@ -97,6 +109,24 @@ describe("quiz copy", () => {
       "On prépare ton guide pour iPhone et PC",
       "Dernière vérification",
     ]);
+  });
+});
+
+describe("timing line", () => {
+  it("adapts to when the position is needed", () => {
+    assert.match(getQuizTimingLine({ timing: ["today"] })!, /aujourd'hui/);
+    assert.match(getQuizTimingLine({ timing: ["today"] })!, /5 minutes/);
+    assert.notEqual(getQuizTimingLine({ timing: ["week"] }), getQuizTimingLine({ timing: ["later"] }));
+    assert.equal(getQuizTimingLine({}), null);
+  });
+});
+
+describe("stored destination", () => {
+  it("only resumes a well-formed stored destination", () => {
+    assert.deepEqual(parseStoredDestination(JSON.stringify(marbella)), marbella);
+    assert.equal(parseStoredDestination(null), null);
+    assert.equal(parseStoredDestination("{oops"), null);
+    assert.equal(parseStoredDestination(JSON.stringify({ city: "Paris" })), null);
   });
 });
 

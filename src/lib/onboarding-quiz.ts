@@ -190,12 +190,30 @@ export type QuizStep =
 
 /** The asked questions, each followed by the fact screen attached to it, if any. */
 export function getQuizSequence(answers: QuizAnswers): QuizStep[] {
-  return getAskedQuestions(answers).flatMap((question): QuizStep[] => [
+  const asked = getAskedQuestions(answers);
+  // The install fact follows the last of device/computer that is asked.
+  const installAnchor = asked.findLast((q) => q.id === "device" || q.id === "computer")?.id;
+  return asked.flatMap((question): QuizStep[] => [
     { kind: "question", question },
-    ...QUIZ_FACTS.filter((fact) => fact.afterQuestionId === question.id).map(
-      (fact): QuizStep => ({ kind: "fact", fact })
-    ),
+    ...QUIZ_FACTS.filter(
+      (fact) =>
+        (fact.afterQuestionId === "device" ? installAnchor : fact.afterQuestionId) === question.id
+    ).map((fact): QuizStep => ({ kind: "fact", fact })),
   ]);
+}
+
+/** One calm line on the ready screen, adapted to when the position is needed. */
+export function getQuizTimingLine(answers: QuizAnswers): string | null {
+  switch (answers.timing?.[0]) {
+    case "today":
+      return "Pour aujourd'hui, c'est jouable : l'installation prend 5 minutes.";
+    case "week":
+      return "Tu as la semaine devant toi : prends ton temps, le guide t'accompagne.";
+    case "later":
+      return "Aucune pression : ta loc t'attend quand tu seras prêt.";
+    default:
+      return null;
+  }
 }
 
 const APP_LABELS: Record<string, string> = {

@@ -127,5 +127,21 @@ export function searchOnboardingDestinations(query: string) {
 
 export const ONBOARDING_DESTINATION_KEY = "anyloc-onboarding-destination";
 
+/** A destination read back from sessionStorage, or null when it is missing or malformed. */
+export function parseStoredDestination(raw: string | null): OnboardingDestination | null {
+  if (!raw) return null;
+  try {
+    const value: unknown = JSON.parse(raw);
+    if (typeof value !== "object" || value === null) return null;
+    const { city, lat, lng } = value as Record<string, unknown>;
+    if (typeof city !== "string" || city.trim() === "") return null;
+    if (typeof lat !== "number" || !Number.isFinite(lat)) return null;
+    if (typeof lng !== "number" || !Number.isFinite(lng)) return null;
+    return value as OnboardingDestination;
+  } catch {
+    return null;
+  }
+}
+
 /** Set when "Définir cette position" hands off to signup with a pending pick. */
 export const ONBOARDING_ACTIVATION_PENDING_KEY = "anyloc-onboarding-activation-pending";
