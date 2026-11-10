@@ -151,7 +151,9 @@ export async function syncProfileFromCheckoutSession(
   const oneTimePurchase = session.mode === "payment" && isOneTimePlanId(checkoutPlanId);
 
   if (oneTimePurchase) {
-    subscriptionStatus = "active";
+    // Read the payment from Stripe rather than the session: a late or
+    // replayed checkout event must not reopen a refunded or disputed purchase.
+    subscriptionStatus = await getOneTimePurchaseStatus(session);
   } else if (subscriptionId && stripe) {
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);
     subscriptionStatus = subscription.status;
@@ -311,18 +313,50 @@ export async function syncProfileFromSubscription(
 }
 
 /**
- * A refunded lifetime purchase closes the access it opened. Subscriptions are
- * refunded by cancelling them, which the customer.subscription.* events sync.
+ * Access status of a paid one-time checkout, read from its charge: "refunded"
+ * once any of it was refunded, "disputed" once the customer opened a dispute,
+ * else "active".
  */
-export async function revokeRefundedOneTimePurchase(charge: Stripe.Charge) {
-  if (!charge.refunded || !stripe || !isSupabaseAdminConfigured()) {
-    return;
+async function getOneTimePurchaseStatus(session: Stripe.Checkout.Session) {
+  const paymentIntentId =
+    typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id;
+
+  if (!stripe || !paymentIntentId) {
+    return "active";
   }
 
-  const paymentIntentId =
-    typeof charge.payment_intent === "string" ? charge.payment_intent : charge.payment_intent?.id;
+  const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
+    expand: ["latest_charge"],
+  });
+  const charge = paymentIntent.latest_charge;
 
-  if (!paymentIntentId) {
+  if (!charge || typeof charge === "string") {
+    return "active";
+  }
+
+  if (charge.refunded || charge.amount_refunded > 0) {
+    return "refunded";
+  }
+
+  return charge.disputed ? "disputed" : "active";
+}
+
+/**
+ * Closes the access a lifetime purchase opened. Subscriptions are refunded by
+ * cancelling them, which the customer.subscription.* events sync.
+ */
+async function revokeOneTimePurchase({
+  paymentIntentId,
+  customerId,
+  status,
+  stripeObjectId,
+}: {
+  paymentIntentId: string | null | undefined;
+  customerId: string | null | undefined;
+  status: "refunded" | "disputed";
+  stripeObjectId: string;
+}) {
+  if (!paymentIntentId || !stripe || !isSupabaseAdminConfigured()) {
     return;
   }
 
@@ -332,13 +366,15 @@ export async function revokeRefundedOneTimePurchase(charge: Stripe.Charge) {
     return;
   }
 
-  const customerId =
-    typeof charge.customer === "string" ? charge.customer : charge.customer?.id;
+  const customer =
+    customerId ??
+    (typeof paymentIntent.customer === "string" ? paymentIntent.customer : paymentIntent.customer?.id);
   const userId = paymentIntent.metadata?.supabase_user_id || null;
 
-  if (!userId && !customerId) {
-    await logError("billing", "Refunded lifetime purchase has no user nor customer", {
-      stripe_charge_id: charge.id,
+  if (!userId && !customer) {
+    await logError("billing", "Revoked lifetime purchase has no user nor customer", {
+      stripe_object_id: stripeObjectId,
+      status,
     });
     return;
   }
@@ -346,13 +382,39 @@ export async function revokeRefundedOneTimePurchase(charge: Stripe.Charge) {
   const admin = createAdminClient();
   const query = admin
     .from("profiles")
-    .update({ subscription_status: "refunded", updated_at: new Date().toISOString() })
+    .update({ subscription_status: status, updated_at: new Date().toISOString() })
     .eq("plan_id", paymentIntent.metadata.plan_id);
   const { error } = userId
     ? await query.eq("id", userId)
-    : await query.eq("stripe_customer_id", customerId!);
+    : await query.eq("stripe_customer_id", customer!);
 
   if (error) {
-    throw new Error(`Failed to revoke refunded lifetime purchase: ${error.message}`);
+    throw new Error(`Failed to revoke lifetime purchase: ${error.message}`);
   }
+}
+
+/** Any refund of a lifetime purchase closes its access (the guarantee refunds it in full). */
+export async function revokeRefundedOneTimePurchase(charge: Stripe.Charge) {
+  if (charge.amount_refunded <= 0) {
+    return;
+  }
+
+  await revokeOneTimePurchase({
+    paymentIntentId:
+      typeof charge.payment_intent === "string" ? charge.payment_intent : charge.payment_intent?.id,
+    customerId: typeof charge.customer === "string" ? charge.customer : charge.customer?.id,
+    status: "refunded",
+    stripeObjectId: charge.id,
+  });
+}
+
+/** A dispute (chargeback) on a lifetime purchase closes its access. */
+export async function revokeDisputedOneTimePurchase(dispute: Stripe.Dispute) {
+  await revokeOneTimePurchase({
+    paymentIntentId:
+      typeof dispute.payment_intent === "string" ? dispute.payment_intent : dispute.payment_intent?.id,
+    customerId: null,
+    status: "disputed",
+    stripeObjectId: dispute.id,
+  });
 }
