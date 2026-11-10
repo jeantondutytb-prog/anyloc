@@ -35,6 +35,7 @@ export function CheckoutView({
   returning,
   fromQuiz,
   priceDisplay,
+  previewAnnualExit,
 }: {
   initialPlanId: string;
   canceled?: boolean;
@@ -47,6 +48,8 @@ export function CheckoutView({
   fromQuiz?: boolean;
   /** A/B test: plans priced per day or per month. */
   priceDisplay?: PriceDisplayVariant;
+  /** Dev preview only: open on the annual exit offer sheet. */
+  previewAnnualExit?: boolean;
 }) {
   const router = useRouter();
   const [selectedPlanId, setSelectedPlanId] = useState(
@@ -105,6 +108,7 @@ export function CheckoutView({
           returning={returning}
           quiz={quiz}
           priceDisplay={priceDisplay}
+          previewAnnualExit={previewAnnualExit}
         />
       </main>
 

@@ -34,6 +34,7 @@ import {
 import type { BackResult } from "@/lib/back-interception";
 import { useBackInterception } from "@/hooks/use-back-interception";
 import {
+  ANNUAL_EXIT_OFFER_WINDOW_MS,
   ANNUAL_EXIT_OFFERS,
   getAnnualExitOfferPlanId,
   getOrPickAnnualExitOfferVariant,
@@ -130,6 +131,7 @@ export function AnyLocCheckoutPanel({
   returning,
   quiz,
   priceDisplay = "per_day",
+  previewAnnualExit = false,
 }: {
   selectedPlanId: string;
   onPlanChange: (planId: string) => void;
@@ -149,6 +151,8 @@ export function AnyLocCheckoutPanel({
   quiz?: QuizResult | null;
   /** A/B test: plans priced per day or per month (see lib/price-display-experiment). */
   priceDisplay?: PriceDisplayVariant;
+  /** Dev preview only (/checkout?preview=1&sortie=1): open on the annual exit offer sheet. */
+  previewAnnualExit?: boolean;
 }) {
   const copy = CHECKOUT_COPY;
   const offerTimeLeft = useOfferTimeLeft(offerEndsAt);
@@ -204,14 +208,16 @@ export function AnyLocCheckoutPanel({
   const [clipperOfferOpen, setClipperOfferOpen] = useState(false);
   const closeOfferDrawnRef = useRef(false);
   // Annual exit offer (29 € instead of 49 €): shown once per visit.
-  const [annualExit, setAnnualExit] = useState<{ expiresAt: Date } | null>(null);
+  const [annualExit, setAnnualExit] = useState<{ expiresAt: Date } | null>(() =>
+    previewAnnualExit ? { expiresAt: new Date(Date.now() + ANNUAL_EXIT_OFFER_WINDOW_MS) } : null
+  );
   const [annualExitAccepted, setAnnualExitAccepted] = useState(false);
-  const annualExitShownRef = useRef(false);
+  const annualExitShownRef = useRef(previewAnnualExit);
   // Same as the ref, as state so the back interception can stop arming itself.
   const [annualExitAttempted, setAnnualExitAttempted] = useState(false);
   // Set only when the sheet really showed (server said 200): from then on, at
   // most the monthly downsell, never the -50 % close offer nor the clipper one.
-  const annualExitSheetShownRef = useRef(false);
+  const annualExitSheetShownRef = useRef(previewAnnualExit);
   const modalOpenRef = useRef(modalOpen);
   useEffect(() => {
     modalOpenRef.current = modalOpen;

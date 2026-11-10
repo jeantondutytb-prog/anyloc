@@ -46,9 +46,10 @@ export default async function CheckoutPage({
     offre?: string;
     parcours?: string;
     prix?: string;
+    sortie?: string;
   }>;
 }) {
-  const { plan, canceled, preview, paiement, pricing, retour, parcours, prix, offre } =
+  const { plan, canceled, preview, paiement, pricing, retour, parcours, prix, offre, sortie } =
     await searchParams;
   // Email links (?paiement=1) open straight on the payment form.
   const focusPayment = paiement === "1";
@@ -144,6 +145,8 @@ export default async function CheckoutPage({
         returning={returning}
         fromQuiz={parcours === "quiz" && !returning}
         priceDisplay={priceDisplay}
+        // The dev preview can open the annual exit offer: /checkout?preview=1&sortie=1.
+        previewAnnualExit={devPreview && sortie === "1"}
       />
     </>
   );
