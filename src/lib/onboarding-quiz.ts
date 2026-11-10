@@ -1,4 +1,4 @@
-import { getGridPlans, type PricingGrid } from "@/lib/constants";
+import { COMPARISON, DEVICE_REQUIREMENT_NOTE, getGridPlans, type PricingGrid } from "@/lib/constants";
 import type { OnboardingDestination } from "@/lib/onboarding-destinations";
 
 /**
@@ -71,6 +71,17 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     ],
   },
   {
+    id: "frequency",
+    kicker: "Ton usage",
+    title: () => "Tu changerais de position à quelle fréquence ?",
+    options: [
+      { id: "once", label: "Une fois, pour un coup", note: "Pratique pour un coup : tu la mets, et elle reste là." },
+      { id: "sometimes", label: "De temps en temps", note: "Tu la changes quand l'envie te prend, depuis ton téléphone." },
+      { id: "often", label: "Souvent", note: "Tu changes de ville quand tu veux, sans tout refaire." },
+      { id: "always", label: "Tout le temps", note: "Elle reste active en arrière-plan, tu n'as rien à relancer." },
+    ],
+  },
+  {
     id: "device",
     kicker: "Ton téléphone",
     title: () => "Tu as quel téléphone ?",
@@ -102,6 +113,17 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     ],
   },
   {
+    id: "tried",
+    kicker: "Ton historique",
+    title: () => "Tu as déjà essayé autre chose ?",
+    options: [
+      { id: "vpn", label: "Un VPN", note: "Un VPN ne change pas ton GPS : les apps le voient toujours." },
+      { id: "fakegps", label: "Une app Fake GPS", note: "Ces apps ne changent pas ta position pour toutes les apps." },
+      { id: "nothing", label: "Non, jamais", note: "Aucun souci : le guide te prend par la main." },
+      { id: "other", label: "Autre chose", note: "Anyloc agit sur le GPS de tout ton téléphone." },
+    ],
+  },
+  {
     id: "worry",
     kicker: "Ce qui te freine",
     title: () => "Qu'est-ce qui t'inquiète le plus ?",
@@ -114,7 +136,67 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
       { id: "other", label: "Autre", note: "Le chat répond à toutes tes questions, même avant de payer." },
     ],
   },
+  {
+    id: "timing",
+    kicker: "Ton timing",
+    title: () => "Tu en as besoin pour quand ?",
+    options: [
+      { id: "today", label: "Aujourd'hui", note: "L'installation prend 5 minutes, une seule fois." },
+      { id: "week", label: "Cette semaine", note: "Tu as le temps : un guide pas à pas t'accompagne." },
+      { id: "later", label: "Plus tard", note: "Aucune pression : ta loc sera prête quand tu le seras." },
+    ],
+  },
 ];
+
+export type QuizFact = {
+  id: "install" | "compare";
+  /** The fact screen comes right after this question. */
+  afterQuestionId: string;
+  title: (answers: QuizAnswers) => string;
+  body: (answers: QuizAnswers) => string;
+};
+
+/** "Modifie le GPS de tout le tel": the first row of the landing comparison. */
+const GPS_ROW = COMPARISON[0].feature;
+
+export const QUIZ_FACTS: QuizFact[] = [
+  {
+    id: "install",
+    afterQuestionId: "device",
+    title: () => "L'installation, c'est 5 minutes",
+    body: () => `Un guide pas à pas, une seule fois. ${DEVICE_REQUIREMENT_NOTE}`,
+  },
+  {
+    id: "compare",
+    afterQuestionId: "tried",
+    title: (answers) =>
+      answers.tried?.[0] === "vpn"
+        ? "Un VPN ne change pas ton GPS"
+        : answers.tried?.[0] === "fakegps"
+          ? "Une app Fake GPS ne suffit pas"
+          : "Anyloc change ton GPS",
+    body: (answers) =>
+      answers.tried?.[0] === "vpn"
+        ? "Un VPN change ton adresse IP, pas ton GPS. Les apps lisent le GPS : elles voient toujours où tu es vraiment."
+        : answers.tried?.[0] === "fakegps"
+          ? "Une app Fake GPS ne change pas la position vue par toutes les apps. Anyloc, si."
+          : `${GPS_ROW} : Anyloc le fait, pas un VPN ni une app Fake GPS.`,
+  },
+];
+
+export type QuizStep =
+  | { kind: "question"; question: QuizQuestion }
+  | { kind: "fact"; fact: QuizFact };
+
+/** The asked questions, each followed by the fact screen attached to it, if any. */
+export function getQuizSequence(answers: QuizAnswers): QuizStep[] {
+  return getAskedQuestions(answers).flatMap((question): QuizStep[] => [
+    { kind: "question", question },
+    ...QUIZ_FACTS.filter((fact) => fact.afterQuestionId === question.id).map(
+      (fact): QuizStep => ({ kind: "fact", fact })
+    ),
+  ]);
+}
 
 const APP_LABELS: Record<string, string> = {
   snap: "Snap",
@@ -165,24 +247,20 @@ export function getQuizFinalSteps(answers: QuizAnswers, destination: OnboardingD
 export type QuizRecommendation = { planId: string; reason: string };
 
 /**
- * iPhone: the plan of the visitor's price grid that includes the iPhone app;
- * otherwise the middle plan of that grid (6 mois, or 3 mois in the new grid).
+ * Always the plan of the visitor's price grid that includes the mobile app
+ * (the annual one); only the reason changes with the answers.
  */
 export function getQuizRecommendation(answers: QuizAnswers, grid: PricingGrid): QuizRecommendation {
   const plans = getGridPlans(grid);
+  const plan = plans.find((candidate) => candidate.mobileApp) ?? plans[plans.length - 1];
   if (answers.device?.[0] === "iphone") {
-    const withApp = plans.find((plan) => plan.mobileApp);
-    if (withApp) {
-      return {
-        planId: withApp.id,
-        reason: "App iPhone incluse : tu changes de ville depuis ton tel",
-      };
-    }
+    return { planId: plan.id, reason: "App iPhone incluse : tu changes de ville depuis ton tel" };
   }
-  return {
-    planId: plans[Math.min(1, plans.length - 1)].id,
-    reason: "Le bon format pour commencer",
-  };
+  const frequency = answers.frequency?.[0];
+  if (frequency === "often" || frequency === "always") {
+    return { planId: plan.id, reason: "Tu t'en sers souvent : c'est la formule la moins chère au mois" };
+  }
+  return { planId: plan.id, reason: "Le meilleur prix au mois, app mobile incluse" };
 }
 
 /** What the quiz hands over to the checkout, through sessionStorage. */

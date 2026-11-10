@@ -5,7 +5,9 @@ import {
   getMainQuizApp,
   getQuizFinalSteps,
   getQuizRecommendation,
+  getQuizSequence,
   listQuizApps,
+  QUIZ_FACTS,
   QUIZ_QUESTIONS,
 } from "./onboarding-quiz";
 import {
@@ -40,15 +42,38 @@ describe("quiz questions", () => {
   });
 });
 
+describe("quiz sequence", () => {
+  it("puts each fact right after its question", () => {
+    const kinds = getQuizSequence({ device: ["android"] }).map((s) =>
+      s.kind === "question" ? s.question.id : `fact:${s.fact.id}`
+    );
+    assert.deepEqual(kinds, [
+      "apps", "audience", "frequency", "device", "fact:install",
+      "movement", "tried", "fact:compare", "worry", "timing",
+    ]);
+  });
+
+  it("tailors the comparison to what was tried", () => {
+    const compare = QUIZ_FACTS.find((fact) => fact.id === "compare")!;
+    assert.match(compare.body({ tried: ["vpn"] }), /VPN/);
+    assert.notEqual(compare.body({ tried: ["vpn"] }), compare.body({ tried: ["fakegps"] }));
+  });
+});
+
 describe("getQuizRecommendation", () => {
   it("recommends the plan with the iPhone app to iPhone users, in either grid", () => {
     assert.equal(getQuizRecommendation({ device: ["iphone"] }, "v1").planId, "annual");
     assert.equal(getQuizRecommendation({ device: ["iphone"] }, "v2").planId, "year_v2");
   });
 
-  it("recommends the middle plan otherwise", () => {
-    assert.equal(getQuizRecommendation({ device: ["android"] }, "v1").planId, "6months");
-    assert.equal(getQuizRecommendation({ device: ["android"] }, "v2").planId, "quarter_v2");
+  it("recommends the plan with the mobile app otherwise", () => {
+    assert.equal(getQuizRecommendation({ device: ["android"] }, "v1").planId, "annual");
+    assert.equal(getQuizRecommendation({ device: ["android"] }, "v2").planId, "year_v2");
+  });
+
+  it("explains the choice by how often the position is used", () => {
+    assert.match(getQuizRecommendation({ frequency: ["often"] }, "v1").reason, /souvent/);
+    assert.match(getQuizRecommendation({ frequency: ["once"] }, "v1").reason, /meilleur prix/);
   });
 });
 
