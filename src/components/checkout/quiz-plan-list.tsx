@@ -170,11 +170,13 @@ export function QuizPlanList({
               </span>
               <span className="shrink-0 text-right">
                 <span className="block whitespace-nowrap text-lg font-semibold tabular-nums text-zinc-900">
-                  {getPerMonthPrice(plan)} €
-                  <span className="ml-0.5 text-xs font-normal text-zinc-500">/mois</span>
+                  {plan.oneTime ? plan.price.replace("€", "") : getPerMonthPrice(plan)} €
+                  <span className="ml-0.5 text-xs font-normal text-zinc-500">
+                    {plan.oneTime ? "une fois" : "/mois"}
+                  </span>
                 </span>
                 <span className="mt-0.5 block whitespace-nowrap text-xs tabular-nums text-zinc-500">
-                  soit {plan.perDay.replace("≈ ", "")} €/jour
+                  {plan.oneTime ? "Sans abonnement" : `soit ${plan.perDay.replace("≈ ", "")} €/jour`}
                 </span>
               </span>
             </button>

@@ -5,6 +5,7 @@ import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/adm
 import { stripe } from "@/lib/stripe";
 import { isStaleSubscriptionEvent } from "@/lib/subscription-sync";
 import { getTrialProfilePatchFromSubscription } from "@/lib/trial-billing";
+import { getCanonicalPlanId, isOneTimePlanId } from "@/lib/constants";
 
 export type ProfileRow = {
   id: string;
@@ -144,7 +145,14 @@ export async function syncProfileFromCheckoutSession(
 
   let trialPatch = {};
 
-  if (subscriptionId && stripe) {
+  const checkoutPlanId = session.metadata?.plan_id ?? null;
+  // A paid one-time checkout (the lifetime plan) opens access with no
+  // subscription behind it; isStaleSubscriptionEvent then keeps it open.
+  const oneTimePurchase = session.mode === "payment" && isOneTimePlanId(checkoutPlanId);
+
+  if (oneTimePurchase) {
+    subscriptionStatus = "active";
+  } else if (subscriptionId && stripe) {
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);
     subscriptionStatus = subscription.status;
     trialPatch = getTrialProfilePatchFromSubscription(subscription);
@@ -158,7 +166,7 @@ export async function syncProfileFromCheckoutSession(
       stripe_customer_id: customerId ?? null,
       stripe_subscription_id: subscriptionId ?? null,
       subscription_status: subscriptionStatus,
-      plan_id: session.metadata?.plan_id ?? null,
+      plan_id: checkoutPlanId ? getCanonicalPlanId(checkoutPlanId) : null,
       ...trialPatch,
       updated_at: new Date().toISOString(),
     },
@@ -197,7 +205,7 @@ async function isStaleForProfile(
 ) {
   const { data } = await admin
     .from("profiles")
-    .select("stripe_subscription_id, subscription_status")
+    .select("stripe_subscription_id, subscription_status, plan_id")
     .eq(column, value)
     .maybeSingle();
 
@@ -299,5 +307,52 @@ export async function syncProfileFromSubscription(
 
   if (error) {
     throw new Error(`Failed to update profile from subscription: ${error.message}`);
+  }
+}
+
+/**
+ * A refunded lifetime purchase closes the access it opened. Subscriptions are
+ * refunded by cancelling them, which the customer.subscription.* events sync.
+ */
+export async function revokeRefundedOneTimePurchase(charge: Stripe.Charge) {
+  if (!charge.refunded || !stripe || !isSupabaseAdminConfigured()) {
+    return;
+  }
+
+  const paymentIntentId =
+    typeof charge.payment_intent === "string" ? charge.payment_intent : charge.payment_intent?.id;
+
+  if (!paymentIntentId) {
+    return;
+  }
+
+  const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+  if (!isOneTimePlanId(paymentIntent.metadata?.plan_id)) {
+    return;
+  }
+
+  const customerId =
+    typeof charge.customer === "string" ? charge.customer : charge.customer?.id;
+  const userId = paymentIntent.metadata?.supabase_user_id || null;
+
+  if (!userId && !customerId) {
+    await logError("billing", "Refunded lifetime purchase has no user nor customer", {
+      stripe_charge_id: charge.id,
+    });
+    return;
+  }
+
+  const admin = createAdminClient();
+  const query = admin
+    .from("profiles")
+    .update({ subscription_status: "refunded", updated_at: new Date().toISOString() })
+    .eq("plan_id", paymentIntent.metadata.plan_id);
+  const { error } = userId
+    ? await query.eq("id", userId)
+    : await query.eq("stripe_customer_id", customerId!);
+
+  if (error) {
+    throw new Error(`Failed to revoke refunded lifetime purchase: ${error.message}`);
   }
 }

@@ -3,6 +3,26 @@ import { describe, it } from "node:test";
 import { isStaleSubscriptionEvent } from "./subscription-sync";
 
 describe("isStaleSubscriptionEvent", () => {
+  it("keeps a lifetime customer's access when an old subscription is canceled", () => {
+    assert.equal(
+      isStaleSubscriptionEvent(
+        { stripe_subscription_id: null, subscription_status: "active", plan_id: "lifetime" },
+        { id: "sub_old", status: "canceled" }
+      ),
+      true
+    );
+  });
+
+  it("does not protect a refunded lifetime purchase", () => {
+    assert.equal(
+      isStaleSubscriptionEvent(
+        { stripe_subscription_id: null, subscription_status: "refunded", plan_id: "lifetime" },
+        { id: "sub_old", status: "canceled" }
+      ),
+      false
+    );
+  });
+
   it("ignores a canceled old subscription while the profile has a paid one", () => {
     assert.equal(
       isStaleSubscriptionEvent(

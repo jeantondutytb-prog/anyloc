@@ -11,7 +11,7 @@ import {
   getOnboardingUrl,
   PLAN_VALUE_STACK,
 } from "@/lib/constants";
-import { readPricingVariantCookie } from "@/lib/pricing-experiment";
+import { getPricingGrid, readPricingVariantCookie } from "@/lib/pricing-experiment";
 import { PlanPrice } from "@/components/pricing/plan-price";
 import { RefundPolicyNotice } from "@/components/pricing/refund-policy-notice";
 import { OnboardingLink } from "@/components/onboarding/onboarding-link";
@@ -29,7 +29,7 @@ export function Pricing() {
     readPricingVariantCookie,
     () => "control" as const
   );
-  const plans = getGridPlans(variant === "grid_v2" ? "v2" : "v1");
+  const plans = getGridPlans(getPricingGrid(variant));
 
   return (
     <section id="pricing" data-track-section="pricing" className="py-16 sm:py-24">

@@ -73,7 +73,7 @@ import {
   type QuizOption,
   type QuizQuestion,
 } from "@/lib/onboarding-quiz";
-import { readPricingVariantCookie } from "@/lib/pricing-experiment";
+import { getPricingGrid, readPricingVariantCookie } from "@/lib/pricing-experiment";
 import { cn } from "@/lib/utils";
 import type { VisitorLocation } from "@/lib/visitor-location";
 
@@ -714,7 +714,7 @@ export function OnboardingQuizView({
   function unlock() {
     if (leaving) return;
     // The plan of the visitor's own price grid (see lib/pricing-experiment).
-    const grid = readPricingVariantCookie() === "grid_v2" ? "v2" : "v1";
+    const grid = getPricingGrid(readPricingVariantCookie());
     const recommendation = getQuizRecommendation(answers, grid);
     const mainApp = getMainQuizApp(answers, otherApp);
     storeQuizResult({

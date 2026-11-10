@@ -32,6 +32,7 @@ const STATUS_LABELS: Record<string, string> = {
   active: "Actif",
   trialing: "Actif",
   canceled: "Annulé",
+  refunded: "Remboursé",
   past_due: "Paiement en retard",
   incomplete: "Incomplet",
   unpaid: "Impayé",

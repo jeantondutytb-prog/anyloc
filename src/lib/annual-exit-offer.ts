@@ -42,9 +42,11 @@ function formatPlanPrice(price: string): string {
   return `${price.replace("€", "").trim().replace(/,00$/, "")} €`;
 }
 
-/** Prices shown for each plan that can receive the offer. Only the v1 annual is listed. */
+/** Prices shown for each plan that can receive the offer. The v1 annual and the lifetime-grid annual (same Stripe price). */
 export const ANNUAL_EXIT_OFFERS: Record<string, { offerPrice: string; fullPrice: string }> = {
   annual: { offerPrice: "29 €", fullPrice: formatPlanPrice(PLANS.find((plan) => plan.id === "annual")?.price ?? "") },
+  // Same Stripe price as the v1 annual (lifetime test grid).
+  annual_v3: { offerPrice: "29 €", fullPrice: formatPlanPrice(PLANS.find((plan) => plan.id === "annual_v3")?.price ?? "") },
 };
 
 /**
