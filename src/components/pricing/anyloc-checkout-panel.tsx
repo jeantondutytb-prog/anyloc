@@ -206,6 +206,15 @@ export function AnyLocCheckoutPanel({
   const [annualExit, setAnnualExit] = useState<{ expiresAt: Date } | null>(null);
   const [annualExitAccepted, setAnnualExitAccepted] = useState(false);
   const annualExitShownRef = useRef(false);
+  // Same as the ref, as state so the back interception can stop arming itself.
+  const [annualExitAttempted, setAnnualExitAttempted] = useState(false);
+  // Set only when the sheet really showed (server said 200): from then on, at
+  // most the monthly downsell, never the -50 % close offer nor the clipper one.
+  const annualExitSheetShownRef = useRef(false);
+  const modalOpenRef = useRef(modalOpen);
+  useEffect(() => {
+    modalOpenRef.current = modalOpen;
+  });
 
   /** Resolves true when the sheet is now showing; the visitor is then in the `offer` group. */
   const offerAnnualExit = useCallback(
@@ -214,6 +223,7 @@ export function AnyLocCheckoutPanel({
       const annualPlanId = getAnnualExitOfferPlanId(selectedPlanId);
       if (!annualPlanId) return false;
       annualExitShownRef.current = true;
+      setAnnualExitAttempted(true);
       const variant = getOrPickAnnualExitOfferVariant();
       registerPostHogProperties({ annual_exit_offer_variant: variant });
       track("annual_exit_offer_experiment_exposed", {
@@ -229,6 +239,9 @@ export function AnyLocCheckoutPanel({
         const data = (await res.json()) as { expiresAt?: string };
         const expiresAt = new Date(data.expiresAt ?? "");
         if (Number.isNaN(expiresAt.getTime())) return false;
+        // The visitor opened the payment popup while the answer was on its way.
+        if (modalOpenRef.current) return false;
+        annualExitSheetShownRef.current = true;
         setAnnualExit({ expiresAt });
         track("annual_exit_offer_shown", { trigger, plan: selectedPlanId });
         return true;
@@ -241,7 +254,12 @@ export function AnyLocCheckoutPanel({
 
   /** Today's close behaviour: the -50 % close-offer test, then the monthly downsell. */
   const closeWithoutAnnualExit = useCallback((sessionId: string | null, downsellPlanId: string | undefined) => {
-    if (isCloseOfferExperimentEnabled() && sessionId && !closeOfferDrawnRef.current) {
+    if (
+      isCloseOfferExperimentEnabled() &&
+      !annualExitSheetShownRef.current &&
+      sessionId &&
+      !closeOfferDrawnRef.current
+    ) {
       closeOfferDrawnRef.current = true;
       const variant = getOrPickCloseOfferVariant();
       registerPostHogProperties({ close_offer_variant: variant });
@@ -287,9 +305,16 @@ export function AnyLocCheckoutPanel({
     });
   }, [selectedPlanId, offerSessionId, annualExitAccepted, offerAnnualExit, closeWithoutAnnualExit]);
 
+  // Only armed while an offer can still show; when it doesn't, the hook sends
+  // the visitor back so a press never gets swallowed.
   useBackInterception(
-    isAnnualExitOfferEnabled() && !modalOpen && !focusPayment,
-    () => void offerAnnualExit("back")
+    isAnnualExitOfferEnabled() &&
+      !modalOpen &&
+      !focusPayment &&
+      !annualExitAttempted &&
+      !offerSessionId &&
+      getAnnualExitOfferPlanId(selectedPlanId) !== null,
+    () => offerAnnualExit("back")
   );
 
   function acceptAnnualExit() {
@@ -382,7 +407,9 @@ export function AnyLocCheckoutPanel({
     track("checkout_hosted_fallback_clicked", { plan: planId });
 
     try {
-      const data = await requestCheckoutSession("/api/checkout", planId, controller.signal);
+      const data = await requestCheckoutSession("/api/checkout", planId, controller.signal, {
+        annualExitOffer: annualExitAccepted || undefined,
+      });
       if (!data.url) {
         throw new Error(data.error ?? copy.errStart);
       }
