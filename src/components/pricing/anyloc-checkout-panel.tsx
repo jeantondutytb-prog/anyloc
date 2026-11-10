@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { AuthDivider } from "@/components/auth/auth-divider";
 import { GoogleAuthLink } from "@/components/auth/google-auth-link";
+import { AnnualExitOfferSheet } from "@/components/checkout/annual-exit-offer-sheet";
 import { CheckoutClipperSheet } from "@/components/checkout/checkout-clipper-sheet";
 import { CheckoutDownsellSheet } from "@/components/checkout/checkout-downsell-sheet";
 import { CheckoutPaymentModal } from "@/components/checkout/checkout-payment-modal";
@@ -30,6 +31,13 @@ import {
   getReturningSubline,
   type ReturningCustomer,
 } from "@/lib/checkout-copy";
+import { useBackInterception } from "@/hooks/use-back-interception";
+import {
+  ANNUAL_EXIT_OFFERS,
+  getAnnualExitOfferPlanId,
+  getOrPickAnnualExitOfferVariant,
+  isAnnualExitOfferEnabled,
+} from "@/lib/annual-exit-offer";
 import { getOrPickClipperOfferVariant } from "@/lib/checkout-clipper-offer";
 import {
   getFirstMonthOfferPrice,
@@ -194,15 +202,45 @@ export function AnyLocCheckoutPanel({
   const [closeOfferSessionId, setCloseOfferSessionId] = useState<string | null>(null);
   const [clipperOfferOpen, setClipperOfferOpen] = useState(false);
   const closeOfferDrawnRef = useRef(false);
-  const closePaymentModal = useCallback((sessionId: string | null) => {
-    const entryId = getGridEntryPlanId(selectedPlanId);
-    const downsellPlanId = selectedPlanId !== entryId ? entryId : undefined;
-    track("checkout_modal_closed", { plan: selectedPlanId });
-    requestRef.current?.abort();
-    setRedirecting(false);
-    setModalOpen(false);
-    // Already discounted: nothing more to offer.
-    if (offerSessionId) return;
+  // Annual exit offer (29 € instead of 49 €): shown once per visit.
+  const [annualExit, setAnnualExit] = useState<{ expiresAt: Date } | null>(null);
+  const [annualExitAccepted, setAnnualExitAccepted] = useState(false);
+  const annualExitShownRef = useRef(false);
+
+  /** Resolves true when the sheet is now showing; the visitor is then in the `offer` group. */
+  const offerAnnualExit = useCallback(
+    async (trigger: "modal_close" | "back"): Promise<boolean> => {
+      if (!isAnnualExitOfferEnabled() || annualExitShownRef.current || offerSessionId) return false;
+      const annualPlanId = getAnnualExitOfferPlanId(selectedPlanId);
+      if (!annualPlanId) return false;
+      annualExitShownRef.current = true;
+      const variant = getOrPickAnnualExitOfferVariant();
+      registerPostHogProperties({ annual_exit_offer_variant: variant });
+      track("annual_exit_offer_experiment_exposed", {
+        variant,
+        trigger,
+        plan: selectedPlanId,
+        $set: { annual_exit_offer_variant: variant },
+      });
+      if (variant !== "offer") return false;
+      try {
+        const res = await fetch("/api/checkout/annual-exit-offer", { method: "POST" });
+        if (!res.ok) return false;
+        const data = (await res.json()) as { expiresAt?: string };
+        const expiresAt = new Date(data.expiresAt ?? "");
+        if (Number.isNaN(expiresAt.getTime())) return false;
+        setAnnualExit({ expiresAt });
+        track("annual_exit_offer_shown", { trigger, plan: selectedPlanId });
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [selectedPlanId, offerSessionId]
+  );
+
+  /** Today's close behaviour: the -50 % close-offer test, then the monthly downsell. */
+  const closeWithoutAnnualExit = useCallback((sessionId: string | null, downsellPlanId: string | undefined) => {
     if (isCloseOfferExperimentEnabled() && sessionId && !closeOfferDrawnRef.current) {
       closeOfferDrawnRef.current = true;
       const variant = getOrPickCloseOfferVariant();
@@ -222,7 +260,59 @@ export function AnyLocCheckoutPanel({
       track("checkout_downsell_shown", { plan: selectedPlanId, offer_plan: downsellPlanId });
       setDownsellOpen(true);
     }
-  }, [selectedPlanId, offerSessionId]);
+  }, [selectedPlanId]);
+
+  const closePaymentModal = useCallback((sessionId: string | null) => {
+    const entryId = getGridEntryPlanId(selectedPlanId);
+    const downsellPlanId = selectedPlanId !== entryId ? entryId : undefined;
+    track("checkout_modal_closed", { plan: selectedPlanId });
+    requestRef.current?.abort();
+    setRedirecting(false);
+    setModalOpen(false);
+    // The annual exit offer's popup closed: back to the normal paywall, nothing more to offer.
+    if (annualExitAccepted) {
+      setAnnualExitAccepted(false);
+      return;
+    }
+    // Already discounted: nothing more to offer.
+    if (offerSessionId) return;
+    if (!isAnnualExitOfferEnabled()) {
+      closeWithoutAnnualExit(sessionId, downsellPlanId);
+      return;
+    }
+    // Shown: the close-offer test and the clipper offer are skipped. Not shown
+    // (control group, or no offer to make): today's behaviour.
+    void offerAnnualExit("modal_close").then((shown) => {
+      if (!shown) closeWithoutAnnualExit(sessionId, downsellPlanId);
+    });
+  }, [selectedPlanId, offerSessionId, annualExitAccepted, offerAnnualExit, closeWithoutAnnualExit]);
+
+  useBackInterception(
+    isAnnualExitOfferEnabled() && !modalOpen && !focusPayment,
+    () => void offerAnnualExit("back")
+  );
+
+  function acceptAnnualExit() {
+    const annualPlanId = getAnnualExitOfferPlanId(selectedPlanId);
+    if (!annualPlanId) return;
+    track("annual_exit_offer_accepted", { plan: selectedPlanId, offer_plan: annualPlanId });
+    setAnnualExit(null);
+    setAnnualExitAccepted(true);
+    if (annualPlanId !== selectedPlanId) onPlanChange(annualPlanId);
+    setError(null);
+    setModalOpen(true);
+  }
+
+  // Declined: only the monthly downsell, no -50 % and no clipper offer.
+  function dismissAnnualExit() {
+    track("annual_exit_offer_dismissed", { plan: selectedPlanId });
+    setAnnualExit(null);
+    if (downgradePlan && !downsellShownRef.current) {
+      downsellShownRef.current = true;
+      track("checkout_downsell_shown", { plan: selectedPlanId, offer_plan: downgradePlan.id });
+      setDownsellOpen(true);
+    }
+  }
 
   // A/B test: half of those who turn down the -50 % get the clipper programme.
   const dismissCloseOffer = useCallback(() => {
@@ -443,7 +533,14 @@ export function AnyLocCheckoutPanel({
               {selected && <span className="h-2.5 w-2.5 rounded-full bg-pink-500" />}
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block font-semibold text-zinc-900">{plan.name}</span>
+              <span className="flex items-center gap-1.5 font-semibold text-zinc-900">
+                {plan.name}
+                {plan.badge ? (
+                  <span className="rounded-full bg-pink-100 px-1.5 py-px text-[10px] font-bold text-pink-700">
+                    {plan.badge}
+                  </span>
+                ) : null}
+              </span>
               <span
                 className={cn(
                   "mt-0.5 flex items-center gap-1 text-xs",
@@ -751,19 +848,34 @@ export function AnyLocCheckoutPanel({
       {modalOpen && hydrated ? (
         <CheckoutPaymentModal
           // A new plan or the discount needs a new Stripe session: remount the popup.
-          key={`${selectedPlan.id}:${offerSessionId ?? ""}`}
+          key={`${selectedPlan.id}:${offerSessionId ?? ""}:${annualExitAccepted ? "annual-exit" : ""}`}
           plan={selectedPlan}
           offerPlan={entryPlan}
           offerSessionId={
             offerSessionId && selectedPlan.id === entryPlanId ? offerSessionId : undefined
           }
           welcomeOffer={recoveryOffer && selectedPlan.id === RECOVERY_OFFER_PLAN_ID}
+          annualExitOffer={
+            annualExitAccepted && ANNUAL_EXIT_OFFERS[selectedPlan.id]
+              ? { offerPrice: ANNUAL_EXIT_OFFERS[selectedPlan.id].offerPrice }
+              : undefined
+          }
           onDeclineOffer={acceptDeclineOffer}
           stripePublishableKey={stripePublishableKey}
           hostedRedirecting={redirecting}
           hostedError={error}
           onHostedFallback={() => void goToHostedPayment()}
           onClose={closePaymentModal}
+        />
+      ) : null}
+
+      {annualExit && hydrated ? (
+        <AnnualExitOfferSheet
+          fullPrice={ANNUAL_EXIT_OFFERS.annual.fullPrice}
+          offerPrice={ANNUAL_EXIT_OFFERS.annual.offerPrice}
+          expiresAt={annualExit.expiresAt}
+          onAccept={acceptAnnualExit}
+          onDismiss={dismissAnnualExit}
         />
       ) : null}
 

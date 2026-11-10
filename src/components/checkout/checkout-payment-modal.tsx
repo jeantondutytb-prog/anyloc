@@ -27,6 +27,7 @@ export function CheckoutPaymentModal({
   offerPlan,
   offerSessionId,
   welcomeOffer,
+  annualExitOffer,
   onDeclineOffer,
   stripePublishableKey,
   hostedRedirecting,
@@ -42,6 +43,8 @@ export function CheckoutPaymentModal({
   offerSessionId?: string;
   /** The welcome offer already takes -50 % off this plan's 1st month. */
   welcomeOffer?: boolean;
+  /** The annual exit offer: the server checks it, the header shows `offerPrice`. */
+  annualExitOffer?: { offerPrice: string };
   onDeclineOffer: (declinedSessionId: string) => void;
   stripePublishableKey: string;
   /** The hosted-page fallback is loading. */
@@ -61,6 +64,7 @@ export function CheckoutPaymentModal({
   const [declined, setDeclined] = useState<DeclineKind | null>(null);
   // Already on a discounted first month: a refusal gets no second discount.
   const discounted = Boolean(offerSessionId || welcomeOffer);
+  const hasAnnualExitOffer = Boolean(annualExitOffer);
   // Closing a drawn form first asks why, in place of the form.
   const [askingExitReason, setAskingExitReason] = useState(false);
   // Read by the Escape handler, which is set up once.
@@ -80,7 +84,7 @@ export function CheckoutPaymentModal({
       "/api/stripe/embedded-checkout",
       plan.id,
       controller.signal,
-      { offerSessionId }
+      { offerSessionId, annualExitOffer: hasAnnualExitOffer || undefined }
     )
       .then((data) => {
         if (!data.clientSecret) {
@@ -111,7 +115,7 @@ export function CheckoutPaymentModal({
       });
 
     return () => controller.abort();
-  }, [plan.id, attempt, copy, offerSessionId]);
+  }, [plan.id, attempt, copy, offerSessionId, hasAnnualExitOffer]);
 
   // Stripe's form doesn't tell the page why a card was refused: the webhook
   // stamps it on the session, read back here.
@@ -220,9 +224,11 @@ export function CheckoutPaymentModal({
         <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
           <p className="text-sm font-bold text-zinc-900">
             {plan.name} ·{" "}
-            {discounted
-              ? copy.firstMonthOfferHeader(getFirstMonthOfferPrice(plan.price))
-              : price}
+            {annualExitOffer
+              ? annualExitOffer.offerPrice
+              : discounted
+                ? copy.firstMonthOfferHeader(getFirstMonthOfferPrice(plan.price))
+                : price}
           </p>
           <button
             ref={closeRef}

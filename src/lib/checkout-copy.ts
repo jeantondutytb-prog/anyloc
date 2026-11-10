@@ -72,6 +72,12 @@ export const CHECKOUT_COPY = {
     `Commence avec la formule ${name} à ${price}, sans engagement. Tu pourras passer sur plus long ensuite.`,
   downsellCta: (price: string) => `Commencer à ${price}`,
   downsellDismiss: "Non merci",
+  annualExitTitle: "Attends : l'annuel à 29 € au lieu de 49 €",
+  annualExitLead: "29 € par an, et ce prix reste le tien chaque année tant que tu restes abonné.",
+  annualExitTerms: "Si tu changes de formule, tu perds ce prix.",
+  annualExitExpiry: (time: string) => `Offre valable jusqu'à ${time}`,
+  annualExitCta: "Prendre l'annuel à 29 €",
+  annualExitDismiss: "Non merci",
   faq: [
     {
       q: "Y a un essai gratuit ?",

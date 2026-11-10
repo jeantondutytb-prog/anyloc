@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   ANNUAL_EXIT_OFFER_WINDOW_MS,
+  formatAnnualExitExpiry,
   getAnnualExitOfferExpiry,
   getAnnualExitOfferPlanId,
   getAnnualExitOfferState,
@@ -46,5 +47,12 @@ describe("annual exit offer", () => {
   it("keeps the first start time on a second display", () => {
     assert.deepEqual(resolveAnnualExitOfferStart(start, at(30 * 60_000)), start);
     assert.deepEqual(resolveAnnualExitOfferStart(null, at(30 * 60_000)), at(30 * 60_000));
+  });
+});
+
+describe("formatAnnualExitExpiry", () => {
+  it("formats HH:MM in local time with zero padding", () => {
+    assert.equal(formatAnnualExitExpiry(new Date(2026, 0, 1, 9, 5)), "09:05");
+    assert.equal(formatAnnualExitExpiry(new Date(2026, 0, 1, 23, 40)), "23:40");
   });
 });

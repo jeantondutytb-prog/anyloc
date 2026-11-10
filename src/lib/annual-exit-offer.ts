@@ -73,6 +73,12 @@ export function getAnnualExitOfferExpiry(startedAt: Date): Date {
   return new Date(startedAt.getTime() + ANNUAL_EXIT_OFFER_WINDOW_MS);
 }
 
+/** "14:05": the offer's end in the visitor's local time. */
+export function formatAnnualExitExpiry(expiresAt: Date): string {
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${pad(expiresAt.getHours())}:${pad(expiresAt.getMinutes())}`;
+}
+
 export function isAnnualExitOfferEnabled() {
   return process.env.NEXT_PUBLIC_ANNUAL_EXIT_OFFER === "on";
 }
