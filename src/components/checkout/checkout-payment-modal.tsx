@@ -31,6 +31,7 @@ export function CheckoutPaymentModal({
   onAnnualExitOfferExpired,
   onDeclineOffer,
   stripePublishableKey,
+  fromQuiz = false,
   hostedRedirecting,
   hostedError,
   onHostedFallback,
@@ -50,6 +51,8 @@ export function CheckoutPaymentModal({
   onAnnualExitOfferExpired?: () => void;
   onDeclineOffer: (declinedSessionId: string) => void;
   stripePublishableKey: string;
+  /** Arrived from the quiz: the guarantee block shrinks to one discreet line. */
+  fromQuiz?: boolean;
   /** The hosted-page fallback is loading. */
   hostedRedirecting: boolean;
   hostedError?: string | null;
@@ -288,22 +291,36 @@ export function CheckoutPaymentModal({
             askingExitReason ? "hidden" : "overflow-y-auto overscroll-contain px-4 pb-4 pt-3"
           }
         >
-          <div className="flex items-start gap-2 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs leading-snug text-emerald-900/80">
-            <Check className="mt-px h-3.5 w-3.5 shrink-0 text-emerald-600" strokeWidth={3} />
-            <p>
-              <span className="font-bold text-emerald-900">{GUARANTEE.title}</span>{" "}
-              {GUARANTEE.summary}{" "}
+          {fromQuiz ? (
+            <p className="text-xs text-zinc-500">
+              {copy.modalGuaranteeLine}{" "}
               <Link
                 href="/politique-de-remboursement"
                 target="_blank"
                 rel="noreferrer"
-                className="whitespace-nowrap text-[10px] font-semibold text-emerald-700 underline"
+                className="whitespace-nowrap underline"
               >
                 {copy.guaranteeConditionsToggle}
               </Link>
             </p>
-          </div>
-          <p className="mt-2 text-xs text-zinc-500">{copy.modalCancelAnytime}</p>
+          ) : (
+            <div className="flex items-start gap-2 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs leading-snug text-emerald-900/80">
+              <Check className="mt-px h-3.5 w-3.5 shrink-0 text-emerald-600" strokeWidth={3} />
+              <p>
+                <span className="font-bold text-emerald-900">{GUARANTEE.title}</span>{" "}
+                {GUARANTEE.summary}{" "}
+                <Link
+                  href="/politique-de-remboursement"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="whitespace-nowrap text-[10px] font-semibold text-emerald-700 underline"
+                >
+                  {copy.guaranteeConditionsToggle}
+                </Link>
+              </p>
+            </div>
+          )}
+          <p className={fromQuiz ? "mt-1 text-xs text-zinc-500" : "mt-2 text-xs text-zinc-500"}>{copy.modalCancelAnytime}</p>
 
           {/* Once discounted, no second offer: only the way out through another method. */}
           {declined && sessionId && (declined === "card" || discounted) ? (

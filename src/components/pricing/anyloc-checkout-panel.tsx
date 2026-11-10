@@ -130,6 +130,7 @@ export function AnyLocCheckoutPanel({
   onShowAllPlans,
   returning,
   quiz,
+  fromQuiz = false,
   priceDisplay = "per_day",
   previewAnnualExit = false,
 }: {
@@ -149,6 +150,8 @@ export function AnyLocCheckoutPanel({
   returning?: ReturningCustomer | null;
   /** Arrived from the quiz onboarding: recommended plan and personal headline. */
   quiz?: QuizResult | null;
+  /** Arriving from the quiz: the paywall eases in from the first paint, before the quiz result is read. */
+  fromQuiz?: boolean;
   /** A/B test: plans priced per day or per month (see lib/price-display-experiment). */
   priceDisplay?: PriceDisplayVariant;
   /** Dev preview only (/checkout?preview=1&sortie=1): open on the annual exit offer sheet. */
@@ -502,7 +505,7 @@ export function AnyLocCheckoutPanel({
   // From the quiz the paywall eases in: headline, plans, button, then the rest
   // (see .paywall-rise in globals.css). The control arm renders without it.
   const riseClass = (step: 0 | 1 | 2 | 3) =>
-    quiz
+    quiz || fromQuiz
       ? cn(
           "paywall-rise",
           step === 1 && "[animation-delay:100ms]",
@@ -773,11 +776,14 @@ export function AnyLocCheckoutPanel({
           </div>
 
           <div className={cn("mt-4 text-center", riseClass(3))}>
-            <p className="flex items-center justify-center gap-1.5 text-xs font-medium text-zinc-600">
-              <LockKeyhole className="h-3.5 w-3.5 text-pink-600" />
-              {copy.paymentProcessor}
-            </p>
-            <ul className="mt-2 flex flex-wrap items-center justify-center gap-1.5 text-[11px] text-zinc-500">
+            {/* From the quiz the Stripe badge below already says it. */}
+            {quiz ? null : (
+              <p className="flex items-center justify-center gap-1.5 text-xs font-medium text-zinc-600">
+                <LockKeyhole className="h-3.5 w-3.5 text-pink-600" />
+                {copy.paymentProcessor}
+              </p>
+            )}
+            <ul className={cn("flex flex-wrap items-center justify-center gap-1.5 text-[11px] text-zinc-500", !quiz && "mt-2")}>
               {[
                 { label: "Stripe", Icon: ShieldCheck },
                 { label: "Carte bancaire", Icon: CreditCard },
@@ -811,10 +817,8 @@ export function AnyLocCheckoutPanel({
           </div>
 
           {quiz ? (
-            // From the quiz: proof, reviews, then the questions; the unlock list is gone.
+            // From the quiz: reviews, then the questions; the unlock list and the proof video are gone.
             <div className={riseClass(3)}>
-              {hydrated ? <CheckoutProofVideo /> : null}
-
               <h2 className="mt-10 text-base font-bold text-zinc-900">{copy.reviewsListTitle}</h2>
               <ul className="mt-3 space-y-2">
                 {CHECKOUT_REVIEWS.slice(0, 3).map((review) => (
@@ -989,6 +993,7 @@ export function AnyLocCheckoutPanel({
           onAnnualExitOfferExpired={leaveAnnualExitOffer}
           onDeclineOffer={acceptDeclineOffer}
           stripePublishableKey={stripePublishableKey}
+          fromQuiz={Boolean(quiz)}
           hostedRedirecting={redirecting}
           hostedError={error}
           onHostedFallback={() => void goToHostedPayment()}

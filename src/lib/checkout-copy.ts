@@ -32,6 +32,8 @@ export const CHECKOUT_COPY = {
   proofVideoAlt: "Enregistrement d'écran : la position Snap Map passe à Londres puis à Paris avec Anyloc",
   redirecting: "Redirection vers le paiement…",
   modalTitle: "Paiement",
+  /** Quiz arm: the popup shows the guarantee as one small grey line. */
+  modalGuaranteeLine: "Garantie 48 h ·",
   modalCancelAnytime: "Résiliable à tout moment, en 1 clic depuis ton espace.",
   modalFallbackLead: "Le paiement ne s'affiche pas ?",
   modalFallbackCta: "Payer sur la page sécurisée Stripe ↗",

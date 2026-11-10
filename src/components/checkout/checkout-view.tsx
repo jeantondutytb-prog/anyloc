@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnyLocCheckoutPanel } from "@/components/pricing/anyloc-checkout-panel";
 import { Logo } from "@/components/ui/logo";
+import { cn } from "@/lib/utils";
 import type { ReturningCustomer } from "@/lib/checkout-copy";
 import { DEFAULT_PLAN_ID, isValidPlanId } from "@/lib/constants";
 import {
@@ -94,8 +95,9 @@ export function CheckoutView({
         </div>
       </div>
 
-      {/* Same entrance as the signup card, so arriving from auth (or Google) eases in. */}
-      <main className="animate-auth-enter relative flex-1 py-5 sm:py-10">
+      {/* Same entrance as the signup card, so arriving from auth (or Google) eases in.
+          From the quiz the panel staggers its own blocks (.paywall-rise): one entrance only. */}
+      <main className={cn("relative flex-1 py-5 sm:py-10", !fromQuiz && "animate-auth-enter")}>
         <AnyLocCheckoutPanel
           selectedPlanId={selectedPlanId}
           onPlanChange={selectPlan}
@@ -107,6 +109,7 @@ export function CheckoutView({
           onShowAllPlans={() => setFocusPayment(false)}
           returning={returning}
           quiz={quiz}
+          fromQuiz={fromQuiz}
           priceDisplay={priceDisplay}
           previewAnnualExit={previewAnnualExit}
         />
