@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnyLocCheckoutPanel } from "@/components/pricing/anyloc-checkout-panel";
 import { Logo } from "@/components/ui/logo";
+import { cn } from "@/lib/utils";
 import type { ReturningCustomer } from "@/lib/checkout-copy";
 import { DEFAULT_PLAN_ID, isValidPlanId } from "@/lib/constants";
 import {
@@ -34,7 +35,9 @@ export function CheckoutView({
   focusPayment: initialFocusPayment,
   returning,
   fromQuiz,
+  autoPay,
   priceDisplay,
+  previewAnnualExit,
 }: {
   initialPlanId: string;
   canceled?: boolean;
@@ -45,8 +48,12 @@ export function CheckoutView({
   returning?: ReturningCustomer | null;
   /** Arrived from the quiz onboarding: its recommendation shapes the paywall. */
   fromQuiz?: boolean;
+  /** Quiz arm, from the plan sheet (?payer=1): the payment popup opens on arrival. */
+  autoPay?: boolean;
   /** A/B test: plans priced per day or per month. */
   priceDisplay?: PriceDisplayVariant;
+  /** Dev preview only: open on the annual exit offer sheet. */
+  previewAnnualExit?: boolean;
 }) {
   const router = useRouter();
   const [selectedPlanId, setSelectedPlanId] = useState(
@@ -71,9 +78,18 @@ export function CheckoutView({
     }
   }, [fromQuiz]);
 
+  // The handoff is one-shot: a reload shows the plan list, not the popup.
+  useEffect(() => {
+    if (!autoPay) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("payer");
+    window.history.replaceState(window.history.state, "", url);
+  }, [autoPay]);
+
   function selectPlan(planId: string) {
     setSelectedPlanId(planId);
-    router.replace(`/checkout?plan=${planId}`, { scroll: false });
+    // The quiz arm keeps its marker, so the server render stays on the plan list.
+    router.replace(`/checkout?plan=${planId}${fromQuiz ? "&parcours=quiz" : ""}`, { scroll: false });
   }
 
   return (
@@ -91,8 +107,9 @@ export function CheckoutView({
         </div>
       </div>
 
-      {/* Same entrance as the signup card, so arriving from auth (or Google) eases in. */}
-      <main className="animate-auth-enter relative flex-1 py-5 sm:py-10">
+      {/* Same entrance as the signup card, so arriving from auth (or Google) eases in.
+          From the quiz the panel staggers its own blocks (.paywall-rise): one entrance only. */}
+      <main className={cn("relative flex-1 py-5 sm:py-10", !fromQuiz && "animate-auth-enter")}>
         <AnyLocCheckoutPanel
           selectedPlanId={selectedPlanId}
           onPlanChange={selectPlan}
@@ -104,7 +121,10 @@ export function CheckoutView({
           onShowAllPlans={() => setFocusPayment(false)}
           returning={returning}
           quiz={quiz}
+          fromQuiz={fromQuiz}
+          autoPay={autoPay}
           priceDisplay={priceDisplay}
+          previewAnnualExit={previewAnnualExit}
         />
       </main>
 

@@ -4,6 +4,9 @@ import { CHECKOUT_PAY_CONSENT, DEVICE_REQUIREMENT_NOTE, type Plan } from "@/lib/
 import { ensureStripeCustomerForUser } from "@/lib/billing";
 import { getAppUrl, stripe } from "@/lib/stripe";
 import { UserFacingError } from "@/lib/errors";
+import { withCheckoutOffer } from "@/lib/checkout-offer";
+
+export { CHECKOUT_OFFER_ANNUAL_EXIT, withCheckoutOffer } from "@/lib/checkout-offer";
 
 type CheckoutMode = "embedded_page" | "hosted_page";
 
@@ -48,6 +51,7 @@ export async function createSubscriptionCheckoutSession({
   uiMode,
   analyticsId,
   couponId,
+  offer,
 }: {
   plan: Plan;
   user?: User | null;
@@ -58,6 +62,8 @@ export async function createSubscriptionCheckoutSession({
    * pending lookup: it runs alongside the Stripe customer lookup.
    */
   couponId?: string | null | Promise<string | null>;
+  /** Offer tag (e.g. "annual_exit") put on the session and the subscription. */
+  offer?: string | null;
 }) {
   if (!stripe || !plan.stripePriceId) {
     throw new UserFacingError("Paiement non configuré pour ce plan");
@@ -71,7 +77,7 @@ export async function createSubscriptionCheckoutSession({
   ]);
 
   const sharedParams = {
-    ...withAnalyticsId(baseParams, analyticsId),
+    ...withCheckoutOffer(withAnalyticsId(baseParams, analyticsId), offer ?? null),
     ...getDeviceRequirementParams(),
     ...(coupon ? { discounts: [{ coupon }] } : {}),
   };

@@ -32,6 +32,8 @@ export const CHECKOUT_COPY = {
   proofVideoAlt: "Enregistrement d'écran : la position Snap Map passe à Londres puis à Paris avec Anyloc",
   redirecting: "Redirection vers le paiement…",
   modalTitle: "Paiement",
+  /** Quiz arm: the popup shows the guarantee as one small grey line. */
+  modalGuaranteeLine: "Garantie 48 h ·",
   modalCancelAnytime: "Résiliable à tout moment, en 1 clic depuis ton espace.",
   modalFallbackLead: "Le paiement ne s'affiche pas ?",
   modalFallbackCta: "Payer sur la page sécurisée Stripe ↗",
@@ -72,6 +74,12 @@ export const CHECKOUT_COPY = {
     `Commence avec la formule ${name} à ${price}, sans engagement. Tu pourras passer sur plus long ensuite.`,
   downsellCta: (price: string) => `Commencer à ${price}`,
   downsellDismiss: "Non merci",
+  annualExitTitle: "Attends : l'annuel à 29 € au lieu de 49 €",
+  annualExitLead: "29 € par an, et ce prix reste le tien chaque année tant que tu restes abonné.",
+  annualExitTerms: "Si tu changes de formule, tu perds ce prix.",
+  annualExitExpiry: (time: string) => `Offre valable jusqu'à ${time}`,
+  annualExitCta: "Prendre l'annuel à 29 €",
+  annualExitDismiss: "Non merci",
   faq: [
     {
       q: "Y a un essai gratuit ?",

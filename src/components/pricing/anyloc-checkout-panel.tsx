@@ -18,11 +18,12 @@ import {
 } from "lucide-react";
 import { AuthDivider } from "@/components/auth/auth-divider";
 import { GoogleAuthLink } from "@/components/auth/google-auth-link";
+import { AnnualExitOfferSheet } from "@/components/checkout/annual-exit-offer-sheet";
 import { CheckoutClipperSheet } from "@/components/checkout/checkout-clipper-sheet";
 import { CheckoutDownsellSheet } from "@/components/checkout/checkout-downsell-sheet";
 import { CheckoutPaymentModal } from "@/components/checkout/checkout-payment-modal";
 import { CheckoutProofVideo } from "@/components/checkout/checkout-proof-video";
-import { GuaranteeSheet } from "@/components/checkout/guarantee-sheet";
+import { QuizPlanPage } from "@/components/checkout/quiz-plan-page";
 import {
   CHECKOUT_COPY,
   CHECKOUT_REVIEWS,
@@ -30,6 +31,15 @@ import {
   getReturningSubline,
   type ReturningCustomer,
 } from "@/lib/checkout-copy";
+import type { BackResult } from "@/lib/back-interception";
+import { useBackInterception } from "@/hooks/use-back-interception";
+import {
+  ANNUAL_EXIT_OFFER_WINDOW_MS,
+  ANNUAL_EXIT_OFFERS,
+  getAnnualExitOfferPlanId,
+  getOrPickAnnualExitOfferVariant,
+  isAnnualExitOfferEnabled,
+} from "@/lib/annual-exit-offer";
 import { getOrPickClipperOfferVariant } from "@/lib/checkout-clipper-offer";
 import {
   getFirstMonthOfferPrice,
@@ -37,7 +47,7 @@ import {
   isCloseOfferExperimentEnabled,
 } from "@/lib/checkout-first-month-offer";
 import { RECOVERY_OFFER_PLAN_ID } from "@/lib/checkout-recovery-plan";
-import { isNetworkError, requestCheckoutSession } from "@/lib/checkout-request";
+import { CheckoutRequestError, isNetworkError, requestCheckoutSession } from "@/lib/checkout-request";
 import { getMonthlyDisplayPrice, type PriceDisplayVariant } from "@/lib/price-display-experiment";
 import {
   getGridEntryPlanId,
@@ -48,6 +58,7 @@ import {
   PLAN_VALUE_STACK,
 } from "@/lib/constants";
 import type { OnboardingDestination } from "@/lib/onboarding-destinations";
+import { atCity } from "@/lib/onboarding-destinations";
 import type { QuizResult } from "@/lib/onboarding-quiz";
 import { registerPostHogProperties } from "@/lib/posthog/browser";
 import { getStripe } from "@/lib/stripe-browser";
@@ -120,7 +131,10 @@ export function AnyLocCheckoutPanel({
   onShowAllPlans,
   returning,
   quiz,
+  fromQuiz = false,
+  autoPay = false,
   priceDisplay = "per_day",
+  previewAnnualExit = false,
 }: {
   selectedPlanId: string;
   onPlanChange: (planId: string) => void;
@@ -138,8 +152,14 @@ export function AnyLocCheckoutPanel({
   returning?: ReturningCustomer | null;
   /** Arrived from the quiz onboarding: recommended plan and personal headline. */
   quiz?: QuizResult | null;
+  /** Arriving from the quiz: the paywall eases in from the first paint, before the quiz result is read. */
+  fromQuiz?: boolean;
+  /** Quiz arm, coming from the plan sheet (?payer=1): the payment popup opens on arrival. */
+  autoPay?: boolean;
   /** A/B test: plans priced per day or per month (see lib/price-display-experiment). */
   priceDisplay?: PriceDisplayVariant;
+  /** Dev preview only (/checkout?preview=1&sortie=1): open on the annual exit offer sheet. */
+  previewAnnualExit?: boolean;
 }) {
   const copy = CHECKOUT_COPY;
   const offerTimeLeft = useOfferTimeLeft(offerEndsAt);
@@ -169,9 +189,19 @@ export function AnyLocCheckoutPanel({
   }, [stripePublishableKey]);
 
   // Email links (?paiement=1) land straight on the payment popup.
-  const [modalOpen, setModalOpen] = useState(Boolean(focusPayment));
+  // The quiz's plan sheet (?payer=1) does too, for the plan it picked.
+  const [modalOpen, setModalOpen] = useState(Boolean(focusPayment) || autoPay);
   // The popup is portaled to <body>: only render it once in the browser.
   const hydrated = useSyncExternalStore(subscribeToNothing, () => true, () => false);
+
+  const autoPayTrackedRef = useRef(false);
+  useEffect(() => {
+    if (!autoPay || autoPayTrackedRef.current) return;
+    autoPayTrackedRef.current = true;
+    track("checkout_continue_clicked", { plan: selectedPlanId, source: "quiz_sheet" });
+    // Once, on arrival from the sheet.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function openPaymentModal(source: "main" | "resume" | "apple_pay_badge") {
     track("checkout_continue_clicked", { plan: selectedPlanId, source });
@@ -194,16 +224,66 @@ export function AnyLocCheckoutPanel({
   const [closeOfferSessionId, setCloseOfferSessionId] = useState<string | null>(null);
   const [clipperOfferOpen, setClipperOfferOpen] = useState(false);
   const closeOfferDrawnRef = useRef(false);
-  const closePaymentModal = useCallback((sessionId: string | null) => {
-    const entryId = getGridEntryPlanId(selectedPlanId);
-    const downsellPlanId = selectedPlanId !== entryId ? entryId : undefined;
-    track("checkout_modal_closed", { plan: selectedPlanId });
-    requestRef.current?.abort();
-    setRedirecting(false);
-    setModalOpen(false);
-    // Already discounted: nothing more to offer.
-    if (offerSessionId) return;
-    if (isCloseOfferExperimentEnabled() && sessionId && !closeOfferDrawnRef.current) {
+  // Annual exit offer (29 € instead of 49 €): shown once per visit.
+  const [annualExit, setAnnualExit] = useState<{ expiresAt: Date } | null>(() =>
+    previewAnnualExit ? { expiresAt: new Date(Date.now() + ANNUAL_EXIT_OFFER_WINDOW_MS) } : null
+  );
+  const [annualExitAccepted, setAnnualExitAccepted] = useState(false);
+  const annualExitShownRef = useRef(previewAnnualExit);
+  // Same as the ref, as state so the back interception can stop arming itself.
+  const [annualExitAttempted, setAnnualExitAttempted] = useState(false);
+  // Set only when the sheet really showed (server said 200): from then on, at
+  // most the monthly downsell, never the -50 % close offer nor the clipper one.
+  const annualExitSheetShownRef = useRef(previewAnnualExit);
+  const modalOpenRef = useRef(modalOpen);
+  useEffect(() => {
+    modalOpenRef.current = modalOpen;
+  });
+
+  /** Resolves true when the sheet is now showing; the visitor is then in the `offer` group. */
+  const offerAnnualExit = useCallback(
+    async (trigger: "modal_close" | "back"): Promise<boolean> => {
+      if (!isAnnualExitOfferEnabled() || annualExitShownRef.current || offerSessionId) return false;
+      const annualPlanId = getAnnualExitOfferPlanId(selectedPlanId);
+      if (!annualPlanId) return false;
+      annualExitShownRef.current = true;
+      setAnnualExitAttempted(true);
+      const variant = getOrPickAnnualExitOfferVariant();
+      registerPostHogProperties({ annual_exit_offer_variant: variant });
+      track("annual_exit_offer_experiment_exposed", {
+        variant,
+        trigger,
+        plan: selectedPlanId,
+        $set: { annual_exit_offer_variant: variant },
+      });
+      if (variant !== "offer") return false;
+      try {
+        const res = await fetch("/api/checkout/annual-exit-offer", { method: "POST" });
+        if (!res.ok) return false;
+        const data = (await res.json()) as { expiresAt?: string };
+        const expiresAt = new Date(data.expiresAt ?? "");
+        if (Number.isNaN(expiresAt.getTime())) return false;
+        // The visitor opened the payment popup while the answer was on its way.
+        if (modalOpenRef.current) return false;
+        annualExitSheetShownRef.current = true;
+        setAnnualExit({ expiresAt });
+        track("annual_exit_offer_shown", { trigger, plan: selectedPlanId });
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [selectedPlanId, offerSessionId]
+  );
+
+  /** Today's close behaviour: the -50 % close-offer test, then the monthly downsell. */
+  const closeWithoutAnnualExit = useCallback((sessionId: string | null, downsellPlanId: string | undefined) => {
+    if (
+      isCloseOfferExperimentEnabled() &&
+      !annualExitSheetShownRef.current &&
+      sessionId &&
+      !closeOfferDrawnRef.current
+    ) {
       closeOfferDrawnRef.current = true;
       const variant = getOrPickCloseOfferVariant();
       registerPostHogProperties({ close_offer_variant: variant });
@@ -222,7 +302,73 @@ export function AnyLocCheckoutPanel({
       track("checkout_downsell_shown", { plan: selectedPlanId, offer_plan: downsellPlanId });
       setDownsellOpen(true);
     }
-  }, [selectedPlanId, offerSessionId]);
+  }, [selectedPlanId]);
+
+  const closePaymentModal = useCallback((sessionId: string | null) => {
+    const entryId = getGridEntryPlanId(selectedPlanId);
+    const downsellPlanId = selectedPlanId !== entryId ? entryId : undefined;
+    track("checkout_modal_closed", { plan: selectedPlanId });
+    requestRef.current?.abort();
+    setRedirecting(false);
+    setModalOpen(false);
+    // The annual exit offer's popup closed: back to the normal paywall, nothing more to offer.
+    if (annualExitAccepted) {
+      setAnnualExitAccepted(false);
+      return;
+    }
+    // Already discounted: nothing more to offer.
+    if (offerSessionId) return;
+    if (!isAnnualExitOfferEnabled()) {
+      closeWithoutAnnualExit(sessionId, downsellPlanId);
+      return;
+    }
+    // Shown: the close-offer test and the clipper offer are skipped. Not shown
+    // (control group, or no offer to make): today's behaviour.
+    void offerAnnualExit("modal_close").then((shown) => {
+      if (!shown) closeWithoutAnnualExit(sessionId, downsellPlanId);
+    });
+  }, [selectedPlanId, offerSessionId, annualExitAccepted, offerAnnualExit, closeWithoutAnnualExit]);
+
+  // Only armed while an offer can still show; when it doesn't, the hook sends
+  // the visitor back so a press never gets swallowed.
+  useBackInterception(
+    isAnnualExitOfferEnabled() &&
+      !modalOpen &&
+      !focusPayment &&
+      !annualExitAttempted &&
+      !offerSessionId &&
+      getAnnualExitOfferPlanId(selectedPlanId) !== null,
+    async (): Promise<BackResult> => {
+      if (await offerAnnualExit("back")) return "shown";
+      // The popup opened while the offer was being fetched: stay, don't navigate.
+      return modalOpenRef.current ? "aborted" : "declined";
+    }
+  );
+
+  const leaveAnnualExitOffer = useCallback(() => setAnnualExitAccepted(false), []);
+
+  const acceptAnnualExit = useCallback(() => {
+    const annualPlanId = getAnnualExitOfferPlanId(selectedPlanId);
+    if (!annualPlanId) return;
+    track("annual_exit_offer_accepted", { plan: selectedPlanId, offer_plan: annualPlanId });
+    setAnnualExit(null);
+    setAnnualExitAccepted(true);
+    if (annualPlanId !== selectedPlanId) onPlanChange(annualPlanId);
+    setError(null);
+    setModalOpen(true);
+  }, [selectedPlanId, onPlanChange]);
+
+  // Declined: only the monthly downsell, no -50 % and no clipper offer.
+  // Not a useCallback: the React Compiler memoizes it, and refuses a manual one that depends on the downgrade plan.
+  function dismissAnnualExit() {
+    track("annual_exit_offer_dismissed", { plan: selectedPlanId });
+    setAnnualExit(null);
+    if (downgradePlan && !downsellShownRef.current) {
+      downsellShownRef.current = true;
+      track("checkout_downsell_shown", { plan: selectedPlanId, offer_plan: downgradePlan.id });
+      setDownsellOpen(true);
+    }
+  }
 
   // A/B test: half of those who turn down the -50 % get the clipper programme.
   const dismissCloseOffer = useCallback(() => {
@@ -292,7 +438,9 @@ export function AnyLocCheckoutPanel({
     track("checkout_hosted_fallback_clicked", { plan: planId });
 
     try {
-      const data = await requestCheckoutSession("/api/checkout", planId, controller.signal);
+      const data = await requestCheckoutSession("/api/checkout", planId, controller.signal, {
+        annualExitOffer: annualExitAccepted || undefined,
+      });
       if (!data.url) {
         throw new Error(data.error ?? copy.errStart);
       }
@@ -300,6 +448,10 @@ export function AnyLocCheckoutPanel({
       window.location.assign(data.url);
     } catch (err) {
       if (controller.signal.aborted) return;
+      // The offer is gone: the next attempt asks the normal price.
+      if (err instanceof CheckoutRequestError && err.status === 409 && annualExitAccepted) {
+        setAnnualExitAccepted(false);
+      }
       const networkError = isNetworkError(err);
       setError(
         networkError ? copy.errNetwork : err instanceof Error ? err.message : copy.errGeneric
@@ -351,19 +503,11 @@ export function AnyLocCheckoutPanel({
   }, []);
 
   const headline = getCheckoutHeadline(destination?.city, returning);
-  // From the quiz: "Active ta loc à Marbella sur Snap" and its recommended plan.
-  const recommendedPlan = quiz
-    ? checkoutPlans.find((plan) => plan.id === quiz.recommendedPlanId)
-    : undefined;
-  const quizHeadline =
-    quiz && destination
-      ? {
-          before: "Active ta loc à",
-          highlight: destination.city,
-          after: quiz.mainApp ? ` sur ${quiz.mainApp}` : "",
-        }
-      : null;
-  const [guaranteeOpen, setGuaranteeOpen] = useState(false);
+  // Visitors from the quiz get the plan list of the quiz's sheet as the page
+  // (components/checkout/quiz-plan-page); everything below it in this file is
+  // the control arm. An email link that
+  // focuses the payment popup keeps the focused view.
+  const quizArm = (Boolean(quiz) || fromQuiz) && !focusPayment;
   // The quiz result is read after hydration, so it gets its own event.
   useEffect(() => {
     if (!quiz) return;
@@ -399,15 +543,7 @@ export function AnyLocCheckoutPanel({
     <div role="radiogroup" aria-label="Choisis ton plan" className={cn("space-y-2.5", className)}>
       {checkoutPlans.map((plan) => {
         const selected = plan.id === selectedPlanId;
-        const recommended = plan.id === recommendedPlan?.id;
-        // From the quiz, the recommendation replaces the "most chosen" badge.
-        const badge = recommendedPlan
-          ? recommended
-            ? "Idéal pour toi"
-            : null
-          : plan.popular
-            ? copy.popularBadge
-            : null;
+        const badge = plan.popular ? copy.popularBadge : null;
 
         return (
           <button
@@ -426,10 +562,7 @@ export function AnyLocCheckoutPanel({
           >
             {badge ? (
               <span
-                className={cn(
-                  "absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white",
-                  recommended ? "bg-gradient-to-r from-pink-500 to-violet-500" : "bg-pink-500"
-                )}
+                className="absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-pink-500 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white"
               >
                 {badge}
               </span>
@@ -443,7 +576,14 @@ export function AnyLocCheckoutPanel({
               {selected && <span className="h-2.5 w-2.5 rounded-full bg-pink-500" />}
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block font-semibold text-zinc-900">{plan.name}</span>
+              <span className="flex items-center gap-1.5 font-semibold text-zinc-900">
+                {plan.name}
+                {plan.badge ? (
+                  <span className="rounded-full bg-pink-100 px-1.5 py-px text-[10px] font-bold text-pink-700">
+                    {plan.badge}
+                  </span>
+                ) : null}
+              </span>
               <span
                 className={cn(
                   "mt-0.5 flex items-center gap-1 text-xs",
@@ -455,7 +595,7 @@ export function AnyLocCheckoutPanel({
                 ) : (
                   <Monitor className="h-3.5 w-3.5" />
                 )}
-                {recommended && quiz ? quiz.reason : plan.perk}
+                {plan.perk}
               </span>
             </span>
             <span className="shrink-0 text-right">
@@ -531,31 +671,40 @@ export function AnyLocCheckoutPanel({
         </button>
       ) : null}
 
-      {/* The whole box opens the conditions: visitors tapped it expecting details.
-          From the quiz they open over the paywall, so coming back is one tap. */}
-      {quiz ? (
-        <>
-          <button
-            type="button"
-            onClick={() => setGuaranteeOpen(true)}
-            data-track="checkout_guarantee_conditions_clicked"
-            className={cn(guaranteeBoxClassName, "w-full text-left")}
-          >
-            {guaranteeBoxContent}
-          </button>
-          <GuaranteeSheet open={guaranteeOpen} onClose={() => setGuaranteeOpen(false)} />
-        </>
+      {quizArm ? (
+        <QuizPlanPage
+          title={{
+            before: "Active ta loc",
+            highlight: destination ? atCity(destination.city) : "",
+            after: quiz?.mainApp ? ` sur ${quiz.mainApp}` : "",
+          }}
+          plans={checkoutPlans}
+          selectedPlan={selectedPlan}
+          referencePlan={entryPlan}
+          recommendedPlanId={quiz?.recommendedPlanId}
+          recommendationReason={quiz?.reason}
+          worry={quiz?.worry}
+          welcomeOfferPrice={
+            recoveryOffer && selectedPlan.id === RECOVERY_OFFER_PLAN_ID
+              ? getFirstMonthOfferPrice(selectedPlan.price)
+              : undefined
+          }
+          hidden={autoPay && !hydrated}
+          onSelectPlan={selectPlan}
+          onContinue={() => openPaymentModal("main")}
+        />
       ) : (
-        <Link
-          href="/politique-de-remboursement"
-          target="_blank"
-          rel="noreferrer"
-          data-track="checkout_guarantee_conditions_clicked"
-          className={guaranteeBoxClassName}
-        >
-          {guaranteeBoxContent}
-        </Link>
-      )}
+        <>
+      {/* The whole box opens the conditions: visitors tapped it expecting details. */}
+      <Link
+        href="/politique-de-remboursement"
+        target="_blank"
+        rel="noreferrer"
+        data-track="checkout_guarantee_conditions_clicked"
+        className={guaranteeBoxClassName}
+      >
+        {guaranteeBoxContent}
+      </Link>
 
       {focusPayment ? (
         <div className="text-center">
@@ -580,173 +729,165 @@ export function AnyLocCheckoutPanel({
         </div>
       ) : (
         <>
-          <h1 className="text-center text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">
-            {quizHeadline ? (
-              <>
-                {quizHeadline.before} <span className="gradient-text">{quizHeadline.highlight}</span>
-                {quizHeadline.after}
-              </>
-            ) : (
-              <>
+              <h1 className="text-center text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">
                 {headline.before} <span className="gradient-text">{headline.highlight}</span>
-              </>
-            )}
-          </h1>
-          {returning ? (
-            <p className="mt-2 text-center text-sm text-zinc-600">
-              {getReturningSubline(returning)}
-            </p>
-          ) : recommendedPlan ? (
-            <p className="mt-2 text-center text-sm text-zinc-600">
-              Pour toi, on recommande la formule {recommendedPlan.name}.
-            </p>
-          ) : null}
+              </h1>
+              {returning ? (
+                <p className="mt-2 text-center text-sm text-zinc-600">
+                  {getReturningSubline(returning)}
+                </p>
+              ) : null}
 
-          {renderPlans("mt-5")}
-        </>
-      )}
+              {renderPlans("mt-5")}
+            </>
+          )}
 
-      <div id="checkout-payment" className="mt-4 scroll-mt-20">
-        {googleAuthRedirectTo ? (
-          <div className="mb-4">
-            <GoogleAuthLink redirectTo={googleAuthRedirectTo} />
-            <AuthDivider />
+          <div id="checkout-payment" className="mt-4 scroll-mt-20">
+            {googleAuthRedirectTo ? (
+              <div className="mb-4">
+                <GoogleAuthLink redirectTo={googleAuthRedirectTo} />
+                <AuthDivider />
+              </div>
+            ) : null}
+            {renderContinueButton("main")}
+            <p className="mt-2 flex items-center justify-center gap-1.5 text-xs font-semibold text-emerald-700">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              {copy.payReassurance}
+            </p>
           </div>
-        ) : null}
-        {renderContinueButton("main")}
-        <p className="mt-2 flex items-center justify-center gap-1.5 text-xs font-semibold text-emerald-700">
-          <ShieldCheck className="h-3.5 w-3.5" />
-          {copy.payReassurance}
-        </p>
-      </div>
 
-      <div className="mt-4 text-center">
-        <p className="flex items-center justify-center gap-1.5 text-xs font-medium text-zinc-600">
-          <LockKeyhole className="h-3.5 w-3.5 text-pink-600" />
-          {copy.paymentProcessor}
-        </p>
-        <ul className="mt-2 flex flex-wrap items-center justify-center gap-1.5 text-[11px] text-zinc-500">
-          {[
-            { label: "Stripe", Icon: ShieldCheck },
-            { label: "Carte bancaire", Icon: CreditCard },
-            { label: "Apple Pay", Icon: AppleLogo },
-          ].map(({ label, Icon }) => (
-            <li
-              key={label}
-              className={cn(
-                "flex items-center gap-1 rounded-md border border-zinc-200 bg-white",
-                label !== "Apple Pay" && "px-2 py-1"
-              )}
-            >
-              {label === "Apple Pay" ? (
+          <div className="mt-4 text-center">
+            <p className="flex items-center justify-center gap-1.5 text-xs font-medium text-zinc-600">
+              <LockKeyhole className="h-3.5 w-3.5 text-pink-600" />
+              {copy.paymentProcessor}
+            </p>
+            <ul className="mt-2 flex flex-wrap items-center justify-center gap-1.5 text-[11px] text-zinc-500">
+              {[
+                { label: "Stripe", Icon: ShieldCheck },
+                { label: "Carte bancaire", Icon: CreditCard },
+                { label: "Apple Pay", Icon: AppleLogo },
+              ].map(({ label, Icon }) => (
+                <li
+                  key={label}
+                  className={cn(
+                    "flex items-center gap-1 rounded-md border border-zinc-200 bg-white",
+                    label !== "Apple Pay" && "px-2 py-1"
+                  )}
+                >
+                  {label === "Apple Pay" ? (
+                    <button
+                      type="button"
+                      onClick={() => openPaymentModal("apple_pay_badge")}
+                      className="flex items-center gap-1 rounded-md px-2 py-1 transition active:bg-zinc-100"
+                    >
+                      <Icon className="h-3 w-3" />
+                      {label}
+                    </button>
+                  ) : (
+                    <>
+                      <Icon className="h-3 w-3" />
+                      {label}
+                    </>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <>
+          {hydrated ? <CheckoutProofVideo /> : null}
+
+          <h2 className="mt-10 text-base font-bold text-zinc-900">{copy.unlockTitle}</h2>
+          <ul className="mt-3 space-y-2">
+            {PLAN_VALUE_STACK.map((perk, index) => (
+              <li key={perk}>
                 <button
                   type="button"
-                  onClick={() => openPaymentModal("apple_pay_badge")}
-                  className="flex items-center gap-1 rounded-md px-2 py-1 transition active:bg-zinc-100"
+                  onClick={() => toggleFeature(index)}
+                  aria-expanded={openFeature === index}
+                  className="flex w-full items-center gap-2.5 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-medium text-zinc-900 transition active:bg-zinc-50"
                 >
-                  <Icon className="h-3 w-3" />
-                  {label}
+                  <CircleCheck className="h-4 w-4 shrink-0 text-pink-600" />
+                  <span className="flex-1">{perk}</span>
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 shrink-0 text-zinc-400 transition-transform",
+                      openFeature === index && "rotate-180"
+                    )}
+                  />
                 </button>
-              ) : (
-                <>
-                  <Icon className="h-3 w-3" />
-                  {label}
-                </>
-              )}
-            </li>
-          ))}
-        </ul>
-      </div>
+                {openFeature === index ? (
+                  <p className="px-4 pt-2 pb-1 text-xs leading-relaxed text-zinc-600">
+                    {PLAN_VALUE_DETAILS[index]}
+                  </p>
+                ) : null}
+              </li>
+            ))}
+          </ul>
 
-      {hydrated ? <CheckoutProofVideo /> : null}
-
-      <h2 className="mt-10 text-base font-bold text-zinc-900">{copy.unlockTitle}</h2>
-      <ul className="mt-3 space-y-2">
-        {PLAN_VALUE_STACK.map((perk, index) => (
-          <li key={perk}>
-            <button
-              type="button"
-              onClick={() => toggleFeature(index)}
-              aria-expanded={openFeature === index}
-              className="flex w-full items-center gap-2.5 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-medium text-zinc-900 transition active:bg-zinc-50"
-            >
-              <CircleCheck className="h-4 w-4 shrink-0 text-pink-600" />
-              <span className="flex-1">{perk}</span>
-              <ChevronDown
-                className={cn(
-                  "h-4 w-4 shrink-0 text-zinc-400 transition-transform",
-                  openFeature === index && "rotate-180"
-                )}
-              />
-            </button>
-            {openFeature === index ? (
-              <p className="px-4 pt-2 pb-1 text-xs leading-relaxed text-zinc-600">
-                {PLAN_VALUE_DETAILS[index]}
-              </p>
-            ) : null}
-          </li>
-        ))}
-      </ul>
-
-      <h2 className="mt-10 text-base font-bold text-zinc-900">{copy.faqTitle}</h2>
-      <div className="mt-3 space-y-2">
-        {copy.faq.map((item) => (
-          <details
-            key={item.q}
-            className="group rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm"
-          >
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-medium text-zinc-900 [&::-webkit-details-marker]:hidden">
-              {item.q}
-              <ChevronDown className="h-4 w-4 shrink-0 text-zinc-400 transition-transform group-open:rotate-180" />
-            </summary>
-            <p className="mt-2 leading-relaxed text-zinc-600">{item.a}</p>
-          </details>
-        ))}
-      </div>
-
-      <h2 className="mt-10 text-base font-bold text-zinc-900">{copy.reviewsListTitle}</h2>
-      <ul className="mt-3 space-y-2">
-        {CHECKOUT_REVIEWS.slice(0, 3).map((review) => (
-          <li
-            key={review.name}
-            className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm"
-          >
-            {review.avatar ? (
-              <Image
-                src={review.avatar}
-                alt=""
-                width={40}
-                height={40}
-                className="h-10 w-10 shrink-0 rounded-full object-cover"
-              />
-            ) : (
-              <span
-                aria-hidden
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-pink-500 to-purple-500 text-sm font-bold text-white"
+          <h2 className="mt-10 text-base font-bold text-zinc-900">{copy.faqTitle}</h2>
+          <div className="mt-3 space-y-2">
+            {copy.faq.map((item) => (
+              <details
+                key={item.q}
+                className="group rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm"
               >
-                {review.name.charAt(0)}
-              </span>
-            )}
-            <div className="min-w-0 flex-1">
-              <p className="text-zinc-800">« {review.text} »</p>
-              <p className="mt-1 flex items-center gap-1.5 text-xs text-zinc-500">
-                {review.name} · {review.city}
-                <span className="flex" aria-hidden>
-                  {[0, 1, 2, 3, 4].map((i) => (
-                    <Star key={i} className="h-3 w-3 fill-pink-500 text-pink-500" />
-                  ))}
-                </span>
-              </p>
-            </div>
-          </li>
-        ))}
-      </ul>
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-medium text-zinc-900 [&::-webkit-details-marker]:hidden">
+                  {item.q}
+                  <ChevronDown className="h-4 w-4 shrink-0 text-zinc-400 transition-transform group-open:rotate-180" />
+                </summary>
+                <p className="mt-2 leading-relaxed text-zinc-600">{item.a}</p>
+              </details>
+            ))}
+          </div>
 
-      {!focusPayment ? (
-        // One last CTA for the plan picked at the top, so the bottom of the
-        // page can pay without scrolling back up or repeating the grid.
-        <div className="mt-10">{renderContinueButton("resume")}</div>
-      ) : null}
+          <h2 className="mt-10 text-base font-bold text-zinc-900">{copy.reviewsListTitle}</h2>
+          <ul className="mt-3 space-y-2">
+            {CHECKOUT_REVIEWS.slice(0, 3).map((review) => (
+              <li
+                key={review.name}
+                className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm"
+              >
+                {review.avatar ? (
+                  <Image
+                    src={review.avatar}
+                    alt=""
+                    width={40}
+                    height={40}
+                    className="h-10 w-10 shrink-0 rounded-full object-cover"
+                  />
+                ) : (
+                  <span
+                    aria-hidden
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-pink-500 to-purple-500 text-sm font-bold text-white"
+                  >
+                    {review.name.charAt(0)}
+                  </span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-zinc-800">« {review.text} »</p>
+                  <p className="mt-1 flex items-center gap-1.5 text-xs text-zinc-500">
+                    {review.name} · {review.city}
+                    <span className="flex" aria-hidden>
+                      {[0, 1, 2, 3, 4].map((i) => (
+                        <Star key={i} className="h-3 w-3 fill-pink-500 text-pink-500" />
+                      ))}
+                    </span>
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          {!focusPayment ? (
+            // One last CTA for the plan picked at the top, so the bottom of the
+            // page can pay without scrolling back up or repeating the grid.
+            <div className="mt-10">{renderContinueButton("resume")}</div>
+          ) : null}
+
+        </>
+        </>
+      )}
 
       {modalOpen && hydrated ? (
         <CheckoutPaymentModal
@@ -758,12 +899,29 @@ export function AnyLocCheckoutPanel({
             offerSessionId && selectedPlan.id === entryPlanId ? offerSessionId : undefined
           }
           welcomeOffer={recoveryOffer && selectedPlan.id === RECOVERY_OFFER_PLAN_ID}
+          annualExitOffer={
+            annualExitAccepted && ANNUAL_EXIT_OFFERS[selectedPlan.id]
+              ? { offerPrice: ANNUAL_EXIT_OFFERS[selectedPlan.id].offerPrice }
+              : undefined
+          }
+          onAnnualExitOfferExpired={leaveAnnualExitOffer}
           onDeclineOffer={acceptDeclineOffer}
           stripePublishableKey={stripePublishableKey}
+          variant={quiz ? "quiz" : undefined}
           hostedRedirecting={redirecting}
           hostedError={error}
           onHostedFallback={() => void goToHostedPayment()}
           onClose={closePaymentModal}
+        />
+      ) : null}
+
+      {annualExit && hydrated ? (
+        <AnnualExitOfferSheet
+          fullPrice={ANNUAL_EXIT_OFFERS.annual.fullPrice}
+          offerPrice={ANNUAL_EXIT_OFFERS.annual.offerPrice}
+          expiresAt={annualExit.expiresAt}
+          onAccept={acceptAnnualExit}
+          onDismiss={dismissAnnualExit}
         />
       ) : null}
 

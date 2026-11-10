@@ -128,6 +128,11 @@ export async function signup(
   }
 
   if (!isSupabaseConfigured()) {
+    // Local walkthrough without keys (`next dev` only): skip the account and
+    // carry on to the next step, so the whole funnel can be clicked through.
+    if (process.env.NODE_ENV === "development") {
+      redirect(getRedirectTo(formData));
+    }
     return { error: "L'authentification n'est pas configurée." };
   }
 

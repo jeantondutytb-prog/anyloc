@@ -2,42 +2,82 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, Check, Laptop, Loader2, Lock, Monitor, MoreHorizontal } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import {
+  ArrowLeft,
+  BookOpen,
+  CalendarDays,
+  Camera,
+  Check,
+  Clock,
+  Euro,
+  Eye,
+  Footprints,
+  Globe,
+  Heart,
+  HeartCrack,
+  House,
+  Infinity as InfinityIcon,
+  Loader2,
+  Lock,
+  MapPin,
+  MessageCircle,
+  MoreHorizontal,
+  Navigation,
+  Plane,
+  Play,
+  Repeat,
+  ShieldCheck,
+  Smartphone,
+  Users,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
 import {
   AndroidLogo,
   AppleLogo,
-  BumbleLogo,
   FindMyLogo,
+  GoogleMapsLogo,
   InstagramLogo,
+  Life360Logo,
   SnapLogo,
-  TinderLogo,
 } from "@/components/onboarding/brand-logos";
 import { OnboardingAhaMoment } from "@/components/onboarding/onboarding-aha-moment";
 import { StepDestination } from "@/components/onboarding/onboarding-two-step-view";
+import { QuizPlansSheet } from "@/components/onboarding/quiz-plans-sheet";
 import { Logo } from "@/components/ui/logo";
 import { track } from "@/lib/analytics/track";
+import { getGridEntryPlanId, getGridPlans, getPlanGrid } from "@/lib/constants";
 import {
+  atCity,
   ONBOARDING_DESTINATION_KEY,
+  parseStoredDestination,
   TRENDING_DESTINATIONS,
   type OnboardingDestination,
 } from "@/lib/onboarding-destinations";
 import {
-  getAskedQuestions,
+  cleanOtherApp,
+  getFinalizingTimeline,
   getMainQuizApp,
+  getQuizAppChips,
   getQuizFinalSteps,
   getQuizRecommendation,
-  listQuizApps,
+  getQuizSequence,
+  getQuizTimingLine,
+  getQuizVisibleLine,
+  OTHER_APP_MAX_LENGTH,
   storeQuizResult,
   type QuizAnswers,
+  type QuizFact,
   type QuizIcon,
+  type QuizOption,
   type QuizQuestion,
 } from "@/lib/onboarding-quiz";
 import { readPricingVariantCookie } from "@/lib/pricing-experiment";
 import { cn } from "@/lib/utils";
 import type { VisitorLocation } from "@/lib/visitor-location";
 
-/** Neutral tile, same size as the brand tiles, for "Autre", Mac and PC. */
+/** Neutral tile, same size as the brand tiles, for "Autre". */
 function GlyphTile({ children }: { children: ReactNode }) {
   return (
     <span className="flex h-11 w-11 items-center justify-center rounded-[28%] bg-zinc-100 text-zinc-600">
@@ -49,21 +89,11 @@ function GlyphTile({ children }: { children: ReactNode }) {
 const ICONS: Record<QuizIcon, ReactNode> = {
   snap: <SnapLogo />,
   instagram: <InstagramLogo />,
-  tinder: <TinderLogo />,
-  bumble: <BumbleLogo />,
+  life360: <Life360Logo />,
+  gmaps: <GoogleMapsLogo />,
   findmy: <FindMyLogo />,
   apple: <AppleLogo />,
   android: <AndroidLogo />,
-  mac: (
-    <GlyphTile>
-      <Laptop className="h-5 w-5" />
-    </GlyphTile>
-  ),
-  pc: (
-    <GlyphTile>
-      <Monitor className="h-5 w-5" />
-    </GlyphTile>
-  ),
   other: (
     <GlyphTile>
       <MoreHorizontal className="h-5 w-5" />
@@ -71,13 +101,72 @@ const ICONS: Record<QuizIcon, ReactNode> = {
   ),
 };
 
-// Long enough for the position to feel prepared, not so long it feels stuck.
-const FINAL_STEP_MS = 3800;
+// The answer card's icon: the app or phone logo the visitor just tapped, at
+// card size, so the card visibly answers that tap.
+const NOTE_LOGOS: Partial<Record<QuizIcon, ReactNode>> = {
+  snap: <SnapLogo size={36} />,
+  instagram: <InstagramLogo size={36} />,
+  life360: <Life360Logo size={36} />,
+  gmaps: <GoogleMapsLogo size={36} />,
+  findmy: <FindMyLogo size={36} />,
+  apple: <AppleLogo size={36} />,
+  android: <AndroidLogo size={36} />,
+};
+
+// Answers without a logo get a plain glyph that says what the answer means.
+const NOTE_GLYPHS: Record<string, LucideIcon> = {
+  "apps:other": Smartphone,
+  "audience:friends": Users,
+  "audience:ex": HeartCrack,
+  "audience:family": House,
+  "audience:matches": Heart,
+  "audience:followers": Camera,
+  "audience:other": MapPin,
+  "frequency:once": MapPin,
+  "frequency:sometimes": Repeat,
+  "frequency:often": InfinityIcon,
+  "frequency:always": Clock,
+  "device:other": Smartphone,
+  "movement:fixed": MapPin,
+  "movement:walk": Footprints,
+  "movement:travel": Plane,
+  "tried:vpn": Globe,
+  "tried:fakegps": Smartphone,
+  "tried:nothing": BookOpen,
+  "tried:other": Navigation,
+  "worry:detect": Eye,
+  "worry:ban": ShieldCheck,
+  "worry:install": BookOpen,
+  "worry:price": Euro,
+  "worry:none": Play,
+  "worry:other": MessageCircle,
+  "timing:today": Zap,
+  "timing:week": CalendarDays,
+  "timing:later": Clock,
+};
+
+function NoteIcon({ questionId, option }: { questionId: string; option: QuizOption }) {
+  const logo = option.icon ? NOTE_LOGOS[option.icon] : undefined;
+  if (logo) return <span className="shrink-0">{logo}</span>;
+  const Glyph = NOTE_GLYPHS[`${questionId}:${option.id}`] ?? MapPin;
+  return (
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[28%] bg-pink-50 text-pink-600">
+      <Glyph className="h-[18px] w-[18px]" aria-hidden />
+    </span>
+  );
+}
+
+// « Continuer avec … »: the plan sheet slides away and the screen fades out
+// this long before navigating to /checkout (payment popup), which then eases in on its
+// own (see .paywall-rise): one continuous move.
+const LEAVE_FADE_MS = 250;
 
 type Screen =
+  /** Before the stored destination is read: renders nothing, never tracked. */
+  | { name: "loading" }
   | { name: "destination" }
   | { name: "intro" }
-  | { name: "question"; index: number }
+  | { name: "step"; index: number }
   | { name: "finalizing" }
   | { name: "ready" };
 
@@ -170,7 +259,7 @@ function IntroScreen({ city, onStart }: { city: string; onStart: () => void }) {
       <PrepVisual city={city} />
       <p className="text-xs font-bold uppercase tracking-widest text-pink-600">Préparation en cours</p>
       <h1 className="mt-2 text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">
-        On prépare ta loc à <span className="gradient-text">{city}</span>
+        On prépare ta loc <span className="gradient-text">{atCity(city)}</span>
       </h1>
       <p className="mt-3 text-zinc-500">Pendant ce temps, réponds à quelques questions pour qu&apos;elle soit parfaite.</p>
       <div className="mt-8">
@@ -190,18 +279,30 @@ function QuestionScreen({
   question,
   city,
   selected,
+  lastPicked,
+  otherApp,
+  onOtherAppChange,
   onToggle,
   onContinue,
 }: {
   question: QuizQuestion;
   city: string;
   selected: string[];
+  /** The option the visitor selected last (multi-select questions). */
+  lastPicked: string | null;
+  /** The app typed for "Autre" (apps question only). */
+  otherApp: string;
+  onOtherAppChange: (value: string) => void;
   onToggle: (optionId: string) => void;
   onContinue: () => void;
 }) {
-  const note = !question.multi
-    ? question.options.find((option) => option.id === selected[0])?.note
-    : undefined;
+  const askOtherApp = question.id === "apps" && selected.includes("other");
+  const reducedMotion = useReducedMotion();
+  // Single choice: the picked option. Multi-select: the last one picked that is still selected.
+  const noteOption = question.options.find(
+    (option) => option.id === (selected.includes(lastPicked ?? "") ? lastPicked : selected.at(-1))
+  );
+  const note = noteOption?.note;
   const withIcons = question.options.some((option) => option.icon);
 
   return (
@@ -223,14 +324,10 @@ function QuestionScreen({
               className={cn(
                 "relative flex flex-col items-center justify-center gap-2.5 rounded-2xl border bg-white px-3 text-center text-sm font-semibold text-zinc-900 shadow-sm transition-all",
                 withIcons ? "py-5" : "min-h-[76px] py-4",
-                active ? "border-pink-400 ring-2 ring-pink-200" : "border-zinc-200 hover:border-pink-200"
+                // Selected: pink border, ring and tint, no corner check mark.
+                active ? "border-pink-400 bg-pink-50/60 ring-2 ring-pink-200" : "border-zinc-200 hover:border-pink-200"
               )}
             >
-              {active && (
-                <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-pink-500">
-                  <Check className="h-3 w-3 text-white" />
-                </span>
-              )}
               {option.icon ? ICONS[option.icon] : null}
               <span>{option.label}</span>
               {option.soon && (
@@ -242,22 +339,93 @@ function QuestionScreen({
           );
         })}
       </div>
-      <AnimatePresence>
-        {note && (
-          <motion.p
-            key={note}
+      {/* Height reserved for two lines, so the page never jumps as the note comes and goes. */}
+      <div className="mt-4 min-h-[4.25rem]">
+        <AnimatePresence initial={false}>
+          {note && (
+          <motion.div
+            key="answer-note"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            className="flex min-h-[4.25rem] items-center gap-3 rounded-2xl border border-zinc-100 bg-white px-4 py-3 text-left shadow-sm"
+          >
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={noteOption?.id}
+                initial={{ opacity: 0, y: reducedMotion ? 0 : 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.18 }}
+                className="flex items-center gap-3"
+              >
+                {noteOption ? <NoteIcon questionId={question.id} option={noteOption} /> : null}
+                <p aria-live="polite" className="text-sm font-medium leading-snug text-zinc-800">
+                  {note}
+                </p>
+              </motion.div>
+            </AnimatePresence>
+          </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+      <AnimatePresence initial={false}>
+        {askOtherApp && (
+          <motion.div
+            key="other-app"
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mt-5 rounded-2xl border border-pink-100 bg-pink-50 px-4 py-3 text-center text-sm text-zinc-700"
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="mt-4"
           >
-            {note}
-          </motion.p>
+            <input
+              type="text"
+              value={otherApp}
+              maxLength={OTHER_APP_MAX_LENGTH}
+              onChange={(event) => onOtherAppChange(event.target.value)}
+              onFocus={(event) => {
+                // Lets the mobile keyboard open first, then keeps the field in view.
+                const input = event.currentTarget;
+                window.setTimeout(() => input.scrollIntoView({ block: "center", behavior: "smooth" }), 300);
+              }}
+              placeholder="Quelle app ?"
+              aria-label="Quelle app ?"
+              autoComplete="off"
+              enterKeyHint="done"
+              className="h-12 w-full rounded-2xl border border-zinc-200 bg-white px-4 text-base text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-400 focus:border-pink-400 focus:ring-2 focus:ring-pink-200"
+            />
+          </motion.div>
         )}
       </AnimatePresence>
       <div className="mt-6">
         <PrimaryButton onClick={onContinue} disabled={selected.length === 0}>
           Continuer
         </PrimaryButton>
+      </div>
+    </div>
+  );
+}
+
+function FactScreen({
+  fact,
+  answers,
+  onContinue,
+}: {
+  fact: QuizFact;
+  answers: QuizAnswers;
+  onContinue: () => void;
+}) {
+  return (
+    <div className="mx-auto w-full max-w-md text-center">
+      <p className="text-xs font-bold uppercase tracking-widest text-pink-600">Bon à savoir</p>
+      <h1 className="mt-2 text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">{fact.title(answers)}</h1>
+      <p className="mt-4 rounded-2xl border border-pink-100 bg-pink-50 px-4 py-3 text-zinc-700">
+        {fact.body(answers)}
+      </p>
+      <div className="mt-8">
+        <PrimaryButton onClick={onContinue}>Continuer</PrimaryButton>
       </div>
     </div>
   );
@@ -273,20 +441,22 @@ function FinalizingScreen({
   onDone: () => void;
 }) {
   const [doneCount, setDoneCount] = useState(0);
+  // Under 3 s in all, whatever the number of lines (see getFinalizingTimeline).
+  const { stepMs, holdMs, percents } = getFinalizingTimeline(steps.length, startPercent);
 
   useEffect(() => {
     if (doneCount >= steps.length) {
-      const timer = window.setTimeout(onDone, 900);
+      const timer = window.setTimeout(onDone, holdMs);
       return () => window.clearTimeout(timer);
     }
-    const timer = window.setTimeout(() => setDoneCount((count) => count + 1), FINAL_STEP_MS);
+    const timer = window.setTimeout(() => setDoneCount((count) => count + 1), stepMs);
     return () => window.clearTimeout(timer);
     // Only the step count drives the timers, not a new callback identity.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doneCount]);
 
-  // Picks up where the questions left the pill, and ends at 100 %.
-  const percent = Math.round(startPercent + ((100 - startPercent) * doneCount) / steps.length);
+  // Picks up where the questions left the pill, and climbs by steps to 100 %.
+  const percent = percents[Math.min(doneCount, percents.length - 1)];
 
   return (
     <div className="mx-auto w-full max-w-md text-center">
@@ -304,7 +474,7 @@ function FinalizingScreen({
             strokeDasharray={276}
             initial={{ strokeDashoffset: 276 - (276 * startPercent) / 100 }}
             animate={{ strokeDashoffset: 276 - (276 * percent) / 100 }}
-            transition={{ duration: FINAL_STEP_MS / 1000, ease: "linear" }}
+            transition={{ duration: (stepMs * 0.8) / 1000, ease: "easeOut" }}
           />
           <defs>
             <linearGradient id="prep-gradient">
@@ -350,26 +520,30 @@ function ReadyScreen({
   destination,
   visitorLocation,
   answers,
+  otherApp,
   leaving,
   onUnlock,
 }: {
   destination: OnboardingDestination;
   visitorLocation: VisitorLocation | null;
   answers: QuizAnswers;
+  otherApp: string;
   leaving: boolean;
   onUnlock: () => void;
 }) {
   const [teleported, setTeleported] = useState(false);
+  const timingLine = getQuizTimingLine(answers);
 
   return (
     <div className="mx-auto w-full max-w-xl">
       <p className="text-center text-xs font-bold uppercase tracking-widest text-pink-600">C&apos;est prêt</p>
       <h1 className="mt-2 text-center text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">
-        Ta loc à <span className="gradient-text">{destination.city}</span> est prête.
+        Ta loc <span className="gradient-text">{atCity(destination.city)}</span> est prête.
       </h1>
       <p className="mt-2 text-center text-sm text-zinc-500">
-        Visible sur {listQuizApps(answers)} dès que tu l&apos;actives.
+        {getQuizVisibleLine(answers, otherApp)}
       </p>
+      {timingLine && <p className="mt-1 text-center text-sm font-medium text-zinc-700">{timingLine}</p>}
       <div className="relative mt-6">
         {/* Once it has landed, the whole phone blurs behind the unlock button. */}
         <motion.div
@@ -385,6 +559,7 @@ function ReadyScreen({
               track("onboarding_teleport_clicked", { destination_city: destination.city, onboarding_variant: "quiz" })
             }
             onDone={() => setTeleported(true)}
+            apps={getQuizAppChips(answers, otherApp)}
           />
         </motion.div>
         <AnimatePresence>
@@ -396,7 +571,7 @@ function ReadyScreen({
               className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 px-6 text-center"
             >
               <p className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-zinc-700 shadow-sm">
-                Ta position t&apos;attend à {destination.city}
+                Ta position t&apos;attend {atCity(destination.city)}
               </p>
               <PrimaryButton onClick={onUnlock} disabled={leaving} className="max-w-[280px]">
                 <span className="inline-flex items-center gap-2">
@@ -426,20 +601,57 @@ export function OnboardingQuizView({
   checkoutPreview?: boolean;
 }) {
   const router = useRouter();
-  const [screen, setScreen] = useState<Screen>({ name: "destination" });
+  const [screen, setScreen] = useState<Screen>({ name: "loading" });
   const [destination, setDestination] = useState<OnboardingDestination>(TRENDING_DESTINATIONS[1]);
   const [query, setQuery] = useState("");
   const [answers, setAnswers] = useState<QuizAnswers>({});
+  const [otherApp, setOtherApp] = useState("");
+  // Last option selected per multi-select question, for the note under the cards.
+  const [lastPicked, setLastPicked] = useState<Record<string, string>>({});
   const [leaving, setLeaving] = useState(false);
+  // Step 1 of the purchase: the plan picker over the ready screen.
+  const [plansSheet, setPlansSheet] = useState<{
+    open: boolean;
+    planId: string;
+    recommendedPlanId: string;
+    reason: string;
+    mainApp: string | null;
+    worry?: string;
+  } | null>(null);
 
-  const askedQuestions = useMemo(() => getAskedQuestions(answers), [answers]);
+  const otherAppName = cleanOtherApp(otherApp);
+  const sequence = useMemo(() => getQuizSequence(answers), [answers]);
+  const currentStep = screen.name === "step" ? sequence[screen.index] : undefined;
   const answeredCount =
-    screen.name === "question" ? screen.index : screen.name === "destination" || screen.name === "intro" ? 0 : askedQuestions.length;
-  const showPrep = screen.name === "intro" || screen.name === "question";
-  const prepPercent = usePrepPercent(showPrep, answeredCount, askedQuestions.length);
-  const stepName = screen.name === "question" ? askedQuestions[screen.index]?.id : screen.name;
+    screen.name === "step" ? screen.index : screen.name === "loading" || screen.name === "destination" || screen.name === "intro"
+      ? 0 : sequence.length;
+  const showPrep = screen.name === "intro" || screen.name === "step";
+  const prepPercent = usePrepPercent(showPrep, answeredCount, sequence.length);
+  const stepName = currentStep
+    ? currentStep.kind === "question"
+      ? currentStep.question.id
+      : `fact:${currentStep.fact.id}`
+    : screen.name;
+
+  // Resume the destination picked before signup. Read after mount, so the
+  // server-rendered markup and the first client render still match; the
+  // neutral "loading" screen then becomes intro or destination in one step.
+  useEffect(() => {
+    let stored: OnboardingDestination | null = null;
+    try {
+      stored = parseStoredDestination(window.sessionStorage.getItem(ONBOARDING_DESTINATION_KEY));
+    } catch {}
+    if (stored) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-off read of sessionStorage after mount
+      setDestination(stored);
+    }
+    setScreen((current) =>
+      current.name === "loading" ? { name: stored ? "intro" : "destination" } : current
+    );
+  }, []);
 
   useEffect(() => {
+    if (stepName === "loading") return;
     window.scrollTo({ top: 0 });
     track("onboarding_quiz_step_viewed", { step_name: stepName });
   }, [stepName]);
@@ -464,56 +676,125 @@ export function OnboardingQuizView({
         : [optionId];
       return { ...current, [question.id]: value };
     });
+    if (question.multi && !(answers[question.id] ?? []).includes(optionId)) {
+      setLastPicked((current) => ({ ...current, [question.id]: optionId }));
+    }
+    // Deselecting "Autre" in the apps question hides the field and forgets what was typed.
+    if (question.id === "apps" && optionId === "other" && (answers.apps ?? []).includes("other")) {
+      setOtherApp("");
+    }
   }
 
-  function nextQuestion(index: number) {
-    const question = askedQuestions[index];
-    track("onboarding_quiz_answered", { question: question.id, answer: (answers[question.id] ?? []).join(",") });
+  function nextStep(index: number) {
+    const step = sequence[index];
+    if (step?.kind === "question") {
+      track("onboarding_quiz_answered", {
+        question: step.question.id,
+        answer: (answers[step.question.id] ?? []).join(","),
+        ...(step.question.id === "apps" ? { other_app: otherAppName || undefined } : {}),
+      });
+    }
     const next = index + 1;
-    setScreen(next < askedQuestions.length ? { name: "question", index: next } : { name: "finalizing" });
+    setScreen(next < sequence.length ? { name: "step", index: next } : { name: "finalizing" });
   }
 
   function back() {
-    if (screen.name === "question") {
-      setScreen(screen.index === 0 ? { name: "intro" } : { name: "question", index: screen.index - 1 });
+    if (screen.name === "step") {
+      setScreen(screen.index === 0 ? { name: "intro" } : { name: "step", index: screen.index - 1 });
     } else if (screen.name === "intro") {
       setScreen({ name: "destination" });
     }
   }
 
+  function checkoutUrl(planId: string, pay = false) {
+    return `/checkout?plan=${planId}&parcours=quiz${checkoutPreview ? "&preview=1" : ""}${pay ? "&payer=1" : ""}`;
+  }
+
+  /** « Débloquer ma loc »: opens the plan picker over the ready screen (step 1). */
   function unlock() {
     if (leaving) return;
-    setLeaving(true);
     // The plan of the visitor's own price grid (see lib/pricing-experiment).
     const grid = readPricingVariantCookie() === "grid_v2" ? "v2" : "v1";
     const recommendation = getQuizRecommendation(answers, grid);
+    const mainApp = getMainQuizApp(answers, otherApp);
     storeQuizResult({
       recommendedPlanId: recommendation.planId,
       reason: recommendation.reason,
-      mainApp: getMainQuizApp(answers),
+      mainApp,
+      worry: answers.worry?.[0],
     });
     try {
       window.sessionStorage.setItem(ONBOARDING_DESTINATION_KEY, JSON.stringify(destination));
     } catch {}
-    track("onboarding_quiz_completed", {
-      destination_city: destination.city,
-      recommended_plan: recommendation.planId,
-      apps: (answers.apps ?? []).join(","),
-      device: answers.device?.[0],
-      computer: answers.computer?.[0],
-      movement: answers.movement?.[0],
+    // Reopening the sheet keeps the plan picked before closing it.
+    const planId = plansSheet?.planId ?? recommendation.planId;
+    if (!plansSheet) {
+      track("onboarding_quiz_completed", {
+        destination_city: destination.city,
+        recommended_plan: recommendation.planId,
+        apps: (answers.apps ?? []).join(","),
+        other_app: (answers.apps ?? []).includes("other") ? otherAppName || undefined : undefined,
+        device: answers.device?.[0],
+        movement: answers.movement?.[0],
+        worry: answers.worry?.[0],
+        audience: (answers.audience ?? []).join(","),
+        tried: (answers.tried ?? []).join(","),
+      });
+    }
+    track("quiz_plans_viewed", { plan: planId, recommended_plan: recommendation.planId });
+    setPlansSheet({
+      open: true,
+      planId,
+      recommendedPlanId: recommendation.planId,
+      reason: recommendation.reason,
+      mainApp,
       worry: answers.worry?.[0],
-      audience: answers.audience?.[0],
     });
-    const preview = checkoutPreview ? "&preview=1" : "";
-    router.push(`/checkout?plan=${recommendation.planId}&parcours=quiz${preview}`);
+    router.prefetch(checkoutUrl(planId, true));
   }
 
-  const canGoBack = screen.name === "intro" || screen.name === "question";
-  const stepKey = screen.name === "question" ? `question-${screen.index}` : screen.name;
+  function selectSheetPlan(planId: string) {
+    if (!plansSheet) return;
+    track("checkout_plan_selected", { plan: planId, previous_plan: plansSheet.planId });
+    if (planId !== plansSheet.planId) setPlansSheet({ ...plansSheet, planId });
+  }
+
+  /** « Continuer avec … »: the sheet slides away while the screen fades, then /checkout opens the payment popup. */
+  function continueToOrder() {
+    if (!plansSheet || leaving) return;
+    const planId = plansSheet.planId;
+    track("quiz_plans_continue", { plan: planId });
+    setLeaving(true);
+    setPlansSheet({ ...plansSheet, open: false });
+    window.setTimeout(() => router.push(checkoutUrl(planId, true)), LEAVE_FADE_MS);
+  }
+
+  const sheetPlans = plansSheet ? getGridPlans(getPlanGrid(plansSheet.recommendedPlanId)) : [];
+  const sheetSelectedPlan = plansSheet
+    ? sheetPlans.find((plan) => plan.id === plansSheet.planId) ?? sheetPlans[0]
+    : undefined;
+  const sheetReferencePlan = plansSheet
+    ? sheetPlans.find((plan) => plan.id === getGridEntryPlanId(plansSheet.recommendedPlanId)) ??
+      sheetPlans[0]
+    : undefined;
+
+  const canGoBack = screen.name === "intro" || screen.name === "step";
+  const stepKey = screen.name === "step" ? `step-${screen.index}` : screen.name;
+  // Arriving from the signup card (which faded out): the first screen eases in
+  // with a soft fade and a small rise, with no wait on the empty loading
+  // screen; every later screen keeps the sideways slide.
+  const reducedMotion = useReducedMotion();
+  const [trail, setTrail] = useState({ key: stepKey, from: "" });
+  if (trail.key !== stepKey) setTrail({ key: stepKey, from: trail.key });
+  const firstEntry = trail.from === "loading";
 
   return (
-    <div className="relative min-h-screen bg-background">
+    <div
+      className={cn(
+        "relative min-h-screen bg-background transition-opacity duration-[250ms] ease-out motion-reduce:transition-none",
+        leaving && "pointer-events-none opacity-0"
+      )}
+    >
       <header className="sticky top-0 z-20 px-2 pt-2 sm:px-4 sm:pt-3">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-3 rounded-full border border-zinc-200/80 bg-white/85 pl-3 pr-4 shadow-lg shadow-zinc-900/5 backdrop-blur-md">
           <div className="flex items-center gap-2">
@@ -541,29 +822,45 @@ export function OnboardingQuizView({
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={stepKey}
-            initial={{ opacity: 0, x: 32 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -32 }}
-            transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
+            initial={
+              firstEntry ? { opacity: 0, y: reducedMotion ? 0 : 10 } : { opacity: 0, x: 32 }
+            }
+            animate={{ opacity: 1, x: 0, y: 0 }}
+            exit={
+              screen.name === "loading"
+                ? { opacity: 0, transition: { duration: 0 } }
+                : { opacity: 0, x: -32 }
+            }
+            transition={
+              firstEntry
+                ? { duration: 0.3, ease: [0.22, 1, 0.36, 1] }
+                : { duration: 0.28, ease: [0.4, 0, 0.2, 1] }
+            }
           >
             {screen.name === "destination" && (
               <StepDestination query={query} onQueryChange={setQuery} onSelect={selectDestination} />
             )}
             {screen.name === "intro" && (
-              <IntroScreen city={destination.city} onStart={() => setScreen({ name: "question", index: 0 })} />
+              <IntroScreen city={destination.city} onStart={() => setScreen({ name: "step", index: 0 })} />
             )}
-            {screen.name === "question" && askedQuestions[screen.index] && (
+            {screen.name === "step" && currentStep?.kind === "question" && (
               <QuestionScreen
-                question={askedQuestions[screen.index]}
+                question={currentStep.question}
                 city={destination.city}
-                selected={answers[askedQuestions[screen.index].id] ?? []}
-                onToggle={(optionId) => toggle(askedQuestions[screen.index], optionId)}
-                onContinue={() => nextQuestion(screen.index)}
+                selected={answers[currentStep.question.id] ?? []}
+                lastPicked={lastPicked[currentStep.question.id] ?? null}
+                otherApp={otherApp}
+                onOtherAppChange={setOtherApp}
+                onToggle={(optionId) => toggle(currentStep.question, optionId)}
+                onContinue={() => nextStep(screen.index)}
               />
+            )}
+            {screen.name === "step" && currentStep?.kind === "fact" && (
+              <FactScreen fact={currentStep.fact} answers={answers} onContinue={() => nextStep(screen.index)} />
             )}
             {screen.name === "finalizing" && (
               <FinalizingScreen
-                steps={getQuizFinalSteps(answers, destination)}
+                steps={getQuizFinalSteps(answers, destination, otherApp)}
                 startPercent={prepPercent}
                 onDone={() => setScreen({ name: "ready" })}
               />
@@ -573,6 +870,7 @@ export function OnboardingQuizView({
                 destination={destination}
                 visitorLocation={visitorLocation}
                 answers={answers}
+                otherApp={otherApp}
                 leaving={leaving}
                 onUnlock={unlock}
               />
@@ -580,6 +878,26 @@ export function OnboardingQuizView({
           </motion.div>
         </AnimatePresence>
       </main>
+
+      {plansSheet && sheetSelectedPlan && sheetReferencePlan ? (
+        <QuizPlansSheet
+          open={plansSheet.open}
+          title={{
+            before: "Active ta loc",
+            highlight: atCity(destination.city),
+            after: plansSheet.mainApp ? ` sur ${plansSheet.mainApp}` : "",
+          }}
+          plans={sheetPlans}
+          selectedPlan={sheetSelectedPlan}
+          referencePlan={sheetReferencePlan}
+          recommendedPlanId={plansSheet.recommendedPlanId}
+          recommendationReason={plansSheet.reason}
+          worry={plansSheet.worry}
+          onSelectPlan={selectSheetPlan}
+          onContinue={continueToOrder}
+          onClose={() => setPlansSheet({ ...plansSheet, open: false })}
+        />
+      ) : null}
     </div>
   );
 }
