@@ -57,7 +57,7 @@ import {
   PLAN_VALUE_DETAILS,
   PLAN_VALUE_STACK,
 } from "@/lib/constants";
-import type { OnboardingDestination } from "@/lib/onboarding-destinations";
+import { atCity, type OnboardingDestination } from "@/lib/onboarding-destinations";
 import type { QuizResult } from "@/lib/onboarding-quiz";
 import { registerPostHogProperties } from "@/lib/posthog/browser";
 import { getStripe } from "@/lib/stripe-browser";
@@ -493,12 +493,23 @@ export function AnyLocCheckoutPanel({
   const quizHeadline =
     quiz && destination
       ? {
-          before: "Active ta loc à",
-          highlight: destination.city,
+          before: "Active ta loc",
+          highlight: atCity(destination.city),
           after: quiz.mainApp ? ` sur ${quiz.mainApp}` : "",
         }
       : null;
   const [guaranteeOpen, setGuaranteeOpen] = useState(false);
+  // From the quiz the paywall eases in: headline, plans, button, then the rest
+  // (see .paywall-rise in globals.css). The control arm renders without it.
+  const riseClass = (step: 0 | 1 | 2 | 3) =>
+    quiz
+      ? cn(
+          "paywall-rise",
+          step === 1 && "[animation-delay:100ms]",
+          step === 2 && "[animation-delay:200ms]",
+          step === 3 && "[animation-delay:300ms]"
+        )
+      : undefined;
   // The quiz result is read after hydration, so it gets its own event.
   useEffect(() => {
     if (!quiz) return;
@@ -676,17 +687,8 @@ export function AnyLocCheckoutPanel({
       {/* The whole box opens the conditions: visitors tapped it expecting details.
           From the quiz they open over the paywall, so coming back is one tap. */}
       {quiz ? (
-        <>
-          <button
-            type="button"
-            onClick={() => setGuaranteeOpen(true)}
-            data-track="checkout_guarantee_conditions_clicked"
-            className={cn(guaranteeBoxClassName, "w-full text-left")}
-          >
-            {guaranteeBoxContent}
-          </button>
-          <GuaranteeSheet open={guaranteeOpen} onClose={() => setGuaranteeOpen(false)} />
-        </>
+        // Less text above the fold: no banner, the line under the button opens the conditions.
+        <GuaranteeSheet open={guaranteeOpen} onClose={() => setGuaranteeOpen(false)} />
       ) : (
         <Link
           href="/politique-de-remboursement"
@@ -722,173 +724,252 @@ export function AnyLocCheckoutPanel({
         </div>
       ) : (
         <>
-          <h1 className="text-center text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">
-            {quizHeadline ? (
-              <>
-                {quizHeadline.before} <span className="gradient-text">{quizHeadline.highlight}</span>
-                {quizHeadline.after}
-              </>
+              <h1 className={cn("text-center text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl", riseClass(0))}>
+                {quizHeadline ? (
+                  <>
+                    {quizHeadline.before} <span className="gradient-text">{quizHeadline.highlight}</span>
+                    {quizHeadline.after}
+                  </>
+                ) : (
+                  <>
+                    {headline.before} <span className="gradient-text">{headline.highlight}</span>
+                  </>
+                )}
+              </h1>
+              {returning ? (
+                <p className="mt-2 text-center text-sm text-zinc-600">
+                  {getReturningSubline(returning)}
+                </p>
+              ) : null}
+
+              {renderPlans(cn("mt-5", riseClass(1)))}
+            </>
+          )}
+
+          <div id="checkout-payment" className={cn("mt-4 scroll-mt-20", riseClass(2))}>
+            {googleAuthRedirectTo ? (
+              <div className="mb-4">
+                <GoogleAuthLink redirectTo={googleAuthRedirectTo} />
+                <AuthDivider />
+              </div>
+            ) : null}
+            {renderContinueButton("main")}
+            {quiz ? (
+              <button
+                type="button"
+                onClick={() => setGuaranteeOpen(true)}
+                data-track="checkout_guarantee_conditions_clicked"
+                className="mt-2 flex w-full items-center justify-center gap-1.5 text-xs font-semibold text-emerald-700"
+              >
+                <ShieldCheck className="h-3.5 w-3.5" />
+                {copy.payReassurance}
+              </button>
             ) : (
-              <>
-                {headline.before} <span className="gradient-text">{headline.highlight}</span>
-              </>
+              <p className="mt-2 flex items-center justify-center gap-1.5 text-xs font-semibold text-emerald-700">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                {copy.payReassurance}
+              </p>
             )}
-          </h1>
-          {returning ? (
-            <p className="mt-2 text-center text-sm text-zinc-600">
-              {getReturningSubline(returning)}
-            </p>
-          ) : recommendedPlan ? (
-            <p className="mt-2 text-center text-sm text-zinc-600">
-              Pour toi, on recommande la formule {recommendedPlan.name}.
-            </p>
-          ) : null}
-
-          {renderPlans("mt-5")}
-        </>
-      )}
-
-      <div id="checkout-payment" className="mt-4 scroll-mt-20">
-        {googleAuthRedirectTo ? (
-          <div className="mb-4">
-            <GoogleAuthLink redirectTo={googleAuthRedirectTo} />
-            <AuthDivider />
           </div>
-        ) : null}
-        {renderContinueButton("main")}
-        <p className="mt-2 flex items-center justify-center gap-1.5 text-xs font-semibold text-emerald-700">
-          <ShieldCheck className="h-3.5 w-3.5" />
-          {copy.payReassurance}
-        </p>
-      </div>
 
-      <div className="mt-4 text-center">
-        <p className="flex items-center justify-center gap-1.5 text-xs font-medium text-zinc-600">
-          <LockKeyhole className="h-3.5 w-3.5 text-pink-600" />
-          {copy.paymentProcessor}
-        </p>
-        <ul className="mt-2 flex flex-wrap items-center justify-center gap-1.5 text-[11px] text-zinc-500">
-          {[
-            { label: "Stripe", Icon: ShieldCheck },
-            { label: "Carte bancaire", Icon: CreditCard },
-            { label: "Apple Pay", Icon: AppleLogo },
-          ].map(({ label, Icon }) => (
-            <li
-              key={label}
-              className={cn(
-                "flex items-center gap-1 rounded-md border border-zinc-200 bg-white",
-                label !== "Apple Pay" && "px-2 py-1"
-              )}
-            >
-              {label === "Apple Pay" ? (
+          <div className={cn("mt-4 text-center", riseClass(3))}>
+            <p className="flex items-center justify-center gap-1.5 text-xs font-medium text-zinc-600">
+              <LockKeyhole className="h-3.5 w-3.5 text-pink-600" />
+              {copy.paymentProcessor}
+            </p>
+            <ul className="mt-2 flex flex-wrap items-center justify-center gap-1.5 text-[11px] text-zinc-500">
+              {[
+                { label: "Stripe", Icon: ShieldCheck },
+                { label: "Carte bancaire", Icon: CreditCard },
+                { label: "Apple Pay", Icon: AppleLogo },
+              ].map(({ label, Icon }) => (
+                <li
+                  key={label}
+                  className={cn(
+                    "flex items-center gap-1 rounded-md border border-zinc-200 bg-white",
+                    label !== "Apple Pay" && "px-2 py-1"
+                  )}
+                >
+                  {label === "Apple Pay" ? (
+                    <button
+                      type="button"
+                      onClick={() => openPaymentModal("apple_pay_badge")}
+                      className="flex items-center gap-1 rounded-md px-2 py-1 transition active:bg-zinc-100"
+                    >
+                      <Icon className="h-3 w-3" />
+                      {label}
+                    </button>
+                  ) : (
+                    <>
+                      <Icon className="h-3 w-3" />
+                      {label}
+                    </>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {quiz ? (
+            // From the quiz: proof, reviews, then the questions; the unlock list is gone.
+            <div className={riseClass(3)}>
+              {hydrated ? <CheckoutProofVideo /> : null}
+
+              <h2 className="mt-10 text-base font-bold text-zinc-900">{copy.reviewsListTitle}</h2>
+              <ul className="mt-3 space-y-2">
+                {CHECKOUT_REVIEWS.slice(0, 3).map((review) => (
+                  <li
+                    key={review.name}
+                    className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm"
+                  >
+                    {review.avatar ? (
+                      <Image
+                        src={review.avatar}
+                        alt=""
+                        width={40}
+                        height={40}
+                        className="h-10 w-10 shrink-0 rounded-full object-cover"
+                      />
+                    ) : (
+                      <span
+                        aria-hidden
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-pink-500 to-purple-500 text-sm font-bold text-white"
+                      >
+                        {review.name.charAt(0)}
+                      </span>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-zinc-800">« {review.text} »</p>
+                      <p className="mt-1 flex items-center gap-1.5 text-xs text-zinc-500">
+                        {review.name} · {review.city}
+                        <span className="flex" aria-hidden>
+                          {[0, 1, 2, 3, 4].map((i) => (
+                            <Star key={i} className="h-3 w-3 fill-pink-500 text-pink-500" />
+                          ))}
+                        </span>
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+
+              <h2 className="mt-10 text-base font-bold text-zinc-900">{copy.faqTitle}</h2>
+              <div className="mt-3 space-y-2">
+                {copy.faq.map((item) => (
+                  <details
+                    key={item.q}
+                    className="group rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm"
+                  >
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-medium text-zinc-900 [&::-webkit-details-marker]:hidden">
+                      {item.q}
+                      <ChevronDown className="h-4 w-4 shrink-0 text-zinc-400 transition-transform group-open:rotate-180" />
+                    </summary>
+                    <p className="mt-2 leading-relaxed text-zinc-600">{item.a}</p>
+                  </details>
+                ))}
+              </div>
+
+              {!focusPayment ? (
+                // One last CTA for the plan picked at the top, so the bottom of the
+                // page can pay without scrolling back up or repeating the grid.
+                <div className="mt-10">{renderContinueButton("resume")}</div>
+              ) : null}
+
+            </div>
+          ) : (
+            <>
+          {hydrated ? <CheckoutProofVideo /> : null}
+
+          <h2 className="mt-10 text-base font-bold text-zinc-900">{copy.unlockTitle}</h2>
+          <ul className="mt-3 space-y-2">
+            {PLAN_VALUE_STACK.map((perk, index) => (
+              <li key={perk}>
                 <button
                   type="button"
-                  onClick={() => openPaymentModal("apple_pay_badge")}
-                  className="flex items-center gap-1 rounded-md px-2 py-1 transition active:bg-zinc-100"
+                  onClick={() => toggleFeature(index)}
+                  aria-expanded={openFeature === index}
+                  className="flex w-full items-center gap-2.5 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-medium text-zinc-900 transition active:bg-zinc-50"
                 >
-                  <Icon className="h-3 w-3" />
-                  {label}
+                  <CircleCheck className="h-4 w-4 shrink-0 text-pink-600" />
+                  <span className="flex-1">{perk}</span>
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 shrink-0 text-zinc-400 transition-transform",
+                      openFeature === index && "rotate-180"
+                    )}
+                  />
                 </button>
-              ) : (
-                <>
-                  <Icon className="h-3 w-3" />
-                  {label}
-                </>
-              )}
-            </li>
-          ))}
-        </ul>
-      </div>
+                {openFeature === index ? (
+                  <p className="px-4 pt-2 pb-1 text-xs leading-relaxed text-zinc-600">
+                    {PLAN_VALUE_DETAILS[index]}
+                  </p>
+                ) : null}
+              </li>
+            ))}
+          </ul>
 
-      {hydrated ? <CheckoutProofVideo /> : null}
-
-      <h2 className="mt-10 text-base font-bold text-zinc-900">{copy.unlockTitle}</h2>
-      <ul className="mt-3 space-y-2">
-        {PLAN_VALUE_STACK.map((perk, index) => (
-          <li key={perk}>
-            <button
-              type="button"
-              onClick={() => toggleFeature(index)}
-              aria-expanded={openFeature === index}
-              className="flex w-full items-center gap-2.5 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-medium text-zinc-900 transition active:bg-zinc-50"
-            >
-              <CircleCheck className="h-4 w-4 shrink-0 text-pink-600" />
-              <span className="flex-1">{perk}</span>
-              <ChevronDown
-                className={cn(
-                  "h-4 w-4 shrink-0 text-zinc-400 transition-transform",
-                  openFeature === index && "rotate-180"
-                )}
-              />
-            </button>
-            {openFeature === index ? (
-              <p className="px-4 pt-2 pb-1 text-xs leading-relaxed text-zinc-600">
-                {PLAN_VALUE_DETAILS[index]}
-              </p>
-            ) : null}
-          </li>
-        ))}
-      </ul>
-
-      <h2 className="mt-10 text-base font-bold text-zinc-900">{copy.faqTitle}</h2>
-      <div className="mt-3 space-y-2">
-        {copy.faq.map((item) => (
-          <details
-            key={item.q}
-            className="group rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm"
-          >
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-medium text-zinc-900 [&::-webkit-details-marker]:hidden">
-              {item.q}
-              <ChevronDown className="h-4 w-4 shrink-0 text-zinc-400 transition-transform group-open:rotate-180" />
-            </summary>
-            <p className="mt-2 leading-relaxed text-zinc-600">{item.a}</p>
-          </details>
-        ))}
-      </div>
-
-      <h2 className="mt-10 text-base font-bold text-zinc-900">{copy.reviewsListTitle}</h2>
-      <ul className="mt-3 space-y-2">
-        {CHECKOUT_REVIEWS.slice(0, 3).map((review) => (
-          <li
-            key={review.name}
-            className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm"
-          >
-            {review.avatar ? (
-              <Image
-                src={review.avatar}
-                alt=""
-                width={40}
-                height={40}
-                className="h-10 w-10 shrink-0 rounded-full object-cover"
-              />
-            ) : (
-              <span
-                aria-hidden
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-pink-500 to-purple-500 text-sm font-bold text-white"
+          <h2 className="mt-10 text-base font-bold text-zinc-900">{copy.faqTitle}</h2>
+          <div className="mt-3 space-y-2">
+            {copy.faq.map((item) => (
+              <details
+                key={item.q}
+                className="group rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm"
               >
-                {review.name.charAt(0)}
-              </span>
-            )}
-            <div className="min-w-0 flex-1">
-              <p className="text-zinc-800">« {review.text} »</p>
-              <p className="mt-1 flex items-center gap-1.5 text-xs text-zinc-500">
-                {review.name} · {review.city}
-                <span className="flex" aria-hidden>
-                  {[0, 1, 2, 3, 4].map((i) => (
-                    <Star key={i} className="h-3 w-3 fill-pink-500 text-pink-500" />
-                  ))}
-                </span>
-              </p>
-            </div>
-          </li>
-        ))}
-      </ul>
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-medium text-zinc-900 [&::-webkit-details-marker]:hidden">
+                  {item.q}
+                  <ChevronDown className="h-4 w-4 shrink-0 text-zinc-400 transition-transform group-open:rotate-180" />
+                </summary>
+                <p className="mt-2 leading-relaxed text-zinc-600">{item.a}</p>
+              </details>
+            ))}
+          </div>
 
-      {!focusPayment ? (
-        // One last CTA for the plan picked at the top, so the bottom of the
-        // page can pay without scrolling back up or repeating the grid.
-        <div className="mt-10">{renderContinueButton("resume")}</div>
-      ) : null}
+          <h2 className="mt-10 text-base font-bold text-zinc-900">{copy.reviewsListTitle}</h2>
+          <ul className="mt-3 space-y-2">
+            {CHECKOUT_REVIEWS.slice(0, 3).map((review) => (
+              <li
+                key={review.name}
+                className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm"
+              >
+                {review.avatar ? (
+                  <Image
+                    src={review.avatar}
+                    alt=""
+                    width={40}
+                    height={40}
+                    className="h-10 w-10 shrink-0 rounded-full object-cover"
+                  />
+                ) : (
+                  <span
+                    aria-hidden
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-pink-500 to-purple-500 text-sm font-bold text-white"
+                  >
+                    {review.name.charAt(0)}
+                  </span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-zinc-800">« {review.text} »</p>
+                  <p className="mt-1 flex items-center gap-1.5 text-xs text-zinc-500">
+                    {review.name} · {review.city}
+                    <span className="flex" aria-hidden>
+                      {[0, 1, 2, 3, 4].map((i) => (
+                        <Star key={i} className="h-3 w-3 fill-pink-500 text-pink-500" />
+                      ))}
+                    </span>
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          {!focusPayment ? (
+            // One last CTA for the plan picked at the top, so the bottom of the
+            // page can pay without scrolling back up or repeating the grid.
+            <div className="mt-10">{renderContinueButton("resume")}</div>
+          ) : null}
+
+        </>
+      )}
 
       {modalOpen && hydrated ? (
         <CheckoutPaymentModal
