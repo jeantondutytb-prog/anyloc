@@ -3,7 +3,36 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowLeft, Check, Loader2, Lock, MoreHorizontal, Sparkles } from "lucide-react";
+import {
+  ArrowLeft,
+  BookOpen,
+  CalendarDays,
+  Camera,
+  Check,
+  Clock,
+  Euro,
+  Eye,
+  Footprints,
+  Globe,
+  Heart,
+  HeartCrack,
+  House,
+  Infinity as InfinityIcon,
+  Loader2,
+  Lock,
+  MapPin,
+  MessageCircle,
+  MoreHorizontal,
+  Navigation,
+  Plane,
+  Play,
+  Repeat,
+  ShieldCheck,
+  Smartphone,
+  Users,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
 import {
   AndroidLogo,
   AppleLogo,
@@ -41,6 +70,7 @@ import {
   type QuizAnswers,
   type QuizFact,
   type QuizIcon,
+  type QuizOption,
   type QuizQuestion,
 } from "@/lib/onboarding-quiz";
 import { readPricingVariantCookie } from "@/lib/pricing-experiment";
@@ -70,6 +100,61 @@ const ICONS: Record<QuizIcon, ReactNode> = {
     </GlyphTile>
   ),
 };
+
+// The answer card's icon: the app or phone logo the visitor just tapped, at
+// card size, so the card visibly answers that tap.
+const NOTE_LOGOS: Partial<Record<QuizIcon, ReactNode>> = {
+  snap: <SnapLogo size={36} />,
+  instagram: <InstagramLogo size={36} />,
+  life360: <Life360Logo size={36} />,
+  gmaps: <GoogleMapsLogo size={36} />,
+  findmy: <FindMyLogo size={36} />,
+  apple: <AppleLogo size={36} />,
+  android: <AndroidLogo size={36} />,
+};
+
+// Answers without a logo get a plain glyph that says what the answer means.
+const NOTE_GLYPHS: Record<string, LucideIcon> = {
+  "apps:other": Smartphone,
+  "audience:friends": Users,
+  "audience:ex": HeartCrack,
+  "audience:family": House,
+  "audience:matches": Heart,
+  "audience:followers": Camera,
+  "audience:other": MapPin,
+  "frequency:once": MapPin,
+  "frequency:sometimes": Repeat,
+  "frequency:often": InfinityIcon,
+  "frequency:always": Clock,
+  "device:other": Smartphone,
+  "movement:fixed": MapPin,
+  "movement:walk": Footprints,
+  "movement:travel": Plane,
+  "tried:vpn": Globe,
+  "tried:fakegps": Smartphone,
+  "tried:nothing": BookOpen,
+  "tried:other": Navigation,
+  "worry:detect": Eye,
+  "worry:ban": ShieldCheck,
+  "worry:install": BookOpen,
+  "worry:price": Euro,
+  "worry:none": Play,
+  "worry:other": MessageCircle,
+  "timing:today": Zap,
+  "timing:week": CalendarDays,
+  "timing:later": Clock,
+};
+
+function NoteIcon({ questionId, option }: { questionId: string; option: QuizOption }) {
+  const logo = option.icon ? NOTE_LOGOS[option.icon] : undefined;
+  if (logo) return <span className="shrink-0">{logo}</span>;
+  const Glyph = NOTE_GLYPHS[`${questionId}:${option.id}`] ?? MapPin;
+  return (
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[28%] bg-pink-50 text-pink-600">
+      <Glyph className="h-[18px] w-[18px]" aria-hidden />
+    </span>
+  );
+}
 
 // « Continuer avec … »: the plan sheet slides away and the screen fades out
 // this long before navigating to /checkout (payment popup), which then eases in on its
@@ -266,21 +351,20 @@ function QuestionScreen({
             transition={{ duration: 0.18 }}
             className="flex min-h-[4.25rem] items-center gap-3 rounded-2xl border border-zinc-100 bg-white px-4 py-3 text-left shadow-sm"
           >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-pink-500 to-violet-500 text-white">
-              <Sparkles className="h-[18px] w-[18px]" aria-hidden />
-            </span>
             <AnimatePresence mode="wait" initial={false}>
-              <motion.p
+              <motion.div
                 key={noteOption?.id}
                 initial={{ opacity: 0, y: reducedMotion ? 0 : 4 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.18 }}
-                aria-live="polite"
-                className="text-sm font-medium leading-snug text-zinc-800"
+                className="flex items-center gap-3"
               >
-                {note}
-              </motion.p>
+                {noteOption ? <NoteIcon questionId={question.id} option={noteOption} /> : null}
+                <p aria-live="polite" className="text-sm font-medium leading-snug text-zinc-800">
+                  {note}
+                </p>
+              </motion.div>
             </AnimatePresence>
           </motion.div>
           )}
