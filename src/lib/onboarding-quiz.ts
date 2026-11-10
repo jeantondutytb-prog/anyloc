@@ -1,5 +1,5 @@
-import { COMPARISON, DEVICE_REQUIREMENT_NOTE, getGridPlans, type PricingGrid } from "@/lib/constants";
-import type { OnboardingDestination } from "@/lib/onboarding-destinations";
+import { getGridPlans, type PricingGrid } from "@/lib/constants";
+import { atCity, atPlace, type OnboardingDestination } from "@/lib/onboarding-destinations";
 
 /**
  * The questions of the quiz onboarding (see lib/onboarding-experiment), asked
@@ -11,8 +11,8 @@ import type { OnboardingDestination } from "@/lib/onboarding-destinations";
 export type QuizIcon =
   | "snap"
   | "instagram"
-  | "tinder"
-  | "bumble"
+  | "life360"
+  | "gmaps"
   | "findmy"
   | "apple"
   | "android"
@@ -42,18 +42,26 @@ export type QuizQuestion = {
   options: QuizOption[];
 };
 
-export const QUIZ_QUESTIONS: QuizQuestion[] = [
+/**
+ * French typography wants a no-break space before ? ! and :, so the mark never
+ * wraps alone onto its own line. Every string the quiz shows goes through this.
+ */
+export function nbsp(text: string) {
+  return text.replace(/ ([?!:])/g, "\u00A0$1");
+}
+
+const RAW_QUIZ_QUESTIONS: QuizQuestion[] = [
   {
     id: "apps",
     kicker: "Tes apps",
-    title: (city) => `Sur quelles apps tu dois apparaître à ${city} ?`,
+    title: (city) => `Sur quelles apps tu dois apparaître ${atCity(city)} ?`,
     multi: true,
     options: [
       { id: "snap", label: "Snap", icon: "snap" },
-      { id: "insta", label: "Instagram", icon: "instagram" },
-      { id: "tinder", label: "Tinder", icon: "tinder" },
-      { id: "bumble", label: "Bumble", icon: "bumble" },
       { id: "findmy", label: "Localiser", icon: "findmy" },
+      { id: "insta", label: "Instagram", icon: "instagram" },
+      { id: "life360", label: "Life360", icon: "life360" },
+      { id: "gmaps", label: "Google Maps", icon: "gmaps" },
       { id: "other", label: "Autre", icon: "other" },
     ],
   },
@@ -61,6 +69,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     id: "audience",
     kicker: "Ton public",
     title: () => "Qui doit y croire ?",
+    multi: true,
     options: [
       { id: "friends", label: "Mes potes", note: "Ils verront ta position bouger en direct sur la carte." },
       { id: "ex", label: "Mon ex", note: "Ta position reste là-bas aussi longtemps que tu veux." },
@@ -116,6 +125,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     id: "tried",
     kicker: "Ton historique",
     title: () => "Tu as déjà essayé autre chose ?",
+    multi: true,
     options: [
       { id: "vpn", label: "Un VPN", note: "Un VPN ne change pas ton GPS : les apps le voient toujours." },
       { id: "fakegps", label: "Une app Fake GPS", note: "Ces apps ne changent pas ta position pour toutes les apps." },
@@ -149,40 +159,63 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
 ];
 
 export type QuizFact = {
-  id: "install" | "compare";
+  id: "compare";
   /** The fact screen comes right after this question. */
   afterQuestionId: string;
   title: (answers: QuizAnswers) => string;
   body: (answers: QuizAnswers) => string;
 };
 
-/** "Modifie le GPS de tout le tel": the first row of the landing comparison. */
-const GPS_ROW = COMPARISON[0].feature;
+/** Which version of the comparison to show: a VPN wins over a Fake GPS app, then the default. */
+function comparisonKind(answers: QuizAnswers): "vpn" | "fakegps" | "default" {
+  const tried = answers.tried ?? [];
+  if (tried.includes("vpn")) return "vpn";
+  if (tried.includes("fakegps")) return "fakegps";
+  return "default";
+}
 
-export const QUIZ_FACTS: QuizFact[] = [
-  {
-    id: "install",
-    afterQuestionId: "device",
-    title: () => "L'installation, c'est 5 minutes",
-    body: () => `Un guide pas à pas, une seule fois. ${DEVICE_REQUIREMENT_NOTE}`,
-  },
+const RAW_QUIZ_FACTS: QuizFact[] = [
   {
     id: "compare",
     afterQuestionId: "tried",
-    title: (answers) =>
-      answers.tried?.[0] === "vpn"
-        ? "Un VPN ne change pas ton GPS"
-        : answers.tried?.[0] === "fakegps"
-          ? "Une app Fake GPS ne suffit pas"
-          : "Anyloc change ton GPS",
-    body: (answers) =>
-      answers.tried?.[0] === "vpn"
-        ? "Un VPN change ton adresse IP, pas ton GPS. Les apps lisent le GPS : elles voient toujours où tu es vraiment."
-        : answers.tried?.[0] === "fakegps"
-          ? "Une app Fake GPS ne change pas la position vue par toutes les apps. Anyloc, si."
-          : `${GPS_ROW} : Anyloc le fait, pas un VPN ni une app Fake GPS.`,
+    title: (answers) => {
+      switch (comparisonKind(answers)) {
+        case "vpn":
+          return "Un VPN ne change pas ton GPS";
+        case "fakegps":
+          return "Une app Fake GPS ne suffit pas";
+        default:
+          return "Anyloc change le GPS de tout ton tel";
+      }
+    },
+    body: (answers) => {
+      switch (comparisonKind(answers)) {
+        case "vpn":
+          return "Un VPN change ton adresse IP, pas ton GPS. Les apps lisent le GPS : elles voient toujours où tu es vraiment.";
+        case "fakegps":
+          return "Une app Fake GPS ne change pas la position vue par toutes les apps. Anyloc, si.";
+        default:
+          return "Toutes tes apps voient ta nouvelle position, pas seulement une.";
+      }
+    },
   },
 ];
+
+export const QUIZ_FACTS: QuizFact[] = RAW_QUIZ_FACTS.map((fact) => ({
+  ...fact,
+  title: (answers) => nbsp(fact.title(answers)),
+  body: (answers) => nbsp(fact.body(answers)),
+}));
+
+export const QUIZ_QUESTIONS: QuizQuestion[] = RAW_QUIZ_QUESTIONS.map((question) => ({
+  ...question,
+  title: (city) => nbsp(question.title(city)),
+  options: question.options.map((option) => ({
+    ...option,
+    label: nbsp(option.label),
+    note: option.note === undefined ? undefined : nbsp(option.note),
+  })),
+}));
 
 export type QuizStep =
   | { kind: "question"; question: QuizQuestion }
@@ -190,15 +223,11 @@ export type QuizStep =
 
 /** The asked questions, each followed by the fact screen attached to it, if any. */
 export function getQuizSequence(answers: QuizAnswers): QuizStep[] {
-  const asked = getAskedQuestions(answers);
-  // The install fact follows the last of device/computer that is asked.
-  const installAnchor = asked.findLast((q) => q.id === "device" || q.id === "computer")?.id;
-  return asked.flatMap((question): QuizStep[] => [
+  return getAskedQuestions(answers).flatMap((question): QuizStep[] => [
     { kind: "question", question },
-    ...QUIZ_FACTS.filter(
-      (fact) =>
-        (fact.afterQuestionId === "device" ? installAnchor : fact.afterQuestionId) === question.id
-    ).map((fact): QuizStep => ({ kind: "fact", fact })),
+    ...QUIZ_FACTS.filter((fact) => fact.afterQuestionId === question.id).map(
+      (fact): QuizStep => ({ kind: "fact", fact })
+    ),
   ]);
 }
 
@@ -206,11 +235,11 @@ export function getQuizSequence(answers: QuizAnswers): QuizStep[] {
 export function getQuizTimingLine(answers: QuizAnswers): string | null {
   switch (answers.timing?.[0]) {
     case "today":
-      return "Pour aujourd'hui, c'est jouable : l'installation prend 5 minutes.";
+      return nbsp("Pour aujourd'hui, c'est jouable : l'installation prend 5 minutes.");
     case "week":
-      return "Tu as la semaine devant toi : prends ton temps, le guide t'accompagne.";
+      return nbsp("Tu as la semaine devant toi : prends ton temps, le guide t'accompagne.");
     case "later":
-      return "Aucune pression : ta loc t'attend quand tu seras prêt.";
+      return nbsp("Aucune pression : ta loc t'attend quand tu seras prêt.");
     default:
       return null;
   }
@@ -219,16 +248,16 @@ export function getQuizTimingLine(answers: QuizAnswers): string | null {
 const APP_LABELS: Record<string, string> = {
   snap: "Snap",
   insta: "Instagram",
-  tinder: "Tinder",
-  bumble: "Bumble",
   findmy: "Localiser",
+  life360: "Life360",
+  gmaps: "Google Maps",
 };
 
 export function getAskedQuestions(answers: QuizAnswers) {
   return QUIZ_QUESTIONS.filter((question) => !question.when || question.when(answers));
 }
 
-/** "Snap, Instagram et Tinder", or "tes apps" when only "Autre" was picked. */
+/** "Snap, Instagram et Google Maps", or "tes apps" when only "Autre" was picked. */
 export function listQuizApps(answers: QuizAnswers) {
   const apps = (answers.apps ?? []).map((id) => APP_LABELS[id]).filter(Boolean);
   if (apps.length <= 1) return apps[0] ?? "tes apps";
@@ -254,9 +283,9 @@ export function getQuizFinalSteps(answers: QuizAnswers, destination: OnboardingD
           ? "On prépare ton guide pour iPhone et PC"
           : "On prépare ton guide d'installation";
   return [
-    `On place ta position à ${destination.area || destination.city}`,
+    `On place ta position ${atPlace(destination)}`,
     `On la connecte à ${listQuizApps(answers)}`,
-    answers.movement?.[0] === "walk" ? `On trace tes balades à ${destination.city}` : "On fixe ta position",
+    answers.movement?.[0] === "walk" ? `On trace tes balades ${atCity(destination.city)}` : "On fixe ta position",
     guide,
     "Dernière vérification",
   ];
@@ -272,11 +301,11 @@ export function getQuizRecommendation(answers: QuizAnswers, grid: PricingGrid): 
   const plans = getGridPlans(grid);
   const plan = plans.find((candidate) => candidate.mobileApp) ?? plans[plans.length - 1];
   if (answers.device?.[0] === "iphone") {
-    return { planId: plan.id, reason: "App iPhone incluse : tu changes de ville depuis ton tel" };
+    return { planId: plan.id, reason: nbsp("App iPhone incluse : tu changes de ville depuis ton tel") };
   }
   const frequency = answers.frequency?.[0];
   if (frequency === "often" || frequency === "always") {
-    return { planId: plan.id, reason: "Tu t'en sers souvent : c'est la formule la moins chère au mois" };
+    return { planId: plan.id, reason: nbsp("Tu t'en sers souvent : c'est la formule la moins chère au mois") };
   }
   return { planId: plan.id, reason: "Le meilleur prix au mois, app mobile incluse" };
 }

@@ -7,17 +7,18 @@ import { ArrowLeft, Check, Laptop, Loader2, Lock, Monitor, MoreHorizontal } from
 import {
   AndroidLogo,
   AppleLogo,
-  BumbleLogo,
   FindMyLogo,
+  GoogleMapsLogo,
   InstagramLogo,
+  Life360Logo,
   SnapLogo,
-  TinderLogo,
 } from "@/components/onboarding/brand-logos";
 import { OnboardingAhaMoment } from "@/components/onboarding/onboarding-aha-moment";
 import { StepDestination } from "@/components/onboarding/onboarding-two-step-view";
 import { Logo } from "@/components/ui/logo";
 import { track } from "@/lib/analytics/track";
 import {
+  atCity,
   ONBOARDING_DESTINATION_KEY,
   parseStoredDestination,
   TRENDING_DESTINATIONS,
@@ -52,8 +53,8 @@ function GlyphTile({ children }: { children: ReactNode }) {
 const ICONS: Record<QuizIcon, ReactNode> = {
   snap: <SnapLogo />,
   instagram: <InstagramLogo />,
-  tinder: <TinderLogo />,
-  bumble: <BumbleLogo />,
+  life360: <Life360Logo />,
+  gmaps: <GoogleMapsLogo />,
   findmy: <FindMyLogo />,
   apple: <AppleLogo />,
   android: <AndroidLogo />,
@@ -76,6 +77,8 @@ const ICONS: Record<QuizIcon, ReactNode> = {
 
 // Long enough for the position to feel prepared, not so long it feels stuck.
 const FINAL_STEP_MS = 3800;
+// The screen fades out this long before navigating to the paywall.
+const LEAVE_FADE_MS = 320;
 
 type Screen =
   /** Before the stored destination is read: renders nothing, never tracked. */
@@ -175,7 +178,7 @@ function IntroScreen({ city, onStart }: { city: string; onStart: () => void }) {
       <PrepVisual city={city} />
       <p className="text-xs font-bold uppercase tracking-widest text-pink-600">Préparation en cours</p>
       <h1 className="mt-2 text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">
-        On prépare ta loc à <span className="gradient-text">{city}</span>
+        On prépare ta loc <span className="gradient-text">{atCity(city)}</span>
       </h1>
       <p className="mt-3 text-zinc-500">Pendant ce temps, réponds à quelques questions pour qu&apos;elle soit parfaite.</p>
       <div className="mt-8">
@@ -394,7 +397,7 @@ function ReadyScreen({
     <div className="mx-auto w-full max-w-xl">
       <p className="text-center text-xs font-bold uppercase tracking-widest text-pink-600">C&apos;est prêt</p>
       <h1 className="mt-2 text-center text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">
-        Ta loc à <span className="gradient-text">{destination.city}</span> est prête.
+        Ta loc <span className="gradient-text">{atCity(destination.city)}</span> est prête.
       </h1>
       <p className="mt-2 text-center text-sm text-zinc-500">
         Visible sur {listQuizApps(answers)} dès que tu l&apos;actives.
@@ -426,7 +429,7 @@ function ReadyScreen({
               className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 px-6 text-center"
             >
               <p className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-zinc-700 shadow-sm">
-                Ta position t&apos;attend à {destination.city}
+                Ta position t&apos;attend {atCity(destination.city)}
               </p>
               <PrimaryButton onClick={onUnlock} disabled={leaving} className="max-w-[280px]">
                 <span className="inline-flex items-center gap-2">
@@ -562,10 +565,15 @@ export function OnboardingQuizView({
       computer: answers.computer?.[0],
       movement: answers.movement?.[0],
       worry: answers.worry?.[0],
-      audience: answers.audience?.[0],
+      audience: (answers.audience ?? []).join(","),
+      tried: (answers.tried ?? []).join(","),
     });
     const preview = checkoutPreview ? "&preview=1" : "";
-    router.push(`/checkout?plan=${recommendation.planId}&parcours=quiz${preview}`);
+    // The screen fades out (see `leaving` on <main>) before the paywall fades in.
+    window.setTimeout(
+      () => router.push(`/checkout?plan=${recommendation.planId}&parcours=quiz${preview}`),
+      LEAVE_FADE_MS
+    );
   }
 
   const canGoBack = screen.name === "intro" || screen.name === "step";
@@ -591,7 +599,12 @@ export function OnboardingQuizView({
         </div>
       </header>
 
-      <main className="px-4 py-8 sm:px-6 sm:py-12">
+      <main
+        className={cn(
+          "px-4 py-8 transition-opacity duration-300 ease-out motion-reduce:transition-none sm:px-6 sm:py-12",
+          leaving && "pointer-events-none opacity-0"
+        )}
+      >
         {showPrep && (
           <div className="mb-8">
             <PrepPill percent={prepPercent} />

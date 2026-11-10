@@ -10,8 +10,9 @@ import {
   listQuizApps,
   QUIZ_FACTS,
   QUIZ_QUESTIONS,
+  type QuizAnswers,
 } from "./onboarding-quiz";
-import { parseStoredDestination } from "./onboarding-destinations";
+import { atCity, atPlace, parseStoredDestination, TRENDING_DESTINATIONS, ALL_ONBOARDING_DESTINATIONS } from "./onboarding-destinations";
 import {
   getAppSignupUrl,
   getQuizSignupUrl,
@@ -29,9 +30,22 @@ const marbella = {
   emoji: "🇪🇸",
   lat: 36.48,
   lng: -4.95,
+  at: "à Puerto Banús",
 };
 
 describe("quiz questions", () => {
+  it("asks about the apps people really fake on", () => {
+    const apps = QUIZ_QUESTIONS.find((q) => q.id === "apps")!;
+    assert.deepEqual(
+      apps.options.map((option) => option.id),
+      ["snap", "findmy", "insta", "life360", "gmaps", "other"]
+    );
+    assert.deepEqual(
+      apps.options.map((option) => option.icon),
+      ["snap", "findmy", "instagram", "life360", "gmaps", "other"]
+    );
+  });
+
   it("never leave one card alone on a row", () => {
     for (const question of QUIZ_QUESTIONS) {
       assert.ok([2, 3, 4, 6].includes(question.options.length), question.id);
@@ -50,25 +64,44 @@ describe("quiz sequence", () => {
       s.kind === "question" ? s.question.id : `fact:${s.fact.id}`
     );
     assert.deepEqual(kinds, [
-      "apps", "audience", "frequency", "device", "fact:install",
+      "apps", "audience", "frequency", "device",
       "movement", "tried", "fact:compare", "worry", "timing",
     ]);
   });
 
-  it("puts the install fact after the computer question on iPhone", () => {
+  it("asks the computer question after the phone on iPhone", () => {
     const kinds = getQuizSequence({ device: ["iphone"] }).map((s) =>
       s.kind === "question" ? s.question.id : `fact:${s.fact.id}`
     );
     assert.deepEqual(kinds, [
-      "apps", "audience", "frequency", "device", "computer", "fact:install",
+      "apps", "audience", "frequency", "device", "computer",
       "movement", "tried", "fact:compare", "worry", "timing",
     ]);
   });
 
-  it("tailors the comparison to what was tried", () => {
+  it("has no install fact", () => {
+    assert.deepEqual(QUIZ_FACTS.map((fact) => fact.id), ["compare"]);
+  });
+
+  it("tailors the comparison to what was tried, a VPN first, then Fake GPS", () => {
     const compare = QUIZ_FACTS.find((fact) => fact.id === "compare")!;
-    assert.match(compare.body({ tried: ["vpn"] }), /VPN/);
-    assert.notEqual(compare.body({ tried: ["vpn"] }), compare.body({ tried: ["fakegps"] }));
+    const vpn = compare.title({ tried: ["vpn"] });
+    const fake = compare.title({ tried: ["fakegps"] });
+    const fallback = compare.title({ tried: ["nothing"] });
+    assert.match(vpn, /VPN/);
+    assert.match(fake, /Fake GPS/);
+    assert.equal(fallback, "Anyloc change le GPS de tout ton tel");
+    assert.equal(compare.body({ tried: ["fakegps", "vpn"] }), compare.body({ tried: ["vpn"] }));
+    assert.equal(compare.title({ tried: ["other", "fakegps"] }), fake);
+    assert.equal(compare.title({ tried: ["nothing", "other"] }), fallback);
+    assert.equal(compare.title({}), fallback);
+    assert.match(compare.body({}), /Toutes tes apps/);
+  });
+
+  it("lets the audience and what was tried be multi-select", () => {
+    for (const id of ["apps", "audience", "tried"]) {
+      assert.equal(QUIZ_QUESTIONS.find((q) => q.id === id)?.multi, true, id);
+    }
   });
 });
 
@@ -91,8 +124,11 @@ describe("getQuizRecommendation", () => {
 
 describe("quiz copy", () => {
   it("names the picked apps", () => {
-    assert.equal(listQuizApps({ apps: ["snap", "insta", "tinder"] }), "Snap, Instagram et Tinder");
+    assert.equal(listQuizApps({ apps: ["snap", "insta", "gmaps"] }), "Snap, Instagram et Google Maps");
+    assert.equal(listQuizApps({ apps: ["findmy", "life360"] }), "Localiser et Life360");
     assert.equal(listQuizApps({ apps: ["other"] }), "tes apps");
+    assert.equal(getMainQuizApp({ apps: ["gmaps"] }), "Google Maps");
+    assert.equal(getMainQuizApp({ apps: ["life360"] }), "Life360");
     assert.equal(getMainQuizApp({ apps: ["other", "insta"] }), "Instagram");
     assert.equal(getMainQuizApp({ apps: ["other"] }), null);
   });
@@ -109,6 +145,70 @@ describe("quiz copy", () => {
       "On prépare ton guide pour iPhone et PC",
       "Dernière vérification",
     ]);
+  });
+});
+
+describe("place articles", () => {
+  it("puts the article before a curated spot", () => {
+    const eiffel = ALL_ONBOARDING_DESTINATIONS.find((d) => d.id === "Paris — Tour Eiffel")!;
+    const strip = ALL_ONBOARDING_DESTINATIONS.find((d) => d.id === "Las Vegas — Strip")!;
+    assert.equal(atPlace(eiffel), "à la Tour Eiffel");
+    assert.equal(atPlace(strip), "sur le Strip");
+    assert.match(getQuizFinalSteps({}, eiffel)[0], /^On place ta position à la Tour Eiffel$/);
+  });
+
+  it("gives every curated spot a phrase", () => {
+    for (const destination of ALL_ONBOARDING_DESTINATIONS) {
+      assert.ok(destination.at, destination.id);
+    }
+    assert.equal(TRENDING_DESTINATIONS.length, 12);
+  });
+
+  it("falls back to the city when the spot has no phrase", () => {
+    assert.equal(atPlace({ city: "Lisbonne" }), "à Lisbonne");
+    assert.equal(
+      getQuizFinalSteps({}, { id: "x", city: "Le Caire", area: "", emoji: "📍", lat: 1, lng: 1 })[0],
+      "On place ta position au Caire"
+    );
+  });
+
+  it("contracts the article of a city", () => {
+    assert.equal(atCity("Marbella"), "à Marbella");
+    assert.equal(atCity("Le Caire"), "au Caire");
+    assert.equal(atCity("Les Sables-d'Olonne"), "aux Sables-d'Olonne");
+    assert.equal(atCity("La Havane"), "à la Havane");
+    assert.equal(atCity("L'Alpe d'Huez"), "à l'Alpe d'Huez");
+  });
+
+  it("uses the city article in the question title", () => {
+    assert.match(QUIZ_QUESTIONS[0].title("Le Caire"), /apparaître au Caire/);
+  });
+});
+
+describe("French typography", () => {
+  it("never leaves a regular space before ? ! or :", () => {
+    const bad = / [?!:]/;
+    const strings: string[] = [];
+    const everyAnswer: QuizAnswers = {
+      apps: ["snap"], device: ["iphone"], computer: ["mac"], movement: ["walk"],
+      timing: ["today"], frequency: ["often"], tried: ["vpn"],
+    };
+    for (const question of QUIZ_QUESTIONS) {
+      strings.push(question.title("Paris"), question.title("Le Caire"));
+      for (const option of question.options) strings.push(option.label, option.note ?? "");
+    }
+    for (const fact of QUIZ_FACTS) {
+      for (const tried of [["vpn"], ["fakegps"], ["nothing"], []]) {
+        strings.push(fact.title({ tried }), fact.body({ tried }));
+      }
+    }
+    for (const timing of ["today", "week", "later"]) strings.push(getQuizTimingLine({ timing: [timing] }) ?? "");
+    strings.push(...getQuizFinalSteps(everyAnswer, marbella));
+    for (const answers of [everyAnswer, { frequency: ["once"] }, { device: ["android"] }]) {
+      strings.push(getQuizRecommendation(answers, "v1").reason, getQuizRecommendation(answers, "v2").reason);
+    }
+    for (const text of strings) assert.ok(!bad.test(text), text);
+    assert.ok(strings.some((text) => text.includes("\u00A0?")));
   });
 });
 
