@@ -55,8 +55,8 @@ describe("quiz questions", () => {
     }
   });
 
-  it("only ask for the computer on iPhone", () => {
-    assert.ok(getAskedQuestions({ device: ["iphone"] }).some((q) => q.id === "computer"));
+  it("never asks about the computer", () => {
+    assert.ok(!getAskedQuestions({ device: ["iphone"] }).some((q) => q.id === "computer"));
     assert.ok(!getAskedQuestions({ device: ["android"] }).some((q) => q.id === "computer"));
   });
 });
@@ -72,12 +72,12 @@ describe("quiz sequence", () => {
     ]);
   });
 
-  it("asks the computer question after the phone on iPhone", () => {
+  it("uses the same sequence on iPhone", () => {
     const kinds = getQuizSequence({ device: ["iphone"] }).map((s) =>
       s.kind === "question" ? s.question.id : `fact:${s.fact.id}`
     );
     assert.deepEqual(kinds, [
-      "apps", "audience", "frequency", "device", "computer",
+      "apps", "audience", "frequency", "device",
       "movement", "tried", "fact:compare", "worry", "timing",
     ]);
   });
@@ -170,14 +170,14 @@ describe("quiz copy", () => {
 
   it("builds the checklist from the answers", () => {
     const steps = getQuizFinalSteps(
-      { apps: ["snap"], device: ["iphone"], computer: ["pc"], movement: ["walk"] },
+      { apps: ["snap"], device: ["iphone"], movement: ["walk"] },
       marbella
     );
     assert.deepEqual(steps, [
       "On place ta position à Puerto Banús",
       "On la connecte à Snap",
       "On trace tes balades à Marbella",
-      "On prépare ton guide pour iPhone et PC",
+      "On prépare ton guide pour iPhone",
       "Dernière vérification",
     ]);
   });
@@ -225,7 +225,7 @@ describe("French typography", () => {
     const bad = / [?!:]/;
     const strings: string[] = [];
     const everyAnswer: QuizAnswers = {
-      apps: ["snap"], device: ["iphone"], computer: ["mac"], movement: ["walk"],
+      apps: ["snap"], device: ["iphone"], movement: ["walk"],
       timing: ["today"], frequency: ["often"], tried: ["vpn"],
     };
     for (const question of QUIZ_QUESTIONS) {

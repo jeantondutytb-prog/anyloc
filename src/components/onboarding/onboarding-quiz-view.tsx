@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowLeft, Check, Laptop, Loader2, Lock, Monitor, MoreHorizontal } from "lucide-react";
+import { ArrowLeft, Check, Loader2, Lock, MoreHorizontal } from "lucide-react";
 import {
   AndroidLogo,
   AppleLogo,
@@ -46,7 +46,7 @@ import { readPricingVariantCookie } from "@/lib/pricing-experiment";
 import { cn } from "@/lib/utils";
 import type { VisitorLocation } from "@/lib/visitor-location";
 
-/** Neutral tile, same size as the brand tiles, for "Autre", Mac and PC. */
+/** Neutral tile, same size as the brand tiles, for "Autre". */
 function GlyphTile({ children }: { children: ReactNode }) {
   return (
     <span className="flex h-11 w-11 items-center justify-center rounded-[28%] bg-zinc-100 text-zinc-600">
@@ -63,16 +63,6 @@ const ICONS: Record<QuizIcon, ReactNode> = {
   findmy: <FindMyLogo />,
   apple: <AppleLogo />,
   android: <AndroidLogo />,
-  mac: (
-    <GlyphTile>
-      <Laptop className="h-5 w-5" />
-    </GlyphTile>
-  ),
-  pc: (
-    <GlyphTile>
-      <Monitor className="h-5 w-5" />
-    </GlyphTile>
-  ),
   other: (
     <GlyphTile>
       <MoreHorizontal className="h-5 w-5" />
@@ -631,7 +621,6 @@ export function OnboardingQuizView({
         apps: (answers.apps ?? []).join(","),
         other_app: (answers.apps ?? []).includes("other") ? otherAppName || undefined : undefined,
         device: answers.device?.[0],
-        computer: answers.computer?.[0],
         movement: answers.movement?.[0],
         worry: answers.worry?.[0],
         audience: (answers.audience ?? []).join(","),

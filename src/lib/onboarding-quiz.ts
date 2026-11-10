@@ -16,8 +16,6 @@ export type QuizIcon =
   | "findmy"
   | "apple"
   | "android"
-  | "mac"
-  | "pc"
   | "other";
 
 export type QuizOption = {
@@ -36,7 +34,7 @@ export type QuizQuestion = {
   kicker: string;
   title: (city: string) => string;
   multi?: boolean;
-  /** Only asked when this returns true (the computer question is iPhone-only). */
+  /** Only asked when this returns true (for conditional questions). */
   when?: (answers: QuizAnswers) => boolean;
   /** Always 2, 3, 4 or 6 options, so the grid never leaves one card alone on a row. */
   options: QuizOption[];
@@ -98,17 +96,6 @@ const RAW_QUIZ_QUESTIONS: QuizQuestion[] = [
       { id: "iphone", label: "iPhone", icon: "apple", note: "Ça marche sur tous les iPhone récents, sans rien modifier." },
       { id: "android", label: "Android", icon: "android", note: "Tout se fait directement sur ton téléphone." },
       { id: "other", label: "Autre", icon: "other", note: "On regarde avec toi si ton téléphone est compatible." },
-    ],
-  },
-  {
-    id: "computer",
-    kicker: "Ton installation",
-    title: () => "Tu as quel ordinateur ?",
-    when: (answers) => answers.device?.[0] === "iphone",
-    options: [
-      { id: "mac", label: "Mac", icon: "mac", note: "On te prépare le guide pour Mac : 5 minutes, une seule fois." },
-      { id: "pc", label: "PC", icon: "pc", note: "On te prépare le guide pour PC : 5 minutes, une seule fois." },
-      { id: "other", label: "Autre", icon: "other", note: "On t'aide à trouver la bonne solution sur le chat." },
     ],
   },
   {
@@ -300,15 +287,12 @@ export function getMainQuizApp(answers: QuizAnswers, otherApp?: string) {
 /** The "finalising" checklist: each line is something the answers set up. */
 export function getQuizFinalSteps(answers: QuizAnswers, destination: OnboardingDestination, otherApp?: string) {
   const device = answers.device?.[0];
-  const computer = answers.computer?.[0];
   const guide =
     device === "android"
       ? "On prépare ton guide pour Android"
-      : device === "iphone" && computer === "mac"
-        ? "On prépare ton guide pour iPhone et Mac"
-        : device === "iphone" && computer === "pc"
-          ? "On prépare ton guide pour iPhone et PC"
-          : "On prépare ton guide d'installation";
+      : device === "iphone"
+        ? "On prépare ton guide pour iPhone"
+        : "On prépare ton guide d'installation";
   return [
     `On place ta position ${atPlace(destination)}`,
     `On la connecte à ${listQuizApps(answers, otherApp)}`,
