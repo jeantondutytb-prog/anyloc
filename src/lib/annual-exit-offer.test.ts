@@ -6,6 +6,7 @@ import {
   getAnnualExitOfferPlanId,
   getAnnualExitOfferState,
   parseAnnualExitOfferVariant,
+  resolveAnnualExitOfferStart,
   pickAnnualExitOfferVariant,
 } from "./annual-exit-offer";
 
@@ -40,5 +41,10 @@ describe("annual exit offer", () => {
     assert.equal(pickAnnualExitOfferVariant(0.2), "control");
     assert.equal(pickAnnualExitOfferVariant(0.7), "offer");
     assert.equal(parseAnnualExitOfferVariant("nope"), null);
+  });
+
+  it("keeps the first start time on a second display", () => {
+    assert.deepEqual(resolveAnnualExitOfferStart(start, at(30 * 60_000)), start);
+    assert.deepEqual(resolveAnnualExitOfferStart(null, at(30 * 60_000)), at(30 * 60_000));
   });
 });

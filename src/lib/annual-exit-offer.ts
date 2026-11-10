@@ -76,3 +76,8 @@ export function getAnnualExitOfferExpiry(startedAt: Date): Date {
 export function isAnnualExitOfferEnabled() {
   return process.env.NEXT_PUBLIC_ANNUAL_EXIT_OFFER === "on";
 }
+
+/** The start time that counts: the first one ever stored, never a later display. */
+export function resolveAnnualExitOfferStart(existing: Date | null, now: Date): Date {
+  return existing ?? now;
+}
