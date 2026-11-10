@@ -209,9 +209,7 @@ function QuestionScreen({
   onContinue: () => void;
 }) {
   const askOtherApp = question.id === "apps" && selected.includes("other");
-  const note = !question.multi
-    ? question.options.find((option) => option.id === selected[0])?.note
-    : undefined;
+  // No note box under the answers: it changed text on every click (owner's call).
   const withIcons = question.options.some((option) => option.icon);
 
   return (
@@ -248,18 +246,6 @@ function QuestionScreen({
           );
         })}
       </div>
-      <AnimatePresence>
-        {note && (
-          <motion.p
-            key={note}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-5 rounded-2xl border border-pink-100 bg-pink-50 px-4 py-3 text-center text-sm text-zinc-700"
-          >
-            {note}
-          </motion.p>
-        )}
-      </AnimatePresence>
       <AnimatePresence initial={false}>
         {askOtherApp && (
           <motion.div
