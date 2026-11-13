@@ -19,6 +19,7 @@ export const CHECKOUT_COPY = {
   /** The pay button shows what is actually charged, so the popup holds no surprise. */
   continueCta: (amount: string, period: string) => `Débloquer · ${amount} pour ${period}`,
   continueCtaRecoveryOffer: "Débloquer · 4,95 € le 1er mois",
+  continueCtaEmailOffer: (offerPrice: string) => `Débloquer · ${offerPrice}`,
   /** Right under the pay button, where the fear of paying for nothing peaks. */
   payReassurance: "Ça marche ou remboursé · Résiliable en 1 clic",
   payReassuranceOneTime: "Ça marche ou remboursé · Paiement unique",
@@ -121,6 +122,8 @@ export const CHECKOUT_COPY = {
     "🎁 Offre appliquée : ton 1er mois à 4,95 € au lieu de 9,90 €.",
   recoveryOfferPickMonthly:
     "🎁 -50 % sur ton 1er mois : choisis le Mensuel à 4,95 € au lieu de 9,90 €",
+  emailOfferApplied: (offerPrice: string, fullPrice: string) =>
+    `🎁 Ta réduction est appliquée : ${offerPrice} au lieu de ${fullPrice}.`,
   recoveryOfferEndsIn: "L'offre se termine dans",
   errNetwork:
     "Le paiement n'a pas pu se charger : ta connexion a coupé. Vérifie ton réseau puis réessaie.",

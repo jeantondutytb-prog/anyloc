@@ -9,6 +9,8 @@ export type SendEmailParams = {
   replyTo?: string;
   headers?: Record<string, string>;
   tags?: { name: string; value: string }[];
+  /** Sends later (Resend queues it; cancel with cancelScheduledEmail). */
+  scheduledAt?: Date;
 };
 
 export const DEFAULT_EMAIL_FROM =
@@ -40,6 +42,7 @@ export async function sendEmail(params: SendEmailParams): Promise<{ id: string }
       reply_to: params.replyTo ?? from,
       headers: params.headers,
       tags: params.tags,
+      ...(params.scheduledAt ? { scheduled_at: params.scheduledAt.toISOString() } : {}),
     }),
   });
 
@@ -52,4 +55,18 @@ export async function sendEmail(params: SendEmailParams): Promise<{ id: string }
   }
 
   return { id: body.id };
+}
+
+/** Cancels an email scheduled with `scheduledAt`. False when it already went out (or is unknown). */
+export async function cancelScheduledEmail(id: string): Promise<boolean> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY is not configured.");
+  }
+
+  const res = await fetch(`https://api.resend.com/emails/${encodeURIComponent(id)}/cancel`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}` },
+  });
+  return res.ok;
 }

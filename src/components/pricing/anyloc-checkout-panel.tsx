@@ -61,6 +61,7 @@ import type { QuizResult } from "@/lib/onboarding-quiz";
 import { registerPostHogProperties } from "@/lib/posthog/browser";
 import { getStripe } from "@/lib/stripe-browser";
 import { cn } from "@/lib/utils";
+import type { PaywallEmailOffer } from "@/lib/checkout-email-offer";
 
 /** Apple logo outline (Simple Icons path, CC0): lucide's `Apple` is a fruit, not the brand. */
 function AppleLogo({ className }: { className?: string }) {
@@ -128,6 +129,7 @@ export function AnyLocCheckoutPanel({
   onBack,
   canceled,
   offerEndsAt,
+  emailOffer,
   focusPayment,
   onShowAllPlans,
   returning,
@@ -146,6 +148,8 @@ export function AnyLocCheckoutPanel({
   canceled?: boolean;
   /** End (ISO) of the -50 % welcome offer: until then the monthly checkout carries the coupon. */
   offerEndsAt?: string | null;
+  /** The 15-min email's discount while it runs: the checkout of these plans carries its coupon. */
+  emailOffer?: PaywallEmailOffer | null;
   /** Arrived from an email: only the selected plan and the payment popup, no sales page. */
   focusPayment?: boolean;
   onShowAllPlans?: () => void;
@@ -166,6 +170,7 @@ export function AnyLocCheckoutPanel({
   const offerTimeLeft = useOfferTimeLeft(offerEndsAt);
   // The server only grants the coupon before the end: past it, back to full price.
   const recoveryOffer = offerTimeLeft === null || offerTimeLeft > 0;
+  const emailOfferTimeLeft = useOfferTimeLeft(emailOffer?.endsAt ?? null);
   // The plans of the selected plan's price grid (see lib/pricing-experiment).
   const checkoutPlans = getGridPlans(getPlanGrid(selectedPlanId));
   const selectedPlan =
@@ -173,6 +178,11 @@ export function AnyLocCheckoutPanel({
   // Card declined (or popup closed) on a pricier plan: offer the shortest one.
   const entryPlanId = getGridEntryPlanId(selectedPlan.id);
   const entryPlan = checkoutPlans.find((plan) => plan.id === entryPlanId) ?? selectedPlan;
+  // Same rule as the server: the discount stops at its end, on the plans it covers.
+  const emailOfferPrice =
+    emailOffer && (emailOfferTimeLeft === null || emailOfferTimeLeft > 0)
+      ? emailOffer.prices[selectedPlan.id] ?? null
+      : null;
   const downgradePlan = selectedPlan.id !== entryPlanId ? entryPlan : undefined;
   // Checkout refused for lack of funds (or closed, in the A/B test) that
   // unlocks the shortest plan at -50 % on the 1st month.
@@ -625,7 +635,9 @@ export function AnyLocCheckoutPanel({
         onClick={() => openPaymentModal(source)}
         className="btn-gradient flex h-12 w-full items-center justify-center gap-2 rounded-full text-[15px] font-bold text-white transition hover:opacity-90 disabled:opacity-70"
       >
-        {recoveryOffer && selectedPlan.id === RECOVERY_OFFER_PLAN_ID
+        {emailOfferPrice
+          ? copy.continueCtaEmailOffer(emailOfferPrice.offerPrice)
+          : recoveryOffer && selectedPlan.id === RECOVERY_OFFER_PLAN_ID
           ? copy.continueCtaRecoveryOffer
           : copy.continueCta(
               selectedPlan.price.replace("€", " €"),
@@ -642,6 +654,21 @@ export function AnyLocCheckoutPanel({
           {copy.canceled}
         </p>
       )}
+
+      {emailOfferPrice ? (
+        <p
+          data-track="checkout_email_offer_shown"
+          className="mb-4 rounded-xl border border-pink-200 bg-pink-50 px-4 py-3 text-center text-sm font-semibold text-pink-700"
+        >
+          {copy.emailOfferApplied(emailOfferPrice.offerPrice, emailOfferPrice.fullPrice)}
+          {emailOfferTimeLeft !== null ? (
+            <span className="mt-1 block text-xs font-medium text-pink-600">
+              {copy.recoveryOfferEndsIn}{" "}
+              <span className="font-bold tabular-nums">{formatTimeLeft(emailOfferTimeLeft)}</span>
+            </span>
+          ) : null}
+        </p>
+      ) : null}
 
       {offerEndsAt && recoveryOffer ? (
         <button

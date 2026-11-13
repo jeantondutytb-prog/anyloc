@@ -5,6 +5,7 @@ import { ensureStripeCustomerForUser } from "@/lib/billing";
 import { getAppUrl, stripe } from "@/lib/stripe";
 import { UserFacingError } from "@/lib/errors";
 import { withCheckoutOffer } from "@/lib/checkout-offer";
+import { isEmailOfferCoupon } from "@/lib/checkout-email-offer";
 
 export { CHECKOUT_OFFER_ANNUAL_EXIT, withCheckoutOffer } from "@/lib/checkout-offer";
 
@@ -77,8 +78,9 @@ export async function createSubscriptionCheckoutSession({
   ]);
 
   // The lifetime plan is paid once: no subscription, and none of the offers
-  // and coupons, which are all made for a subscription plan.
+  // and coupons made for a subscription plan, except the 15-min email's.
   const oneTime = Boolean(plan.oneTime);
+  const applyCoupon = Boolean(coupon) && (!oneTime || isEmailOfferCoupon(coupon!));
   const baseParams = oneTime ? toOneTimePaymentParams(subscriptionParams) : subscriptionParams;
 
   const sharedParams = {
@@ -86,7 +88,7 @@ export async function createSubscriptionCheckoutSession({
       ? withAnalyticsId(baseParams, analyticsId)
       : withCheckoutOffer(withAnalyticsId(baseParams, analyticsId), offer ?? null)),
     ...getDeviceRequirementParams(),
-    ...(coupon && !oneTime ? { discounts: [{ coupon }] } : {}),
+    ...(applyCoupon ? { discounts: [{ coupon: coupon! }] } : {}),
   };
 
   if (uiMode === "embedded_page") {
