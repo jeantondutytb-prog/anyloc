@@ -14,6 +14,7 @@ import {
   capturePostHogEvent,
   parsePostHogDistinctId,
 } from "@/lib/posthog/server";
+import { markCheckoutRecoveryConverted } from "@/lib/checkout-recovery-server";
 import { stripe } from "@/lib/stripe";
 import { logError } from "@/lib/log-error";
 import { claimStripeEvent, releaseStripeEvent } from "@/lib/webhook-idempotency";
@@ -208,6 +209,12 @@ export async function POST(request: Request) {
         // The sync returns the account even for a guest checkout, where it is
         // found or created from the email typed in Stripe.
         const userId = await syncProfileFromCheckoutSession(session);
+        if (userId) {
+          // Paid: no recovery email after the fact. Never fails the webhook.
+          await markCheckoutRecoveryConverted(userId).catch((error) =>
+            logError("checkout-recovery/converted", error, { userId })
+          );
+        }
 
         await trackCheckoutCompleted(
           session,

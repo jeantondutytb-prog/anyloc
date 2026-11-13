@@ -1,4 +1,5 @@
 import type { User } from "@supabase/supabase-js";
+import { after } from "next/server";
 import { logError } from "@/lib/log-error";
 import {
   buildRecoveryEmail,
@@ -12,7 +13,13 @@ import {
   type RecoveryState,
   type RecoveryStep,
 } from "@/lib/checkout-recovery";
-import { isResendConfigured, sendEmail } from "@/lib/email/resend";
+import {
+  buildEmailOfferEmail,
+  getEmailOffer,
+  isEmailOfferActive,
+  planEmailOffer,
+} from "@/lib/checkout-email-offer";
+import { cancelScheduledEmail, isResendConfigured, sendEmail } from "@/lib/email/resend";
 import { capturePostHogEvent } from "@/lib/posthog/server";
 import { getAppUrl, stripe } from "@/lib/stripe";
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
@@ -51,7 +58,7 @@ export async function enrollInCheckoutRecovery(user: User, planId: string) {
   if (!user.email || !isSupabaseAdminConfigured()) return;
 
   const now = new Date();
-  const { error } = await createAdminClient()
+  const { data: inserted, error } = await createAdminClient()
     .from("checkout_recoveries")
     .upsert(
       {
@@ -63,10 +70,181 @@ export async function enrollInCheckoutRecovery(user: User, planId: string) {
         offer_expires_at: isWelcomeOfferEnabled() ? getRecoveryOfferExpiry(now).toISOString() : null,
       },
       { onConflict: "user_id", ignoreDuplicates: true }
-    );
+    )
+    // Only a first view comes back: later views hit the conflict and insert nothing.
+    .select("user_id");
 
   if (error) {
     await logError("checkout-recovery/enroll", error, { userId: user.id, plan_id: planId });
+    return;
+  }
+
+  // The welcome offer keeps its own 3-email sequence (cron); otherwise one email at 15 min.
+  if (inserted?.length && !isWelcomeOfferEnabled()) {
+    const email = user.email;
+    // After the response: the paywall never waits on Resend.
+    after(() =>
+      scheduleEmailOffer(user.id, email, planId, now).catch((err) =>
+        logError("checkout-recovery/schedule", err, { userId: user.id, plan_id: planId })
+      )
+    );
+  }
+}
+
+function getUnsubscribeUrl(userId: string) {
+  return `${getAppUrl()}/api/email/unsubscribe?u=${userId}&t=${signUnsubscribeToken(userId)}`;
+}
+
+/**
+ * Queues the email at Resend for 15 min after the first paywall view, then
+ * stores the arm and the 2 h window. The window is only stored once the email
+ * is queued: no email, no discount.
+ */
+async function scheduleEmailOffer(userId: string, email: string, planId: string, firstViewAt: Date) {
+  if (!isResendConfigured()) return;
+
+  const schedule = planEmailOffer(userId, planId, firstViewAt);
+  const unsubscribeUrl = getUnsubscribeUrl(userId);
+  const message = buildEmailOfferEmail({
+    planId,
+    variant: schedule.variant,
+    expiresAt: schedule.expiresAt,
+    appUrl: getAppUrl(),
+    unsubscribeUrl,
+  });
+
+  const { id } = await sendEmail({
+    to: email,
+    ...message,
+    scheduledAt: schedule.sendAt,
+    headers: {
+      "List-Unsubscribe": `<${unsubscribeUrl}>`,
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    },
+    tags: [
+      { name: "campaign", value: "checkout_recovery" },
+      { name: "step", value: `mail15_${schedule.variant}` },
+    ],
+  });
+
+  const { error } = await createAdminClient()
+    .from("checkout_recoveries")
+    .update({
+      email_offer_variant: schedule.variant,
+      email_offer_send_at: schedule.sendAt.toISOString(),
+      email_offer_expires_at: schedule.expiresAt?.toISOString() ?? null,
+      email_offer_email_id: id,
+    })
+    .eq("user_id", userId);
+
+  if (error) {
+    // Without the stored window the link would land on the full price: drop the email.
+    await cancelScheduledEmail(id).catch(() => false);
+    throw new Error(error.message);
+  }
+
+  await capturePostHogEvent({
+    distinctId: userId,
+    event: "recovery_email_scheduled",
+    properties: {
+      plan: planId,
+      variant: schedule.variant,
+      send_at: schedule.sendAt.toISOString(),
+    },
+  });
+}
+
+type EmailOfferRow = {
+  email_offer_send_at: string | null;
+  email_offer_expires_at: string | null;
+  email_offer_email_id: string | null;
+  converted_at: string | null;
+};
+
+async function getEmailOfferRow(userId: string) {
+  const { data, error } = await createAdminClient()
+    .from("checkout_recoveries")
+    .select("email_offer_send_at, email_offer_expires_at, email_offer_email_id, converted_at")
+    .eq("user_id", userId)
+    .maybeSingle<EmailOfferRow>();
+  return error ? null : data;
+}
+
+function isEmailOfferRowActive(row: EmailOfferRow, now: Date) {
+  const date = (value: string | null) => (value ? new Date(value) : null);
+  return isEmailOfferActive(
+    {
+      sendAt: date(row.email_offer_send_at),
+      expiresAt: date(row.email_offer_expires_at),
+      convertedAt: date(row.converted_at),
+    },
+    now
+  );
+}
+
+/** End (ISO) of the 15-min email's discount while it runs, else null: what the paywall shows. */
+export async function getActiveEmailOfferEnd(userId: string) {
+  if (!isSupabaseAdminConfigured()) return null;
+
+  const row = await getEmailOfferRow(userId);
+  return row && isEmailOfferRowActive(row, new Date()) ? row.email_offer_expires_at : null;
+}
+
+const ensuredCoupons = new Set<string>();
+
+/** The offer's coupons are created on first use, so no setup step is needed in Stripe. */
+async function ensureEmailOfferCoupon(planId: string) {
+  const offer = getEmailOffer(planId);
+  if (!offer || !stripe) return null;
+  if (ensuredCoupons.has(offer.couponId)) return offer.couponId;
+
+  try {
+    await stripe.coupons.retrieve(offer.couponId);
+  } catch (error) {
+    if ((error as { code?: string }).code !== "resource_missing") throw error;
+    await stripe.coupons
+      .create({
+        id: offer.couponId,
+        amount_off: offer.amountOffCents,
+        currency: "eur",
+        duration: "once",
+        // Shown to the customer next to the discount in Stripe Checkout.
+        name: "Offre spéciale",
+      })
+      .catch((err: { code?: string }) => {
+        // Created by a concurrent request meanwhile.
+        if (err.code !== "resource_already_exists") throw err;
+      });
+  }
+  ensuredCoupons.add(offer.couponId);
+  return offer.couponId;
+}
+
+/**
+ * Paid: stops the recovery and cancels the 15-min email if it has not gone out.
+ * Safe to call on every payment.
+ */
+export async function markCheckoutRecoveryConverted(userId: string) {
+  if (!isSupabaseAdminConfigured()) return;
+
+  const now = new Date();
+  const { data, error } = await createAdminClient()
+    .from("checkout_recoveries")
+    .update({ converted_at: now.toISOString() })
+    .eq("user_id", userId)
+    .is("converted_at", null)
+    .select("email_offer_send_at, email_offer_email_id")
+    .returns<{ email_offer_send_at: string | null; email_offer_email_id: string | null }[]>();
+
+  if (error) throw new Error(error.message);
+  const row = data?.[0];
+  if (
+    row?.email_offer_email_id &&
+    row.email_offer_send_at &&
+    new Date(row.email_offer_send_at) > now &&
+    isResendConfigured()
+  ) {
+    await cancelScheduledEmail(row.email_offer_email_id);
   }
 }
 
@@ -85,10 +263,19 @@ export async function getActiveRecoveryOfferExpiry(userId: string) {
   return isRecoveryOfferActive(state, new Date()) ? state.offerExpiresAt : null;
 }
 
-/** Coupon to apply to this user's checkout, when the offer is live and the plan is eligible. */
+/**
+ * Coupon to apply to this user's checkout: the welcome offer on the monthly
+ * plan, else the 15-min email's discount on the plan picked, while it runs.
+ */
 export async function getRecoveryCouponForUser(userId: string, planId: string) {
-  if (planId !== RECOVERY_OFFER_PLAN_ID) return null;
-  return (await getActiveRecoveryOfferExpiry(userId)) ? RECOVERY_COUPON_ID : null;
+  if (planId === RECOVERY_OFFER_PLAN_ID && (await getActiveRecoveryOfferExpiry(userId))) {
+    return RECOVERY_COUPON_ID;
+  }
+  if (!getEmailOffer(planId) || !isSupabaseAdminConfigured()) return null;
+
+  const row = await getEmailOfferRow(userId);
+  if (!row || !isEmailOfferRowActive(row, new Date())) return null;
+  return ensureEmailOfferCoupon(planId);
 }
 
 export async function unsubscribeFromCheckoutRecovery(userId: string) {
@@ -118,7 +305,7 @@ async function sendRecoveryStep(row: RecoveryRow, step: RecoveryStep) {
   if (!claimed?.length) return false;
 
   const appUrl = getAppUrl();
-  const unsubscribeUrl = `${appUrl}/api/email/unsubscribe?u=${row.user_id}&t=${signUnsubscribeToken(row.user_id)}`;
+  const unsubscribeUrl = getUnsubscribeUrl(row.user_id);
   const email = buildRecoveryEmail({
     step,
     appUrl,
@@ -171,9 +358,13 @@ export type RecoveryRunResult = {
   failed: number;
 };
 
-/** Sends every due recovery email; run hourly. */
+/**
+ * Sends every due email of the welcome offer's sequence; run hourly. Without
+ * the welcome offer, the single 15-min email is queued at Resend instead.
+ */
 export async function processCheckoutRecoveries(now = new Date()): Promise<RecoveryRunResult> {
   const result: RecoveryRunResult = { checked: 0, sent: 0, converted: 0, failed: 0 };
+  if (!isWelcomeOfferEnabled()) return result;
   if (!isSupabaseAdminConfigured() || !isResendConfigured()) return result;
 
   const admin = createAdminClient();
