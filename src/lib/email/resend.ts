@@ -16,6 +16,17 @@ export type SendEmailParams = {
 export const DEFAULT_EMAIL_FROM =
   process.env.EMAIL_FROM ?? "Jean d'Anyloc <jean@anyloc.io>";
 
+/**
+ * Sender of the recovery emails: its own subdomain (e.g. "Jean d'Anyloc
+ * <jean@relance.anyloc.io>", verified in Resend first), so their reputation at
+ * Gmail never drags down the account emails sent from anyloc.io. Unset: the
+ * default sender.
+ */
+export const RECOVERY_EMAIL_FROM = process.env.RECOVERY_EMAIL_FROM || DEFAULT_EMAIL_FROM;
+
+/** Replies to any email land in the inbox Jean reads, whatever the sender. */
+export const EMAIL_REPLY_TO = process.env.EMAIL_REPLY_TO || "jean@anyloc.io";
+
 export function isResendConfigured() {
   return Boolean(process.env.RESEND_API_KEY);
 }

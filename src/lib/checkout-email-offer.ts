@@ -154,6 +154,12 @@ function escapeHtml(value: string) {
 
 export type EmailOfferMessage = { subject: string; html: string; text: string };
 
+/**
+ * Same plain subject in both arms: no emoji, price or deadline, which spam
+ * filters weigh, and the A/B test then only compares the body.
+ */
+export const RECOVERY_SUBJECT = "Tu y étais presque";
+
 export function buildEmailOfferEmail({
   planId,
   variant,
@@ -174,7 +180,7 @@ export function buildEmailOfferEmail({
 
   const content = offer
     ? {
-        subject: `🎁 ${capitalize(offer.label)} à ${offer.offerPrice} au lieu de ${offer.fullPrice}, pendant 2 h`,
+        subject: RECOVERY_SUBJECT,
         paragraphs: [
           "Salut,",
           "Tu étais à deux doigts de débloquer Anyloc, ce serait dommage de t'arrêter là.",
@@ -185,7 +191,7 @@ export function buildEmailOfferEmail({
         cta: `Je profite de ${offer.offerPrice}`,
       }
     : {
-        subject: "Tu y étais presque",
+        subject: RECOVERY_SUBJECT,
         paragraphs: [
           "Salut,",
           "Tu étais à deux doigts de débloquer Anyloc, ce serait dommage de t'arrêter là.",
@@ -224,6 +230,3 @@ ${content.paragraphs
   return { subject: content.subject, html, text };
 }
 
-function capitalize(value: string) {
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}

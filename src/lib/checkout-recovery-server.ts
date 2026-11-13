@@ -19,7 +19,13 @@ import {
   isEmailOfferActive,
   planEmailOffer,
 } from "@/lib/checkout-email-offer";
-import { cancelScheduledEmail, isResendConfigured, sendEmail } from "@/lib/email/resend";
+import {
+  cancelScheduledEmail,
+  EMAIL_REPLY_TO,
+  isResendConfigured,
+  RECOVERY_EMAIL_FROM,
+  sendEmail,
+} from "@/lib/email/resend";
 import { capturePostHogEvent } from "@/lib/posthog/server";
 import { getAppUrl, stripe } from "@/lib/stripe";
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
@@ -116,6 +122,8 @@ async function scheduleEmailOffer(userId: string, email: string, planId: string,
   const { id } = await sendEmail({
     to: email,
     ...message,
+    from: RECOVERY_EMAIL_FROM,
+    replyTo: EMAIL_REPLY_TO,
     scheduledAt: schedule.sendAt,
     headers: {
       "List-Unsubscribe": `<${unsubscribeUrl}>`,
@@ -318,6 +326,8 @@ async function sendRecoveryStep(row: RecoveryRow, step: RecoveryStep) {
     await sendEmail({
       to: row.email,
       ...email,
+      from: RECOVERY_EMAIL_FROM,
+      replyTo: EMAIL_REPLY_TO,
       headers: {
         "List-Unsubscribe": `<${unsubscribeUrl}>`,
         "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
