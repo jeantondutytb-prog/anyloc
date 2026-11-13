@@ -14,7 +14,7 @@ type EmailState =
   | { status: "sent"; email: string | null }
   | { status: "error"; message: string };
 
-function CopyPageLink({
+export function CopyPageLink({
   href,
   label,
   preview = false,
