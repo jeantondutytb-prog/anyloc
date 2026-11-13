@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { Children, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Apple, Check, ChevronDown, Loader2, Monitor, Smartphone } from "lucide-react";
@@ -9,6 +9,7 @@ import { IphoneInstallView } from "@/components/dashboard/iphone-install-view";
 import { SetupPasswordForm } from "@/components/dashboard/setup-password-form";
 import {
   AndroidOpenHelp,
+  CopyPageLink,
   MacOpenHelp,
 } from "@/components/dashboard/setup-open-help";
 import { WindowsOpenHelp } from "@/components/dashboard/windows-open-help";
@@ -78,7 +79,9 @@ function StepCard({
         <div className="min-w-0 flex-1">
           <p className="font-semibold text-zinc-900">{title}</p>
           <p className="mt-1 text-sm text-zinc-600">{text}</p>
-          {children ? <div className="mt-4">{children}</div> : null}
+          {Children.toArray(children).length > 0 ? (
+            <div className="mt-4">{children}</div>
+          ) : null}
         </div>
       </div>
     </li>
@@ -281,6 +284,27 @@ export function PaidDashboardView({
         ) : null}
 
         <ol className="mt-8 space-y-3">
+          {/* On an iPhone nothing here can be installed: the Android button handed
+              people an .apk that iOS cannot open. Send them to their computer. */}
+          {device.isIos ? (
+            <StepCard
+              number={1}
+              title="Ouvre cette page sur ton ordinateur"
+              text="Sur iPhone, Anyloc s'installe depuis un Mac ou un PC, avec le câble de ton iPhone. Rien à télécharger sur le téléphone."
+            >
+              <CopyPageLink
+                href={`${window.location.origin}/dashboard`}
+                label="Copier le lien"
+                preview={preview}
+              />
+              {track === "iphone" ? (
+                <p className="mt-3 text-xs text-zinc-500">
+                  Pas d&apos;ordi ? Ta formule permet d&apos;installer l&apos;app directement
+                  sur l&apos;iPhone : ouvre « J&apos;ai un iPhone mais pas d&apos;ordi » plus bas.
+                </p>
+              ) : null}
+            </StepCard>
+          ) : (
           <StepCard
             number={1}
             title="Télécharge l'app"
@@ -319,13 +343,18 @@ export function PaidDashboardView({
               </div>
             )}
           </StepCard>
+          )}
 
           <StepCard
             number={2}
             title="Ouvre l'app et connecte-la"
-            text="Une fois l'app installée, appuie ici depuis le même appareil : Anyloc s'ouvre déjà connectée à ton compte."
+            text={
+              device.isIos
+                ? "Sur ton ordi, une fois l'app installée, appuie sur « Connecter Anyloc à mon compte » sur cette même page. L'app te guide pour brancher ton iPhone."
+                : "Une fois l'app installée, appuie ici depuis le même appareil : Anyloc s'ouvre déjà connectée à ton compte."
+            }
           >
-            {device.isAndroid ? (
+            {device.isIos ? null : device.isAndroid ? (
               <Button
                 size="lg"
                 variant="secondary"
