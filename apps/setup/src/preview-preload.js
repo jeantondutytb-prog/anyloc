@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld("anylocSetup", {
       udid: "preview-udid",
     }),
   openExternal: () => Promise.resolve(),
+  track: () => Promise.resolve(),
   trustDevice: () => wait(1200, { trusted: true }),
   prepareWindows: () => wait(1500, { ok: true }),
   onWindowsProgress: () => () => {},

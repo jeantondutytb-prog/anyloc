@@ -24,6 +24,7 @@ const {
 const { ensurePymobiledevice3, isBundleReady, isBundleCurrent, removeLegacyEnv } = require("./python-setup");
 const { diagnoseWindows, repairWindows } = require("./windows-driver");
 const { configureErrorReporter, reportError, getRecentErrors } = require("./error-reporter");
+const { configureAnalytics, trackEvent } = require("./analytics");
 
 const SUPABASE_URL =
   process.env.ANYLOC_SUPABASE_URL || "https://gqkxnktprctdvpwvnqli.supabase.co";
@@ -944,6 +945,10 @@ ipcMain.handle("setup:copy-diagnostic", () => {
   return { ok: true };
 });
 
+ipcMain.handle("setup:track", (_event, name, properties, onceKey) => {
+  if (typeof name === "string") trackEvent(name, properties || {}, onceKey ?? null);
+});
+
 ipcMain.handle("setup:open-external", async (_event, url) => {
   const raw = String(url || "");
   if (!raw) return { ok: false };
@@ -1229,6 +1234,12 @@ app.whenReady().then(() => {
     apiBaseUrl: ANYLOC_API,
     appVersion: app.getVersion(),
     getAccessToken: () => currentSession?.access_token ?? null,
+  });
+  configureAnalytics({
+    apiBaseUrl: ANYLOC_API,
+    appVersion: app.getVersion(),
+    getAccessToken: () => currentSession?.access_token ?? null,
+    dataDir: app.getPath("userData"),
   });
 
   if (process.defaultApp || process.argv.length >= 2) {

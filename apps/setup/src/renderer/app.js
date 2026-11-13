@@ -29,6 +29,11 @@ function clearSession() {
   void window.anylocSetup.setSession?.(null);
 }
 
+// Install steps, for PostHog (see analytics.js). `onceKey`: once per app session.
+function track(name, properties = {}, onceKey = null) {
+  try { void window.anylocSetup.track?.(name, properties, onceKey); } catch {}
+}
+
 // Single place a new session lands: renderer, home view and main process
 // (which keeps it refreshed) all get the same one.
 function adoptSession(s) {
@@ -59,6 +64,7 @@ async function handleLogin(email, password) {
   }
 
   adoptSession(result.session);
+  track("desktop_logged_in", { method: isSignupMode ? "signup" : "password" });
   enterMain();
 }
 
@@ -69,6 +75,7 @@ async function handleOAuth(provider) {
     return;
   }
   adoptSession(result.session);
+  track("desktop_logged_in", { method: provider });
   enterMain();
 }
 
@@ -83,6 +90,7 @@ function onLaunchConfig(config) {
   if (!config) return;
   if (config.session) {
     adoptSession(config.session);
+    track("desktop_logged_in", { method: "browser" });
     enterMain();
     showToast("Connecté à ton compte Anyloc.", "ok");
   } else if (config.error && !session) {
@@ -238,8 +246,18 @@ async function showGuide() {
   $("guide-done-text").textContent = guide.appEligible
     ? "Choisis une ville sur la carte et clique sur « Appliquer la position ». Anyloc te dit quand ton iPhone a bien changé de position. Ensuite, tu pourras aussi la changer depuis l'app Anyloc sur ton iPhone."
     : "Choisis une ville sur la carte et clique sur « Appliquer la position ». Anyloc te dit quand ton iPhone a bien changé de position.";
+  if (guide.current === "plug") trackStepViewed();
   renderGuideProgress();
   renderPlugButton();
+}
+
+function trackStepViewed() {
+  track("desktop_guide_step_viewed", {
+    step: guide.current,
+    step_index: guide.steps.indexOf(guide.current) + 1,
+    steps_total: guide.steps.length,
+    app_eligible: guide.appEligible,
+  });
 }
 
 function renderGuideProgress() {
@@ -251,6 +269,8 @@ function renderGuideProgress() {
 function goToStep(step) {
   guide.run++;
   guide.current = step;
+  // Before eligibility is known the step list is a guess: plug is tracked once it is.
+  if (guide.eligibilityKnown) trackStepViewed();
   for (const name of ["plug", "install", "devmode", "nocable", "done"]) {
     $(`guide-step-${name}`).hidden = name !== step;
   }
@@ -284,7 +304,12 @@ function nextStep() {
   else finishGuide();
 }
 
-function finishGuide() {
+function finishGuide(skipped = false) {
+  track("desktop_guide_completed", {
+    skipped,
+    last_step: guide.current,
+    app_eligible: guide.appEligible,
+  });
   markGuideComplete();
   enterMain();
 }
@@ -305,6 +330,7 @@ async function startPlugStep() {
     const progressBar = $("guide-tools-progress-bar");
     progressWrap.hidden = false;
     progressBar.style.width = "5%";
+    const toolsStartedAt = Date.now();
     const cleanup = window.anylocSetup.onToolsProgress((p) => {
       if (p.pct) progressBar.style.width = `${p.pct}%`;
     });
@@ -313,6 +339,9 @@ async function startPlugStep() {
     progressWrap.hidden = true;
     if (run !== guide.run) return;
 
+    track(result.ok ? "desktop_tools_ready" : "desktop_tools_failed", {
+      duration_s: Math.round((Date.now() - toolsStartedAt) / 1000),
+    });
     if (!result.ok) {
       console.warn("[tools]", result.message);
       setStatus(
@@ -341,12 +370,14 @@ async function checkPlug(run) {
   if (result.connected) {
     clearInterval(guide.usbTimer);
     guide.udid = result.udid;
+    track("desktop_iphone_detected", {}, "detected");
     renderWindowsBox(null);
     void trustPlugged(run, result.deviceName);
     return;
   }
 
   renderWindowsBox(result.windowsStage);
+  if (result.windowsStage) track("desktop_windows_stage", { stage: result.windowsStage }, result.windowsStage);
   setStatus("plug", "wait", "Recherche de ton iPhone…", plugHint(result.windowsStage));
 }
 
@@ -372,6 +403,7 @@ async function trustPlugged(run, deviceName) {
       if (run !== guide.run || guide.current !== "plug") return;
 
       if (result.trusted) {
+        track("desktop_iphone_trusted", {}, "trusted");
         guide.trusted = true;
         setStatus("plug", "ok", `${deviceName} connecté`, "");
         renderPlugButton();
@@ -391,6 +423,7 @@ async function trustPlugged(run, deviceName) {
         denied: "Tu as refusé sur l'iPhone. Débranche-le, rebranche-le et appuie cette fois sur « Faire confiance ».",
         pending: "Sur l'iPhone, appuie sur « Faire confiance » puis entre ton code.",
       };
+      track("desktop_iphone_trust_waiting", { reason: result.reason || "pending" }, result.reason || "pending");
       setStatus("plug", "wait", `${deviceName} détecté`, hints[result.reason] || hints.pending);
       await new Promise((r) => setTimeout(r, 2000));
       if (run !== guide.run) return;
@@ -456,6 +489,7 @@ async function prepareWindows() {
 
   try {
     const result = await window.anylocSetup.prepareWindows();
+    track("desktop_windows_repaired", { ok: Boolean(result.ok) });
     if (result.ok) {
       $("guide-windows-box").hidden = true;
       setStatus("plug", "wait", "Windows est prêt", "Débranche et rebranche ton iPhone, puis déverrouille-le.");
@@ -482,7 +516,8 @@ async function copyDiagnostic() {
 // Registers the UDID, waits for the app signed for this iPhone (a few minutes
 // the first time), then installs it over USB.
 
-function installFailed(message) {
+function installFailed(message, stage) {
+  track("desktop_iphone_app_install_failed", { stage });
   setStatus("install", "error", "L'installation n'a pas abouti", message);
   $("guide-install-retry").hidden = false;
 }
@@ -505,21 +540,21 @@ async function startInstallStep() {
   if (run !== guide.run) return;
   if (!registered?.ok) {
     guide.registration = null;
-    return installFailed(registered?.message || "Réessaie dans un instant.");
+    return installFailed(registered?.message || "Réessaie dans un instant.", "register");
   }
 
   const startedAt = Date.now();
   const waitForApp = async () => {
     const status = await window.anylocSetup.iphoneAppStatus();
     if (run !== guide.run) return;
-    if (!status.ok) return installFailed(status.message);
+    if (!status.ok) return installFailed(status.message, "status");
 
     const state = status.state?.kind;
-    if (state === "failed") return installFailed(status.state.message);
+    if (state === "failed") return installFailed(status.state.message, "signing");
     if (state === "ready") return void installApp(run);
 
     if (Date.now() - startedAt > 20 * 60 * 1000) {
-      return installFailed("Ça prend plus de temps que prévu. Réessaie, ou écris-nous sur le chat.");
+      return installFailed("Ça prend plus de temps que prévu. Réessaie, ou écris-nous sur le chat.", "timeout");
     }
     setStatus(
       "install",
@@ -536,8 +571,9 @@ async function installApp(run) {
   setStatus("install", "wait", "Installation sur ton iPhone…", "Garde-le branché et déverrouillé.");
   const result = await window.anylocSetup.iphoneAppInstall({ udid: guide.udid });
   if (run !== guide.run) return;
-  if (!result.ok) return installFailed(result.message);
+  if (!result.ok) return installFailed(result.message, "usb_install");
 
+  track("desktop_iphone_app_installed");
   setStatus("install", "ok", "App installée sur ton iPhone", "");
   guide.installTimer = setTimeout(nextStep, 900);
 }
@@ -552,9 +588,10 @@ async function startDevModeStep() {
   const revealed = await window.anylocSetup.revealDevMode({ udid: guide.udid });
   if (run !== guide.run) return;
 
-  if (revealed.ok && revealed.enabled) return onDevModeEnabled();
+  if (revealed.ok && revealed.enabled) return onDevModeEnabled(true);
 
   if (!revealed.ok) {
+    track("desktop_devmode_failed");
     setStatus("devmode", "error", "L'iPhone ne répond pas", revealed.message || "Rebranche l'iPhone et réessaie.");
     $("guide-devmode-retry").hidden = false;
     return;
@@ -576,7 +613,8 @@ async function pollDevMode(run) {
   }
 }
 
-function onDevModeEnabled() {
+function onDevModeEnabled(alreadyOn = false) {
+  track("desktop_devmode_enabled", { already_on: alreadyOn });
   clearInterval(guide.devModeTimer);
   setStatus("devmode", "ok", "C'est activé", "");
   ensureAutoSync();
@@ -609,6 +647,8 @@ async function init() {
   } catch {
     clearSession();
   }
+
+  track("desktop_app_opened", { logged_in: Boolean(session), guide_done: isGuideComplete() });
 
   if (session) {
     enterMain();
@@ -656,7 +696,7 @@ async function init() {
   // Guide
   $("guide-windows-btn").addEventListener("click", () => void prepareWindows());
   $("guide-copy-diagnostic").addEventListener("click", () => void copyDiagnostic());
-  $("guide-skip-btn").addEventListener("click", finishGuide);
+  $("guide-skip-btn").addEventListener("click", () => finishGuide(true));
   $("guide-plug-next").addEventListener("click", () => {
     startAppSigning();
     nextStep();
@@ -669,7 +709,7 @@ async function init() {
   $("guide-devmode-retry").addEventListener("click", () => goToStep("devmode"));
   $("guide-nocable-next").addEventListener("click", nextStep);
   $("guide-nocable-skip").addEventListener("click", nextStep);
-  $("guide-done-btn").addEventListener("click", finishGuide);
+  $("guide-done-btn").addEventListener("click", () => finishGuide());
 }
 
 void init();
