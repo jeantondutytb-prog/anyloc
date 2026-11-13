@@ -3,6 +3,9 @@
 
   track.py backfill  -> vues par date de publication jusqu'à hier, et pose la base
   track.py daily     -> vues gagnées depuis le dernier relevé, datées de la veille
+  track.py videos    -> chaque vidéo avec ses vues, likes, commentaires et partages, pour l'onglet
+                        « Vidéos » de HQ (POST /api/ingest/videos). Se lance quand on veut, 4 fois par jour
+                        par com.anyloc.tiktok-videos.plist.
 
 Sort du JSON sur stdout ; l'état (dernier cumul par compte) est dans state.json.
 
@@ -105,14 +108,20 @@ def send_to_hq(days):
     return "échec : " + " ; ".join(errors) + (f" — {len(kept)} jour(s) en attente" if kept else "")
 
 
-def fetch(account):
-    """Liste (date de publication, vues) de chaque vidéo, ou None si TikTok n'a rien renvoyé."""
+def fetch_raw(account):
+    """Les vidéos du compte telles que yt-dlp les lit, ou None si TikTok n'a rien renvoyé."""
     out = subprocess.run(
         ["yt-dlp", "--flat-playlist", "-j", f"https://www.tiktok.com/@{account}"],
         capture_output=True, text=True, timeout=300,
     ).stdout
     videos = [json.loads(line) for line in out.splitlines() if line.strip()]
-    if not videos:
+    return videos or None
+
+
+def fetch(account):
+    """Liste (date de publication, vues) de chaque vidéo, ou None si TikTok n'a rien renvoyé."""
+    videos = fetch_raw(account)
+    if videos is None:
         return None
     return [(datetime.fromtimestamp(v["timestamp"], TZ).date(), v.get("view_count") or 0) for v in videos]
 
@@ -160,5 +169,37 @@ def daily():
                       "cumul": state["cumul"], "hq": hq}, ensure_ascii=False))
 
 
+VIDEO_FIELDS = ["id", "timestamp", "view_count", "like_count", "comment_count", "repost_count", "duration", "title"]
+
+
+def videos():
+    """Envoie à HQ chaque vidéo de chaque compte. Un compte qui ne répond pas est signalé, pas compté à 0."""
+    config = hq_config()
+    if config is None:
+        sys.exit("HQ non configuré (HQ_URL / HQ_INGEST_TOKEN)")
+    accounts, failed = {}, []
+    for a in ACCOUNTS:
+        raw = fetch_raw(a)
+        if raw is None:
+            failed.append(a)
+            continue
+        accounts[a] = [{k: v.get(k) for k in VIDEO_FIELDS} for v in raw if v.get("timestamp")]
+    url, token = config
+    request = urllib.request.Request(
+        f"{url}/api/ingest/videos",
+        data=json.dumps({"accounts": accounts, "failed": failed}).encode(),
+        headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=60) as response:
+            hq = json.loads(response.read())
+    except urllib.error.HTTPError as e:
+        hq = f"HTTP {e.code} {e.read().decode(errors='replace')[:200]}"
+    except (urllib.error.URLError, TimeoutError) as e:
+        hq = f"échec : {e}"
+    print(json.dumps({"videos": {a: len(v) for a, v in accounts.items()}, "failed": failed, "hq": hq}, ensure_ascii=False))
+
+
 if __name__ == "__main__":
-    {"backfill": backfill, "daily": daily}[sys.argv[1]]()
+    {"backfill": backfill, "daily": daily, "videos": videos}[sys.argv[1]]()
