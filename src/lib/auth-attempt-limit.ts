@@ -72,7 +72,7 @@ function isTrusted(email: string, bucket: string, now: number) {
 
 export function tooManyAttemptsMessage(retryAfterSeconds: number) {
   const minutes = Math.max(1, Math.ceil(retryAfterSeconds / 60));
-  return `Trop d'essais. Réessaie dans ${minutes} minute${minutes > 1 ? "s" : ""}, ou réinitialise ton mot de passe.`;
+  return `Trop d'essais. Réessaie dans ${minutes} minute${minutes > 1 ? "s" : ""}.`;
 }
 
 /**

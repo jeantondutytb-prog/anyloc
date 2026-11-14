@@ -126,8 +126,8 @@ describe("ipBucket", () => {
 
 describe("tooManyAttemptsMessage", () => {
   it("rounds up to whole minutes, never below one", () => {
-    assert.match(tooManyAttemptsMessage(5), /dans 1 minute,/);
-    assert.match(tooManyAttemptsMessage(61), /dans 2 minutes,/);
+    assert.match(tooManyAttemptsMessage(5), /dans 1 minute\./);
+    assert.match(tooManyAttemptsMessage(61), /dans 2 minutes\./);
   });
 });
 
