@@ -57,7 +57,8 @@ function translateAuthError(message: string) {
 
 /** Counts one password attempt (by email and visitor IP) before Supabase is called. */
 async function limitAuthAttempt(email: string) {
-  return checkAuthAttempt({ email, ip: getClientIpFromHeaders(await headers()) });
+  const ip = getClientIpFromHeaders(await headers());
+  return { ...checkAuthAttempt({ email, ip }), ip };
 }
 
 function getRedirectTo(formData: FormData) {
@@ -96,7 +97,7 @@ export async function login(
   }
 
   if (data.user) {
-    clearAuthAttempts(email);
+    clearAuthAttempts(email, attempt.ip);
     await identifyPostHogUser({
       distinctId: data.user.id,
       properties: { email: data.user.email },
@@ -174,7 +175,7 @@ export async function signup(
     if (accountExists) {
       const { data: login } = await supabase.auth.signInWithPassword({ email, password });
       if (login.user) {
-        clearAuthAttempts(email);
+        clearAuthAttempts(email, attempt.ip);
         await identifyPostHogUser({
           distinctId: login.user.id,
           properties: { email: login.user.email },
