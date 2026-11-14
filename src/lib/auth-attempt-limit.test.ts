@@ -87,19 +87,18 @@ describe("checkAuthAttempt", () => {
     for (let i = 0; i < AUTH_ATTEMPT_LIMITS.emailIp.limit; i += 1) {
       checkAuthAttempt({ email, ip, now });
     }
-    recordAuthSuccess(email.toUpperCase(), ip, now);
+    recordAuthSuccess(email.toUpperCase(), ip);
     assert.equal(checkAuthAttempt({ email, ip, now }).ok, true);
   });
 
-  it("lets a recently trusted IP through while the email is capped elsewhere", () => {
+  it("lets a trusted device through while the email is capped elsewhere", () => {
     const { email, ip: home } = fresh();
     const now = 7_000_000;
-    recordAuthSuccess(email, home, now);
     for (let i = 0; i < AUTH_ATTEMPT_LIMITS.email.limit + 5; i += 1) {
-      checkAuthAttempt({ email, ip: `198.18.${seq % 250}.${i}`, now: now + 1 });
+      checkAuthAttempt({ email, ip: `198.18.${seq % 250}.${i}`, now });
     }
-    assert.equal(checkAuthAttempt({ email, ip: "198.18.250.1", now: now + 2 }).ok, false);
-    assert.equal(checkAuthAttempt({ email, ip: home, now: now + 2 }).ok, true);
+    assert.equal(checkAuthAttempt({ email, ip: home, now: now + 1 }).ok, false);
+    assert.equal(checkAuthAttempt({ email, ip: home, trustedDevice: true, now: now + 1 }).ok, true);
   });
 
   it("counts every address of one IPv6 /64 together", () => {

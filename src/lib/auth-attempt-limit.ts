@@ -1,20 +1,19 @@
 import { rateLimit, resetRateLimit } from "@/lib/rate-limit";
 
 const FIFTEEN_MINUTES = 15 * 60 * 1000;
-const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
 
 /**
  * Password attempts (login and signup share them, both can try a password on
  * an existing account), all over 15 min.
  * - Per email + IP, 5: a real person who forgot their password tries a few
- *   times then resets it. Keyed on the pair so someone typing your email from
- *   elsewhere does not use up your own tries.
+ *   times; someone typing your email from elsewhere does not use up yours.
  * - Per IP, 30: one script cannot sweep many accounts, while a shared
  *   mobile-carrier or school IP (many real people behind one address) still
  *   has room.
  * - Per email, 20 across all IPs: caps guessing one account from many IPs.
- *   An IP where this account recently logged in skips this cap, so an attack
- *   from elsewhere does not lock the owner out of their usual connection.
+ *   A browser that already logged into this account (signed cookie, see
+ *   auth-trusted-device.ts) skips it, so an attack from elsewhere does not
+ *   lock the owner out of their own device.
  * IPv6 addresses count per /64 (one subscriber usually holds a whole /64).
  */
 export const AUTH_ATTEMPT_LIMITS = {
@@ -23,14 +22,7 @@ export const AUTH_ATTEMPT_LIMITS = {
   email: { limit: 20, windowMs: FIFTEEN_MINUTES },
 } as const;
 
-/** How long a successful login keeps an IP trusted for that account. */
-export const TRUSTED_IP_MS = THIRTY_DAYS;
-
 export type AuthAttemptResult = { ok: true } | { ok: false; error: string };
-
-// Same caveat as rate-limit.ts: kept in the instance's memory, best effort.
-const trusted = new Map<string, number>();
-const MAX_TRUSTED = 10_000;
 
 function normalize(email: string) {
   return email.trim().toLowerCase();
@@ -65,11 +57,6 @@ function emailIpKey(email: string, bucket: string) {
   return `auth-attempt:email-ip:${normalize(email)}|${bucket}`;
 }
 
-function isTrusted(email: string, bucket: string, now: number) {
-  const until = trusted.get(emailIpKey(email, bucket));
-  return until !== undefined && until > now;
-}
-
 export function tooManyAttemptsMessage(retryAfterSeconds: number) {
   const minutes = Math.max(1, Math.ceil(retryAfterSeconds / 60));
   return `Trop d'essais. Réessaie dans ${minutes} minute${minutes > 1 ? "s" : ""}.`;
@@ -83,20 +70,22 @@ export function tooManyAttemptsMessage(retryAfterSeconds: number) {
 export function checkAuthAttempt({
   email,
   ip,
+  trustedDevice = false,
   now = Date.now(),
 }: {
   email: string;
   ip: string;
+  trustedDevice?: boolean;
   now?: number;
 }): AuthAttemptResult {
   const checks: Array<[string, { limit: number; windowMs: number }]> = [];
-  const bucket = known(ip) ? ipBucket(ip) : null;
 
-  if (bucket) {
+  if (known(ip)) {
+    const bucket = ipBucket(ip);
     checks.push([`auth-attempt:ip:${bucket}`, AUTH_ATTEMPT_LIMITS.ip]);
     checks.push([emailIpKey(email, bucket), AUTH_ATTEMPT_LIMITS.emailIp]);
   }
-  if (!bucket || !isTrusted(email, bucket, now)) {
+  if (!trustedDevice) {
     checks.push([emailKey(email), AUTH_ATTEMPT_LIMITS.email]);
   }
 
@@ -109,20 +98,10 @@ export function checkAuthAttempt({
 }
 
 /**
- * The right password was given from this IP: its tries start again from zero
- * and the IP is trusted for this account for 30 days. The per-email count is
- * left as is, so an attack running from other IPs stays capped.
+ * The right password was given from this IP: its tries start again from
+ * zero. The per-email count is left as is, so an attack running from other
+ * IPs stays capped.
  */
-export function recordAuthSuccess(email: string, ip: string, now = Date.now()) {
-  if (!known(ip)) return;
-  const key = emailIpKey(email, ipBucket(ip));
-  resetRateLimit(key);
-
-  if (trusted.size >= MAX_TRUSTED) {
-    for (const [storedKey, until] of trusted) {
-      if (until <= now) trusted.delete(storedKey);
-    }
-    if (trusted.size >= MAX_TRUSTED) trusted.clear();
-  }
-  trusted.set(key, now + TRUSTED_IP_MS);
+export function recordAuthSuccess(email: string, ip: string) {
+  if (known(ip)) resetRateLimit(emailIpKey(email, ipBucket(ip)));
 }

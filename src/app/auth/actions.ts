@@ -1,8 +1,15 @@
 "use server";
 
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { checkAuthAttempt, recordAuthSuccess } from "@/lib/auth-attempt-limit";
+import {
+  createTrustedDeviceToken,
+  getTrustedDeviceSecret,
+  isTrustedDeviceToken,
+  TRUSTED_DEVICE_COOKIE,
+  TRUSTED_DEVICE_MAX_AGE_SECONDS,
+} from "@/lib/auth-trusted-device";
 import { resolvePostAuthRedirect } from "@/lib/auth-redirect";
 import { getCheckoutUrl } from "@/lib/constants";
 import {
@@ -58,7 +65,25 @@ function translateAuthError(message: string) {
 /** Counts one password attempt (by email and visitor IP) before Supabase is called. */
 async function limitAuthAttempt(email: string) {
   const ip = getClientIpFromHeaders(await headers());
-  return { ...checkAuthAttempt({ email, ip }), ip };
+  const secret = getTrustedDeviceSecret();
+  const trustedDevice = secret
+    ? isTrustedDeviceToken(secret, email, (await cookies()).get(TRUSTED_DEVICE_COOKIE)?.value)
+    : false;
+  return { ...checkAuthAttempt({ email, ip, trustedDevice }), ip };
+}
+
+/** Right password: reset this IP's tries and remember this browser for the account. */
+async function rememberAuthSuccess(email: string, ip: string) {
+  recordAuthSuccess(email, ip);
+  const secret = getTrustedDeviceSecret();
+  if (!secret) return;
+  (await cookies()).set(TRUSTED_DEVICE_COOKIE, createTrustedDeviceToken(secret, email), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: TRUSTED_DEVICE_MAX_AGE_SECONDS,
+  });
 }
 
 function getRedirectTo(formData: FormData) {
@@ -97,7 +122,7 @@ export async function login(
   }
 
   if (data.user) {
-    recordAuthSuccess(email, attempt.ip);
+    await rememberAuthSuccess(email, attempt.ip);
     await identifyPostHogUser({
       distinctId: data.user.id,
       properties: { email: data.user.email },
@@ -175,7 +200,7 @@ export async function signup(
     if (accountExists) {
       const { data: login } = await supabase.auth.signInWithPassword({ email, password });
       if (login.user) {
-        recordAuthSuccess(email, attempt.ip);
+        await rememberAuthSuccess(email, attempt.ip);
         await identifyPostHogUser({
           distinctId: login.user.id,
           properties: { email: login.user.email },
