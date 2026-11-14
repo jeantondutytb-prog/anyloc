@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { resolvePostAuthRedirect } from "@/lib/auth-redirect";
 import { getCheckoutUrl } from "@/lib/constants";
+import { findGmailTwinEmail } from "@/lib/gmail-email";
 import {
   capturePostHogEvent,
   identifyPostHogUser,
@@ -18,6 +19,8 @@ export type AuthState = {
   notice?: string;
   /** Signup hit an existing account: the form offers to log in instead. */
   accountExists?: boolean;
+  /** The existing account's address when it differs from the typed one (Gmail dots / +suffix). */
+  existingEmail?: string;
 };
 
 export async function signOut() {
@@ -138,6 +141,36 @@ export async function signup(
 
   const supabase = await createClient();
   const redirectTo = getRedirectTo(formData);
+
+  // Gmail ignores dots and "+suffix": jean.dupont@ and jeandupont@ are the
+  // same inbox. Never open a second account for it, or the person ends up
+  // paying on one and logging into the other (back to the paywall).
+  const twinEmail = await findGmailTwinEmail(email);
+  if (twinEmail) {
+    const { data: login } = await supabase.auth.signInWithPassword({
+      email: twinEmail,
+      password,
+    });
+    if (login.user) {
+      await identifyPostHogUser({
+        distinctId: login.user.id,
+        properties: { email: login.user.email },
+      });
+      await capturePostHogEvent({
+        distinctId: login.user.id,
+        event: "login_completed",
+        properties: { source: "signup_gmail_twin" },
+      });
+      redirect(await resolvePostAuthRedirect(login.user.id, login.user.email, redirectTo));
+    }
+
+    return {
+      error: `Tu as déjà un compte avec cette adresse Gmail, écrite ${twinEmail}. Connecte-toi avec celle-ci.`,
+      accountExists: true,
+      existingEmail: twinEmail,
+    };
+  }
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,

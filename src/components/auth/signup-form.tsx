@@ -58,7 +58,8 @@ export function SignupForm({
                 href={loginHref}
                 onClick={() => {
                   const input = document.getElementById("email");
-                  if (input instanceof HTMLInputElement) stashAuthEmail(input.value.trim());
+                  if (state.existingEmail) stashAuthEmail(state.existingEmail);
+                  else if (input instanceof HTMLInputElement) stashAuthEmail(input.value.trim());
                   track("login_link_clicked", { source: "signup_account_exists", plan });
                 }}
                 className="mt-3 flex h-11 w-full items-center justify-center rounded-full bg-white font-semibold text-pink-600 ring-1 ring-pink-200 transition hover:bg-pink-50"
