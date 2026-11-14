@@ -60,9 +60,10 @@ export async function findGmailTwinEmail(email: string) {
 
   const typed = normalizeEmail(email);
   const canonical = canonicalEmail(email);
-  const { data, error } = await createAdminClient()
+  const admin = createAdminClient();
+  const { data, error } = await admin
     .from("profiles")
-    .select("email, created_at")
+    .select("id, email, created_at")
     .filter("email", "imatch", pattern)
     .order("created_at", { ascending: true })
     .limit(10);
@@ -72,12 +73,23 @@ export async function findGmailTwinEmail(email: string) {
     return null;
   }
 
-  const emails = (data ?? [])
-    .map((row) => (typeof row.email === "string" ? normalizeEmail(row.email) : ""))
-    .filter((existing) => existing && canonicalEmail(existing) === canonical);
+  const twins = (data ?? [])
+    .map((row) => ({
+      id: String(row.id),
+      email: typeof row.email === "string" ? normalizeEmail(row.email) : "",
+    }))
+    .filter((row) => row.email && canonicalEmail(row.email) === canonical);
 
   // The exact address already has an account: Supabase's own flow handles it.
-  if (emails.includes(typed)) return null;
+  if (twins.some((row) => row.email === typed)) return null;
 
-  return emails[0] ?? null;
+  // Only a confirmed account counts: an unconfirmed one may have been opened
+  // by someone else with a spelling of this inbox, and must not lock the
+  // real owner out of signing up.
+  for (const twin of twins) {
+    const { data: found } = await admin.auth.admin.getUserById(twin.id);
+    if (found.user?.email_confirmed_at) return twin.email;
+  }
+
+  return null;
 }
