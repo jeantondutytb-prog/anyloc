@@ -2,7 +2,7 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { checkAuthAttempt, clearAuthAttempts } from "@/lib/auth-attempt-limit";
+import { checkAuthAttempt, recordAuthSuccess } from "@/lib/auth-attempt-limit";
 import { resolvePostAuthRedirect } from "@/lib/auth-redirect";
 import { getCheckoutUrl } from "@/lib/constants";
 import {
@@ -97,7 +97,7 @@ export async function login(
   }
 
   if (data.user) {
-    clearAuthAttempts(email, attempt.ip);
+    recordAuthSuccess(email, attempt.ip);
     await identifyPostHogUser({
       distinctId: data.user.id,
       properties: { email: data.user.email },
@@ -175,7 +175,7 @@ export async function signup(
     if (accountExists) {
       const { data: login } = await supabase.auth.signInWithPassword({ email, password });
       if (login.user) {
-        clearAuthAttempts(email, attempt.ip);
+        recordAuthSuccess(email, attempt.ip);
         await identifyPostHogUser({
           distinctId: login.user.id,
           properties: { email: login.user.email },

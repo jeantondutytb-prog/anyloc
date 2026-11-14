@@ -3,7 +3,8 @@ import { describe, it } from "node:test";
 import {
   AUTH_ATTEMPT_LIMITS,
   checkAuthAttempt,
-  clearAuthAttempts,
+  ipBucket,
+  recordAuthSuccess,
   tooManyAttemptsMessage,
 } from "./auth-attempt-limit";
 import { getClientIpFromHeaders } from "./rate-limit";
@@ -41,7 +42,7 @@ describe("checkAuthAttempt", () => {
     const { email } = fresh();
     const now = 1_800_000;
     for (let i = 0; i < AUTH_ATTEMPT_LIMITS.email.limit; i += 1) {
-      assert.equal(checkAuthAttempt({ email, ip: `198.51.${Math.floor(i / 4)}.${i}`, now }).ok, true);
+      assert.equal(checkAuthAttempt({ email, ip: `198.51.${seq % 250}.${i}`, now }).ok, true);
     }
     assert.equal(checkAuthAttempt({ email, ip: "192.0.2.200", now }).ok, false);
   });
@@ -80,14 +81,46 @@ describe("checkAuthAttempt", () => {
     }
   });
 
-  it("starts the email from zero after a successful login", () => {
+  it("starts the IP's tries from zero after a successful login", () => {
     const { email, ip } = fresh();
     const now = 6_000_000;
     for (let i = 0; i < AUTH_ATTEMPT_LIMITS.emailIp.limit; i += 1) {
       checkAuthAttempt({ email, ip, now });
     }
-    clearAuthAttempts(email.toUpperCase(), ip);
+    recordAuthSuccess(email.toUpperCase(), ip, now);
     assert.equal(checkAuthAttempt({ email, ip, now }).ok, true);
+  });
+
+  it("lets a recently trusted IP through while the email is capped elsewhere", () => {
+    const { email, ip: home } = fresh();
+    const now = 7_000_000;
+    recordAuthSuccess(email, home, now);
+    for (let i = 0; i < AUTH_ATTEMPT_LIMITS.email.limit + 5; i += 1) {
+      checkAuthAttempt({ email, ip: `198.18.${seq % 250}.${i}`, now: now + 1 });
+    }
+    assert.equal(checkAuthAttempt({ email, ip: "198.18.250.1", now: now + 2 }).ok, false);
+    assert.equal(checkAuthAttempt({ email, ip: home, now: now + 2 }).ok, true);
+  });
+
+  it("counts every address of one IPv6 /64 together", () => {
+    const { email } = fresh();
+    const now = 8_000_000;
+    for (let i = 0; i < AUTH_ATTEMPT_LIMITS.emailIp.limit; i += 1) {
+      assert.equal(checkAuthAttempt({ email, ip: `2001:db8:${seq}:1::${i + 1}`, now }).ok, true);
+    }
+    assert.equal(checkAuthAttempt({ email, ip: `2001:db8:${seq}:1:ffff::9`, now }).ok, false);
+    assert.equal(checkAuthAttempt({ email, ip: `2001:db8:${seq}:2::1`, now }).ok, true);
+  });
+});
+
+describe("ipBucket", () => {
+  it("keeps IPv4 and reduces IPv6 to its /64", () => {
+    assert.equal(ipBucket("203.0.113.9"), "203.0.113.9");
+    assert.equal(ipBucket("2001:0DB8:0000:0001:aaaa:bbbb:cccc:dddd"), "2001:db8:0:1::/64");
+    assert.equal(ipBucket("2001:db8::1"), "2001:db8:0:0::/64");
+    assert.equal(ipBucket("2001:db8:5:6::"), "2001:db8:5:6::/64");
+    assert.equal(ipBucket("::1"), "0:0:0:0::/64");
+    assert.equal(ipBucket("::ffff:192.0.2.1"), "192.0.2.1");
   });
 });
 
