@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { SUPPORT_AGENT_NICKNAME, type CrispMessage } from "@/lib/support/crisp-api";
 import { buildSupportKnowledge } from "@/lib/support/knowledge";
+import { isAgentText, isTeamText } from "@/lib/support/message-kind";
 import { MAX_REPLY_CHARS, WELCOME_MESSAGE } from "@/lib/support/reply-shape";
 
 // The cheapest current model: answers come from the written knowledge, and
@@ -99,15 +100,18 @@ function describeContent(message: CrispMessage) {
   return `[message de type ${message.type}]`;
 }
 
-/** The conversation as the agent reads it: visitor, agent and human operators. */
-export function formatTranscript(messages: CrispMessage[]) {
+/**
+ * The conversation as the agent reads it: visitor, agent and human operators.
+ * Notes and Crisp's own automated messages (email request…) are left out.
+ */
+export function formatTranscript(messages: CrispMessage[], agentTexts?: Set<string>) {
   return messages
-    .filter((message) => message.type !== "note")
+    .filter((message) => message.from === "user" || isTeamText(message))
     .map((message) => {
       const author =
         message.from === "user"
           ? "Client"
-          : message.user?.nickname === SUPPORT_AGENT_NICKNAME
+          : isAgentText(message, agentTexts)
             ? "Toi (assistant)"
             : `Équipe (${message.user?.nickname ?? "opérateur"})`;
       return `${author} : ${describeContent(message)}`;
