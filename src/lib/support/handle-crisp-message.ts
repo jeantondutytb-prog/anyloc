@@ -1,6 +1,11 @@
 import { logError } from "@/lib/log-error";
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
-import { decideSupportReply, formatTranscript, type SupportDecision } from "@/lib/support/agent";
+import {
+  decideSupportReply,
+  formatTranscript,
+  shortenSupportReply,
+  type SupportDecision,
+} from "@/lib/support/agent";
 import {
   SUPPORT_AGENT_NICKNAME,
   getConversationMessages,
@@ -14,6 +19,7 @@ import {
 } from "@/lib/support/crisp-api";
 import { describeCustomer } from "@/lib/support/customer-context";
 import { enforceHandover, type HandoverGuardRule } from "@/lib/support/handover-guard";
+import { enforceReplyLength, sendWelcomeOnce, WELCOME_MESSAGE } from "@/lib/support/reply-shape";
 import { alertHandover, alertSupportError } from "@/lib/support/support-alerts";
 
 export type SupportAgentMode = "off" | "draft" | "live";
@@ -21,8 +27,15 @@ export type SupportAgentMode = "off" | "draft" | "live";
 /** Segment set on a conversation the agent handed over: it stays quiet there. */
 export const ESCALATED_SEGMENT = "ia-escalade";
 
-/** Visitors often send a question in several messages: answer the last one. */
-const DEBOUNCE_MS = 8_000;
+/**
+ * Visitors often send a question in several messages: answer the last one.
+ * Was 8 s, most of Léa's 11 s answer time; the instant welcome now covers
+ * the wait, so 4 s is enough to catch a follow-up message.
+ */
+const DEBOUNCE_MS = 4_000;
+
+/** Row that marks "welcome sent" for a conversation (unique per session). */
+const WELCOME_FINGERPRINT = -1;
 
 /** A human who wrote in the last hours owns the conversation. */
 const HUMAN_TAKEOVER_MS = 12 * 60 * 60 * 1000;
@@ -167,6 +180,29 @@ async function recordOutcome(
   }
 }
 
+/** True once per conversation: the unique (session_id, fingerprint) row decides. */
+async function claimWelcome(sessionId: string) {
+  if (!isSupabaseAdminConfigured()) {
+    return true;
+  }
+  const { error } = await createAdminClient().from("support_agent_events").insert({
+    session_id: sessionId,
+    fingerprint: WELCOME_FINGERPRINT,
+    mode: "live",
+    status: "done",
+    reply: WELCOME_MESSAGE,
+    internal_note: "Accueil automatique",
+    finished_at: new Date().toISOString(),
+  });
+  if (!error) {
+    return true;
+  }
+  if (error.code !== UNIQUE_VIOLATION) {
+    await logError("support-agent/welcome-claim", error, { session_id: sessionId });
+  }
+  return false;
+}
+
 function formatDraftNote(decision: SupportDecision) {
   if (decision.action === "ignore") {
     return `[IA · brouillon] Rien à répondre.\n${decision.internalNote}`;
@@ -224,13 +260,44 @@ export async function handleCrispVisitorMessage({
     return;
   }
 
-  await new Promise((resolve) => setTimeout(resolve, DEBOUNCE_MS));
+  const startedAt = Date.now();
+  const timings: Record<string, number> = {};
+  const mark = (step: string) => {
+    timings[step] = Date.now() - startedAt;
+  };
 
   let composing = false;
   let decision: SupportDecision | undefined;
   let guardRule: HandoverGuardRule | null = null;
   let lastVisitorMessage = "";
   try {
+    if (mode === "live") {
+      // First look, before the wait: stay out of a conversation a human owns,
+      // otherwise greet a new visitor at once and show Léa typing.
+      const [early, earlyMeta, earlyEscalated] = await Promise.all([
+        getConversationMessages(sessionId),
+        getConversationMeta(sessionId),
+        wasEscalatedRecently(sessionId),
+      ]);
+      const earlySkip = getSkipReason({
+        messages: early,
+        fingerprint,
+        segments: earlyMeta?.segments ?? [],
+        escalated: earlyEscalated,
+        mode,
+      });
+      if (earlySkip) {
+        await recordOutcome(sessionId, fingerprint, { status: earlySkip });
+        return;
+      }
+      await sendWelcomeOnce({ sessionId, messages: early, claim: claimWelcome, send: sendOperatorText });
+      mark("welcome");
+      composing = true;
+      await setComposing(sessionId, true).catch(() => undefined);
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, DEBOUNCE_MS));
+
     const [messages, meta, escalated] = await Promise.all([
       getConversationMessages(sessionId),
       getConversationMeta(sessionId),
@@ -245,7 +312,9 @@ export async function handleCrispVisitorMessage({
       return;
     }
 
+    mark("context");
     if (mode === "live") {
+      // Again after the wait: Crisp drops the indicator after a while.
       composing = true;
       await setComposing(sessionId, true).catch(() => undefined);
     }
@@ -259,9 +328,14 @@ export async function handleCrispVisitorMessage({
           ? await describeCustomer(meta?.email)
           : "Email non vérifié : pas de données de compte. Pour une question sur le compte, renvoie vers l'espace connecté.",
     });
+    mark("model");
+    // Too long: a short rewrite, then a clean cut. Before the handover guard,
+    // so the guard sees the text that will really be sent.
+    const short = await enforceReplyLength(proposed, shortenSupportReply);
+    mark("shorten");
     // A refund promise, a discount, "zero ban" or a handover only announced
     // becomes a real handover, whatever the model decided.
-    ({ decision, rule: guardRule } = enforceHandover(proposed));
+    ({ decision, rule: guardRule } = enforceHandover(short));
 
     if (mode === "draft") {
       await sendPrivateNote(sessionId, formatDraftNote(decision));
@@ -269,7 +343,9 @@ export async function handleCrispVisitorMessage({
       await applyLiveDecision(sessionId, decision, segments);
     }
 
+    mark("sent");
     await recordOutcome(sessionId, fingerprint, { status: "done", decision });
+    console.info("support-agent timing", JSON.stringify({ session_id: sessionId, ms: timings }));
 
     if (decision.action === "escalate") {
       await alertHandover({
