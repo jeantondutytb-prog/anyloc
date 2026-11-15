@@ -1,10 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { track } from "@/lib/analytics/track";
+import { useEffect, useRef } from "react";
 import { CHECKOUT_COPY } from "@/lib/checkout-copy";
-import { getOrPickProofVideoVariant } from "@/lib/checkout-proof-video";
-import { registerPostHogProperties } from "@/lib/posthog/browser";
 
 const VIDEO_SRC = "/proof/demo-snap-londres-paris.mp4";
 const POSTER_SRC = "/proof/demo-snap-londres-paris.jpg";
@@ -12,47 +9,28 @@ const POSTER_SRC = "/proof/demo-snap-londres-paris.jpg";
 /**
  * One-take screen recording (Anyloc → Snap Map, London then Paris), sped up
  * ×3 without cuts. Half of mobile visitors scroll below the plans looking for
- * reassurance, so the proof sits there, behind a 50/50 A/B test. Mount it only
- * once hydrated: the variant comes from a cookie.
+ * reassurance, so the proof sits there. Shown to everyone since 29/10: its A/B
+ * test ended level (1,2 % of paywalls paid with it, 1,0 % without).
  */
 export function CheckoutProofVideo() {
   const copy = CHECKOUT_COPY;
-  const [variant] = useState(getOrPickProofVideoVariant);
-  const slotRef = useRef<HTMLDivElement>(null);
+  const slotRef = useRef<HTMLElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  useEffect(() => {
-    registerPostHogProperties({ proof_video_variant: variant });
-  }, [variant]);
-
-  // Both variants count as exposed once the spot is on screen, so the test
-  // compares visitors who scrolled that far, with or without the video.
+  // Plays only while on screen.
   useEffect(() => {
     const slot = slotRef.current;
     if (!slot) return;
-    let exposed = false;
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          videoRef.current?.play().catch(() => {});
-          if (!exposed) {
-            exposed = true;
-            track("proof_video_experiment_exposed", {
-              proof_video_variant: variant,
-              $set: { proof_video_variant: variant },
-            });
-          }
-        } else {
-          videoRef.current?.pause();
-        }
+        if (entry.isIntersecting) videoRef.current?.play().catch(() => {});
+        else videoRef.current?.pause();
       },
       { threshold: 0.4 }
     );
     observer.observe(slot);
     return () => observer.disconnect();
-  }, [variant]);
-
-  if (variant === "control") return <div ref={slotRef} aria-hidden className="h-px" />;
+  }, []);
 
   return (
     <section

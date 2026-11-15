@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { evaluateCheckoutSession } from "./stripe-session";
+import { CHECKOUT_OFFER_ANNUAL_EXIT, withCheckoutOffer } from "./checkout-offer";
 
 type Session = Parameters<typeof evaluateCheckoutSession>[0];
 
@@ -48,5 +49,18 @@ describe("evaluateCheckoutSession", () => {
   it("accepts a completed card-setup (trial) session", () => {
     const trial = session({ mode: "setup", payment_status: "no_payment_required" });
     assert.equal(evaluateCheckoutSession(trial, "user-1").verified, true);
+  });
+});
+
+describe("withCheckoutOffer", () => {
+  it("tags the session and the subscription with the offer", () => {
+    const params = withCheckoutOffer(
+      { mode: "subscription", metadata: { plan_id: "annual" }, subscription_data: { metadata: { plan_id: "annual" } } },
+      CHECKOUT_OFFER_ANNUAL_EXIT
+    );
+    assert.equal(params.metadata?.offer, "annual_exit");
+    assert.equal(params.metadata?.plan_id, "annual");
+    assert.equal(params.subscription_data?.metadata?.offer, "annual_exit");
+    assert.deepEqual(withCheckoutOffer({ mode: "subscription" }, null), { mode: "subscription" });
   });
 });

@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { syncProfileFromCheckoutSession } from "@/lib/billing";
-import { CHECKOUT_INTENT_COOKIE } from "@/lib/checkout-intent-cookie";
+import {
+  CHECKOUT_INTENT_COOKIE,
+  CHECKOUT_RETURN_APP_COOKIE,
+  REMOTE_APP_PAID_PATH,
+} from "@/lib/checkout-intent-cookie";
+import { cookies } from "next/headers";
 import { redeemCheckoutSession, sendMagicLinkEmail } from "@/lib/guest-account";
 import { logError } from "@/lib/log-error";
 import { getAppUrl, stripe } from "@/lib/stripe";
@@ -57,6 +62,12 @@ export async function GET(request: Request) {
         session.client_reference_id ?? session.metadata?.supabase_user_id;
 
       if (user?.id && sessionUserId && user.id === sessionUserId) {
+        // Paid from the web remote: back to /app, which shows the setup next.
+        if ((await cookies()).get(CHECKOUT_RETURN_APP_COOKIE)?.value === "1") {
+          const response = NextResponse.redirect(new URL(REMOTE_APP_PAID_PATH, origin));
+          response.cookies.delete({ name: CHECKOUT_RETURN_APP_COOKIE, path: "/" });
+          return response;
+        }
         return NextResponse.redirect(
           new URL("/dashboard?success=true", origin)
         );

@@ -5,6 +5,8 @@ import {
   getRecoveryCouponForUser,
 } from "@/lib/checkout-recovery-server";
 import { PLANS } from "@/lib/constants";
+import { resolveAnnualExitCoupon } from "@/lib/annual-exit-coupon";
+import { CHECKOUT_OFFER_ANNUAL_EXIT } from "@/lib/checkout-offer";
 import { capturePostHogEvent, parsePostHogDistinctId } from "@/lib/posthog/server";
 import { publicErrorMessage } from "@/lib/errors";
 import { limitByIp } from "@/lib/rate-limit";
@@ -41,8 +43,24 @@ export async function POST(request: Request) {
     userId = user?.id;
     const analyticsId = parsePostHogDistinctId(body?.analyticsId);
 
+    // The annual exit offer: checked here, never trusted from the browser.
+    // It wins over the recovery coupon (never two discounts).
+    const gate = await resolveAnnualExitCoupon({
+      requested: body?.annualExitOffer === true,
+      userId: user?.id ?? null,
+      planId: plan.id,
+    });
+    if (gate.kind === "error") {
+      return NextResponse.json({ error: gate.error }, { status: gate.status });
+    }
+    const annualExitCoupon = gate.kind === "coupon" ? gate.couponId : null;
+
     // Looked up while Stripe finds the customer: every round trip delays the payment form.
-    const couponPromise = user ? getRecoveryCouponForUser(user.id, plan.id) : null;
+    const couponPromise = annualExitCoupon
+      ? Promise.resolve(annualExitCoupon)
+      : user
+        ? getRecoveryCouponForUser(user.id, plan.id)
+        : null;
 
     // The paywall's "Continuer" button: Stripe-hosted payment page.
     const session = await createSubscriptionCheckoutSession({
@@ -51,6 +69,7 @@ export async function POST(request: Request) {
       analyticsId,
       uiMode: "hosted_page",
       couponId: couponPromise,
+      offer: annualExitCoupon ? CHECKOUT_OFFER_ANNUAL_EXIT : null,
     });
     const couponId = await couponPromise;
 
@@ -68,7 +87,8 @@ export async function POST(request: Request) {
             guest_checkout: !user,
             ui_mode: "hosted",
             checkout_variant: "direct",
-            recovery_offer: Boolean(couponId),
+            recovery_offer: Boolean(couponId) && !annualExitCoupon,
+            offer: annualExitCoupon ? CHECKOUT_OFFER_ANNUAL_EXIT : null,
           },
         });
       } catch (error) {

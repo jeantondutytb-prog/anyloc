@@ -20,6 +20,8 @@ import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import io.anyloc.app.R
 import io.anyloc.app.SubscriptionInactiveActivity
 import io.anyloc.app.AppErrorReporter
@@ -35,7 +37,21 @@ import kotlinx.coroutines.launch
 class MockLocationService : Service() {
     private val scope = CoroutineScope(Dispatchers.IO)
     private var pollJob: Job? = null
+    private var pushJob: Job? = null
     private var locationManager: LocationManager? = null
+
+    // Google Maps and most apps read Play Services' fused location, which has
+    // its own Wi-Fi/cell positioning that the platform test providers don't
+    // reach. Its mock mode is the only way to silence the real fixes there.
+    private var fusedClient: FusedLocationProviderClient? = null
+    private var gmsMockMode = false
+
+    // Last spot returned by the API, re-injected every second so the real
+    // network/fused fixes never get a window to show up between two polls.
+    @Volatile
+    private var currentTarget: Target? = null
+
+    private data class Target(val lat: Double, val lng: Double, val accuracy: Double)
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -65,6 +81,7 @@ class MockLocationService : Service() {
         }
 
         locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        fusedClient = runCatching { LocationServices.getFusedLocationProviderClient(this) }.getOrNull()
 
         if (!MockLocationHelper.isMockLocationAllowed(this)) {
             Log.w(TAG, "Anyloc is not selected as mock location app")
@@ -73,7 +90,15 @@ class MockLocationService : Service() {
             return START_NOT_STICKY
         }
 
-        ensureTestProvider()
+        ensureTestProviders()
+
+        pushJob?.cancel()
+        pushJob = scope.launch {
+            while (isActive) {
+                currentTarget?.let { pushMockLocation(it) }
+                delay(PUSH_INTERVAL_MS)
+            }
+        }
 
         pollJob?.cancel()
         pollJob = scope.launch {
@@ -96,10 +121,22 @@ class MockLocationService : Service() {
                     }
                     result?.location?.isActive == true -> {
                         val remote = result.location
-                        pushMockLocation(remote.lat, remote.lng, remote.accuracy)
+                        val target = Target(remote.lat, remote.lng, remote.accuracy)
+                        currentTarget = target
+                        pushMockLocation(target)
                         updateNotification(remote.name)
                     }
+                    result == null -> {
+                        // Network hiccup: keep injecting the last spot.
+                    }
                     else -> {
+                        if (currentTarget != null) {
+                            // Hand the real providers back; pushMockLocation re-adds
+                            // the test providers when a spot is active again.
+                            currentTarget = null
+                            removeTestProviders()
+                            setGmsMockMode(false)
+                        }
                         updateNotification("En pause")
                     }
                 }
@@ -113,7 +150,10 @@ class MockLocationService : Service() {
 
     override fun onDestroy() {
         pollJob?.cancel()
-        removeTestProvider()
+        pushJob?.cancel()
+        currentTarget = null
+        removeTestProviders()
+        setGmsMockMode(false)
         super.onDestroy()
     }
 
@@ -138,12 +178,26 @@ class MockLocationService : Service() {
         return true
     }
 
-    private fun ensureTestProvider() {
+    private fun mockedProviders(): List<String> {
+        // GPS alone is not enough: the network provider (Wi-Fi/cell) and the
+        // fused provider most apps read from keep reporting the real position.
+        val providers = mutableListOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            providers += LocationManager.FUSED_PROVIDER
+        }
+        return providers
+    }
+
+    private fun ensureTestProviders() {
+        mockedProviders().forEach { ensureTestProvider(it) }
+    }
+
+    private fun ensureTestProvider(provider: String) {
         val manager = locationManager ?: return
 
         try {
             manager.addTestProvider(
-                LocationManager.GPS_PROVIDER,
+                provider,
                 false,
                 false,
                 false,
@@ -155,19 +209,19 @@ class MockLocationService : Service() {
                 Criteria.ACCURACY_FINE,
             )
         } catch (_: IllegalArgumentException) {
-            // GPS provider already exists — keep going.
+            // Test provider already exists — keep going.
         } catch (_: SecurityException) {
             return
         }
 
         try {
-            manager.setTestProviderEnabled(LocationManager.GPS_PROVIDER, true)
+            manager.setTestProviderEnabled(provider, true)
         } catch (_: Exception) {
             // Provider cannot be enabled yet.
         }
     }
 
-    private fun pushMockLocation(lat: Double, lng: Double, accuracy: Double) {
+    private fun pushMockLocation(target: Target) {
         val manager = locationManager ?: return
 
         if (
@@ -177,35 +231,77 @@ class MockLocationService : Service() {
             return
         }
 
-        val location = Location(LocationManager.GPS_PROVIDER).apply {
-            latitude = lat
-            longitude = lng
-            this.accuracy = accuracy.toFloat()
-            time = System.currentTimeMillis()
-            elapsedRealtimeNanos = SystemClock.elapsedRealtimeNanos()
+        mockedProviders().forEach { provider ->
+            val location = buildLocation(provider, target)
+            try {
+                manager.setTestProviderLocation(provider, location)
+            } catch (_: SecurityException) {
+                // Mock location permission missing.
+            } catch (_: IllegalArgumentException) {
+                ensureTestProvider(provider)
+                try {
+                    manager.setTestProviderLocation(provider, location)
+                } catch (_: Exception) {
+                    // Provider still unavailable.
+                }
+            }
         }
 
+        pushGmsMockLocation(target)
+    }
+
+    @Suppress("MissingPermission")
+    private fun pushGmsMockLocation(target: Target) {
+        val client = fusedClient ?: return
         try {
-            manager.setTestProviderLocation(LocationManager.GPS_PROVIDER, location)
-        } catch (_: SecurityException) {
-            // Mock location permission missing.
-        } catch (_: IllegalArgumentException) {
-            ensureTestProvider()
-            try {
-                manager.setTestProviderLocation(LocationManager.GPS_PROVIDER, location)
-            } catch (_: Exception) {
-                // Provider still unavailable.
+            if (!gmsMockMode) {
+                client.setMockMode(true)
+                    .addOnSuccessListener { gmsMockMode = true }
+                    .addOnFailureListener { Log.w(TAG, "Play Services mock mode refused", it) }
             }
+            client.setMockLocation(buildLocation("fused", target))
+        } catch (error: Exception) {
+            // Play Services missing or mock app not selected.
+            Log.w(TAG, "Play Services mock location failed", error)
         }
     }
 
-    private fun removeTestProvider() {
+    @Suppress("MissingPermission")
+    private fun setGmsMockMode(enabled: Boolean) {
+        val client = fusedClient ?: return
+        try {
+            client.setMockMode(enabled)
+        } catch (_: Exception) {
+            // Ignore: Play Services unavailable.
+        }
+        gmsMockMode = enabled
+    }
+
+    private fun buildLocation(provider: String, target: Target): Location {
+        return Location(provider).apply {
+            latitude = target.lat
+            longitude = target.lng
+            accuracy = target.accuracy.toFloat()
+            altitude = 0.0
+            speed = 0f
+            bearing = 0f
+            verticalAccuracyMeters = 1f
+            speedAccuracyMetersPerSecond = 0.1f
+            bearingAccuracyDegrees = 0.1f
+            time = System.currentTimeMillis()
+            elapsedRealtimeNanos = SystemClock.elapsedRealtimeNanos()
+        }
+    }
+
+    private fun removeTestProviders() {
         val manager = locationManager ?: return
 
-        try {
-            manager.setTestProviderEnabled(LocationManager.GPS_PROVIDER, false)
-        } catch (_: Exception) {
-            // Ignore cleanup errors.
+        mockedProviders().forEach { provider ->
+            try {
+                manager.removeTestProvider(provider)
+            } catch (_: Exception) {
+                // Ignore cleanup errors.
+            }
         }
     }
 
@@ -275,6 +371,7 @@ class MockLocationService : Service() {
         private const val TAG = "MockLocationService"
         private const val NOTIFICATION_ID = 1001
         private const val POLL_INTERVAL_MS = 15_000L
+        private const val PUSH_INTERVAL_MS = 1_000L
 
         fun start(context: Context, apiBaseUrl: String, deviceToken: String): Boolean {
             val intent = Intent(context, MockLocationService::class.java).apply {

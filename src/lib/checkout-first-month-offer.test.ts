@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  declineKind,
   FIRST_MONTH_OFFER_WINDOW_MS,
   getFirstMonthOfferPrice,
   getFirstMonthOfferReason,
@@ -15,6 +16,22 @@ describe("isDeclineOfferCode", () => {
     assert.equal(isDeclineOfferCode("insufficient_funds"), true);
     assert.equal(isDeclineOfferCode("highest_risk_level"), false);
     assert.equal(isDeclineOfferCode(undefined), false);
+  });
+});
+
+describe("declineKind", () => {
+  it("tells an empty account from a card that can't make this payment", () => {
+    assert.equal(declineKind("insufficient_funds"), "funds");
+    assert.equal(declineKind("transaction_not_allowed"), "card");
+    assert.equal(declineKind("try_again_later"), "card");
+    assert.equal(declineKind("do_not_honor"), "card");
+  });
+
+  it("leaves out the refusals another payment method wouldn't fix", () => {
+    // A mistyped number is pointed out by Stripe's form; a fraud block is not to be worked around.
+    assert.equal(declineKind("incorrect_number"), null);
+    assert.equal(declineKind("highest_risk_level"), null);
+    assert.equal(declineKind(undefined), null);
   });
 });
 
