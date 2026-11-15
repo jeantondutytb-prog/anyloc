@@ -1,6 +1,7 @@
 import {
   IOS_ADHOC_BUILD_STALE_MS,
   IOS_ADHOC_FAILED_BUILD_BACKOFF_MS,
+  IOS_ADHOC_PENDING_RETRY_MS,
 } from "./config";
 
 export type IosDeviceRow = {
@@ -78,15 +79,15 @@ export function isBuildStale(build: IosBuildRow, now: number) {
 }
 
 export function needsNewBuild(input: {
-  registeredUdids: string[];
+  registeredDevices: Array<{ udid: string; registered_at: string }>;
   latestBuild: IosBuildRow | null;
   latestSucceededBuild: IosBuildRow | null;
   now: number;
 }) {
   const signed = new Set(input.latestSucceededBuild?.udids ?? []);
-  const hasPending = input.registeredUdids.some((udid) => !signed.has(udid));
+  const pending = input.registeredDevices.filter((device) => !signed.has(device.udid));
 
-  if (!hasPending) {
+  if (!pending.length) {
     return false;
   }
 
@@ -106,5 +107,11 @@ export function needsNewBuild(input: {
     return age > IOS_ADHOC_FAILED_BUILD_BACKOFF_MS;
   }
 
-  return true;
+  // A build succeeds even when Apple has not listed a new iPhone yet (1 to 2
+  // days). Build at once only for iPhones the latest build could not have seen.
+  const latestStartedAt = Date.parse(latest.created_at);
+  return (
+    age > IOS_ADHOC_PENDING_RETRY_MS ||
+    pending.some((device) => Date.parse(device.registered_at) > latestStartedAt)
+  );
 }

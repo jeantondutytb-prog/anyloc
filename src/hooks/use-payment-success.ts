@@ -1,20 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useSearchParams } from "next/navigation";
 import { PAYMENT_SUCCESS_SESSION_KEY } from "@/lib/dashboard-onboarding";
 
 function readStoredPaymentSuccess() {
-  if (typeof window === "undefined") {
+  try {
+    return window.sessionStorage.getItem(PAYMENT_SUCCESS_SESSION_KEY) === "true";
+  } catch {
     return false;
   }
-
-  return window.sessionStorage.getItem(PAYMENT_SUCCESS_SESSION_KEY) === "true";
 }
+
+const noSubscribe = () => () => {};
 
 export function usePaymentSuccess() {
   const searchParams = useSearchParams();
-  const [paymentSuccess, setPaymentSuccess] = useState(readStoredPaymentSuccess);
+  // Read through useSyncExternalStore, not useState's initializer: the server
+  // can't see sessionStorage, so reading it on the first render made the
+  // "Paiement confirmé" banner differ from the server HTML (React error #418).
+  const storedSuccess = useSyncExternalStore(
+    noSubscribe,
+    readStoredPaymentSuccess,
+    () => false
+  );
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
 
   useEffect(() => {
     if (!searchParams) {
@@ -32,7 +42,9 @@ export function usePaymentSuccess() {
     };
 
     const markPaymentSuccess = () => {
-      window.sessionStorage.setItem(PAYMENT_SUCCESS_SESSION_KEY, "true");
+      try {
+        window.sessionStorage.setItem(PAYMENT_SUCCESS_SESSION_KEY, "true");
+      } catch {}
       setPaymentSuccess(true);
       clearPaymentParams();
     };
@@ -61,5 +73,5 @@ export function usePaymentSuccess() {
     }
   }, [searchParams]);
 
-  return paymentSuccess;
+  return paymentSuccess || storedSuccess;
 }

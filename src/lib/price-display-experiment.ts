@@ -6,7 +6,9 @@ import type { Plan } from "@/lib/constants";
  * month (6,99 €/mois). The billed total stays under it in both. Drawn once in
  * the proxy and kept in a cookie, like the pricing test, and read on
  * checkout_continue_clicked and purchase_completed through the
- * price_display_variant person property.
+ * price_display_variant person property. Stopped on 29/10 with the other tests
+ * (sales fell while they all ran at once): off until
+ * NEXT_PUBLIC_PRICE_DISPLAY_EXPERIMENT is "on", and everyone sees per day.
  */
 export const PRICE_DISPLAY_VARIANTS = ["per_day", "per_month"] as const;
 
@@ -17,12 +19,21 @@ export const PRICE_DISPLAY_COOKIE = "anyloc-price-display";
 /** 90 days: long enough to cover the visit that ends in a purchase. */
 export const PRICE_DISPLAY_MAX_AGE = 60 * 60 * 24 * 90;
 
+export function isPriceDisplayExperimentEnabled() {
+  return process.env.NEXT_PUBLIC_PRICE_DISPLAY_EXPERIMENT === "on";
+}
+
 export function parsePriceDisplayVariant(value: unknown): PriceDisplayVariant | null {
   return PRICE_DISPLAY_VARIANTS.find((variant) => variant === value) ?? null;
 }
 
 export function pickPriceDisplayVariant(random = Math.random()): PriceDisplayVariant {
   return random < 0.5 ? "per_day" : "per_month";
+}
+
+/** The display to render: always per day while the test is off. */
+export function getEffectivePriceDisplayVariant(cookieValue: unknown): PriceDisplayVariant {
+  return (isPriceDisplayExperimentEnabled() && parsePriceDisplayVariant(cookieValue)) || "per_day";
 }
 
 /** Months covered by one payment of each plan. */
@@ -33,7 +44,14 @@ const PLAN_MONTHS: Record<string, number> = {
   month_v2: 1,
   quarter_v2: 3,
   year_v2: 12,
+  monthly_v3: 1,
+  annual_v3: 12,
 };
+
+/** Months covered by one payment of a plan (1 for an unknown id). */
+export function getPlanMonths(planId: string) {
+  return PLAN_MONTHS[planId] ?? 1;
+}
 
 /**
  * Rounds up to the next price ending in ,49 or ,99: 6,58 -> 6,99, 4,08 ->

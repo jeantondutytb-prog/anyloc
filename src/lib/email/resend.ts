@@ -9,10 +9,23 @@ export type SendEmailParams = {
   replyTo?: string;
   headers?: Record<string, string>;
   tags?: { name: string; value: string }[];
+  /** Sends later (Resend queues it; cancel with cancelScheduledEmail). */
+  scheduledAt?: Date;
 };
 
 export const DEFAULT_EMAIL_FROM =
   process.env.EMAIL_FROM ?? "Jean d'Anyloc <jean@anyloc.io>";
+
+/**
+ * Sender of the recovery emails: its own subdomain (e.g. "Jean d'Anyloc
+ * <jean@relance.anyloc.io>", verified in Resend first), so their reputation at
+ * Gmail never drags down the account emails sent from anyloc.io. Unset: the
+ * default sender.
+ */
+export const RECOVERY_EMAIL_FROM = process.env.RECOVERY_EMAIL_FROM || DEFAULT_EMAIL_FROM;
+
+/** Replies to any email land in the inbox Jean reads, whatever the sender. */
+export const EMAIL_REPLY_TO = process.env.EMAIL_REPLY_TO || "jean@anyloc.io";
 
 export function isResendConfigured() {
   return Boolean(process.env.RESEND_API_KEY);
@@ -40,6 +53,7 @@ export async function sendEmail(params: SendEmailParams): Promise<{ id: string }
       reply_to: params.replyTo ?? from,
       headers: params.headers,
       tags: params.tags,
+      ...(params.scheduledAt ? { scheduled_at: params.scheduledAt.toISOString() } : {}),
     }),
   });
 
@@ -52,4 +66,18 @@ export async function sendEmail(params: SendEmailParams): Promise<{ id: string }
   }
 
   return { id: body.id };
+}
+
+/** Cancels an email scheduled with `scheduledAt`. False when it already went out (or is unknown). */
+export async function cancelScheduledEmail(id: string): Promise<boolean> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY is not configured.");
+  }
+
+  const res = await fetch(`https://api.resend.com/emails/${encodeURIComponent(id)}/cancel`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}` },
+  });
+  return res.ok;
 }

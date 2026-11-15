@@ -8,13 +8,30 @@ export type OnboardingDestination = {
   emoji: string;
   lat: number;
   lng: number;
+  /** "à la Tour Eiffel": optional, so older stored destinations still parse. */
+  at?: string;
 };
+
+/** "à Marbella", "au Caire", "aux Sables-d'Olonne", "à la Havane", "à l'Alpe d'Huez". */
+export function atCity(city: string) {
+  if (city.startsWith("Le ")) return `au ${city.slice(3)}`;
+  if (city.startsWith("La ")) return `à la ${city.slice(3)}`;
+  if (city.startsWith("Les ")) return `aux ${city.slice(4)}`;
+  if (city.startsWith("L'")) return `à l'${city.slice(2)}`;
+  return `à ${city}`;
+}
+
+/** Where the position lands, with the right article: the curated spot's phrase, else the city's. */
+export function atPlace(destination: Pick<OnboardingDestination, "city" | "at">) {
+  return destination.at ?? atCity(destination.city);
+}
 
 function toOnboardingDestination(spot: {
   name: string;
   lat: number;
   lng: number;
   emoji?: string;
+  at?: string;
 }): OnboardingDestination {
   const [city, area = ""] = spot.name.split(" — ");
 
@@ -25,6 +42,7 @@ function toOnboardingDestination(spot: {
     emoji: spot.emoji ?? "📍",
     lat: spot.lat,
     lng: spot.lng,
+    ...(spot.at ? { at: spot.at } : {}),
   };
 }
 
@@ -126,6 +144,22 @@ export function searchOnboardingDestinations(query: string) {
 }
 
 export const ONBOARDING_DESTINATION_KEY = "anyloc-onboarding-destination";
+
+/** A destination read back from sessionStorage, or null when it is missing or malformed. */
+export function parseStoredDestination(raw: string | null): OnboardingDestination | null {
+  if (!raw) return null;
+  try {
+    const value: unknown = JSON.parse(raw);
+    if (typeof value !== "object" || value === null) return null;
+    const { city, lat, lng } = value as Record<string, unknown>;
+    if (typeof city !== "string" || city.trim() === "") return null;
+    if (typeof lat !== "number" || !Number.isFinite(lat)) return null;
+    if (typeof lng !== "number" || !Number.isFinite(lng)) return null;
+    return value as OnboardingDestination;
+  } catch {
+    return null;
+  }
+}
 
 /** Set when "Définir cette position" hands off to signup with a pending pick. */
 export const ONBOARDING_ACTIVATION_PENDING_KEY = "anyloc-onboarding-activation-pending";

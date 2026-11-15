@@ -6,7 +6,7 @@ import { VslPlayer } from "@/components/landing/vsl-player";
 import { MainCta } from "@/components/landing/main-cta";
 import { SITE } from "@/lib/constants";
 
-const HERO_CHECKS = ["iOS + Android", "Zéro jailbreak", "Annulation en 1 clic"];
+const HERO_CHECKS = ["iOS + Android", "Zéro jailbreak", "Garantie 48 h"];
 
 export function Hero() {
   return (

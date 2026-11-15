@@ -1,8 +1,9 @@
 /**
- * The clipper programme as a last resort on the checkout: shown to everyone
- * who closes the payment popup, in place of the stopped -50 % close offer.
- * While that test is on, it is A/B tested on half of the visitors who dismiss
- * the -50 %, drawn on that dismissal and kept in a cookie.
+ * A/B test of the clipper programme as a last resort on the checkout: shown to
+ * half of the visitors who dismiss the -50 % close offer, the ones about to
+ * leave without paying. Drawn on that dismissal and kept in a cookie. Only
+ * runs with the -50 % test: closing the popup offers the shortest plan again
+ * (shown to everyone from 27/10, it took the place of that offer as sales fell).
  */
 export const CLIPPER_OFFER_VARIANTS = ["control", "clipper"] as const;
 

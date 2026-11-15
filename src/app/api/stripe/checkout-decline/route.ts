@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { isCheckoutSessionDeclined } from "@/lib/checkout-first-month-offer-server";
+import { getCheckoutDeclineKind } from "@/lib/checkout-first-month-offer-server";
 import { logError } from "@/lib/log-error";
 import { limitByIp } from "@/lib/rate-limit";
 
 /**
- * Polled by the payment popup: whether its checkout was refused for lack of
- * funds (stamped by the webhook), to offer the -50 % first month.
+ * Polled by the payment popup: whether its checkout was refused (stamped by the
+ * webhook), and how: "funds" gets the -50 % first month, "card" another method.
  */
 export async function GET(request: Request) {
   const limited = limitByIp(request, "checkout-decline", 40, 60_000);
@@ -20,7 +20,8 @@ export async function GET(request: Request) {
   }
 
   try {
-    return NextResponse.json({ declined: await isCheckoutSessionDeclined(sessionId) });
+    const kind = await getCheckoutDeclineKind(sessionId);
+    return NextResponse.json({ declined: kind !== null, kind });
   } catch (error) {
     await logError("stripe/checkout-decline", error, { stripe_object_id: sessionId });
     return NextResponse.json({ declined: false });

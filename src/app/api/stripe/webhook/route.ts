@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import {
   syncProfileFromCheckoutSession,
+  revokeDisputedOneTimePurchase,
+  revokeRefundedOneTimePurchase,
   syncProfileFromSubscription,
 } from "@/lib/billing";
-import { isDeclineOfferCode } from "@/lib/checkout-first-month-offer";
+import { declineKind } from "@/lib/checkout-first-month-offer";
 import { markCheckoutSessionDeclined } from "@/lib/checkout-first-month-offer-server";
 import { chargeSubscriptionInvoiceImmediately } from "@/lib/trial-billing";
 import {
@@ -12,6 +14,7 @@ import {
   capturePostHogEvent,
   parsePostHogDistinctId,
 } from "@/lib/posthog/server";
+import { markCheckoutRecoveryConverted } from "@/lib/checkout-recovery-server";
 import { stripe } from "@/lib/stripe";
 import { logError } from "@/lib/log-error";
 import { claimStripeEvent, releaseStripeEvent } from "@/lib/webhook-idempotency";
@@ -49,6 +52,7 @@ async function trackCheckoutCompleted(
       guest_checkout: session.metadata?.guest_checkout === "true",
       amount_total: session.amount_total,
       currency: session.currency,
+      offer: session.metadata?.offer ?? null,
     },
   });
 }
@@ -136,9 +140,10 @@ async function trackCheckoutPaymentAttempt(
   }
 
   const error = paymentIntent.last_payment_error;
-  // Lets the payment popup offer the -50 % first month; never worth failing the webhook over.
+  // Lets the payment popup say what to do next (-50 % for lack of funds, another
+  // payment method for a blocked card); never worth failing the webhook over.
   const declineCode = error?.decline_code;
-  if (declineCode && isDeclineOfferCode(declineCode)) {
+  if (declineCode && declineKind(declineCode)) {
     await markCheckoutSessionDeclined(session.id, declineCode).catch((markError) =>
       logError("stripe-webhook/mark-declined", markError, { stripe_object_id: session.id })
     );
@@ -204,6 +209,12 @@ export async function POST(request: Request) {
         // The sync returns the account even for a guest checkout, where it is
         // found or created from the email typed in Stripe.
         const userId = await syncProfileFromCheckoutSession(session);
+        if (userId) {
+          // Paid: no recovery email after the fact. Never fails the webhook.
+          await markCheckoutRecoveryConverted(userId).catch((error) =>
+            logError("checkout-recovery/converted", error, { userId })
+          );
+        }
 
         await trackCheckoutCompleted(
           session,
@@ -234,6 +245,12 @@ export async function POST(request: Request) {
           event.data.object as Stripe.PaymentIntent,
           "failed"
         );
+        break;
+      case "charge.refunded":
+        await revokeRefundedOneTimePurchase(event.data.object as Stripe.Charge);
+        break;
+      case "charge.dispute.created":
+        await revokeDisputedOneTimePurchase(event.data.object as Stripe.Dispute);
         break;
       case "invoice.created":
         // Bypass Stripe's ~1h draft window so renewal charges
