@@ -5,6 +5,7 @@ import {
   getRequestOrigin,
   readOAuthNext,
   setOAuthNextCookie,
+  setOAuthStartedCookie,
 } from "@/lib/oauth";
 import {
   createCookieCollector,
@@ -38,5 +39,6 @@ export async function GET(request: NextRequest) {
   const response = NextResponse.redirect(data.url);
   collector.applyTo(response);
   setOAuthNextCookie(response, next, request);
+  setOAuthStartedCookie(response, request);
   return response;
 }
