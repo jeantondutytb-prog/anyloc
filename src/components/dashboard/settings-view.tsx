@@ -26,6 +26,7 @@ import {
   type SettingsActionState,
 } from "@/app/dashboard/(protected)/settings/actions";
 import { CancelSubscriptionConfirmDialog } from "@/components/subscription/cancel-subscription-confirm-dialog";
+import { DeviceLinkSection } from "@/components/dashboard/device-link-section";
 import {
   formatSubscriptionStatusLabel,
   type BillingPortalFlow,
@@ -573,6 +574,12 @@ export function SettingsView({
             </Card>
           ) : null}
         </SettingsSection>
+
+        {!preview ? (
+          <SettingsSection title="Appareils">
+            <DeviceLinkSection />
+          </SettingsSection>
+        ) : null}
 
         <SettingsSection title="Facturation">
           <Card className="p-5">

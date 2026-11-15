@@ -1,24 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Copy, Loader2, Smartphone, Trash2 } from "lucide-react";
+import { Loader2, Smartphone, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { track } from "@/lib/analytics/track";
 import { Card } from "@/components/ui/card";
-
-type DeviceItem = {
-  id: string;
-  platform: "android" | "ios";
-  deviceName: string;
-  lastSeenAt: string | null;
-  createdAt: string;
-};
-
-type CreatedToken = {
-  token: string;
-  platform: "android" | "ios";
-  apiBaseUrl: string;
-};
+import { track } from "@/lib/analytics/track";
+import { describeDevice, MAX_DEVICES_PER_USER, type DeviceItem } from "@/lib/device-list";
 
 type DevicesResult =
   | { ok: true; devices: DeviceItem[] }
@@ -36,7 +23,7 @@ async function fetchDevices(): Promise<DevicesResult> {
       return {
         ok: false,
         devices: [],
-        error: "Abonnement actif requis pour lier un appareil.",
+        error: "Abonnement actif requis pour voir tes appareils.",
       };
     }
 
@@ -57,13 +44,16 @@ async function fetchDevices(): Promise<DevicesResult> {
   }
 }
 
+/**
+ * "Appareils liés" in Mon compte (settings): every phone, computer or web shortcut linked
+ * to the account, with a button to remove one (the limit error points here).
+ */
 export function DeviceLinkSection() {
   const [devices, setDevices] = useState<DeviceItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState<"android" | "ios" | null>(null);
-  const [createdToken, setCreatedToken] = useState<CreatedToken | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
 
   const apply = useCallback((result: DevicesResult) => {
     if (result.devices) {
@@ -75,12 +65,6 @@ export function DeviceLinkSection() {
     setLoading(false);
   }, []);
 
-  const loadDevices = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    apply(await fetchDevices());
-  }, [apply]);
-
   useEffect(() => {
     let active = true;
     void fetchDevices().then((result) => {
@@ -91,148 +75,54 @@ export function DeviceLinkSection() {
     };
   }, [apply]);
 
-  const createToken = async (platform: "android" | "ios") => {
-    setCreating(platform);
-    setError(null);
-    setCreatedToken(null);
-
-    try {
-      const response = await fetch("/api/device", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          platform,
-          deviceName: platform === "android" ? "Mon Android" : "Mon iPhone",
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error ?? "Impossible de créer le token.");
-      }
-
-      setCreatedToken({
-        token: data.token,
-        platform,
-        apiBaseUrl: data.apiBaseUrl,
-      });
-      track("device_link_created", { platform, source: "device_link_section" });
-      await loadDevices();
-    } catch (createError) {
-      const message =
-        createError instanceof Error
-          ? createError.message
-          : "Impossible de créer le token.";
-      setError(message);
-      track("device_link_failed", { platform, source: "device_link_section", error: message });
-    } finally {
-      setCreating(null);
-    }
-  };
-
   const revokeDevice = async (id: string) => {
     setError(null);
+    setRemovingId(id);
 
     try {
       const response = await fetch(`/api/device/${id}`, { method: "DELETE" });
 
       if (!response.ok) {
-        const data = await response.json();
+        const data = await response.json().catch(() => ({}));
         throw new Error(data.error ?? "Impossible de supprimer l'appareil.");
       }
 
-      track("device_revoked");
-      await loadDevices();
+      track("device_revoked", { source: "settings" });
+      setDevices((current) => current.filter((device) => device.id !== id));
     } catch (revokeError) {
       setError(
         revokeError instanceof Error
           ? revokeError.message
           : "Impossible de supprimer l'appareil."
       );
+    } finally {
+      setRemovingId(null);
+      setConfirmingId(null);
     }
-  };
-
-  const copyToken = async () => {
-    if (!createdToken) {
-      return;
-    }
-
-    await navigator.clipboard.writeText(createdToken.token);
-    track("device_token_copied", { platform: createdToken.platform });
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 2000);
   };
 
   return (
     <Card className="p-5">
-      <h3 className="text-sm font-medium text-zinc-600">Lier ton appareil</h3>
-      <p className="mt-2 text-sm text-zinc-500">
-        Génère un token pour connecter l&apos;app Android ou iOS à ton compte.
-        L&apos;app lit ensuite ta position via{" "}
-        <code className="text-xs">GET /api/device/location</code>.
-      </p>
-
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
-
-      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-        <Button
-          size="sm"
-          variant="secondary"
-          disabled={creating !== null}
-          onClick={() => void createToken("android")}
-        >
-          {creating === "android" ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Smartphone className="h-4 w-4" />
-          )}
-          Token Android
-        </Button>
-        <Button
-          size="sm"
-          variant="secondary"
-          disabled={creating !== null}
-          onClick={() => void createToken("ios")}
-        >
-          {creating === "ios" ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Smartphone className="h-4 w-4" />
-          )}
-          Token iPhone
-        </Button>
-      </div>
-
-      {createdToken && (
-        <div className="mt-4 rounded-xl border border-pink-200 bg-pink-50/70 p-4">
-          <p className="text-sm font-medium text-pink-700">
-            Token créé — copie-le maintenant
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pink-500/10">
+          <Smartphone className="h-5 w-5 text-pink-600" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-medium text-zinc-900">
+            Appareils liés
+            {!loading && (
+              <span className="ml-1 text-sm font-normal text-zinc-500">
+                ({devices.length}/{MAX_DEVICES_PER_USER})
+              </span>
+            )}
           </p>
-          <p className="mt-1 text-xs text-pink-600/90">
-            Il ne sera plus affiché après fermeture de cette page.
-          </p>
-          <code className="mt-3 block break-all rounded-lg bg-white px-3 py-2 text-xs text-zinc-800">
-            {createdToken.token}
-          </code>
-          <div className="mt-3 flex gap-2">
-            <Button size="sm" onClick={() => void copyToken()}>
-              <Copy className="h-4 w-4" />
-              {copied ? "Copié" : "Copier"}
-            </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => setCreatedToken(null)}
-            >
-              Fermer
-            </Button>
-          </div>
-          <p className="mt-3 text-xs text-zinc-500">
-            API : {createdToken.apiBaseUrl}/api/device/location
+          <p className="mt-1 text-sm text-zinc-500">
+            Supprime un appareil que tu n&apos;utilises plus pour en lier un nouveau.
           </p>
         </div>
-      )}
+      </div>
+
+      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
       {loading ? (
         <div className="mt-4 flex items-center gap-2 text-sm text-zinc-500">
@@ -241,29 +131,51 @@ export function DeviceLinkSection() {
         </div>
       ) : devices.length > 0 ? (
         <ul className="mt-4 space-y-2">
-          {devices.map((device) => (
-            <li
-              key={device.id}
-              className="flex items-center justify-between gap-3 rounded-lg border border-zinc-200 px-3 py-2 text-sm"
-            >
-              <div>
-                <p className="font-medium text-zinc-900">{device.deviceName}</p>
-                <p className="text-xs text-zinc-500">
-                  {device.platform === "android" ? "Android" : "iPhone"}
-                  {device.lastSeenAt
-                    ? ` · vu ${new Date(device.lastSeenAt).toLocaleString("fr-FR")}`
-                    : " · jamais connecté"}
-                </p>
-              </div>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => void revokeDevice(device.id)}
+          {devices.map((device) => {
+            const { title, detail } = describeDevice(device);
+            const confirming = confirmingId === device.id;
+            const removing = removingId === device.id;
+
+            return (
+              <li
+                key={device.id}
+                className="flex items-center justify-between gap-3 rounded-lg border border-zinc-200 px-3 py-2 text-sm"
               >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </li>
-          ))}
+                <div className="min-w-0">
+                  <p className="font-medium text-zinc-900">{title}</p>
+                  <p className="text-xs text-zinc-500">{detail}</p>
+                </div>
+                {confirming ? (
+                  <div className="flex shrink-0 gap-2">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      disabled={removing}
+                      onClick={() => setConfirmingId(null)}
+                    >
+                      Annuler
+                    </Button>
+                    <Button
+                      size="sm"
+                      disabled={removing}
+                      onClick={() => void revokeDevice(device.id)}
+                    >
+                      {removing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Supprimer"}
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    aria-label={`Supprimer ${title}`}
+                    onClick={() => setConfirmingId(device.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </li>
+            );
+          })}
         </ul>
       ) : (
         <p className="mt-4 text-sm text-zinc-500">Aucun appareil lié pour l&apos;instant.</p>
