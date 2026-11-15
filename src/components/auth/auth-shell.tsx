@@ -36,7 +36,10 @@ export function AuthShell({
       </div>
 
       <div className="relative flex w-full flex-1 items-center justify-center px-2 pt-8 sm:px-0 sm:pt-12">
-        <Card className="animate-auth-enter w-full max-w-md border-zinc-200/80 p-6 shadow-lg shadow-pink-500/5 [animation-delay:80ms] sm:p-8">
+        {/* A form inside can mark itself [data-leaving=true] while it hands over to the next
+            page: the card then fades out (after a beat, so a quick error never blinks it) and
+            comes straight back if the submission fails. */}
+        <Card className="animate-auth-enter w-full max-w-md border-zinc-200/80 p-6 shadow-lg shadow-pink-500/5 transition-opacity duration-200 ease-out [animation-delay:80ms] sm:p-8 motion-safe:has-[[data-leaving=true]]:animate-none motion-safe:has-[[data-leaving=true]]:opacity-0 motion-safe:has-[[data-leaving=true]]:delay-300">
           {notice}
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900">
             {title}

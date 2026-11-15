@@ -36,7 +36,10 @@ describe("price display experiment", () => {
   });
 
   it("shows every plan per month, never below its real monthly cost", () => {
-    const shown = Object.fromEntries(PLANS.map((plan) => [plan.id, getMonthlyDisplayPrice(plan)]));
+    // The lifetime plan is paid once: the cards show its price, not a month.
+    const shown = Object.fromEntries(
+      PLANS.filter((plan) => !plan.oneTime).map((plan) => [plan.id, getMonthlyDisplayPrice(plan)])
+    );
     assert.deepEqual(shown, {
       monthly: "9,90",
       "6months": "5,99",
@@ -44,6 +47,8 @@ describe("price display experiment", () => {
       month_v2: "19",
       quarter_v2: "9,99",
       year_v2: "6,99",
+      monthly_v3: "9,90",
+      annual_v3: "4,49",
     });
   });
 });

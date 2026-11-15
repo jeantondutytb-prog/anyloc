@@ -371,7 +371,7 @@ const PMD3_ERROR_HINTS = [
     "L'iPhone a coupé la connexion. Garde-le déverrouillé, écran allumé, pendant que la position s'applique, puis réessaie. En Wi-Fi, rapproche-le de la box ou branche-le en USB.",
   ],
   [
-    /NoDeviceConnected|DeviceNotFound|ConnectionFailedToUsbmuxd|No device/i,
+    /NoDeviceConnected|DeviceNotFound|Device not found|ConnectionFailedToUsbmuxd|No device/i,
     "Aucun iPhone détecté. Rebranche le câble USB et déverrouille l'iPhone.",
   ],
   [

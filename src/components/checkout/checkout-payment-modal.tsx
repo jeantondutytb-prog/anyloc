@@ -8,9 +8,10 @@ import { StripeEmbeddedCheckout } from "@/components/checkout/stripe-embedded-ch
 import { isCrispHiddenPath, setCrispBubbleHidden } from "@/components/crisp/crisp-visibility";
 import { track } from "@/lib/analytics/track";
 import { CHECKOUT_COPY } from "@/lib/checkout-copy";
-import { getFirstMonthOfferPrice } from "@/lib/checkout-first-month-offer";
-import { isNetworkError, requestCheckoutSession } from "@/lib/checkout-request";
+import { type DeclineKind, getFirstMonthOfferPrice } from "@/lib/checkout-first-month-offer";
+import { CheckoutRequestError, isNetworkError, requestCheckoutSession } from "@/lib/checkout-request";
 import { GUARANTEE, type Plan } from "@/lib/constants";
+import { getOrderRenewalLine } from "@/lib/quiz-paywall";
 
 /**
  * Payment popup opened by the paywall's "Continuer": Stripe's embedded
@@ -27,8 +28,11 @@ export function CheckoutPaymentModal({
   offerPlan,
   offerSessionId,
   welcomeOffer,
+  annualExitOffer,
+  onAnnualExitOfferExpired,
   onDeclineOffer,
   stripePublishableKey,
+  variant,
   hostedRedirecting,
   hostedError,
   onHostedFallback,
@@ -42,8 +46,14 @@ export function CheckoutPaymentModal({
   offerSessionId?: string;
   /** The welcome offer already takes -50 % off this plan's 1st month. */
   welcomeOffer?: boolean;
+  /** The annual exit offer: the server checks it, the header shows `offerPrice`. */
+  annualExitOffer?: { offerPrice: string };
+  /** The server answered 409 to the offer: the parent leaves offer mode, so a retry asks the normal price. */
+  onAnnualExitOfferExpired?: () => void;
   onDeclineOffer: (declinedSessionId: string) => void;
   stripePublishableKey: string;
+  /** "quiz": the quiz arm's popup, a squarer card whose header shows the amount charged today. */
+  variant?: "quiz";
   /** The hosted-page fallback is loading. */
   hostedRedirecting: boolean;
   hostedError?: string | null;
@@ -54,11 +64,25 @@ export function CheckoutPaymentModal({
   zIndexClassName?: string;
 }) {
   const copy = CHECKOUT_COPY;
+  const isQuiz = variant === "quiz";
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [declined, setDeclined] = useState(false);
+  const [declined, setDeclined] = useState<DeclineKind | null>(null);
+  // Already on a discounted first month: a refusal gets no second discount.
+  const discounted = Boolean(offerSessionId || welcomeOffer);
+  const hasAnnualExitOffer = Boolean(annualExitOffer);
+  // Read when a request starts, not a dependency: leaving offer mode after a
+  // 409 must keep the message on screen until the visitor retries.
+  const annualExitOfferRef = useRef(hasAnnualExitOffer);
+  useEffect(() => {
+    annualExitOfferRef.current = hasAnnualExitOffer;
+  });
+  const onAnnualExitOfferExpiredRef = useRef(onAnnualExitOfferExpired);
+  useEffect(() => {
+    onAnnualExitOfferExpiredRef.current = onAnnualExitOfferExpired;
+  });
   // Closing a drawn form first asks why, in place of the form.
   const [askingExitReason, setAskingExitReason] = useState(false);
   // Read by the Escape handler, which is set up once.
@@ -78,7 +102,7 @@ export function CheckoutPaymentModal({
       "/api/stripe/embedded-checkout",
       plan.id,
       controller.signal,
-      offerSessionId
+      { offerSessionId, annualExitOffer: annualExitOfferRef.current || undefined }
     )
       .then((data) => {
         if (!data.clientSecret) {
@@ -96,6 +120,9 @@ export function CheckoutPaymentModal({
       })
       .catch((err) => {
         if (controller.signal.aborted) return;
+        if (err instanceof CheckoutRequestError && err.status === 409 && annualExitOfferRef.current) {
+          onAnnualExitOfferExpiredRef.current?.();
+        }
         const networkError = isNetworkError(err);
         setError(
           networkError ? copy.errNetwork : err instanceof Error ? err.message : copy.errGeneric
@@ -112,20 +139,23 @@ export function CheckoutPaymentModal({
   }, [plan.id, attempt, copy, offerSessionId]);
 
   // Stripe's form doesn't tell the page why a card was refused: the webhook
-  // stamps it on the session, read back here. Once discounted, no second offer.
+  // stamps it on the session, read back here.
   useEffect(() => {
-    if (!sessionId || declined || offerSessionId || welcomeOffer) return;
+    if (!sessionId || declined) return;
     const controller = new AbortController();
     const timer = setInterval(() => {
       if (document.visibilityState !== "visible") return;
       fetch(`/api/stripe/checkout-decline?session_id=${encodeURIComponent(sessionId)}`, {
         signal: controller.signal,
       })
-        .then((res) => res.json() as Promise<{ declined?: boolean }>)
+        .then((res) => res.json() as Promise<{ kind?: DeclineKind | null }>)
         .then((data) => {
-          if (!data.declined) return;
-          setDeclined(true);
-          track("checkout_decline_offer_shown", { plan: plan.id, offer_plan: offerPlan.id });
+          if (!data.kind) return;
+          setDeclined(data.kind);
+          track(
+            data.kind === "funds" && !discounted ? "checkout_decline_offer_shown" : "checkout_decline_switch_shown",
+            { plan: plan.id, offer_plan: offerPlan.id, decline_kind: data.kind }
+          );
         })
         .catch(() => {});
     }, DECLINE_POLL_MS);
@@ -133,7 +163,7 @@ export function CheckoutPaymentModal({
       clearInterval(timer);
       controller.abort();
     };
-  }, [sessionId, declined, offerSessionId, welcomeOffer, plan.id, offerPlan.id]);
+  }, [sessionId, declined, discounted, plan.id, offerPlan.id]);
 
   useEffect(() => {
     closeRef.current?.focus();
@@ -195,6 +225,14 @@ export function CheckoutPaymentModal({
   const price = plan.price.replace("€", " €");
   const offerPrice = getFirstMonthOfferPrice(offerPlan.price);
 
+  // Quiz header: what the card is charged today and what renews after.
+  const quizPayToday = annualExitOffer
+    ? annualExitOffer.offerPrice
+    : discounted
+      ? getFirstMonthOfferPrice(plan.price)
+      : price;
+  const quizRenewalLine = getOrderRenewalLine(plan, { annualExitOfferPrice: annualExitOffer?.offerPrice });
+
   function retry() {
     setError(null);
     setAttempt((count) => count + 1);
@@ -210,14 +248,41 @@ export function CheckoutPaymentModal({
         aria-modal="true"
         aria-label={copy.modalTitle}
         onClick={(event) => event.stopPropagation()}
-        className="flex cursor-auto max-h-[calc(100dvh-2rem)] w-full max-w-md animate-[checkoutModalIn_.25s_ease-out] flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
+        className={
+          isQuiz
+            ? "flex cursor-auto max-h-[90dvh] w-full max-w-md animate-[checkoutModalIn_.2s_ease-out] flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+            : "flex cursor-auto max-h-[calc(100dvh-2rem)] w-full max-w-md animate-[checkoutModalIn_.25s_ease-out] flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
+        }
       >
+        {isQuiz ? (
+          <div className="flex items-start justify-between gap-3 px-5 pb-3 pt-5">
+            <p className="min-w-0 text-2xl font-bold leading-tight text-zinc-900">{plan.name}</p>
+            <div className="flex shrink-0 items-start gap-3">
+              <div className="text-right">
+                <p className="text-xs text-zinc-500">À payer aujourd&apos;hui</p>
+                <p className="text-2xl font-bold leading-tight text-zinc-900">{quizPayToday}</p>
+                <p className="text-xs text-zinc-500">{quizRenewalLine}</p>
+              </div>
+              <button
+                ref={closeRef}
+                type="button"
+                onClick={requestClose}
+                aria-label="Fermer"
+                className="-mr-2 -mt-1 flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 transition hover:text-zinc-900"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        ) : (
         <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
           <p className="text-sm font-bold text-zinc-900">
             {plan.name} ·{" "}
-            {offerSessionId || welcomeOffer
-              ? copy.firstMonthOfferHeader(getFirstMonthOfferPrice(plan.price))
-              : price}
+            {annualExitOffer
+              ? annualExitOffer.offerPrice
+              : discounted
+                ? copy.firstMonthOfferHeader(getFirstMonthOfferPrice(plan.price))
+                : price}
           </p>
           <button
             ref={closeRef}
@@ -229,6 +294,7 @@ export function CheckoutPaymentModal({
             <X className="h-4 w-4" />
           </button>
         </div>
+        )}
 
         {askingExitReason ? (
           <div className="px-4 pb-5 pt-4">
@@ -261,24 +327,38 @@ export function CheckoutPaymentModal({
             askingExitReason ? "hidden" : "overflow-y-auto overscroll-contain px-4 pb-4 pt-3"
           }
         >
-          <div className="flex items-start gap-2 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs leading-snug text-emerald-900/80">
-            <Check className="mt-px h-3.5 w-3.5 shrink-0 text-emerald-600" strokeWidth={3} />
-            <p>
-              <span className="font-bold text-emerald-900">{GUARANTEE.title}</span>{" "}
-              {GUARANTEE.summary}{" "}
-              <Link
-                href="/politique-de-remboursement"
-                target="_blank"
-                rel="noreferrer"
-                className="whitespace-nowrap text-[10px] font-semibold text-emerald-700 underline"
-              >
-                {copy.guaranteeConditionsToggle}
-              </Link>
-            </p>
-          </div>
+          {isQuiz ? null : (
+            <>
+            <div className="flex items-start gap-2 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs leading-snug text-emerald-900/80">
+              <Check className="mt-px h-3.5 w-3.5 shrink-0 text-emerald-600" strokeWidth={3} />
+              <p>
+                <span className="font-bold text-emerald-900">{GUARANTEE.title}</span>{" "}
+                {GUARANTEE.summary}{" "}
+                <Link
+                  href="/politique-de-remboursement"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="whitespace-nowrap text-[10px] font-semibold text-emerald-700 underline"
+                >
+                  {copy.guaranteeConditionsToggle}
+                </Link>
+              </p>
+            </div>
           <p className="mt-2 text-xs text-zinc-500">{copy.modalCancelAnytime}</p>
+            </>
+          )}
 
-          {declined && sessionId ? (
+          {/* Once discounted, no second offer: only the way out through another method. */}
+          {declined && sessionId && (declined === "card" || discounted) ? (
+            <div className="mt-3 rounded-2xl border border-pink-200 bg-pink-50 p-3">
+              <p className="text-sm font-bold text-zinc-900">
+                {declined === "card" ? copy.declineCardTitle : copy.declineOfferTitle}
+              </p>
+              <p className="mt-0.5 text-xs text-zinc-600">
+                {declined === "card" ? copy.declineCardLead : copy.declineFundsSwitchLead}
+              </p>
+            </div>
+          ) : declined === "funds" && sessionId ? (
             <div className="mt-3 rounded-2xl border border-pink-200 bg-pink-50 p-3">
               <p className="text-sm font-bold text-zinc-900">{copy.declineOfferTitle}</p>
               <p className="mt-0.5 text-xs text-zinc-600">

@@ -38,12 +38,25 @@ export function rateLimit(
   return { ok: true };
 }
 
-export function getClientIp(request: Request) {
+/** Forgets a key, e.g. once the visitor proved who they are. */
+export function resetRateLimit(key: string) {
+  windows.delete(key);
+}
+
+/**
+ * Visitor IP behind Vercel, which sets x-real-ip and overwrites
+ * x-forwarded-for with the real client address (a client cannot spoof them).
+ */
+export function getClientIpFromHeaders(headers: Pick<Headers, "get">) {
   return (
-    request.headers.get("x-real-ip") ??
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    headers.get("x-real-ip")?.trim() ||
+    headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     "unknown"
   );
+}
+
+export function getClientIp(request: Request) {
+  return getClientIpFromHeaders(request.headers);
 }
 
 export function tooManyRequests(retryAfterSeconds: number) {

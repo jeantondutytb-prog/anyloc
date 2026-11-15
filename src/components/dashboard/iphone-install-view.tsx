@@ -153,7 +153,7 @@ export function IphoneInstallView({ embedded = false }: { embedded?: boolean } =
               <ol className="list-decimal space-y-1 pl-5">
                 <li>Appuie sur le bouton, puis sur <strong>Autoriser</strong>.</li>
                 <li>Ouvre <strong>Réglages</strong> → <strong>Profil téléchargé</strong> → <strong>Installer</strong>.</li>
-                <li>Reviens ici : on prépare ton app (2 à 5 minutes).</li>
+                <li>Reviens ici : Apple valide ton iPhone (en général 1 à 2 jours), puis ton app sera prête.</li>
               </ol>
               <Button
                 data-track="iphone_install_enroll_clicked"
@@ -176,7 +176,7 @@ export function IphoneInstallView({ embedded = false }: { embedded?: boolean } =
           {status.state.kind === "preparing" && (
             <p className="flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Ton iPhone est enregistré. On prépare ton app… (2 à 5 minutes, garde cette page ouverte)
+              Ton iPhone est enregistré. Apple doit encore le valider, en général sous 1 à 2 jours. Tu peux fermer cette page et revenir plus tard.
             </p>
           )}
 

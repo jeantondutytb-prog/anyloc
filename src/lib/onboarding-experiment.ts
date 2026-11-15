@@ -1,16 +1,17 @@
+import { getPostOnboardingSignupUrl } from "@/lib/constants";
+
 /**
  * A/B test of the onboarding: half of the visitors keep the current flow
- * (destination, teleport preview, then signup), the other half sign up first
- * and land straight in the web remote (/app), where they pick a destination
- * and teleport before the paywall. Drawn once in the proxy and kept in a
- * cookie, like the pricing test. Off until NEXT_PUBLIC_ONBOARDING_EXPERIMENT
- * is "on": everyone then keeps the current flow.
+ * (destination, teleport preview, then signup and checkout), the other half
+ * sign up first and answer the quiz (/onboarding/quiz) before the paywall.
+ * Drawn once in the proxy and kept in a cookie, like the pricing test. Off
+ * until NEXT_PUBLIC_ONBOARDING_EXPERIMENT is "on": everyone then keeps the
+ * current flow.
  *
- * The quiz onboarding (/onboarding/quiz) was the previous B side; it is out of
- * the draw but still reachable. Visitors who still carry a "quiz" cookie get
- * drawn again.
+ * The "app" variant (web remote, /app) is retired but /app stays reachable.
+ * Visitors who still carry an "app" or "quiz" cookie get drawn again.
  */
-export const ONBOARDING_VARIANTS = ["control", "app"] as const;
+export const ONBOARDING_VARIANTS = ["control", "questions"] as const;
 
 export type OnboardingVariant = (typeof ONBOARDING_VARIANTS)[number];
 
@@ -32,13 +33,13 @@ export function parseOnboardingVariant(value: unknown): OnboardingVariant | null
 }
 
 export function pickOnboardingVariant(random = Math.random()): OnboardingVariant {
-  return random < 0.5 ? "control" : "app";
+  return random < 0.5 ? "control" : "questions";
 }
 
 /** The flow to run: always the current one while the test is off. */
 export function getEffectiveOnboardingVariant(cookieValue: unknown): OnboardingVariant {
-  return isOnboardingExperimentEnabled() && parseOnboardingVariant(cookieValue) === "app"
-    ? "app"
+  return isOnboardingExperimentEnabled() && parseOnboardingVariant(cookieValue) === "questions"
+    ? "questions"
     : "control";
 }
 
@@ -53,6 +54,13 @@ export function getQuizSignupUrl(planId: string) {
 
 export function isOnboardingQuizPath(path: string | null | undefined) {
   return (path ?? "").split("?")[0] === ONBOARDING_QUIZ_PATH;
+}
+
+/** Where the visitor goes to sign up, depending on the half of the test. */
+export function getSignupUrlForOnboardingVariant(variant: OnboardingVariant, planId: string) {
+  return variant === "questions"
+    ? getQuizSignupUrl(planId)
+    : getPostOnboardingSignupUrl(planId);
 }
 
 /** Signup first, then the web remote: where the app half of the landing CTAs go. */

@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AuthPasswordInput } from "@/components/auth/auth-input";
 import { useAccount } from "@/hooks/use-account";
-import { CANCELLATION_WARNING, PLANS, getCheckoutUrl, getPlanDisplayName } from "@/lib/constants";
+import { CANCELLATION_WARNING, PLANS, getCheckoutUrl, getPlanDisplayName, isOneTimePlanId } from "@/lib/constants";
 import {
   deleteAccount,
   updatePassword,
@@ -459,7 +459,7 @@ export function SettingsView({
                     <Link href={getCheckoutUrl("annual")}>
                       <Button size="sm">Souscrire à une offre</Button>
                     </Link>
-                  ) : data?.canManageBilling ? (
+                  ) : data?.canManageBilling && !isOneTimePlanId(data?.planId) ? (
                     <BillingPortalButton flow="subscription" variant="default">
                       Changer de formule
                     </BillingPortalButton>
@@ -515,6 +515,8 @@ export function SettingsView({
             </Card>
           ) : data?.hasActiveSubscription &&
             data?.canManageBilling &&
+            // Paid once: there is no subscription to cancel.
+            !isOneTimePlanId(data?.planId) &&
             !data?.isAdmin &&
             !data?.isClipper ? (
             <Card className="border-amber-200 p-5">

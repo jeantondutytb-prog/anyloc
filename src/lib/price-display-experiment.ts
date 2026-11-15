@@ -44,7 +44,14 @@ const PLAN_MONTHS: Record<string, number> = {
   month_v2: 1,
   quarter_v2: 3,
   year_v2: 12,
+  monthly_v3: 1,
+  annual_v3: 12,
 };
+
+/** Months covered by one payment of a plan (1 for an unknown id). */
+export function getPlanMonths(planId: string) {
+  return PLAN_MONTHS[planId] ?? 1;
+}
 
 /**
  * Rounds up to the next price ending in ,49 or ,99: 6,58 -> 6,99, 4,08 ->

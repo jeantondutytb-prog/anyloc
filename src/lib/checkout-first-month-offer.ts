@@ -22,6 +22,30 @@ export function isDeclineOfferCode(code: string | null | undefined) {
 }
 
 /**
+ * Refusals where this card can't make the payment whatever the amount: the
+ * bank blocks online or recurring payments, or answers "later". Retrying the
+ * same card changes nothing, another payment method can.
+ */
+export const SWITCH_METHOD_CODES = [
+  "transaction_not_allowed",
+  "try_again_later",
+  "do_not_honor",
+  "generic_decline",
+  "card_not_supported",
+  "restricted_card",
+  "withdrawal_count_limit_exceeded",
+  "card_velocity_exceeded",
+] as const;
+
+/** What the payment popup tells after a refusal: an empty account, or a card that can't pay this. */
+export type DeclineKind = "funds" | "card";
+
+export function declineKind(code: string | null | undefined): DeclineKind | null {
+  if (isDeclineOfferCode(code)) return "funds";
+  return SWITCH_METHOD_CODES.some((switchCode) => switchCode === code) ? "card" : null;
+}
+
+/**
  * A/B test of the offer when the payment popup is closed. Drawn the first
  * time a visitor closes it, so only those visitors are in the test, and kept
  * in a cookie: the server reads it to allow the coupon. Stopped (same

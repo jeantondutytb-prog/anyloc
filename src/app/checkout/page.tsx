@@ -6,8 +6,10 @@ import { PricingExperimentExposure } from "@/components/pricing/pricing-experime
 import type { ReturningCustomer } from "@/lib/checkout-copy";
 import {
   enrollInCheckoutRecovery,
+  getActiveEmailOfferEnd,
   getActiveRecoveryOfferExpiry,
 } from "@/lib/checkout-recovery-server";
+import { toPaywallEmailOffer, type PaywallEmailOffer } from "@/lib/checkout-email-offer";
 import { DEFAULT_PLAN_ID, getCheckoutUrl, getPlanDisplayName, isValidPlanId } from "@/lib/constants";
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 import { getSubscriptionInactiveReason } from "@/lib/subscription-inactive";
@@ -45,11 +47,24 @@ export default async function CheckoutPage({
     retour?: string;
     offre?: string;
     parcours?: string;
+    payer?: string;
     prix?: string;
+    sortie?: string;
+    utm_source?: string;
+    utm_medium?: string;
+    utm_campaign?: string;
+    utm_content?: string;
   }>;
 }) {
-  const { plan, canceled, preview, paiement, pricing, retour, parcours, prix, offre } =
-    await searchParams;
+  const params = await searchParams;
+  const { plan, canceled, preview, paiement, pricing, retour, parcours, payer, prix, offre, sortie } =
+    params;
+  // Kept through the login redirect, so the email's clicks stay attributed.
+  const utmQuery = new URLSearchParams(
+    (["utm_source", "utm_medium", "utm_campaign", "utm_content"] as const).flatMap((key) =>
+      params[key] ? [[key, params[key]!]] : []
+    )
+  ).toString();
   // Email links (?paiement=1) open straight on the payment form.
   const focusPayment = paiement === "1";
   // Local design preview without an account: /checkout?preview=1 under `next dev` only.
@@ -60,7 +75,7 @@ export default async function CheckoutPage({
     redirect(getCheckoutUrl(DEFAULT_PLAN_ID));
   }
 
-  // The dev preview can force a grid: /checkout?preview=1&pricing=grid_v2.
+  // The dev preview can force a grid: /checkout?preview=1&pricing=lifetime.
   const pricingVariant =
     devPreview && parsePricingVariant(pricing)
       ? parsePricingVariant(pricing)!
@@ -77,6 +92,8 @@ export default async function CheckoutPage({
 
   // End of the -50 % welcome offer, while it runs. The dev preview can show
   // it ending in 90 s: /checkout?preview=1&offre=1.
+  // The 15-min email's discount, while it runs (see lib/checkout-email-offer).
+  let emailOffer: PaywallEmailOffer | null = null;
   let offerEndsAt: string | null =
     devPreview && offre === "1" ? previewOfferEnd() : null;
   // The dev preview can show the welcome-back copy: /checkout?preview=1&retour=1.
@@ -91,11 +108,12 @@ export default async function CheckoutPage({
 
     if (!user) {
       // Email recipients already have an account: log them in, then come back here.
+      const utm = utmQuery ? `&${utmQuery}` : "";
       const next = focusPayment
-        ? `${getCheckoutUrl(planId)}&paiement=1`
-        : getCheckoutUrl(planId);
+        ? `${getCheckoutUrl(planId)}&paiement=1${utm}`
+        : `${getCheckoutUrl(planId)}${utm}`;
       redirect(
-        `/${focusPayment ? "login" : "signup"}?plan=${planId}&next=${encodeURIComponent(next)}`
+        `/${focusPayment ? "login" : "signup"}?plan=${planId}${utm}&next=${encodeURIComponent(next)}`
       );
     }
 
@@ -109,6 +127,8 @@ export default async function CheckoutPage({
     await enrollInCheckoutRecovery(user, planId);
     offerEndsAt =
       (await getActiveRecoveryOfferExpiry(user.id).catch(() => null))?.toISOString() ?? null;
+    const emailOfferEnd = offerEndsAt ? null : await getActiveEmailOfferEnd(user.id).catch(() => null);
+    emailOffer = emailOfferEnd ? toPaywallEmailOffer(emailOfferEnd) : null;
 
     // A former subscriber gets welcome-back copy; a first purchase stays as is.
     if (isSupabaseAdminConfigured()) {
@@ -139,11 +159,16 @@ export default async function CheckoutPage({
         initialPlanId={planId}
         canceled={canceled === "true"}
         offerEndsAt={offerEndsAt}
+        emailOffer={emailOffer}
         focusPayment={focusPayment}
         stripePublishableKey={getStripePublishableKey()}
         returning={returning}
         fromQuiz={parcours === "quiz" && !returning}
+        // From the quiz's plan sheet (?payer=1): open the payment popup on arrival.
+        autoPay={parcours === "quiz" && !returning && !focusPayment && payer === "1"}
         priceDisplay={priceDisplay}
+        // The dev preview can open the annual exit offer: /checkout?preview=1&sortie=1.
+        previewAnnualExit={devPreview && sortie === "1"}
       />
     </>
   );

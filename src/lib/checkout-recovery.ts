@@ -14,11 +14,21 @@ export { RECOVERY_OFFER_PLAN_ID };
  * que ceux de 2 mois, Shu & Gneezy 2010) et les achats se font surtout juste
  * avant l'échéance ; un jour entier laisse le temps de trouver l'argent, quand
  * la moitié des refus de carte sont des comptes vides.
+ *
+ * Arrêtée le 30/10 : 3 ventes sur 346 visiteurs, toutes à 4,95 €, aucun annuel
+ * sur 27 paiements lancés. La conversion n'a pas bougé (0,87 % contre 0,72 %)
+ * et le revenu par visiteur est passé de 0,13 € à 0,04 €. Off tant que
+ * WELCOME_OFFER n'est pas "on" : les emails relancent alors sans remise, et le
+ * -50 % reste proposé après une carte refusée faute de fonds.
  */
 
 const HOUR_MS = 60 * 60 * 1000;
 
 export type RecoveryStep = 1 | 2 | 3;
+
+export function isWelcomeOfferEnabled() {
+  return process.env.WELCOME_OFFER === "on";
+}
 
 const FIRST_EMAIL_DELAY_MS = 1 * HOUR_MS;
 /** The last call goes out this long before the offer ends (18:00 Paris). */

@@ -5,6 +5,7 @@ import {
   getDueRecoveryStep,
   getRecoveryOfferExpiry,
   isRecoveryOfferActive,
+  isWelcomeOfferEnabled,
   signUnsubscribeToken,
   verifyUnsubscribeToken,
   type RecoveryState,
@@ -83,6 +84,15 @@ describe("isRecoveryOfferActive", () => {
 
   it("is off once the user paid", () => {
     assert.equal(isRecoveryOfferActive(state({ offerExpiresAt, convertedAt: at(3) }), at(3)), false);
+  });
+});
+
+describe("isWelcomeOfferEnabled", () => {
+  it("is off unless WELCOME_OFFER is on", (t) => {
+    assert.equal(isWelcomeOfferEnabled(), false);
+    t.after(() => delete process.env.WELCOME_OFFER);
+    process.env.WELCOME_OFFER = "on";
+    assert.equal(isWelcomeOfferEnabled(), true);
   });
 });
 
