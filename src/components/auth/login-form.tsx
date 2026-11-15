@@ -85,6 +85,12 @@ export function LoginForm({
           onToggle={() => setShowPassword((value) => !value)}
         />
 
+        <p className="-mt-2 text-right text-sm">
+          <Link href="/forgot-password" className="font-medium text-pink-600 hover:underline">
+            Mot de passe oublié ?
+          </Link>
+        </p>
+
         <Button type="submit" className="w-full" disabled={pending}>
           {pending ? (
             <>

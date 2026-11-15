@@ -13,7 +13,7 @@ struct MainTabView: View {
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .background(Theme.Dark.bg.ignoresSafeArea())
         .task {
-            await SignatureRenewalService.shared.refreshPairingStatus()
+            await PairingService.shared.refreshPairingStatus()
         }
     }
 }

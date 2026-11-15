@@ -8,6 +8,7 @@ import {
 } from "@/app/clippeurs/actions";
 import { Button } from "@/components/ui/button";
 import {
+  CLIPPER_PHONE_ERROR,
   CLIPPER_VIDEOS_PER_DAY,
   clipperWhatsAppUrl,
   normalizePhone,
@@ -33,6 +34,7 @@ export function ClipperApplicationForm({
   const [videosPerDay, setVideosPerDay] = useState("");
   const [firstName, setFirstName] = useState("");
   const [phone, setPhone] = useState("");
+  const [phoneTouched, setPhoneTouched] = useState(false);
   const [honeypot, setHoneypot] = useState("");
 
   const whatsAppUrl = clipperWhatsAppUrl({ firstName, videosPerDay });
@@ -77,6 +79,9 @@ export function ClipperApplicationForm({
   }
 
   const phoneIsValid = normalizePhone(phone) !== null;
+  // Only once they've typed a full number (or left the field), not on the first digit.
+  const phoneDigits = phone.replace(/\D/g, "").length;
+  const showPhoneError = !phoneIsValid && (phoneTouched || phoneDigits >= 10);
 
   return (
     <form
@@ -177,10 +182,22 @@ export function ClipperApplicationForm({
             value={phone}
             onChange={(event) => setPhone(event.target.value)}
             placeholder="06 12 34 56 78"
-            className={cn(inputClassName, "mt-5")}
+            aria-invalid={showPhoneError}
+            aria-describedby={showPhoneError ? "phone-error" : undefined}
+            onBlur={() => setPhoneTouched(true)}
+            className={cn(
+              inputClassName,
+              "mt-5",
+              showPhoneError && "border-red-300 focus:border-red-400 focus:ring-red-200"
+            )}
           />
+          {showPhoneError ? (
+            <p id="phone-error" className="mt-2 text-sm text-red-600">
+              {CLIPPER_PHONE_ERROR}
+            </p>
+          ) : null}
 
-          {state.error ? (
+          {state.error && !showPhoneError ? (
             <p role="alert" className="mt-3 text-sm text-red-600">
               {state.error}
             </p>

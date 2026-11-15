@@ -182,6 +182,194 @@ body {
   }
 }
 
+/* Map of the iPhone remote (/app): MapLibre controls in the app's dark theme. */
+.remote-map,
+.remote-map .maplibregl-canvas-container {
+  background: #1a1a1e;
+}
+
+.remote-map .maplibregl-ctrl.maplibregl-ctrl-attrib {
+  background: rgba(10, 10, 12, 0.6);
+  color: #55555d;
+  font-size: 10px;
+}
+
+.remote-map .maplibregl-ctrl-attrib a {
+  color: #8b8b94;
+}
+
+.remote-map .maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button {
+  filter: invert(1) opacity(0.5);
+}
+
+.dark-search-results,
+.dark-search-results .text-zinc-900 {
+  color: #c4c4ca;
+}
+
+.dark-search-results .text-zinc-500 {
+  color: #8b8b94;
+}
+
+.dark-search-results .text-pink-600\/70 {
+  color: #f472b6;
+}
+
+.dark-search-results li + li {
+  border-top: 1px solid #25252b;
+}
+
+.dark-search-results button:hover {
+  background: #16161a;
+}
+
+/* The marker element itself is positioned by MapLibre through `transform`:
+   only its children animate. */
+.dark-pin {
+  position: relative;
+  width: 64px;
+  height: 46px;
+}
+
+/* MapLibre writes the marker's own inline opacity: hide its children instead. */
+.dark-pin > * {
+  transition: opacity 0.25s ease;
+}
+
+.dark-pin--hidden {
+  pointer-events: none;
+}
+
+.dark-pin--hidden > * {
+  opacity: 0;
+}
+
+.dark-pin__glow {
+  position: absolute;
+  left: 0;
+  top: 27px;
+  width: 64px;
+  height: 20px;
+  border-radius: 9999px;
+  background: radial-gradient(closest-side, rgba(236, 72, 153, 0.5), transparent);
+}
+
+.dark-pin__drop {
+  position: absolute;
+  left: 13px;
+  top: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 19px 19px 19px 0;
+  transform: rotate(-45deg);
+  background: linear-gradient(135deg, #ec4899, #a855f7);
+  box-shadow: 0 6px 12px rgba(236, 72, 153, 0.55);
+  will-change: transform;
+}
+
+.dark-pin__drop--landing {
+  animation: dark-pin-drop 0.5s cubic-bezier(0.34, 1.4, 0.64, 1) backwards;
+}
+
+.dark-pin__dot {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: #fff;
+}
+
+.dark-pin--active .dark-pin__glow {
+  animation: dark-pin-pulse 1.8s ease-out infinite;
+}
+
+@keyframes dark-pin-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-28px) rotate(-45deg);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-45deg);
+  }
+}
+
+@keyframes dark-pin-pulse {
+  0% {
+    opacity: 0.9;
+    transform: scale(0.7);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+
+@keyframes remote-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes remote-rise {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.98);
+  }
+}
+
+@keyframes remote-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes showcase-ring {
+  0% {
+    opacity: 0.7;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.1);
+  }
+}
+
+@keyframes showcase-pulse {
+  from {
+    transform: scale(0.96);
+  }
+  to {
+    transform: scale(1.06);
+  }
+}
+
+@keyframes showcase-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes showcase-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes showcase-enter {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* Auth pages ease in instead of cutting in (e.g. arriving from onboarding). */
 @keyframes auth-enter {
   from {
@@ -202,6 +390,28 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .animate-auth-enter {
+    animation: none;
+  }
+}
+
+/* Post-quiz paywall: blocks come in one after the other, a short stagger. */
+@keyframes paywall-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.paywall-rise {
+  animation: paywall-rise 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .paywall-rise {
     animation: none;
   }
 }

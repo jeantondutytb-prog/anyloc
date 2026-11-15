@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  declineKind,
   FIRST_MONTH_OFFER_WINDOW_MS,
   getFirstMonthOfferPrice,
   getFirstMonthOfferReason,
@@ -15,6 +16,22 @@ describe("isDeclineOfferCode", () => {
     assert.equal(isDeclineOfferCode("insufficient_funds"), true);
     assert.equal(isDeclineOfferCode("highest_risk_level"), false);
     assert.equal(isDeclineOfferCode(undefined), false);
+  });
+});
+
+describe("declineKind", () => {
+  it("tells an empty account from a card that can't make this payment", () => {
+    assert.equal(declineKind("insufficient_funds"), "funds");
+    assert.equal(declineKind("transaction_not_allowed"), "card");
+    assert.equal(declineKind("try_again_later"), "card");
+    assert.equal(declineKind("do_not_honor"), "card");
+  });
+
+  it("leaves out the refusals another payment method wouldn't fix", () => {
+    // A mistyped number is pointed out by Stripe's form; a fraud block is not to be worked around.
+    assert.equal(declineKind("incorrect_number"), null);
+    assert.equal(declineKind("highest_risk_level"), null);
+    assert.equal(declineKind(undefined), null);
   });
 });
 
@@ -42,10 +59,17 @@ describe("getFirstMonthOfferReason", () => {
     );
   });
 
-  it("offers a closed checkout only to the offer group", () => {
+  it("offers a closed checkout only to the offer group", (t) => {
+    t.after(() => delete process.env.NEXT_PUBLIC_CLOSE_OFFER_EXPERIMENT);
+    process.env.NEXT_PUBLIC_CLOSE_OFFER_EXPERIMENT = "on";
     assert.equal(getFirstMonthOfferReason(closed, "monthly", "offer", later(0)), "closed");
     assert.equal(getFirstMonthOfferReason(closed, "monthly", "control", later(0)), null);
     assert.equal(getFirstMonthOfferReason(closed, "monthly", null, later(0)), null);
+  });
+
+  it("offers nothing on close while the test is off", () => {
+    assert.equal(getFirstMonthOfferReason(closed, "monthly", "offer", later(0)), null);
+    assert.equal(getFirstMonthOfferReason(declined, "monthly", "offer", later(0)), "declined");
   });
 
   it("expires after the window", () => {

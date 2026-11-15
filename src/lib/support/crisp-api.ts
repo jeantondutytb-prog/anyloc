@@ -12,7 +12,9 @@ export type CrispMessage = {
   content: unknown;
   fingerprint: number;
   timestamp: number;
-  user?: { nickname?: string; user_id?: string };
+  /** Set by Crisp on bot and automation messages. */
+  automated?: boolean;
+  user?: { nickname?: string; user_id?: string; type?: string };
 };
 
 export type CrispConversationMeta = {

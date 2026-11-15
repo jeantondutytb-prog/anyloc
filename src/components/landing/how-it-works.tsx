@@ -3,7 +3,7 @@ import { CreditCard, Download, MapPin } from "lucide-react";
 const steps = [
   {
     icon: CreditCard,
-    title: "Tu t'abonnes",
+    title: "Tu choisis ton plan",
     description:
       "Paiement sécurisé. Ton accès est actif dès que c'est validé.",
   },

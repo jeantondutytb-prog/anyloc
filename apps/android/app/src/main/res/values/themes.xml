@@ -5,4 +5,16 @@
         <item name="colorOnPrimary">#FFFFFF</item>
         <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimaryVariant</item>
     </style>
+
+    <!-- Main map screen: dark, edge to edge, no action bar (matches the iOS app). -->
+    <style name="Theme.Anyloc.Map" parent="Theme.MaterialComponents.NoActionBar">
+        <item name="colorPrimary">@color/accent_start</item>
+        <item name="colorAccent">@color/dark_accent</item>
+        <item name="colorControlActivated">@color/dark_accent</item>
+        <item name="android:windowBackground">@color/dark_bg</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@color/dark_bg</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:textColorHighlight">#66EC4899</item>
+    </style>
 </resources>

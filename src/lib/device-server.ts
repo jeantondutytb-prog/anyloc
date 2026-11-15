@@ -6,15 +6,24 @@ import {
 } from "@/lib/location";
 import { hashDeviceToken, type DeviceTokenRow } from "@/lib/device";
 import { buildSubscriptionAccessResponse } from "@/lib/subscription-access-api";
-import { getSubscriptionAccessForUser, isActiveSubscriptionStatus } from "@/lib/subscription";
+import {
+  getSubscriptionAccessForUser,
+  isActiveSubscriptionStatus,
+  type SubscriptionAccess,
+} from "@/lib/subscription";
 
 /** Caps linked devices so one subscription can't be shared across a group. */
 export const MAX_DEVICES_PER_USER = 10;
 
 export const DEVICE_LIMIT_ERROR = `Tu as atteint la limite de ${MAX_DEVICES_PER_USER} appareils. Supprime un ancien appareil dans Paramètres pour en ajouter un.`;
 
-export async function hasReachedDeviceLimit(userId: string) {
-  if (!isSupabaseAdminConfigured()) {
+export async function hasReachedDeviceLimit(
+  userId: string,
+  access: Pick<SubscriptionAccess, "isAdmin"> | null
+) {
+  // Admin accounts can link as many devices as they want. `access.isAdmin` is
+  // only set once the admin email is confirmed, unlike a raw email match.
+  if (access?.isAdmin || !isSupabaseAdminConfigured()) {
     return false;
   }
 

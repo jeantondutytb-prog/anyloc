@@ -16,6 +16,19 @@ export async function getLatestDeviceForUser(userId: string) {
   return (data as IosDeviceRow | null) ?? null;
 }
 
+export async function getRegisteredDeviceForUser(userId: string, udid: string) {
+  const { data, error } = await createAdminClient()
+    .from("ios_devices")
+    .select(DEVICE_COLUMNS)
+    .eq("user_id", userId)
+    .eq("status", "registered")
+    .ilike("udid", udid)
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as IosDeviceRow | null) ?? null;
+}
+
 export async function getDevice(id: string) {
   const { data, error } = await createAdminClient()
     .from("ios_devices")
@@ -83,13 +96,15 @@ export async function markDeviceFailed(id: string, message: string) {
   if (error) throw error;
 }
 
-export async function listRegisteredUdids() {
+export async function listRegisteredDevices() {
   const { data, error } = await createAdminClient()
     .from("ios_devices")
-    .select("udid")
+    .select("udid, registered_at")
     .eq("status", "registered");
   if (error) throw error;
-  return (data ?? []).map((row) => row.udid as string).filter(Boolean);
+  return ((data ?? []) as Array<{ udid: string | null; registered_at: string | null }>).flatMap((row) =>
+    row.udid && row.registered_at ? [{ udid: row.udid, registered_at: row.registered_at }] : []
+  );
 }
 
 async function latestBuild(filterSucceeded: boolean) {
