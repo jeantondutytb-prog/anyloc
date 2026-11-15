@@ -1,3 +1,4 @@
+import { OPS_ALERT_EMAIL } from "@/lib/ops-alert";
 import type { User } from "@supabase/supabase-js";
 import { after } from "next/server";
 import { logError } from "@/lib/log-error";
@@ -441,7 +442,7 @@ const NO_SALE_WINDOW_MS = 4 * 3600 * 1000;
 /** Stripe sessions in the window (one visitor opens several); below this, silence is normal. */
 const NO_SALE_MIN_CHECKOUTS = 30;
 
-export const OPS_ALERT_EMAIL = process.env.OPS_ALERT_EMAIL ?? "jean@anyloc.io";
+export { OPS_ALERT_EMAIL } from "@/lib/ops-alert";
 
 /** Emails an alert when checkouts keep coming but nothing sold for 4 h. At most once per 4 h. */
 export async function checkNoSaleAlert(now = new Date()) {
