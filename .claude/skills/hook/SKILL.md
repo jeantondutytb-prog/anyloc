@@ -14,7 +14,7 @@ Tout se fait en français, ton direct, tutoiement. Le résultat final est une li
 ## Étape 0 — Combien de vidéos ?
 
 - Si l'utilisateur donne un nombre (« /hook 36 », « 7 par compte »), utilise-le.
-- Sinon, reprends le « Rythme actuel » du journal (depuis le 28/10 : 3 par compte, 10h sûr · 15h test · 20h sûr).
+- Sinon, reprends le « Rythme actuel » du journal (depuis le 05/11 : 3 par compte, 10h sûr · 15h test · 20h test).
 - Répartis toujours équitablement entre les comptes actifs du journal.
 
 ## Mode nuit (tâche planifiée de 00h01)
@@ -53,13 +53,13 @@ On ne touche qu'aux hooks encore « À filmer » : étape `null` ou `a_filmer`, 
    | `null`, ou `hookId` à `null` | **garder le plan** ; `reason` le dit (« dernière vidéo pas encore cochée Posté », ou « pas encore de vidéo à lire »). Ne pas deviner le hook. |
    | reliée à un ancien `hors_plan` | **garder le plan** |
    | test **fort** | une **variante de ce test** : même idée, autre formulation |
-   | test **faible** | un **sûr** |
+   | test **faible** | un **autre test** : une autre situation déjà prête dans « Scripts traduits » du journal, pas le même angle ; un sûr seulement s'il n'y en a aucune |
    | sûr **fort** | **garder le plan** : le sûr marche, on continue |
    | sûr **faible** | **changer de sûr** : une autre formule des Gagnants, pas le même angle |
    | **normal** ou **pas assez de recul** | **garder le plan** |
 
    Tu peux t'écarter de ces règles si tu le justifies dans `reason`. Un nouveau hook **remplace** un « À filmer », il ne s'ajoute pas : **jamais plus de 3 hooks par compte et par jour**, en comptant ceux qui ont avancé. Il suit les règles strictes de l'étape 4 (pas mot pour mot sur un compte où il est déjà passé, « elle », Snap Map, rien d'« Abandonné »). Pour sa vidéo à refaire et son script, reprends ceux du test qu'il varie ou de la formule du sûr (journal, Gagnants) : pas de nouvelle vidéo à regarder.
-4. **Créneaux et hook du moment.** Ordre conseillé : **10h sûr · 15h test · 20h sûr**. Recalcule les créneaux des hooks restants autour de ce qui est déjà posté (si le test est parti à 10h, il reste deux sûrs, à 15h et 20h). Deux hooks du même compte peuvent avoir le même créneau : ce n'est pas une erreur. Mets `now: true` sur **un seul** hook par compte, celui à tourner tout de suite (passage de 8h40 → la vidéo de 10h, 13h40 → 15h, 18h40 → 20h).
+4. **Créneaux et hook du moment.** Ordre conseillé : **10h sûr · 15h test · 20h test**. Recalcule les créneaux des hooks restants autour de ce qui est déjà posté (si un test est parti à 10h, il reste un sûr et un test, à 15h et 20h). Deux hooks du même compte peuvent avoir le même créneau : ce n'est pas une erreur. Mets `now: true` sur **un seul** hook par compte, celui à tourner tout de suite (passage de 8h40 → la vidéo de 10h, 13h40 → 15h, 18h40 → 20h).
 5. **Envoyer à HQ**, comme à l'étape 5 bis : `date` = `date` de `/tmp/hooks-today.json`, et dans `hooks`, pour chaque compte qui a encore des « À filmer », **tous** ses « À filmer », réécrits ou gardés tels quels (un hook gardé mais pas renvoyé serait supprimé). Chacun avec sa `reason` (une phrase, 300 caractères au plus) et `now`. Pas de `results`, pas de `notes`. Un compte qui n'a plus de « À filmer » n'apparaît pas dans l'envoi.
 6. **Journal** : une ligne courte par compte sous le « Prévu le JJ/MM » du jour dans « Historique », par exemple « 13h40 — @kyliantropa : test de 10h ×1,8 → variante ». Rien d'autre, pas de commit.
 7. **Si l'envoi échoue** : sur un **400**, ne renvoie pas le même corps ; relis `GET /api/hooks/today` (étape 2), refais le corps à partir de cet état frais (étapes 3 à 5) et renvoie-le une seule fois. Sur une autre erreur, réessaie une fois après 1 minute. Si cette seconde tentative échoue aussi, écris l'erreur en tête du journal (sous « Dernière analyse »).
@@ -136,11 +136,25 @@ Mets à jour les règles du journal **seulement si les chiffres le justifient** 
 
 Pour chaque compte, N vidéos avec **hook / description**.
 
-**Répartition : moitié sûr, moitié test** (pour 3 vidéos par compte : 2 sûrs à 10h et 20h, 1 test à 15h ; les hits sortent entre 10h et 15h, règle 15).
-- **3 hooks sûrs** : uniquement des formules déjà prouvées dans « 🔥 Gagnants » et « Règles apprises » (parent + âge, couple + durée, rupture sur Gabin…). On peut les refaire tant qu'elles marchent, en changeant le chiffre, l'âge ou la formulation. Jamais un hook mot pour mot sur un compte où il est déjà passé.
-- **3 hooks tests** : des formats repérés à l'étape 1 bis (concurrents ou autre niche), adaptés à Anyloc. En priorité ceux de la « Veille » qui n'ont pas encore été testés, puis « Idées à tester ». Indiquer d'où vient chaque test (ex. « Locaflex, 27K likes »).
-- Ordre : **10h sûr · 15h test · 20h sûr**. Le sûr le plus fort va à 10h : il assure la journée. Le test de 15h reste dans la fenêtre des hits, et on sait déjà comment le sûr a démarré.
+**Répartition : un tiers sûr, deux tiers test** (pour 3 vidéos par compte : 1 sûr à 10h, 2 tests à 15h et 20h ; décision de Jean, 05/11). Le 04/11, la « découverte » de 20h faisait ~370 vues en moyenne, contre ~2,9K pour les situations de 15h : la répéter le soir n'apporte plus rien, alors qu'il faut plus de tentatives sur la formule qui peut percer.
+- **Hooks sûrs** : uniquement des formules déjà prouvées dans « 🔥 Gagnants » et « Règles apprises » (parent + âge, couple + durée, rupture sur Gabin…). On peut les refaire tant qu'elles marchent, en changeant le chiffre, l'âge ou la formulation. Jamais un hook mot pour mot sur un compte où il est déjà passé.
+- **Hooks tests** : des formats repérés à l'étape 1 bis (concurrents ou autre niche), adaptés à Anyloc. En priorité ceux de la « Veille » qui n'ont pas encore été testés, puis « Idées à tester ». Indiquer d'où vient chaque test (ex. « Locaflex, 27K likes »).
+- Ordre : **10h sûr · 15h test · 20h test**. Le sûr le plus fort va à 10h : il assure la journée. Le test de 15h reste dans la fenêtre des hits. Le test de 20h n'est jamais le même que celui de 15h : une autre situation qui passe le filtre Léo Grindarss, pour avoir deux tentatives différentes par jour.
 - Un test qui fait ✅ ou 🔥 sur 2 comptes passe dans les Gagnants : il devient un hook sûr.
+
+**Jamais de script inventé (décision de Jean, 04/11).** Les scripts écrits de tête ne marchent pas. Chaque script est la **traduction au plus près d'une vidéo qui a déjà percé** (≥ 50K vues) : mêmes plans, même ordre, même durée, même texte à l'écran et même voix traduits en français, même son. On ne change que ce qui est obligatoire :
+- le nom de l'appli → Anyloc (son écran montré au même moment que dans la source) ;
+- la carte (Find My, Life360, Apple Plans) → la Snap Map ;
+- un lieu étranger → l'équivalent français (« uni » → « la fac », « library » → « la bibli ») ;
+- le genre si besoin (règle 7).
+Pas de phrase ajoutée, pas d'étape inventée, pas de chute « améliorée ». Si aucune source ne colle, on ne fait pas le test.
+
+**Filtre Léo Grindarss avant de prendre une source** (les 4 doivent être vrais) :
+1. le sujet est une situation que l'audience connaît (parents, meuf, école, sortie), pas l'outil ;
+2. le hook promet un résultat, et l'outil n'est pas dans le hook ;
+3. on voit le moment où le résultat sort (le message de la mère, la loc posée à l'école…), pas juste la fonction ;
+4. ça se dévoile en étapes : situation → l'appli au milieu → résultat à la fin.
+Les sources qui passent le filtre sont dans « Scripts traduits » du journal.
 
 **Rien à l'aveugle : chaque hook a sa vidéo à refaire et son script.**
 - **Vidéo à refaire** (`source_url`) : pour un test, le lien de la vidéo du concurrent repérée à l'étape 1 bis ; pour un sûr, le lien de **notre** meilleure vidéo sur cette formule (`url` dans `videos.json`, ou `https://www.tiktok.com/@<compte>/video/<id>`). Jamais un lien inventé : si tu n'as pas le lien, mets `null` et dis-le dans les alertes.
@@ -149,7 +163,8 @@ Pour chaque compte, N vidéos avec **hook / description**.
   2. le déroulé seconde par seconde (ex. « 0-3 s : hook sur la carte · 3-8 s : la loc part de chez toi vers Dubaï · 8-12 s : zoom sur le Bitmoji ») ;
   3. les textes à l'écran après le hook, **les mêmes que la vidéo source, traduits en français** ;
   4. la durée visée et **la même musique ou le même son** que la vidéo source.
-  Pour un test, on copie la vidéo source clairement : même plan, même musique, même texte traduit. On ne la réinvente pas.
+  Pour un test **comme pour un sûr**, on copie la vidéo source : même plan, même musique, même texte traduit. On ne la réinvente pas. Pour un sûr, la source est notre propre vidéo gagnante : on la refait à l'identique, seul le hook change.
+  Le texte à l'écran se lit sur la planche de `frames.py` ; la voix, s'il y en a, se transcrit avec faster-whisper (modèle `small` déjà en cache, audio décodé avec ffmpeg comme dans `apps/video/scripts/tiktok-align.py`).
   Une même vidéo source sert à plusieurs hooks : ne la regarde qu'une fois, réutilise le script.
 
 **Règles strictes :**

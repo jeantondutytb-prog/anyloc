@@ -21,8 +21,8 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 ACCOUNTS = ["kyliantropa", "tristanpauki", "mariusgreto", "gabrielhelau"]  # depuis le 16/10/2026 (gabrielhelau depuis le 26/10) ; anciens : antoine.ckts chloe.rtps emma.ftpl emma.srtp margaux.fgts mateo.ltpr
-ACCOUNTS += ["introuvable........1", "moracle09"]  # TikTok des clippeurs : Ben depuis le 29/10, Matis depuis le 30/10
-ACCOUNTS += ["yt:mariusgreto", "yt:tristanpauki", "yt:Kylian-q6u"]  # Shorts YouTube, depuis le 29/10 ; même liste que SCANNED_ACCOUNTS dans anyloc-hq
+ACCOUNTS += ["annadbpljux", "camilyhd337", "anaisuxfzsv"]  # depuis le 13/11 ; même liste que SCANNED_ACCOUNTS dans anyloc-hq
+# Retirés le 13/11 : TikTok des clippeurs (introuvable........1, moracle09, anyloc.668, anyloc.669) et Shorts YouTube (yt:mariusgreto, yt:tristanpauki, yt:Kylian-q6u)
 TZ = ZoneInfo("Europe/Paris")
 STATE = Path(__file__).with_name("state.json")
 HQ_ENV = Path(__file__).with_name(".env")
@@ -189,6 +189,11 @@ def daily():
             row[a], errors = "", errors + [a]
             continue
         total = sum(views for _, views in videos)
+        # yt-dlp renvoie parfois une liste tronquée : le cumul s'effondre, puis tout revient le lendemain
+        # crédité d'un coup (tristanpauki, 9-10/11/2026). Une baisse de plus de 10 % est traitée comme un échec.
+        if total < 0.9 * state["cumul"].get(a, 0):
+            row[a], errors = "", errors + [f"{a} (liste tronquée : {total} < {state['cumul'][a]})"]
+            continue
         # Un compte ajouté depuis le dernier relevé part de son cumul actuel, sans tout créditer à hier.
         row[a] = total - state["cumul"].get(a, total)
         state["cumul"][a] = total
