@@ -118,6 +118,8 @@ class MainActivity : AppCompatActivity() {
     private var spotCategory = "all"
     private var pendingSpoofingStart = false
     private var setupHintShown = false
+    /** The developer-options step on screen, so its buttons open the right menu. */
+    private var setupStep: SetupGuide.Step? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -561,17 +563,21 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (!mockAllowed) {
+            val step = SetupGuide.step(Build.MANUFACTURER, isDeveloperOptionsEnabled())
+            setupStep = step
             showSetupOverlay(
-                title = "Encore 1 étape",
-                body = "Tape 7 fois sur Numéro de build, puis choisis Anyloc comme application de localisation fictive. Les boutons ouvrent les bons menus.",
-                primary = "Ouvrir les options développeur",
-                secondary = "Ouvrir À propos du téléphone",
+                title = step.title,
+                body = step.body,
+                primary = step.primary,
+                secondary = step.secondary,
                 done = "C'est fait, vérifier",
             )
-            setStatus("Choisis Anyloc dans Options développeur → Application de localisation fictive")
+            setStatus(step.status)
             setupHintShown = true
             return
         }
+
+        setupStep = null
 
         hideSetupOverlay()
 
@@ -605,7 +611,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        openSettings(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
+        openSetupTarget(setupStep?.primaryTarget ?: SetupGuide.Target.ABOUT_PHONE)
     }
 
     private fun handleSetupSecondary() {
@@ -616,8 +622,22 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        openSettings(Settings.ACTION_DEVICE_INFO_SETTINGS)
+        openSetupTarget(setupStep?.secondaryTarget ?: SetupGuide.Target.DEVELOPER_OPTIONS)
     }
+
+    private fun openSetupTarget(target: SetupGuide.Target) {
+        openSettings(
+            when (target) {
+                SetupGuide.Target.ABOUT_PHONE -> Settings.ACTION_DEVICE_INFO_SETTINGS
+                SetupGuide.Target.DEVELOPER_OPTIONS -> Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS
+            }
+        )
+    }
+
+    /** True once the user has tapped 7 times on the build entry (the menu exists). */
+    private fun isDeveloperOptionsEnabled(): Boolean = runCatching {
+        Settings.Global.getInt(contentResolver, Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0) == 1
+    }.getOrDefault(false)
 
     private fun openSettings(action: String) {
         val intents = listOf(

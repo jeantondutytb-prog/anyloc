@@ -92,4 +92,6 @@ dependencies {
     implementation("androidx.browser:browser:1.8.0")
     implementation("org.maplibre.gl:android-sdk:11.5.2")
     implementation("com.google.android.gms:play-services-location:21.3.0")
+
+    testImplementation("junit:junit:4.13.2")
 }
