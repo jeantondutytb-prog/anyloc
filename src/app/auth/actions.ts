@@ -1,6 +1,15 @@
 "use server";
 
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { checkAuthAttempt, recordAuthSuccess } from "@/lib/auth-attempt-limit";
+import {
+  createTrustedDeviceToken,
+  getTrustedDeviceSecret,
+  isTrustedDeviceToken,
+  TRUSTED_DEVICE_COOKIE,
+  TRUSTED_DEVICE_MAX_AGE_SECONDS,
+} from "@/lib/auth-trusted-device";
 import { resolvePostAuthRedirect } from "@/lib/auth-redirect";
 import { getCheckoutUrl } from "@/lib/constants";
 import {
@@ -8,6 +17,7 @@ import {
   identifyPostHogUser,
 } from "@/lib/posthog/server";
 import { validateEmail, validatePassword } from "@/lib/password-policy";
+import { getClientIpFromHeaders } from "@/lib/rate-limit";
 import { sanitizeRedirectPath } from "@/lib/safe-redirect";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { getAppUrl } from "@/lib/stripe";
@@ -52,6 +62,30 @@ function translateAuthError(message: string) {
   return message;
 }
 
+/** Counts one password attempt (by email and visitor IP) before Supabase is called. */
+async function limitAuthAttempt(email: string) {
+  const ip = getClientIpFromHeaders(await headers());
+  const secret = getTrustedDeviceSecret();
+  const trustedDevice = secret
+    ? isTrustedDeviceToken(secret, email, (await cookies()).get(TRUSTED_DEVICE_COOKIE)?.value)
+    : false;
+  return { ...checkAuthAttempt({ email, ip, trustedDevice }), ip };
+}
+
+/** Right password: reset this IP's tries and remember this browser for the account. */
+async function rememberAuthSuccess(email: string, ip: string) {
+  recordAuthSuccess(email, ip);
+  const secret = getTrustedDeviceSecret();
+  if (!secret) return;
+  (await cookies()).set(TRUSTED_DEVICE_COOKIE, createTrustedDeviceToken(secret, email), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: TRUSTED_DEVICE_MAX_AGE_SECONDS,
+  });
+}
+
 function getRedirectTo(formData: FormData) {
   const redirectTo = String(formData.get("redirectTo") ?? "").trim();
   return sanitizeRedirectPath(redirectTo, getCheckoutUrl());
@@ -72,6 +106,11 @@ export async function login(
     return { error: "L'authentification n'est pas configurée." };
   }
 
+  const attempt = await limitAuthAttempt(email);
+  if (!attempt.ok) {
+    return { error: attempt.error };
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
@@ -83,6 +122,7 @@ export async function login(
   }
 
   if (data.user) {
+    await rememberAuthSuccess(email, attempt.ip);
     await identifyPostHogUser({
       distinctId: data.user.id,
       properties: { email: data.user.email },
@@ -136,6 +176,12 @@ export async function signup(
     return { error: "L'authentification n'est pas configurée." };
   }
 
+  // Signup can try a password on an existing account too (below): same limit.
+  const attempt = await limitAuthAttempt(email);
+  if (!attempt.ok) {
+    return { error: attempt.error };
+  }
+
   const supabase = await createClient();
   const redirectTo = getRedirectTo(formData);
   const { data, error } = await supabase.auth.signUp({
@@ -154,6 +200,7 @@ export async function signup(
     if (accountExists) {
       const { data: login } = await supabase.auth.signInWithPassword({ email, password });
       if (login.user) {
+        await rememberAuthSuccess(email, attempt.ip);
         await identifyPostHogUser({
           distinctId: login.user.id,
           properties: { email: login.user.email },
