@@ -13,6 +13,8 @@ import {
   type CrispMessage,
 } from "@/lib/support/crisp-api";
 import { describeCustomer } from "@/lib/support/customer-context";
+import { enforceHandover, type HandoverGuardRule } from "@/lib/support/handover-guard";
+import { alertHandover, alertSupportError } from "@/lib/support/support-alerts";
 
 export type SupportAgentMode = "off" | "draft" | "live";
 
@@ -36,6 +38,13 @@ const DEFAULT_HANDOVER_REPLY =
 export function getSupportAgentMode(): SupportAgentMode {
   const mode = process.env.CRISP_AGENT_MODE;
   return mode === "draft" || mode === "live" ? mode : "off";
+}
+
+/** The visitor's last message as plain text, for the handover email. */
+export function getLastVisitorText(messages: CrispMessage[]) {
+  const last = [...messages].reverse().find((message) => message.from === "user");
+  if (!last) return "";
+  return typeof last.content === "string" ? last.content : `[message de type ${last.type}]`;
 }
 
 function isHumanText(message: CrispMessage) {
@@ -219,6 +228,8 @@ export async function handleCrispVisitorMessage({
 
   let composing = false;
   let decision: SupportDecision | undefined;
+  let guardRule: HandoverGuardRule | null = null;
+  let lastVisitorMessage = "";
   try {
     const [messages, meta, escalated] = await Promise.all([
       getConversationMessages(sessionId),
@@ -226,6 +237,7 @@ export async function handleCrispVisitorMessage({
       wasEscalatedRecently(sessionId),
     ]);
     const segments = meta?.segments ?? [];
+    lastVisitorMessage = getLastVisitorText(messages);
 
     const skipReason = getSkipReason({ messages, fingerprint, segments, escalated, mode });
     if (skipReason) {
@@ -240,13 +252,16 @@ export async function handleCrispVisitorMessage({
 
     // The Crisp email isn't verified: a live answer goes straight to whoever
     // typed it, so account data only reaches the model behind a human review.
-    decision = await decideSupportReply({
+    const proposed = await decideSupportReply({
       transcript: formatTranscript(messages),
       customer:
         mode === "draft"
           ? await describeCustomer(meta?.email)
           : "Email non vérifié : pas de données de compte. Pour une question sur le compte, renvoie vers l'espace connecté.",
     });
+    // A refund promise, a discount, "zero ban" or a handover only announced
+    // becomes a real handover, whatever the model decided.
+    ({ decision, rule: guardRule } = enforceHandover(proposed));
 
     if (mode === "draft") {
       await sendPrivateNote(sessionId, formatDraftNote(decision));
@@ -255,13 +270,21 @@ export async function handleCrispVisitorMessage({
     }
 
     await recordOutcome(sessionId, fingerprint, { status: "done", decision });
+
+    if (decision.action === "escalate") {
+      await alertHandover({
+        sessionId,
+        reason: decision.reason,
+        reply: decision.reply || DEFAULT_HANDOVER_REPLY,
+        lastVisitorMessage,
+        guardRule,
+      });
+    }
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     await logError("support-agent/handle", error, { session_id: sessionId });
-    await recordOutcome(sessionId, fingerprint, {
-      status: "error",
-      decision,
-      error: error instanceof Error ? error.message : String(error),
-    });
+    await recordOutcome(sessionId, fingerprint, { status: "error", decision, error: message });
+    await alertSupportError({ sessionId, error: message });
   } finally {
     if (composing) {
       await setComposing(sessionId, false).catch(() => undefined);
