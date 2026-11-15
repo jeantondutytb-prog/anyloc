@@ -1,7 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { resolvePostAuthRedirect } from "@/lib/auth-redirect";
+import { trackGoogleSignup } from "@/lib/google-signup";
 import { logError } from "@/lib/log-error";
-import { clearOAuthNextCookie, getRequestOrigin, readOAuthNext } from "@/lib/oauth";
+import {
+  clearOAuthNextCookie,
+  clearOAuthStartedCookie,
+  getRequestOrigin,
+  readOAuthNext,
+  readOAuthStartedAt,
+} from "@/lib/oauth";
 import { sanitizeRedirectPath } from "@/lib/safe-redirect";
 import {
   createCookieCollector,
@@ -36,6 +43,14 @@ export async function GET(request: NextRequest) {
     } = await supabase.auth.getUser();
     userId = user?.id;
 
+    if (user) {
+      // First Google signup only: a reconnection sends nothing. Analytics
+      // must never block the login, so a PostHog failure is just logged.
+      await trackGoogleSignup(user, readOAuthStartedAt(request)).catch((trackError) =>
+        logError("auth/callback", trackError, { userId, step: "track_google_signup" })
+      );
+    }
+
     const destination = user
       ? await resolvePostAuthRedirect(user.id, user.email, requestedNext)
       : sanitizeRedirectPath(requestedNext, "/dashboard");
@@ -43,6 +58,7 @@ export async function GET(request: NextRequest) {
     const response = NextResponse.redirect(new URL(destination, origin));
     collector.applyTo(response);
     clearOAuthNextCookie(response, request);
+    clearOAuthStartedCookie(response, request);
     return response;
   } catch (error) {
     await logError("auth/callback", error, { userId, step: "unexpected" });

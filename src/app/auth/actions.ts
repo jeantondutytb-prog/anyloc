@@ -271,6 +271,7 @@ export async function signup(
     await capturePostHogEvent({
       distinctId: data.user.id,
       event: "signup_completed",
+      properties: { method: "email" },
     });
 
     redirect(

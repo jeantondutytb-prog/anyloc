@@ -55,3 +55,34 @@ export function clearOAuthNextCookie(response: NextResponse, request: Request) {
     maxAge: 0,
   });
 }
+
+/**
+ * When the Google round trip started (ms since epoch). The callback compares
+ * it with the account's created_at to tell a first signup from a reconnection.
+ */
+export const OAUTH_STARTED_COOKIE = "anyloc_oauth_started";
+
+export function setOAuthStartedCookie(
+  response: NextResponse,
+  request: Request,
+  now = Date.now()
+) {
+  response.cookies.set(OAUTH_STARTED_COOKIE, String(now), oauthNextCookieOptions(request));
+}
+
+export function readOAuthStartedAt(request: NextRequest): number | null {
+  const value = request.cookies.get(OAUTH_STARTED_COOKIE)?.value;
+
+  if (!value || !/^\d{1,16}$/.test(value)) {
+    return null;
+  }
+
+  return Number(value);
+}
+
+export function clearOAuthStartedCookie(response: NextResponse, request: Request) {
+  response.cookies.set(OAUTH_STARTED_COOKIE, "", {
+    ...oauthNextCookieOptions(request),
+    maxAge: 0,
+  });
+}
