@@ -7,7 +7,6 @@ import {
   type SupportDecision,
 } from "@/lib/support/agent";
 import {
-  SUPPORT_AGENT_NICKNAME,
   getConversationMessages,
   getConversationMeta,
   markConversationUnresolved,
@@ -18,7 +17,8 @@ import {
   type CrispMessage,
 } from "@/lib/support/crisp-api";
 import { describeCustomer } from "@/lib/support/customer-context";
-import { enforceHandover, type HandoverGuardRule } from "@/lib/support/handover-guard";
+import { enforceHandover, GUARD_HANDOVER_REPLY, type HandoverGuardRule } from "@/lib/support/handover-guard";
+import { describeMessage, isHumanText, toAgentTexts } from "@/lib/support/message-kind";
 import { enforceReplyLength, sendWelcomeOnce, WELCOME_MESSAGE } from "@/lib/support/reply-shape";
 import { alertHandover, alertSupportError } from "@/lib/support/support-alerts";
 
@@ -60,11 +60,18 @@ export function getLastVisitorText(messages: CrispMessage[]) {
   return typeof last.content === "string" ? last.content : `[message de type ${last.type}]`;
 }
 
-function isHumanText(message: CrispMessage) {
-  return (
-    message.from === "operator" &&
-    message.type !== "note" &&
-    message.user?.nickname !== SUPPORT_AGENT_NICKNAME
+/**
+ * The recent message by a person from the team that makes Léa step back, if
+ * any. Crisp's automated messages and Léa's own never count.
+ */
+export function findHumanTakeover(
+  messages: CrispMessage[],
+  agentTexts?: Set<string>,
+  now = Date.now()
+) {
+  // Crisp timestamps are in milliseconds.
+  return messages.find(
+    (message) => isHumanText(message, agentTexts) && now - message.timestamp < HUMAN_TAKEOVER_MS
   );
 }
 
@@ -77,6 +84,7 @@ export function getSkipReason({
   fingerprint,
   segments,
   escalated = false,
+  agentTexts,
   mode,
   now = Date.now(),
 }: {
@@ -85,6 +93,8 @@ export function getSkipReason({
   segments: string[];
   /** The agent handed this conversation over recently (from our own log). */
   escalated?: boolean;
+  /** What Léa already sent here (from our own log), to recognise her messages. */
+  agentTexts?: Set<string>;
   mode: Exclude<SupportAgentMode, "off">;
   now?: number;
 }): "superseded" | "human_active" | null {
@@ -98,35 +108,51 @@ export function getSkipReason({
     return null;
   }
 
-  // Crisp timestamps are in milliseconds.
-  if (messages.some((message) => isHumanText(message) && now - message.timestamp < HUMAN_TAKEOVER_MS)) {
+  if (findHumanTakeover(messages, agentTexts, now)) {
     return "human_active";
   }
 
   return escalated || segments.includes(ESCALATED_SEGMENT) ? "human_active" : null;
 }
 
+/** Why Léa stepped back, kept in our log (no message content). */
+function describeSkip(
+  reason: "superseded" | "human_active",
+  messages: CrispMessage[],
+  agentTexts: Set<string>
+) {
+  if (reason !== "human_active") return undefined;
+  const human = findHumanTakeover(messages, agentTexts);
+  return human ? `Humain détecté : ${describeMessage(human)}` : "Conversation passée à l'équipe";
+}
+
 /**
- * Crisp segments and notes need a paid plan, so the handover is also
- * remembered in our own log.
+ * What Léa did in this conversation, from our own log: whether she handed it
+ * over recently (Crisp segments and notes need a paid plan), and the texts
+ * she sent, to recognise her messages in Crisp.
  */
-async function wasEscalatedRecently(sessionId: string) {
+async function getAgentHistory(sessionId: string) {
+  const fixedTexts = [WELCOME_MESSAGE, DEFAULT_HANDOVER_REPLY, GUARD_HANDOVER_REPLY];
   if (!isSupabaseAdminConfigured()) {
-    return false;
+    return { escalated: false, agentTexts: toAgentTexts(fixedTexts) };
   }
   const { data, error } = await createAdminClient()
     .from("support_agent_events")
-    .select("id")
+    .select("action, reply, created_at")
     .eq("session_id", sessionId)
-    .eq("action", "escalate")
-    .gte("created_at", new Date(Date.now() - ESCALATION_HOLD_MS).toISOString())
-    .limit(1);
+    .order("created_at", { ascending: false })
+    .limit(200);
 
   if (error) {
-    await logError("support-agent/escalation-check", error, { session_id: sessionId });
-    return false;
+    await logError("support-agent/history", error, { session_id: sessionId });
+    return { escalated: false, agentTexts: toAgentTexts(fixedTexts) };
   }
-  return (data ?? []).length > 0;
+  const rows = (data ?? []) as { action: string | null; reply: string | null; created_at: string }[];
+  const holdStart = Date.now() - ESCALATION_HOLD_MS;
+  return {
+    escalated: rows.some((row) => row.action === "escalate" && Date.parse(row.created_at) >= holdStart),
+    agentTexts: toAgentTexts([...fixedTexts, ...rows.map((row) => row.reply)]),
+  };
 }
 
 async function claimMessage(sessionId: string, fingerprint: number, mode: SupportAgentMode) {
@@ -155,6 +181,7 @@ async function recordOutcome(
     status: "superseded" | "human_active" | "done" | "error";
     decision?: SupportDecision;
     error?: string;
+    note?: string;
   }
 ) {
   if (!isSupabaseAdminConfigured()) {
@@ -168,7 +195,7 @@ async function recordOutcome(
       action: decision?.action ?? null,
       reply: decision && decision.action !== "ignore" ? decision.reply : null,
       reason: decision?.action === "escalate" ? decision.reason : null,
-      internal_note: decision?.internalNote ?? null,
+      internal_note: [decision?.internalNote, outcome.note].filter(Boolean).join("\n\n") || null,
       error: outcome.error ?? null,
       finished_at: new Date().toISOString(),
     })
@@ -274,20 +301,24 @@ export async function handleCrispVisitorMessage({
     if (mode === "live") {
       // First look, before the wait: stay out of a conversation a human owns,
       // otherwise greet a new visitor at once and show Léa typing.
-      const [early, earlyMeta, earlyEscalated] = await Promise.all([
+      const [early, earlyMeta, earlyHistory] = await Promise.all([
         getConversationMessages(sessionId),
         getConversationMeta(sessionId),
-        wasEscalatedRecently(sessionId),
+        getAgentHistory(sessionId),
       ]);
       const earlySkip = getSkipReason({
         messages: early,
         fingerprint,
         segments: earlyMeta?.segments ?? [],
-        escalated: earlyEscalated,
+        escalated: earlyHistory.escalated,
+        agentTexts: earlyHistory.agentTexts,
         mode,
       });
       if (earlySkip) {
-        await recordOutcome(sessionId, fingerprint, { status: earlySkip });
+        await recordOutcome(sessionId, fingerprint, {
+          status: earlySkip,
+          note: describeSkip(earlySkip, early, earlyHistory.agentTexts),
+        });
         return;
       }
       await sendWelcomeOnce({ sessionId, messages: early, claim: claimWelcome, send: sendOperatorText });
@@ -298,17 +329,20 @@ export async function handleCrispVisitorMessage({
 
     await new Promise((resolve) => setTimeout(resolve, DEBOUNCE_MS));
 
-    const [messages, meta, escalated] = await Promise.all([
+    const [messages, meta, { escalated, agentTexts }] = await Promise.all([
       getConversationMessages(sessionId),
       getConversationMeta(sessionId),
-      wasEscalatedRecently(sessionId),
+      getAgentHistory(sessionId),
     ]);
     const segments = meta?.segments ?? [];
     lastVisitorMessage = getLastVisitorText(messages);
 
-    const skipReason = getSkipReason({ messages, fingerprint, segments, escalated, mode });
+    const skipReason = getSkipReason({ messages, fingerprint, segments, escalated, agentTexts, mode });
     if (skipReason) {
-      await recordOutcome(sessionId, fingerprint, { status: skipReason });
+      await recordOutcome(sessionId, fingerprint, {
+        status: skipReason,
+        note: describeSkip(skipReason, messages, agentTexts),
+      });
       return;
     }
 
@@ -322,7 +356,7 @@ export async function handleCrispVisitorMessage({
     // The Crisp email isn't verified: a live answer goes straight to whoever
     // typed it, so account data only reaches the model behind a human review.
     const proposed = await decideSupportReply({
-      transcript: formatTranscript(messages),
+      transcript: formatTranscript(messages, agentTexts),
       customer:
         mode === "draft"
           ? await describeCustomer(meta?.email)
@@ -344,7 +378,12 @@ export async function handleCrispVisitorMessage({
     }
 
     mark("sent");
-    await recordOutcome(sessionId, fingerprint, { status: "done", decision });
+    // Also in our log: Vercel keeps runtime logs only a short while.
+    await recordOutcome(sessionId, fingerprint, {
+      status: "done",
+      decision,
+      note: `Temps (ms depuis la prise en charge) : ${JSON.stringify(timings)}`,
+    });
     console.info("support-agent timing", JSON.stringify({ session_id: sessionId, ms: timings }));
 
     if (decision.action === "escalate") {

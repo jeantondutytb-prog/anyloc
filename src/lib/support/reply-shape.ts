@@ -1,4 +1,5 @@
-import { SUPPORT_AGENT_NICKNAME, type CrispMessage } from "@/lib/support/crisp-api";
+import type { CrispMessage } from "@/lib/support/crisp-api";
+import { isTeamText } from "@/lib/support/message-kind";
 
 /**
  * What the visitor sees and how long it is: the instant welcome (sent before
@@ -11,25 +12,19 @@ export const WELCOME_MESSAGE = "Hello ! Je suis Léa, je vais t'aider à trouver
 /** Above this, an answer is shortened (model rewrite, then a clean cut). */
 export const MAX_REPLY_CHARS = 350;
 
-function isOperatorText(message: CrispMessage) {
-  return message.from === "operator" && message.type !== "note";
-}
-
 /**
  * True for a first contact: nobody from Anyloc (Léa or a human) has written
- * in this conversation yet. A conversation already under way gets no welcome.
+ * in this conversation yet. Crisp's own automated messages (email request…)
+ * don't count. A conversation already under way gets no welcome.
  */
 export function shouldSendWelcome(messages: CrispMessage[]) {
-  return !messages.some(isOperatorText);
+  return !messages.some(isTeamText);
 }
 
 /** True when Léa's welcome is already in the conversation. */
 export function hasWelcome(messages: CrispMessage[]) {
   return messages.some(
-    (message) =>
-      isOperatorText(message) &&
-      message.user?.nickname === SUPPORT_AGENT_NICKNAME &&
-      message.content === WELCOME_MESSAGE
+    (message) => message.from === "operator" && message.type !== "note" && message.content === WELCOME_MESSAGE
   );
 }
 
