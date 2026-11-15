@@ -27,7 +27,7 @@ type Phase = "connect" | "ready" | "showcase" | "lock" | "sync" | "done";
 
 type ShowcaseStep = "connecting" | "sending" | "done";
 
-const APPS = ["Snap", "Insta", "Tinder", "Life360"];
+const DEFAULT_APPS = ["Snap", "Insta", "Tinder", "Life360"];
 
 const CAPTIONS: Record<Phase, string> = {
   connect: "Connexion au GPS…",
@@ -56,7 +56,7 @@ const SHOWCASE_END_MS = 5800;
  * branded card (the map jumps to the destination behind it), lock,
  * apps synced one by one, then "done".
  */
-function useTimeline(destination: OnboardingDestination, withTravel: boolean) {
+function useTimeline(destination: OnboardingDestination, withTravel: boolean, apps: string[]) {
   const [phase, setPhase] = useState<Phase>("connect");
   const [typed, setTyped] = useState(0);
   const [syncedApps, setSyncedApps] = useState(0);
@@ -98,8 +98,8 @@ function useTimeline(destination: OnboardingDestination, withTravel: boolean) {
     const lockAt = SHOWCASE_END_MS;
     at(lockAt, () => setPhase("lock"));
     at(lockAt + 500, () => setPhase("sync"));
-    APPS.forEach((_, i) => at(lockAt + 750 + i * 300, () => setSyncedApps(i + 1)));
-    at(lockAt + 750 + APPS.length * 300, () => setPhase("done"));
+    apps.forEach((_, i) => at(lockAt + 750 + i * 300, () => setSyncedApps(i + 1)));
+    at(lockAt + 750 + apps.length * 300, () => setPhase("done"));
   }
 
   return { phase, typed, syncedApps, showcaseStep, covered, start };
@@ -250,6 +250,7 @@ export function OnboardingAhaMoment({
   onLockedClick,
   onTeleportStart,
   onDone,
+  apps: appsProp,
 }: {
   destination: OnboardingDestination;
   /** Where the visitor is (IP city): the pin starts there, then flies. */
@@ -261,11 +262,14 @@ export function OnboardingAhaMoment({
   onTeleportStart?: () => void;
   /** The teleport animation is over: the position is "active". */
   onDone?: () => void;
+  /** Chips of the apps being synced; the quiz passes the ones the visitor picked. */
+  apps?: string[];
 }) {
+  const apps = appsProp && appsProp.length > 0 ? appsProp : DEFAULT_APPS;
   // No flight when "there" is basically "here" (same city).
   const distance = origin ? distanceKm(origin, destination) : 0;
   const withTravel = Boolean(origin) && distance > 30;
-  const { phase, typed, syncedApps, showcaseStep, covered, start } = useTimeline(destination, withTravel);
+  const { phase, typed, syncedApps, showcaseStep, covered, start } = useTimeline(destination, withTravel, apps);
 
   useEffect(() => {
     if (phase === "done") onDone?.();
@@ -445,8 +449,11 @@ export function OnboardingAhaMoment({
             </div>
           </div>
 
-          <div className="mt-3 grid grid-cols-4 gap-1.5">
-            {APPS.map((app, index) => {
+          <div
+            className="mt-3 grid gap-1.5"
+            style={{ gridTemplateColumns: `repeat(${apps.length <= 4 ? apps.length : 3}, minmax(0, 1fr))` }}
+          >
+            {apps.map((app, index) => {
               const synced = syncedApps > index;
               const syncing = phase === "sync" && syncedApps === index;
 
@@ -454,7 +461,7 @@ export function OnboardingAhaMoment({
                 <div
                   key={app}
                   className={cn(
-                    "flex h-8 items-center justify-center gap-1 rounded-[10px] border text-[12px] font-semibold transition-colors duration-300",
+                    "flex h-8 items-center justify-center gap-1 rounded-[10px] border px-1 text-[12px] font-semibold transition-colors duration-300",
                     synced
                       ? "border-pink-500/[0.42] bg-pink-500/[0.13] text-[#F472B6]"
                       : syncing
@@ -462,8 +469,8 @@ export function OnboardingAhaMoment({
                         : "border-[#25252B] bg-[#16161A] text-[#55555D]",
                   )}
                 >
-                  {synced && <Check className="h-3 w-3" strokeWidth={3} />}
-                  {app}
+                  {synced && <Check className="h-3 w-3 shrink-0" strokeWidth={3} />}
+                  <span className="truncate">{app}</span>
                 </div>
               );
             })}

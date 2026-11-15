@@ -54,9 +54,12 @@ export function PlanPrice({
           {plan.perDayLabel}
         </span>
       </div>
-      <p className={cn("mt-1", sublineSize, "text-zinc-500")}>
-        {formatPlanBillingTotal(plan)}
-      </p>
+      {/* Paid once: the big line already reads « 89 € une fois ». */}
+      {plan.oneTime ? null : (
+        <p className={cn("mt-1", sublineSize, "text-zinc-500")}>
+          {formatPlanBillingTotal(plan)}
+        </p>
+      )}
     </div>
   );
 }

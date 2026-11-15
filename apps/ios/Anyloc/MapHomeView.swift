@@ -71,7 +71,7 @@ struct MapHomeView: View {
         }
         .alert("Active LocalDevVPN", isPresented: $onDevice.needsVPN) {
             Button("Ouvrir LocalDevVPN") {
-                UIApplication.shared.open(SignatureRenewalService.localDevVpnAppStoreURL)
+                UIApplication.shared.open(PairingService.localDevVpnAppStoreURL)
             }
             Button("Annuler", role: .cancel) {}
         } message: {

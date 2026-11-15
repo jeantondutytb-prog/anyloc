@@ -1,6 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { SUPPORT_AGENT_NICKNAME, type CrispMessage } from "@/lib/support/crisp-api";
 import { buildSupportKnowledge } from "@/lib/support/knowledge";
+import { isAgentText, isTeamText } from "@/lib/support/message-kind";
+import { MAX_REPLY_CHARS, WELCOME_MESSAGE } from "@/lib/support/reply-shape";
 
 // The cheapest current model: answers come from the written knowledge, and
 // anything unsure is handed over to the team anyway.
@@ -41,7 +43,11 @@ const DECISION_SCHEMA = {
 
 const SUPPORT_RULES = `Tu es ${SUPPORT_AGENT_NICKNAME}, au support client d'Anyloc (anyloc.io), un service qui change la position GPS d'un téléphone. Tu réponds dans le chat Crisp du site, en français, 24 h/24.
 
-Ton ton : comme une personne du support qui écrit sur son téléphone, pas comme un robot. Tu tutoies, phrases courtes, naturel, chaleureux et direct, sans jargon. Évite les tournures toutes faites d'assistant (« Je comprends parfaitement votre frustration », « N'hésitez pas à… », « Excellente question »), les listes à puces et les formules trop polies. Pas d'emoji, pas de markdown (le chat affiche le texte brut) : des retours à la ligne et des étapes numérotées « 1. 2. 3. » suffisent quand il y a des étapes. Une réponse fait rarement plus de 5 lignes. Pose une seule question à la fois quand il te manque une info (iPhone ou Android, Mac ou PC, message d'erreur exact).
+Ton ton : comme une personne du support qui écrit sur son téléphone, pas comme un robot. Tu tutoies, phrases courtes, naturel, chaleureux et direct, sans jargon. Évite les tournures toutes faites d'assistant (« Je comprends parfaitement votre frustration », « N'hésitez pas à… », « Excellente question »), les listes à puces et les formules trop polies. Pas d'emoji, pas de markdown (le chat affiche le texte brut).
+
+Longueur : jamais de pavé, toujours à l'essentiel. 2 ou 3 phrases courtes au maximum, moins de 300 caractères. Une seule info ou une seule action par message : s'il y a plusieurs étapes, donne seulement la première et demande au client de te dire quand c'est fait. Pas de liste à rallonge. Pose une seule question à la fois quand il te manque une info (iPhone ou Android, Mac ou PC, message d'erreur exact).
+
+Accueil : le client a déjà reçu « ${WELCOME_MESSAGE} ». Ne te présente pas et ne redis pas bonjour : va droit à la réponse.
 
 Ton identité : tu ne dis jamais de toi-même que tu es une IA ou un assistant automatique. Mais si le client te demande sincèrement si tu es un robot ou une IA, tu ne mens pas et tu ne prétends pas être humain : réponds simplement que tu es l'assistante d'Anyloc, et propose de passer la main à quelqu'un de l'équipe s'il préfère. Puis reviens à sa question.
 
@@ -94,15 +100,18 @@ function describeContent(message: CrispMessage) {
   return `[message de type ${message.type}]`;
 }
 
-/** The conversation as the agent reads it: visitor, agent and human operators. */
-export function formatTranscript(messages: CrispMessage[]) {
+/**
+ * The conversation as the agent reads it: visitor, agent and human operators.
+ * Notes and Crisp's own automated messages (email request…) are left out.
+ */
+export function formatTranscript(messages: CrispMessage[], agentTexts?: Set<string>) {
   return messages
-    .filter((message) => message.type !== "note")
+    .filter((message) => message.from === "user" || isTeamText(message))
     .map((message) => {
       const author =
         message.from === "user"
           ? "Client"
-          : message.user?.nickname === SUPPORT_AGENT_NICKNAME
+          : isAgentText(message, agentTexts)
             ? "Toi (assistant)"
             : `Équipe (${message.user?.nickname ?? "opérateur"})`;
       return `${author} : ${describeContent(message)}`;
@@ -148,7 +157,8 @@ export async function decideSupportReply({
 
   const response = await client.beta.messages.create({
     model: SUPPORT_AGENT_MODEL,
-    max_tokens: 16000,
+    // A short JSON answer: a low cap also bounds the time a runaway answer takes.
+    max_tokens: 1500,
     system: getSystemPrompt(),
     output_config: {
       effort: "low",
@@ -190,4 +200,25 @@ export async function decideSupportReply({
       internalNote: "Conversation non traitée automatiquement : à reprendre à la main.",
     }
   );
+}
+
+const SHORTEN_RULES = `Tu raccourcis un message de support client Anyloc, écrit en français et en tutoyant. Garde le sens, le ton et la première action à faire. Au maximum 2 ou 3 phrases courtes et moins de ${MAX_REPLY_CHARS - 50} caractères. Pas de liste, pas d'emoji, pas de markdown. Ne rajoute aucune info. Réponds uniquement avec le message raccourci.`;
+
+/** Rewrites an answer that came out too long. Null when the model gives nothing usable. */
+export async function shortenSupportReply(reply: string): Promise<string | null> {
+  client ??= new Anthropic();
+
+  const response = await client.messages.create({
+    model: SUPPORT_AGENT_MODEL,
+    max_tokens: 400,
+    system: SHORTEN_RULES,
+    messages: [{ role: "user", content: reply }],
+  });
+
+  const text = response.content
+    .filter((block): block is Anthropic.TextBlock => block.type === "text")
+    .map((block) => block.text)
+    .join("")
+    .trim();
+  return text || null;
 }

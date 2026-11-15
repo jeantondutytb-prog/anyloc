@@ -2,7 +2,6 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var auth = AuthService.shared
-    @ObservedObject private var renewal = SignatureRenewalService.shared
     @ObservedObject private var subscription = SubscriptionService.shared
     @State private var journalURL: URL?
     @AppStorage(FilmingMode.key) private var filmingMode = false
@@ -196,7 +195,7 @@ struct SettingsView: View {
             }
         }
         .task {
-            await renewal.refreshPairingStatus()
+            await PairingService.shared.refreshPairingStatus()
         }
     }
 

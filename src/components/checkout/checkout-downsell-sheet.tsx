@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Monitor } from "lucide-react";
+import { Smartphone } from "lucide-react";
 import { CHECKOUT_COPY } from "@/lib/checkout-copy";
 import type { Plan } from "@/lib/constants";
 
@@ -60,8 +60,8 @@ export function CheckoutDownsellSheet({
         <p className="mt-1.5 text-sm text-zinc-600">{lead}</p>
         {plan.mobileApp && !offerPlan.mobileApp ? (
           <p className="mt-2 text-xs text-zinc-500">
-            <Monitor className="mr-1 inline h-3.5 w-3.5 -translate-y-px" />
-            {copy.planDesktopOnly} · {copy.downgradeNoMobileApp}
+            <Smartphone className="mr-1 inline h-3.5 w-3.5 -translate-y-px" />
+            {copy.downgradeNoMobileApp}
           </p>
         ) : null}
         <button

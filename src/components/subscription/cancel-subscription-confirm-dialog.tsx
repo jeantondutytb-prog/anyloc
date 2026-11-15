@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { track } from "@/lib/analytics/track";
 import type { RetentionOffer } from "@/lib/retention-offer";
+import { openCrispChat } from "@/components/crisp/crisp-loader";
 
 type CancelSubscriptionConfirmDialogProps = {
   open: boolean;
@@ -129,9 +130,7 @@ export function CancelSubscriptionConfirmDialog({
 
   function openChat() {
     track("cancel_help_chat_opened", { reason });
-    // The bubble may be hidden on this page: show it before opening the chat.
-    window.$crisp?.push(["do", "chat:show"]);
-    window.$crisp?.push(["do", "chat:open"]);
+    openCrispChat();
     close();
   }
 
