@@ -34,6 +34,17 @@ export const PASSWORD_RESET_SENT_NOTICE =
 export const PASSWORD_RESET_EXPIRED_ERROR =
   "Ce lien a expiré ou a déjà servi. Redemande un lien depuis « Mot de passe oublié ».";
 
+export const PASSWORD_RESET_OTHER_ACCOUNT_ERROR =
+  "Ce lien concerne un autre compte que celui connecté ici. Déconnecte-toi, puis redemande un lien depuis « Mot de passe oublié ».";
+
+/**
+ * A reset link may only log this browser into its account when nobody is
+ * logged in here, or when it's the same account.
+ */
+export function isResetForCurrentBrowser(currentUserId: string | null, linkUserId: string) {
+  return currentUserId === null || currentUserId === linkUserId;
+}
+
 export function normalizeResetEmail(email: string) {
   return email.trim().toLowerCase();
 }

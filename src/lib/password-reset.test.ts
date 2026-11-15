@@ -7,6 +7,7 @@ import {
   buildPasswordResetEmail,
   buildPasswordResetLink,
   isPlausibleTokenHash,
+  isResetForCurrentBrowser,
   PASSWORD_RESET_LIMITS,
   RESET_TOKEN_COOKIE,
   RESET_TOKEN_MAX_AGE_SECONDS,
@@ -96,5 +97,13 @@ describe("GET /auth/reset-password", () => {
     const response = resetLinkRoute(new NextRequest("https://anyloc.io/auth/reset-password?token_hash=x"));
     assert.equal(response.cookies.get(RESET_TOKEN_COOKIE), undefined);
     assert.equal(new URL(response.headers.get("location") ?? "").pathname, "/reset-password");
+  });
+});
+
+describe("isResetForCurrentBrowser", () => {
+  it("never swaps a logged-in browser to another account", () => {
+    assert.equal(isResetForCurrentBrowser(null, "user-a"), true);
+    assert.equal(isResetForCurrentBrowser("user-a", "user-a"), true);
+    assert.equal(isResetForCurrentBrowser("user-a", "user-b"), false);
   });
 });

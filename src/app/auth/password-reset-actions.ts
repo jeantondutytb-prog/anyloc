@@ -1,7 +1,9 @@
 "use server";
 
+import { createClient as createStatelessClient } from "@supabase/supabase-js";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { isResendConfigured, sendEmail } from "@/lib/email/resend";
 import { logError } from "@/lib/log-error";
 import {
@@ -9,7 +11,9 @@ import {
   buildPasswordResetEmail,
   buildPasswordResetLink,
   isPlausibleTokenHash,
+  isResetForCurrentBrowser,
   normalizeResetEmail,
+  PASSWORD_RESET_OTHER_ACCOUNT_ERROR,
   PASSWORD_RESET_EXPIRED_ERROR,
   PASSWORD_RESET_SENT_NOTICE,
   RESET_TOKEN_COOKIE,
@@ -66,11 +70,23 @@ export async function requestPasswordReset(
     }
 
     const link = buildPasswordResetLink(getAppUrl(), data.properties.hashed_token);
-    await sendEmail({ to: email, ...buildPasswordResetEmail(link), tags: [{ name: "campaign", value: "password_reset" }] });
-
-    if (data.user?.id) {
-      await capturePostHogEvent({ distinctId: data.user.id, event: "password_reset_requested" });
-    }
+    const userId = data.user?.id;
+    // After the response: an existing account must not answer slower than
+    // a missing one, or the timing would tell who has an account.
+    after(async () => {
+      try {
+        await sendEmail({
+          to: email,
+          ...buildPasswordResetEmail(link),
+          tags: [{ name: "campaign", value: "password_reset" }],
+        });
+        if (userId) {
+          await capturePostHogEvent({ distinctId: userId, event: "password_reset_requested" });
+        }
+      } catch (error) {
+        await logError("auth/password-reset/send", error, { userId });
+      }
+    });
   } catch (error) {
     await logError("auth/password-reset", error);
   }
@@ -100,10 +116,35 @@ export async function resetPassword(
     return { error: PASSWORD_RESET_EXPIRED_ERROR };
   }
 
+  // The token is checked by a client that keeps no session, so this browser's
+  // session only changes once we know whose account the link opens.
+  const verifier = createStatelessClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }
+  );
+  const { data, error } = await verifier.auth.verifyOtp({ type: "recovery", token_hash: tokenHash });
+  cookieStore.delete(RESET_TOKEN_COOKIE);
+  if (error || !data.user || !data.session) {
+    return { error: PASSWORD_RESET_EXPIRED_ERROR };
+  }
+
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.verifyOtp({ type: "recovery", token_hash: tokenHash });
-  if (error || !data.user) {
-    cookieStore.delete(RESET_TOKEN_COOKIE);
+  const {
+    data: { user: currentUser },
+  } = await supabase.auth.getUser();
+  if (!isResetForCurrentBrowser(currentUser?.id ?? null, data.user.id)) {
+    // Someone else's link (or another account of yours) while logged in:
+    // never swap this browser to that account behind the visitor's back.
+    return { error: PASSWORD_RESET_OTHER_ACCOUNT_ERROR };
+  }
+
+  const { error: sessionError } = await supabase.auth.setSession({
+    access_token: data.session.access_token,
+    refresh_token: data.session.refresh_token,
+  });
+  if (sessionError) {
+    await logError("auth/password-reset/session", sessionError, { userId: data.user.id });
     return { error: PASSWORD_RESET_EXPIRED_ERROR };
   }
 
@@ -111,7 +152,6 @@ export async function resetPassword(
     password,
     data: { password_set: true },
   });
-  cookieStore.delete(RESET_TOKEN_COOKIE);
 
   if (updateError) {
     // They typed their current password: it works, and the link logged them in.
