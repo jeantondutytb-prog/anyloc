@@ -49,11 +49,16 @@ export async function POST(request: Request) {
     return limited;
   }
 
-  const { user, error } = await requireActiveSubscription();
+  const { user, error, access } = await requireActiveSubscription();
 
   if (!user) {
     const status = error?.includes("Connecte") ? 401 : 403;
     return Response.json({ error }, { status });
+  }
+
+  // requireActiveSubscription returns the user even without an active plan.
+  if (!access?.hasAccess) {
+    return Response.json({ error }, { status: 403 });
   }
 
   let body: unknown;
@@ -73,7 +78,7 @@ export async function POST(request: Request) {
     );
   }
 
-  if (await hasReachedDeviceLimit(user.id)) {
+  if (await hasReachedDeviceLimit(user.id, access)) {
     return Response.json({ error: DEVICE_LIMIT_ERROR }, { status: 409 });
   }
 

@@ -16,12 +16,13 @@ export const CHECKOUT_COPY = {
   reviewsListTitle: "Ce qu'ils en disent",
   paymentProcessor: "Paiement sécurisé, encaissé par Stripe",
   popularBadge: "Le plus choisi",
-  planDesktopOnly: "Sur PC et Mac",
   /** The pay button shows what is actually charged, so the popup holds no surprise. */
   continueCta: (amount: string, period: string) => `Débloquer · ${amount} pour ${period}`,
   continueCtaRecoveryOffer: "Débloquer · 4,95 € le 1er mois",
+  continueCtaEmailOffer: (offerPrice: string) => `Débloquer · ${offerPrice}`,
   /** Right under the pay button, where the fear of paying for nothing peaks. */
   payReassurance: "Ça marche ou remboursé · Résiliable en 1 clic",
+  payReassuranceOneTime: "Ça marche ou remboursé · Paiement unique",
   proofVideoTitle: "Regarde, ça marche pour de vrai",
   proofVideoSteps: [
     "Je choisis Londres dans Anyloc",
@@ -32,26 +33,54 @@ export const CHECKOUT_COPY = {
   proofVideoAlt: "Enregistrement d'écran : la position Snap Map passe à Londres puis à Paris avec Anyloc",
   redirecting: "Redirection vers le paiement…",
   modalTitle: "Paiement",
+  /** Quiz arm: the popup shows the guarantee as one small grey line. */
+  modalGuaranteeLine: "Garantie 48 h ·",
   modalCancelAnytime: "Résiliable à tout moment, en 1 clic depuis ton espace.",
   modalFallbackLead: "Le paiement ne s'affiche pas ?",
   modalFallbackCta: "Payer sur la page sécurisée Stripe ↗",
   payOpening: "On prépare ton paiement…",
   retryCta: "Réessayer",
-  declineOfferTitle: "Paiement refusé : solde insuffisant",
+  /** Asked once when the payment popup is closed: one tap, then it closes. */
+  exitQuestionTitle: "Qu'est-ce qui te bloque ?",
+  exitQuestionLead: "Un clic, ça nous aide à améliorer Anyloc.",
+  exitQuestionReasons: [
+    { id: "price", label: "C'est trop cher" },
+    { id: "computer_required", label: "L'ordinateur obligatoire" },
+    { id: "no_card", label: "Je n'ai pas de carte" },
+    { id: "just_looking", label: "Je regardais juste" },
+    { id: "other", label: "Autre chose" },
+  ],
+  exitQuestionSkip: "Fermer sans répondre",
+  declineOfferTitle: "Paiement refusé : pas assez sur ta carte",
   declineOfferLead: (name: string, offerPrice: string, price: string) =>
-    `Pas de souci : ton 1er mois de formule ${name} passe à ${offerPrice} au lieu de ${price}. Sans engagement.`,
+    `Pas de souci : ton 1er mois de formule ${name} passe à ${offerPrice} au lieu de ${price}. Sans engagement. Ou choisis un autre moyen de paiement juste en dessous.`,
+  declineFundsSwitchLead:
+    "Choisis un autre moyen de paiement juste en dessous, ou recharge ta carte et réessaie.",
+  declineCardTitle: "Ta carte refuse ce paiement",
+  declineCardLead:
+    "Réessayer avec la même carte ne changera rien. Choisis un autre moyen de paiement juste en dessous, ou une autre carte.",
   declineOfferCta: (offerPrice: string) => `Payer ${offerPrice} le 1er mois`,
   firstMonthOfferHeader: (offerPrice: string) => `${offerPrice} le 1er mois`,
   closeOfferTitle: "Attends ! -50 % sur ton 1er mois",
   closeOfferLead: (name: string, offerPrice: string, price: string) =>
     `Ton 1er mois de formule ${name} passe à ${offerPrice} au lieu de ${price}. Sans engagement, résiliable en 1 clic.`,
   closeOfferCta: (offerPrice: string) => `Profiter de -50 % · ${offerPrice}`,
-  downgradeNoMobileApp: "L'app iPhone est réservée à la formule 1 an.",
+  clipperOfferTitle: "Pas le budget ? Gagne de l'argent",
+  clipperOfferLead:
+    "Poste des clips Anyloc sur TikTok ou Insta : tu as l'accès gratuit et tu es payé pour tes vidéos. Pas besoin d'abonnés.",
+  clipperOfferCta: "Devenir clippeur",
+  downgradeNoMobileApp: "Sur iPhone, il faudra un ordi une fois pour l'installer.",
   downsellTitle: (price: string) => `Pas prêt à mettre ${price} d'un coup ?`,
   downsellLead: (name: string, price: string) =>
     `Commence avec la formule ${name} à ${price}, sans engagement. Tu pourras passer sur plus long ensuite.`,
   downsellCta: (price: string) => `Commencer à ${price}`,
   downsellDismiss: "Non merci",
+  annualExitTitle: "Attends : l'annuel à 29 € au lieu de 49 €",
+  annualExitLead: "29 € par an, et ce prix reste le tien chaque année tant que tu restes abonné.",
+  annualExitTerms: "Si tu changes de formule, tu perds ce prix.",
+  annualExitExpiry: (time: string) => `Offre valable jusqu'à ${time}`,
+  annualExitCta: "Prendre l'annuel à 29 €",
+  annualExitDismiss: "Non merci",
   faq: [
     {
       q: "Y a un essai gratuit ?",
@@ -61,7 +90,7 @@ export const CHECKOUT_COPY = {
     {
       q: "Ma carte sera débitée tout de suite ?",
       a:
-        "Oui. Tu paies à la validation et tu as accès tout de suite. Tu peux annuler en 1 clic depuis ton espace — tu gardes l'accès jusqu'à la fin de la période payée. Si ta loc ne bouge pas, la garantie 48 h te rembourse ton 1er paiement (conditions juste au-dessus).",
+        "Oui. Tu paies à la validation et tu as accès tout de suite. Un abonnement se résilie en 1 clic depuis ton espace — tu gardes l'accès jusqu'à la fin de la période payée. Si ta loc ne bouge pas, la garantie 48 h te rembourse ton 1er paiement (conditions juste au-dessus).",
     },
     {
       q: "Ça marche sur quelles apps ?",
@@ -90,9 +119,12 @@ export const CHECKOUT_COPY = {
   focusOfferNote: "1er mois à 4,95 €",
   focusShowAllPlans: "Voir tous les plans",
   recoveryOfferApplied:
-    "🎁 Ton offre est appliquée : ton 1er mois à 4,95 € au lieu de 9,90 €.",
+    "🎁 Offre appliquée : ton 1er mois à 4,95 € au lieu de 9,90 €.",
   recoveryOfferPickMonthly:
-    "🎁 Ton offre -50 % sur le 1er mois est valable sur le plan Mensuel.",
+    "🎁 -50 % sur ton 1er mois : choisis le Mensuel à 4,95 € au lieu de 9,90 €",
+  emailOfferApplied: (offerPrice: string, fullPrice: string) =>
+    `🎁 Ta réduction est appliquée : ${offerPrice} au lieu de ${fullPrice}.`,
+  recoveryOfferEndsIn: "L'offre se termine dans",
   errNetwork:
     "Le paiement n'a pas pu se charger : ta connexion a coupé. Vérifie ton réseau puis réessaie.",
 } as const;

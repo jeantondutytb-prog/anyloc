@@ -59,7 +59,8 @@ export async function POST(request: Request) {
   const result = await registerIosDeviceFromDesktop(
     user.id,
     { udid, product: readOptionalString(body?.product), osVersion: readOptionalString(body?.osVersion) },
-    new Date()
+    new Date(),
+    { allowMultipleIphones: access?.isAdmin === true }
   );
 
   if (!result.ok) {

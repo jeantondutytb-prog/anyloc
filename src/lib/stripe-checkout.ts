@@ -4,6 +4,10 @@ import { CHECKOUT_PAY_CONSENT, DEVICE_REQUIREMENT_NOTE, type Plan } from "@/lib/
 import { ensureStripeCustomerForUser } from "@/lib/billing";
 import { getAppUrl, stripe } from "@/lib/stripe";
 import { UserFacingError } from "@/lib/errors";
+import { withCheckoutOffer } from "@/lib/checkout-offer";
+import { isEmailOfferCoupon } from "@/lib/checkout-email-offer";
+
+export { CHECKOUT_OFFER_ANNUAL_EXIT, withCheckoutOffer } from "@/lib/checkout-offer";
 
 type CheckoutMode = "embedded_page" | "hosted_page";
 
@@ -48,6 +52,7 @@ export async function createSubscriptionCheckoutSession({
   uiMode,
   analyticsId,
   couponId,
+  offer,
 }: {
   plan: Plan;
   user?: User | null;
@@ -58,6 +63,8 @@ export async function createSubscriptionCheckoutSession({
    * pending lookup: it runs alongside the Stripe customer lookup.
    */
   couponId?: string | null | Promise<string | null>;
+  /** Offer tag (e.g. "annual_exit") put on the session and the subscription. */
+  offer?: string | null;
 }) {
   if (!stripe || !plan.stripePriceId) {
     throw new UserFacingError("Paiement non configuré pour ce plan");
@@ -65,15 +72,23 @@ export async function createSubscriptionCheckoutSession({
 
   const returnUrl = getCheckoutReturnUrl();
 
-  const [baseParams, coupon] = await Promise.all([
+  const [subscriptionParams, coupon] = await Promise.all([
     user?.id ? buildAuthenticatedCheckoutParams(plan, user) : buildGuestCheckoutParams(plan),
     couponId,
   ]);
 
+  // The lifetime plan is paid once: no subscription, and none of the offers
+  // and coupons made for a subscription plan, except the 15-min email's.
+  const oneTime = Boolean(plan.oneTime);
+  const applyCoupon = Boolean(coupon) && (!oneTime || isEmailOfferCoupon(coupon!));
+  const baseParams = oneTime ? toOneTimePaymentParams(subscriptionParams) : subscriptionParams;
+
   const sharedParams = {
-    ...withAnalyticsId(baseParams, analyticsId),
+    ...(oneTime
+      ? withAnalyticsId(baseParams, analyticsId)
+      : withCheckoutOffer(withAnalyticsId(baseParams, analyticsId), offer ?? null)),
     ...getDeviceRequirementParams(),
-    ...(coupon ? { discounts: [{ coupon }] } : {}),
+    ...(applyCoupon ? { discounts: [{ coupon: coupon! }] } : {}),
   };
 
   if (uiMode === "embedded_page") {
@@ -92,6 +107,26 @@ export async function createSubscriptionCheckoutSession({
   });
 }
 
+/**
+ * Turns the subscription params of a plan into a one-time payment: same
+ * customer and metadata, the metadata copied on the PaymentIntent, and a
+ * Stripe customer created for a guest so the dashboard can show the receipt.
+ */
+export function toOneTimePaymentParams(
+  params: Stripe.Checkout.SessionCreateParams
+): Stripe.Checkout.SessionCreateParams {
+  const { subscription_data, ...rest } = params;
+  const metadata = { ...subscription_data?.metadata, ...rest.metadata, checkout_type: "one_time" };
+
+  return {
+    ...rest,
+    mode: "payment",
+    metadata,
+    payment_intent_data: { metadata },
+    ...(rest.customer ? {} : { customer_creation: "always" as const }),
+  };
+}
+
 async function buildAuthenticatedCheckoutParams(
   plan: Plan,
   user: User
@@ -107,7 +142,8 @@ async function buildAuthenticatedCheckoutParams(
 
   return {
     mode: "subscription",
-    payment_method_types: ["card"],
+    // No payment_method_types: Stripe offers the methods switched on in the
+    // Dashboard that can pay a subscription (card, Apple Pay, Link, Revolut Pay...).
     line_items: [{ price: plan.stripePriceId!, quantity: 1 }],
     client_reference_id: user.id,
     metadata: {
@@ -134,7 +170,7 @@ function buildGuestCheckoutParams(
 ): Stripe.Checkout.SessionCreateParams {
   return {
     mode: "subscription",
-    payment_method_types: ["card"],
+    // Same methods as the signed-in checkout above.
     line_items: [{ price: plan.stripePriceId!, quantity: 1 }],
     metadata: {
       plan_id: plan.id,

@@ -2,6 +2,7 @@ import { AuthShell } from "@/components/auth/auth-shell";
 import { OnboardingActivationNotice } from "@/components/auth/onboarding-activation-notice";
 import { SignupForm } from "@/components/auth/signup-form";
 import { DEFAULT_PLAN_ID, getCheckoutUrl, isValidPlanId } from "@/lib/constants";
+import { isOnboardingQuizPath, isRemoteAppPath } from "@/lib/onboarding-experiment";
 import { sanitizeRedirectPath } from "@/lib/safe-redirect";
 
 export default async function SignupPage({
@@ -15,12 +16,25 @@ export default async function SignupPage({
     next ?? redirectToParam,
     getCheckoutUrl(planId)
   );
+  // The web remote and the quiz are reached through signup first.
+  const beforeApp = isRemoteAppPath(redirectTo);
+  const beforeQuiz = beforeApp || isOnboardingQuizPath(redirectTo);
 
   return (
     <AuthShell
-      notice={<OnboardingActivationNotice action="signup" />}
+      notice={
+        beforeQuiz ? (
+          <p className="mb-3 text-sm font-semibold text-pink-600">Ta loc est prête en 2 minutes</p>
+        ) : (
+          <OnboardingActivationNotice action="signup" />
+        )
+      }
       title="Crée ton compte"
-      description="Email et mot de passe suffisent pour choisir ta destination."
+      description={
+        beforeQuiz
+          ? "On prépare ta fausse loc juste après."
+          : "Email et mot de passe suffisent pour choisir ta destination."
+      }
     >
       <SignupForm plan={planId} redirectTo={redirectTo} />
     </AuthShell>

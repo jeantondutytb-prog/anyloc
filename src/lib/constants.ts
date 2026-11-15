@@ -6,7 +6,7 @@ export const CHECKOUT_MARKETING_LINE =
   "Active Anyloc sur le plan de ton choix — Snap, Insta, Tinder et toutes tes apps.";
 
 export const CHECKOUT_SELECT_SUBLINE =
-  "Même accès complet sur tous les plans — Snap, Insta, Tinder et toutes tes apps. Seule la durée facturée change.";
+  "Même accès complet sur tous les plans — Snap, Insta, Tinder et toutes tes apps.";
 
 export const CHECKOUT_HEADLINE =
   "Paiement sécurisé — ta carte est débitée tout de suite, accès immédiat.";
@@ -174,7 +174,7 @@ export const PLANS = [
     id: "monthly",
     grid: "v1",
     mobileApp: false,
-    perk: "Sur PC et Mac",
+    perk: "iPhone et Android",
     name: "Mensuel",
     price: "9,90€",
     period: "/mois",
@@ -186,7 +186,7 @@ export const PLANS = [
     description: "Sans engagement, tu paies mois par mois.",
     savings: undefined,
     features: PLAN_VALUE_STACK,
-    popular: false,
+    popular: true,
     ctaLabel: CHECKOUT_CTA_LABEL,
     stripePriceId: process.env.STRIPE_PRICE_MONTHLY,
   },
@@ -194,7 +194,7 @@ export const PLANS = [
     id: "6months",
     grid: "v1",
     mobileApp: false,
-    perk: "Sur PC et Mac",
+    perk: "iPhone et Android",
     name: "6 mois",
     price: "34,90€",
     period: "/6 mois",
@@ -214,7 +214,7 @@ export const PLANS = [
     id: "annual",
     grid: "v1",
     mobileApp: true,
-    perk: "App mobile incluse",
+    perk: "iPhone installé sans ordi",
     name: "Annuel",
     price: "49,00€",
     period: "/an",
@@ -226,7 +226,7 @@ export const PLANS = [
     description: "Le meilleur deal si t'es un habitué.",
     savings: "Tu gardes 69 € sur l'année · -59 % vs mensuel",
     features: PLAN_VALUE_STACK,
-    popular: true,
+    popular: false,
     ctaLabel: CHECKOUT_CTA_LABEL,
     stripePriceId: process.env.STRIPE_PRICE_ANNUAL,
   },
@@ -235,7 +235,7 @@ export const PLANS = [
     id: "month_v2",
     grid: "v2",
     mobileApp: false,
-    perk: "Sur PC et Mac",
+    perk: "iPhone et Android",
     name: "1 mois",
     price: "19€",
     period: "/mois",
@@ -255,7 +255,7 @@ export const PLANS = [
     id: "quarter_v2",
     grid: "v2",
     mobileApp: false,
-    perk: "PC et Mac + prix bloqué",
+    perk: "iPhone et Android + prix bloqué",
     name: "3 mois",
     price: "29€",
     period: "/3 mois",
@@ -275,7 +275,7 @@ export const PLANS = [
     id: "year_v2",
     grid: "v2",
     mobileApp: true,
-    perk: "PC et Mac + app iPhone",
+    perk: "iPhone installé sans ordi",
     name: "1 an",
     price: "79€",
     period: "/an",
@@ -292,15 +292,95 @@ export const PLANS = [
     ctaLabel: CHECKOUT_CTA_LABEL,
     stripePriceId: process.env.STRIPE_PRICE_YEAR_V2,
   },
+  // Lifetime grid tested against v1 (see lib/pricing-experiment): the v1
+  // monthly and annual at the same Stripe prices, the 6-month plan (no sales)
+  // replaced by a one-time lifetime plan without the iPhone app.
+  {
+    id: "monthly_v3",
+    grid: "v3",
+    mobileApp: false,
+    perk: "iPhone et Android",
+    name: "Mensuel",
+    price: "9,90€",
+    period: "/mois",
+    perDay: "0,33",
+    perDayLabel: "€/jour",
+    billedNote:
+      "Facturé 9,90 € chaque mois. Résiliable à tout moment — accès conservé jusqu'à la fin du mois payé.",
+    compare: "Flexible si tu testes encore",
+    description: "Sans engagement, tu paies mois par mois.",
+    savings: undefined,
+    features: PLAN_VALUE_STACK,
+    popular: true,
+    ctaLabel: CHECKOUT_CTA_LABEL,
+    stripePriceId: process.env.STRIPE_PRICE_MONTHLY,
+  },
+  {
+    id: "annual_v3",
+    grid: "v3",
+    mobileApp: true,
+    perk: "iPhone installé sans ordi",
+    name: "Annuel",
+    price: "49,00€",
+    period: "/an",
+    perDay: "≈ 0,13",
+    perDayLabel: "€/jour",
+    billedNote: "Facturé 49,00 € une fois par an.",
+    compare: "Tu gardes 69 € sur l'année",
+    badge: "-59 %",
+    description: "Le meilleur deal si t'es un habitué.",
+    savings: "Tu gardes 69 € sur l'année · -59 % vs mensuel",
+    features: PLAN_VALUE_STACK,
+    popular: false,
+    ctaLabel: CHECKOUT_CTA_LABEL,
+    stripePriceId: process.env.STRIPE_PRICE_ANNUAL,
+  },
+  {
+    id: "lifetime",
+    grid: "v3",
+    mobileApp: false,
+    oneTime: true,
+    perk: "iPhone et Android, pour toujours",
+    name: "À vie",
+    price: "89€",
+    period: " une fois",
+    perDay: "89",
+    perDayLabel: "€ une fois",
+    billedNote:
+      "Payé 89 € une seule fois. Pas d'abonnement, rien ne se renouvelle. Sur iPhone, un ordi est nécessaire une fois pour installer.",
+    compare: "Le prix de 9 mois, pour toujours",
+    description: "Tu paies une fois, Anyloc est à toi.",
+    savings: "Plus jamais d'abonnement",
+    features: PLAN_VALUE_STACK,
+    popular: false,
+    ctaLabel: CHECKOUT_CTA_LABEL,
+    stripePriceId: process.env.STRIPE_PRICE_LIFETIME,
+  },
 ];
+
+/** A plan paid once (no Stripe subscription), e.g. the lifetime plan. */
+export function isOneTimePlanId(planId: string | null | undefined) {
+  return Boolean(planId && PLANS.find((plan) => plan.id === planId)?.oneTime);
+}
+
+/**
+ * The plan id stored on the profile for a plan: v3 reuses the v1 monthly and
+ * annual Stripe prices, and is saved as those plans so the iPhone app, labels
+ * and portal switch keep working.
+ */
+export function getCanonicalPlanId(planId: string) {
+  const plan = PLANS.find((candidate) => candidate.id === planId);
+  return getPlanIdForStripePrice(plan?.stripePriceId) ?? planId;
+}
 
 export type Plan = (typeof PLANS)[number];
 
 /**
  * Plan preselected across the funnel (landing CTAs → onboarding → signup →
- * checkout). Annual: the only plan with the mobile app, and the best value.
+ * checkout). Monthly: checkouts opened on annual almost never end in a payment
+ * (Stripe, October–November 2026).
  */
-export const DEFAULT_PLAN_ID = "annual";
+export const DEFAULT_PLAN_ID = "monthly";
 
 export const PLAN_IDS = PLANS.map((plan) => plan.id);
 
@@ -310,6 +390,8 @@ export type PricingGrid = Plan["grid"];
 export const PLAN_SWITCH_PORTAL_CONFIGURATIONS: Record<PricingGrid, string> = {
   v1: "bpc_1URxjvENC8ag2ECj5PthFo0H",
   v2: "bpc_1URxjvENC8ag2ECjEcsZJvqX",
+  // v3 subscribers are saved on the v1 monthly and annual (getCanonicalPlanId).
+  v3: "bpc_1URxjvENC8ag2ECj5PthFo0H",
 };
 
 /** Plan a Stripe price belongs to: follows a plan switch made from the portal. */
