@@ -57,6 +57,7 @@ class AnylocApi(
     private val client = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS)
+        .addNetworkInterceptor(KeepAuthOnRedirect())
         .build()
 
     private val baseUrl: String

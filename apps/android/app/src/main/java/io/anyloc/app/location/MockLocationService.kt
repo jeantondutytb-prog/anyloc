@@ -24,6 +24,7 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import io.anyloc.app.R
 import io.anyloc.app.SubscriptionInactiveActivity
+import io.anyloc.app.ApiBaseUrl
 import io.anyloc.app.AppErrorReporter
 import io.anyloc.app.api.AnylocApi
 import io.anyloc.app.api.DeviceUnlinkedException
@@ -57,7 +58,9 @@ class MockLocationService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val apiBaseUrl = intent?.getStringExtra(EXTRA_API_BASE_URL) ?: return START_NOT_STICKY
+        // Sanitized again: a service restarted with an old intent may still say anyloc.io.
+        val apiBaseUrl = intent?.getStringExtra(EXTRA_API_BASE_URL)?.let { ApiBaseUrl.sanitize(it) }
+            ?: return START_NOT_STICKY
         val token = intent.getStringExtra(EXTRA_DEVICE_TOKEN) ?: return START_NOT_STICKY
 
         if (!hasRequiredPermissions()) {

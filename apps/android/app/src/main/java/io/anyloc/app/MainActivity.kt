@@ -189,9 +189,14 @@ class MainActivity : AppCompatActivity() {
         setupDoneButton.setOnClickListener { refreshSetupUi(startIfReady = true) }
 
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        apiBaseUrlInput.setText(
-            ApiBaseUrl.sanitize(prefs.getString(KEY_API_BASE_URL, "https://www.anyloc.io"))
-        )
+        // Phones linked with api=https://anyloc.io (redirected to www, which made
+        // them lose the token) are moved to www for good here.
+        val storedApiBaseUrl = prefs.getString(KEY_API_BASE_URL, null)
+        val apiBaseUrl = ApiBaseUrl.sanitize(storedApiBaseUrl)
+        if (storedApiBaseUrl != null && storedApiBaseUrl != apiBaseUrl) {
+            prefs.edit().putString(KEY_API_BASE_URL, apiBaseUrl).apply()
+        }
+        apiBaseUrlInput.setText(apiBaseUrl)
         // The saved preferences are the only source of the token: both fields have
         // android:saveEnabled="false", so Android doesn't put a previous value back
         // over them when the screen is recreated.

@@ -27,6 +27,7 @@ object AppErrorReporter {
     private val client = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(10, TimeUnit.SECONDS)
+        .addNetworkInterceptor(io.anyloc.app.api.KeepAuthOnRedirect())
         .build()
 
     fun report(
