@@ -26,6 +26,7 @@ import io.anyloc.app.R
 import io.anyloc.app.SubscriptionInactiveActivity
 import io.anyloc.app.AppErrorReporter
 import io.anyloc.app.api.AnylocApi
+import io.anyloc.app.api.DeviceUnlinkedException
 import io.anyloc.app.api.SubscriptionInactiveDetails
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -107,7 +108,11 @@ class MockLocationService : Service() {
             while (isActive) {
                 val result = runCatching { api.fetchLocation() }
                     .onFailure { error ->
-                        AppErrorReporter.report(this@MockLocationService, apiBaseUrl, token, "mock/poll", error)
+                        if (error is DeviceUnlinkedException) {
+                            AppErrorReporter.reportUnlinked(this@MockLocationService, apiBaseUrl, token, "mock/poll")
+                        } else {
+                            AppErrorReporter.report(this@MockLocationService, apiBaseUrl, token, "mock/poll", error)
+                        }
                     }
                     .getOrNull()
 

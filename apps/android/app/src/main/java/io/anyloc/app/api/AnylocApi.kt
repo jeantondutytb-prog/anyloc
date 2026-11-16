@@ -36,6 +36,12 @@ data class AppUpdate(
     val downloadUrl: String,
 )
 
+/**
+ * The server answered 401: this token is unknown (link deleted on anyloc.io or
+ * replaced). Retrying won't help, the phone has to be linked again.
+ */
+class DeviceUnlinkedException(request: String) : Exception("Device token refused (401) on $request")
+
 data class GeocodeResult(
     val id: String,
     val name: String,
@@ -56,6 +62,7 @@ class AnylocApi(
     private val baseUrl: String
         get() = apiBaseUrl.trimEnd('/')
 
+    /** @throws DeviceUnlinkedException when the token is refused (401). */
     fun fetchLocation(): LocationFetchResult {
         val request = Request.Builder()
             .url("$baseUrl/api/device/location")
@@ -65,6 +72,10 @@ class AnylocApi(
 
         client.newCall(request).execute().use { response ->
             val body = response.body?.string().orEmpty()
+
+            if (response.code == 401) {
+                throw DeviceUnlinkedException("GET /api/device/location")
+            }
 
             if (response.code == 403) {
                 val inactive = SubscriptionInactiveDetails.fromJson(
@@ -85,6 +96,7 @@ class AnylocApi(
         }
     }
 
+    /** @throws DeviceUnlinkedException when the token is refused (401). */
     fun updateLocation(
         name: String,
         lat: Double,
@@ -105,6 +117,10 @@ class AnylocApi(
             .build()
 
         client.newCall(request).execute().use { response ->
+            if (response.code == 401) {
+                throw DeviceUnlinkedException("PUT /api/device/location")
+            }
+
             if (response.code == 403) {
                 return null
             }
