@@ -9,6 +9,7 @@ import {
 import { requireActiveSubscription } from "@/lib/subscription";
 import { limitByIp } from "@/lib/rate-limit";
 import { DEVICE_LIMIT_ERROR, hasReachedDeviceLimit } from "@/lib/device-server";
+import { getDefaultApiBaseUrl } from "@/lib/api-base-url";
 
 export async function GET() {
   const { user, error } = await requireActiveSubscription();
@@ -114,6 +115,7 @@ export async function POST(request: Request) {
       createdAt: data.created_at,
     },
     token,
-    apiBaseUrl: process.env.NEXT_PUBLIC_APP_URL ?? "https://www.anyloc.io",
+    // Never the bare anyloc.io: its redirect to www makes the apps lose the token.
+    apiBaseUrl: getDefaultApiBaseUrl(),
   });
 }

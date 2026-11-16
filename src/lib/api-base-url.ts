@@ -7,6 +7,22 @@ const ALLOWED_API_HOSTS = new Set([
   "127.0.0.1",
 ]);
 
+/**
+ * anyloc.io answers every request with a 308 to www.anyloc.io. Apps that follow
+ * it drop the Authorization header on the way (OkHttp, fetch: the host changes),
+ * so every call answered 401. The apps must always be given the www host.
+ */
+const APEX_HOST = "anyloc.io";
+const CANONICAL_HOST = "www.anyloc.io";
+
+/** Origin of a parsed URL, with anyloc.io moved to https://www.anyloc.io. */
+function canonicalOrigin(parsed: URL) {
+  if (normalizeHost(parsed.hostname) === APEX_HOST) {
+    return `https://${CANONICAL_HOST}`;
+  }
+  return parsed.origin.replace(/\/$/, "");
+}
+
 function normalizeHost(hostname: string) {
   return hostname.trim().toLowerCase().replace(/\.$/, "");
 }
@@ -44,7 +60,7 @@ export function getDefaultApiBaseUrl() {
       const parsed = new URL(appUrl);
 
       if (isAllowedApiHost(parsed.hostname)) {
-        return parsed.origin.replace(/\/$/, "");
+        return canonicalOrigin(parsed);
       }
     } catch {
       // Fall back to production default.
@@ -73,7 +89,7 @@ export function sanitizeApiBaseUrl(raw: string | null | undefined) {
       return fallback;
     }
 
-    return parsed.origin.replace(/\/$/, "");
+    return canonicalOrigin(parsed);
   } catch {
     return fallback;
   }
