@@ -99,7 +99,8 @@ def set_location(
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--api-base-url", default="https://anyloc.io")
+    # www: anyloc.io answers with a 308 to www (see src/lib/api-base-url.ts).
+    parser.add_argument("--api-base-url", default="https://www.anyloc.io")
     parser.add_argument("--token", required=True)
     parser.add_argument("--udid")
     parser.add_argument("--userspace", action="store_true", default=True)

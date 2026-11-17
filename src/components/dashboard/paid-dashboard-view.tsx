@@ -22,11 +22,8 @@ import { track as trackEvent } from "@/lib/analytics/track";
 import { formatSubscriptionStatusLabel } from "@/lib/account-billing-types";
 import { getPlanDisplayName } from "@/lib/constants";
 import { dashboardHref, getDashboardBasePath } from "@/lib/dashboard-paths";
-import {
-  buildMobileSetupLink,
-  getPendingTokenStorageKey,
-  getPublicApiBaseUrl,
-} from "@/lib/device-setup-link";
+import { buildMobileSetupLink, getPublicApiBaseUrl } from "@/lib/device-setup-link";
+import { resolvePendingDeviceToken } from "@/lib/pending-device-token";
 import { getClientDeviceSnapshot, SERVER_CLIENT_DEVICE } from "@/lib/platform";
 
 /** L'abonnement du client inclut-il l'app iPhone sans ordi ? */
@@ -132,33 +129,48 @@ function HelpItem({ title, children }: { title: string; children: React.ReactNod
   );
 }
 
-type PendingToken = { token: string; apiBaseUrl: string };
+/** Ids of the account's devices, or null when the list can't be loaded. */
+async function listDeviceIds(): Promise<string[] | null> {
+  const response = await fetch("/api/device", { cache: "no-store" });
+  if (!response.ok) return null;
+  const data = (await response.json()) as { devices?: { id: string }[] };
+  return (data.devices ?? []).map((device) => device.id);
+}
 
-/** The Android app links to the account through a one-time token, not a login. */
+/**
+ * The Android app links to the account through a one-time token, not a login.
+ * A token kept from an earlier tap is reused only while its device still exists
+ * (a deleted one would leave the app in 401), otherwise a new one is made.
+ */
 async function openAndroidApp() {
-  const storageKey = getPendingTokenStorageKey("android");
-  let pending: PendingToken | null = null;
+  let storage: Storage | null = null;
   try {
-    const cached = sessionStorage.getItem(storageKey);
-    if (cached) pending = JSON.parse(cached) as PendingToken;
-  } catch {
-    pending = null;
-  }
+    storage = window.sessionStorage;
+  } catch {}
 
-  if (!pending?.token?.startsWith("anyloc_")) {
-    const response = await fetch("/api/device", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ platform: "android", deviceName: "Mon Android" }),
-    });
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error ?? "Impossible de connecter l'app.");
-    }
-    pending = { token: data.token, apiBaseUrl: data.apiBaseUrl ?? getPublicApiBaseUrl() };
-    try {
-      sessionStorage.setItem(storageKey, JSON.stringify({ ...pending, platform: "android" }));
-    } catch {}
+  const { pending, created } = await resolvePendingDeviceToken({
+    storage,
+    platform: "android",
+    listDeviceIds,
+    createDevice: async () => {
+      const response = await fetch("/api/device", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ platform: "android", deviceName: "Mon Android" }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error ?? "Impossible de connecter l'app.");
+      }
+      return {
+        token: data.token,
+        deviceId: data.device.id,
+        apiBaseUrl: data.apiBaseUrl ?? getPublicApiBaseUrl(),
+      };
+    },
+  });
+
+  if (created) {
     trackEvent("device_link_created", { platform: "android", source: "dashboard" });
   }
 

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { track } from "@/lib/analytics/track";
 import { describeDevice, MAX_DEVICES_PER_USER, type DeviceItem } from "@/lib/device-list";
+import { forgetPendingDeviceToken } from "@/lib/pending-device-token";
 
 type DevicesResult =
   | { ok: true; devices: DeviceItem[] }
@@ -88,6 +89,10 @@ export function DeviceLinkSection() {
       }
 
       track("device_revoked", { source: "settings" });
+      // The dashboard must not hand this deleted link to the app again.
+      try {
+        forgetPendingDeviceToken(window.sessionStorage, id);
+      } catch {}
       setDevices((current) => current.filter((device) => device.id !== id));
     } catch (revokeError) {
       setError(
