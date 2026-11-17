@@ -38,6 +38,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.updatePadding
 import io.anyloc.app.api.AnylocApi
 import io.anyloc.app.api.DeviceProfile
+import io.anyloc.app.api.DeviceUnlinkedException
 import io.anyloc.app.api.GeocodeResult
 import io.anyloc.app.api.RemoteLocation
 import io.anyloc.app.api.SubscriptionInactiveDetails
@@ -188,9 +189,17 @@ class MainActivity : AppCompatActivity() {
         setupDoneButton.setOnClickListener { refreshSetupUi(startIfReady = true) }
 
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        apiBaseUrlInput.setText(
-            ApiBaseUrl.sanitize(prefs.getString(KEY_API_BASE_URL, "https://www.anyloc.io"))
-        )
+        // Phones linked with api=https://anyloc.io (redirected to www, which made
+        // them lose the token) are moved to www for good here.
+        val storedApiBaseUrl = prefs.getString(KEY_API_BASE_URL, null)
+        val apiBaseUrl = ApiBaseUrl.sanitize(storedApiBaseUrl)
+        if (storedApiBaseUrl != null && storedApiBaseUrl != apiBaseUrl) {
+            prefs.edit().putString(KEY_API_BASE_URL, apiBaseUrl).apply()
+        }
+        apiBaseUrlInput.setText(apiBaseUrl)
+        // The saved preferences are the only source of the token: both fields have
+        // android:saveEnabled="false", so Android doesn't put a previous value back
+        // over them when the screen is recreated.
         tokenInput.setText(prefs.getString(KEY_DEVICE_TOKEN, ""))
 
         findViewById<View>(R.id.testButton).setOnClickListener { testConnection() }
@@ -243,7 +252,14 @@ class MainActivity : AppCompatActivity() {
         })
 
         renderPanel()
-        handleDeepLink(intent)
+        // A recreated screen (process killed in the background, then reopened) gets
+        // back the intent that first opened it, i.e. the first anyloc://setup link.
+        // Handling it again put that old, since deleted, token back over the newer
+        // one: every call then answered 401 (Crisp ticket 16/11). New links reach a
+        // recreated screen through onNewIntent.
+        if (savedInstanceState == null && !isLaunchedFromHistory(intent)) {
+            handleDeepLink(intent)
+        }
         requestRuntimePermissionsIfNeeded()
         refreshCurrentLocation()
         refreshSetupUi(startIfReady = true)
@@ -547,6 +563,10 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, "Anyloc configuré automatiquement", Toast.LENGTH_SHORT).show()
     }
 
+    /** Reopened from the recent apps: the intent is the old one that started the task. */
+    private fun isLaunchedFromHistory(intent: Intent?): Boolean =
+        intent != null && intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0
+
     private fun refreshSetupUi(startIfReady: Boolean) {
         val hasToken = readCredentials() != null
         val mockAllowed = MockLocationHelper.isMockLocationAllowed(this)
@@ -844,13 +864,16 @@ class MainActivity : AppCompatActivity() {
         Thread {
             val api = AnylocApi(credentials.first, credentials.second)
             // Network errors must not kill the app: show the failure instead.
-            val location = runCatching {
+            val attempt = runCatching {
                 api.updateLocation(place.name, place.lat, place.lng, isActive = true)
-            }.onFailure { error ->
+            }
+            val unlinked = attempt.exceptionOrNull() is DeviceUnlinkedException
+            attempt.exceptionOrNull()?.takeUnless { unlinked }?.let { error ->
                 AppErrorReporter.report(this, credentials.first, credentials.second, "location/activate", error)
-            }.getOrNull()
+            }
+            val location = attempt.getOrNull()
             // Fetched here, not on the UI thread: Android kills the app on main-thread network calls.
-            val check = if (location == null) runCatching { api.fetchLocation() }.getOrNull() else null
+            val check = if (location == null && !unlinked) runCatching { api.fetchLocation() }.getOrNull() else null
 
             val showcaseWait = if (filming) (4200 - (SystemClock.elapsedRealtime() - startedAt)).coerceAtLeast(0) else 0
             mainHandler.postDelayed({
@@ -858,6 +881,10 @@ class MainActivity : AppCompatActivity() {
                 if (location == null) {
                     if (filming) showcase.hide()
                     renderPanel()
+                    if (unlinked) {
+                        showUnlinked(credentials, "location/activate")
+                        return@postDelayed
+                    }
                     if (check?.subscriptionInactive == true) {
                         showSubscriptionInactive(
                             check.inactiveDetails
@@ -904,15 +931,18 @@ class MainActivity : AppCompatActivity() {
 
         Thread {
             val api = AnylocApi(credentials.first, credentials.second)
-            val location = runCatching {
+            val attempt = runCatching {
                 api.updateLocation(current.name, current.lat, current.lng, isActive = false)
-            }.getOrNull()
+            }
+            val location = attempt.getOrNull()
 
             runOnUiThread {
                 if (location != null) {
                     activeLocation = location
                     renderPanel()
                     setStatus("Tu es revenu à ta vraie position")
+                } else if (attempt.exceptionOrNull() is DeviceUnlinkedException) {
+                    showUnlinked(credentials, "location/pause")
                 } else {
                     setStatus("Pas de connexion — réessaie", isError = true)
                 }
@@ -925,12 +955,25 @@ class MainActivity : AppCompatActivity() {
         startActivity(SubscriptionInactiveActivity.createIntent(this, details))
     }
 
+    /** The server refused the token (401): say how to fix it and report it. */
+    private fun showUnlinked(credentials: Pair<String, String>, where: String) {
+        // A late answer for a token replaced since (new link): nothing to say.
+        if (readCredentials()?.second != credentials.second) return
+        setStatus(AppErrorReporter.UNLINKED_MESSAGE, isError = true)
+        AppErrorReporter.reportUnlinked(this, credentials.first, credentials.second, where)
+    }
+
     private fun refreshCurrentLocation() {
         val credentials = readCredentials() ?: return
 
         Thread {
             val api = AnylocApi(credentials.first, credentials.second)
-            val result = runCatching { api.fetchLocation() }.getOrNull() ?: return@Thread
+            val attempt = runCatching { api.fetchLocation() }
+            if (attempt.exceptionOrNull() is DeviceUnlinkedException) {
+                runOnUiThread { showUnlinked(credentials, "location/refresh") }
+                return@Thread
+            }
+            val result = attempt.getOrNull() ?: return@Thread
 
             runOnUiThread {
                 val location = result.location
@@ -1350,9 +1393,15 @@ class MainActivity : AppCompatActivity() {
 
         Thread {
             val api = AnylocApi(credentials.first, credentials.second)
-            val result = runCatching { api.fetchLocation() }.getOrNull()
+            val attempt = runCatching { api.fetchLocation() }
+            val result = attempt.getOrNull()
 
             runOnUiThread {
+                if (attempt.exceptionOrNull() is DeviceUnlinkedException) {
+                    showUnlinked(credentials, "settings/test")
+                    return@runOnUiThread
+                }
+
                 if (result == null) {
                     setStatus("Pas de connexion — réessaie", isError = true)
                     return@runOnUiThread

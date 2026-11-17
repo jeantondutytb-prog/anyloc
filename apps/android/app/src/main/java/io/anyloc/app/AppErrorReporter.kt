@@ -27,6 +27,7 @@ object AppErrorReporter {
     private val client = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(10, TimeUnit.SECONDS)
+        .addNetworkInterceptor(io.anyloc.app.api.KeepAuthOnRedirect())
         .build()
 
     fun report(
@@ -78,6 +79,27 @@ object AppErrorReporter {
             override fun onResponse(call: Call, response: Response) = response.close()
         })
     }
+
+    /**
+     * The token was refused (401): the phone is no longer linked. Lands in PostHog
+     * as a `$exception` with scope `app/android/device/unlinked`; the token is
+     * unknown to the server, so the event is not attached to a person.
+     */
+    fun reportUnlinked(context: Context, apiBaseUrl: String, deviceToken: String?, where: String) {
+        report(
+            context,
+            apiBaseUrl,
+            deviceToken,
+            UNLINKED_SCOPE,
+            "Device token refused (401)",
+            mapOf("where" to where, "http_status" to 401),
+        )
+    }
+
+    const val UNLINKED_SCOPE = "device/unlinked"
+
+    /** Shown when the server refuses the token (401). */
+    const val UNLINKED_MESSAGE = "Ce téléphone n'est plus relié, relie-le depuis anyloc.io/dashboard"
 
     private fun appVersion(context: Context): String = runCatching {
         val info = context.packageManager.getPackageInfo(context.packageName, 0)

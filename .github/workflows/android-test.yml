@@ -1,0 +1,37 @@
+name: Android tests
+
+# JVM unit tests of the Android app on every PR that touches it. The APK itself
+# is only built and published by build-android.yml, after the merge on main.
+on:
+  pull_request:
+    paths:
+      - "apps/android/**"
+      - ".github/workflows/android-test.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Run unit tests
+        working-directory: apps/android
+        run: chmod +x gradlew && ./gradlew --console=plain testDebugUnitTest
+
+      - name: Test summary
+        if: always()
+        working-directory: apps/android/app/build/test-results/testDebugUnitTest
+        run: |
+          for f in *.xml; do
+            echo "$f: $(grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' "$f" | head -1)"
+          done

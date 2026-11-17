@@ -712,12 +712,14 @@
                 <EditText
                     android:id="@+id/tokenInput"
                     style="@style/Profile.Field"
+                    android:saveEnabled="false"
                     android:hint="Code de liaison (anyloc_...)"
                     android:inputType="textPassword" />
 
                 <EditText
                     android:id="@+id/apiBaseUrlInput"
                     style="@style/Profile.Field"
+                    android:saveEnabled="false"
                     android:layout_marginTop="8dp"
                     android:hint="https://anyloc.io"
                     android:inputType="textUri"

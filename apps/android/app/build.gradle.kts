@@ -94,4 +94,7 @@ dependencies {
     implementation("com.google.android.gms:play-services-location:21.3.0")
 
     testImplementation("junit:junit:4.13.2")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+    // android.jar only has stubs of org.json: the real one for JVM tests.
+    testImplementation("org.json:json:20240303")
 }
