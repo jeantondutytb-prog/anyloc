@@ -1019,9 +1019,14 @@ async function pushPairingToApp({ udid }) {
       ["apps", "push", "io.anyloc.app", tmp, "/Documents/AnylocRemotePairing.plist", "--udid", udid],
       20000
     );
-    return pushed.ok
-      ? { ok: true }
-      : { ok: false, message: humanizePmd3Error(pushed.stderr || pushed.stdout) };
+    if (pushed.ok) return { ok: true };
+    const output = pushed.stderr || pushed.stdout;
+    // Expected until the customer installs the iPhone app (retried every
+    // minute): not an error, so not sent to PostHog as pmd3/unknown.
+    if (/AppNotInstalledError/.test(output)) {
+      return { ok: false, notInstalled: true, message: "App Anyloc pas encore installée sur l'iPhone." };
+    }
+    return { ok: false, message: humanizePmd3Error(output) };
   } catch (error) {
     return { ok: false, message: error.message };
   } finally {

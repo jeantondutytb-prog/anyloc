@@ -31,7 +31,11 @@ import typer
 
 from packaging.version import Version
 from pymobiledevice3 import usbmux
-from pymobiledevice3.exceptions import AlreadyMountedError, DeveloperModeIsNotEnabledError
+from pymobiledevice3.exceptions import (
+    AlreadyMountedError,
+    ConnectionTerminatedError,
+    DeveloperModeIsNotEnabledError,
+)
 from pymobiledevice3.pair_records import iter_remote_paired_identifiers
 from pymobiledevice3.remote import tunnel_service, userspace_tunnel
 from pymobiledevice3.services.dvt.instruments.dvt_provider import DvtProvider
@@ -40,6 +44,7 @@ from pymobiledevice3.services.mobile_image_mounter import (
     DeveloperDiskImageMounter,
     PersonalizedImageMounter,
     auto_mount,
+    fetch_personalized_ddi,
 )
 
 cli = typer.Typer(name="live-location", no_args_is_help=True)
@@ -90,12 +95,20 @@ async def location_simulation(udid: Optional[str]):
     # mounted. Xcode does it on a developer's iPhone; a customer's iPhone never
     # had it, and a reboot unmounts it. The device lists its services when the
     # tunnel opens, so after a fresh mount the tunnel is opened again.
-    async with userspace_tunnel.UserspaceRsdTunnel(serial=serial) as rsd:
-        mounted_now = await ensure_developer_image(rsd)
-        if not mounted_now:
-            async with DvtProvider(rsd) as dvt, LocationSimulation(dvt) as simulation:
-                yield simulation
-            return
+    # A mount the iPhone cut halfway (the tunnel dropped) is tried once more on
+    # a fresh tunnel: the image is cached by then, so the retry is quick.
+    for attempt in range(2):
+        try:
+            async with userspace_tunnel.UserspaceRsdTunnel(serial=serial) as rsd:
+                mounted_now = await ensure_developer_image(rsd)
+                if not mounted_now:
+                    async with DvtProvider(rsd) as dvt, LocationSimulation(dvt) as simulation:
+                        yield simulation
+                    return
+            break
+        except DdiConnectionLost:
+            if attempt:
+                raise
 
     async with (
         userspace_tunnel.UserspaceRsdTunnel(serial=serial) as rsd,
@@ -103,6 +116,17 @@ async def location_simulation(udid: Optional[str]):
         LocationSimulation(dvt) as simulation,
     ):
         yield simulation
+
+
+class DdiConnectionLost(RuntimeError):
+    """The iPhone dropped the tunnel while the image was being mounted."""
+
+
+# What pymobiledevice3 10.10.3 raises when the tunnel's lockdown connection
+# drops mid-mount: it tries to reconnect, which RemoteXPC can't do
+# (NotImplementedError: "RemoteXPC service connections should only be
+# created using RemoteServiceDiscoveryService").
+CONNECTION_LOST_ERRORS = (NotImplementedError, ConnectionError, ConnectionTerminatedError)
 
 
 async def ensure_developer_image(provider) -> bool:
@@ -117,13 +141,21 @@ async def ensure_developer_image(provider) -> bool:
         if await mounter.is_image_mounted(mounter.IMAGE_TYPE):
             return False
     try:
-        # Downloads the image once (cached in ~/.pymobiledevice3), then Apple
-        # signs it for this iPhone: needs internet the first time.
+        if personalized:
+            # The first time, the image (~20 MB) is downloaded with a blocking
+            # requests.get. Run on the event loop, it froze the userspace tunnel
+            # for the whole download and the iPhone dropped the connection, so
+            # the first mount always failed. In a thread the tunnel keeps going.
+            # Cached in ~/.pymobiledevice3 afterwards.
+            await asyncio.to_thread(fetch_personalized_ddi)
+        # Apple then signs the image for this iPhone: needs internet.
         await auto_mount(provider)
     except AlreadyMountedError:
         return False
     except DeveloperModeIsNotEnabledError:
         raise
+    except CONNECTION_LOST_ERRORS as error:
+        raise DdiConnectionLost(f"{DDI_FAILED_MESSAGE} ({type(error).__name__}: {error})") from error
     except Exception as error:
         raise RuntimeError(f"{DDI_FAILED_MESSAGE} ({type(error).__name__}: {error})") from error
     return True
