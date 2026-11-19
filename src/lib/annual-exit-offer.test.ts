@@ -2,18 +2,34 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { PLANS } from "./constants";
 import {
+  ANNUAL_EXIT_DISMISS_GUARD_MS,
   ANNUAL_EXIT_OFFERS,
   ANNUAL_EXIT_OFFER_WINDOW_MS,
   formatAnnualExitExpiry,
   getAnnualExitOfferExpiry,
   getAnnualExitOfferPlanId,
   getAnnualExitOfferState,
+  isAnnualExitDismissTooEarly,
   parseAnnualExitOfferVariant,
   resolveAnnualExitOfferStart,
   pickAnnualExitOfferVariant,
 } from "./annual-exit-offer";
 
 describe("annual exit offer", () => {
+  it("ignores backdrop taps and Escape during the first 700 ms, never the button", () => {
+    assert.equal(ANNUAL_EXIT_DISMISS_GUARD_MS, 700);
+    for (const ms of [0, 18, 210, 699]) {
+      assert.equal(isAnnualExitDismissTooEarly("backdrop", ms), true);
+      assert.equal(isAnnualExitDismissTooEarly("escape", ms), true);
+      assert.equal(isAnnualExitDismissTooEarly("button", ms), false);
+    }
+    for (const ms of [700, 860, 5000]) {
+      assert.equal(isAnnualExitDismissTooEarly("backdrop", ms), false);
+      assert.equal(isAnnualExitDismissTooEarly("escape", ms), false);
+      assert.equal(isAnnualExitDismissTooEarly("button", ms), false);
+    }
+  });
+
   const start = new Date("2026-11-10T18:00:00Z");
   const at = (ms: number) => new Date(start.getTime() + ms);
 

@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { AuthDivider } from "@/components/auth/auth-divider";
 import { GoogleAuthLink } from "@/components/auth/google-auth-link";
-import { AnnualExitOfferSheet } from "@/components/checkout/annual-exit-offer-sheet";
+import { type AnnualExitDismissal, AnnualExitOfferSheet } from "@/components/checkout/annual-exit-offer-sheet";
 import { CheckoutClipperSheet } from "@/components/checkout/checkout-clipper-sheet";
 import { CheckoutDownsellSheet } from "@/components/checkout/checkout-downsell-sheet";
 import { CheckoutPaymentModal } from "@/components/checkout/checkout-payment-modal";
@@ -371,8 +371,8 @@ export function AnyLocCheckoutPanel({
 
   // Declined: only the monthly downsell, no -50 % and no clipper offer.
   // Not a useCallback: the React Compiler memoizes it, and refuses a manual one that depends on the downgrade plan.
-  function dismissAnnualExit() {
-    track("annual_exit_offer_dismissed", { plan: selectedPlanId });
+  function dismissAnnualExit({ method, visibleMs }: AnnualExitDismissal) {
+    track("annual_exit_offer_dismissed", { plan: selectedPlanId, method, visible_ms: visibleMs });
     setAnnualExit(null);
     if (downgradePlan && !downsellShownRef.current) {
       downsellShownRef.current = true;

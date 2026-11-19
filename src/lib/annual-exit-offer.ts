@@ -37,6 +37,25 @@ export function getOrPickAnnualExitOfferVariant(random = Math.random()): AnnualE
   return variant;
 }
 
+/**
+ * How the visitor closed the sheet. `button` is "Non merci"; `backdrop` and
+ * `escape` can be a leftover tap or key press from closing the payment popup.
+ */
+export type AnnualExitDismissMethod = "button" | "backdrop" | "escape";
+
+/**
+ * Taps on the backdrop and Escape are ignored this long after the sheet opens
+ * (its entry animation lasts 0,25 s). Visitors close the payment popup with a
+ * burst of backdrop taps: the next one used to land on this sheet and count as
+ * a refusal before it could be read.
+ */
+export const ANNUAL_EXIT_DISMISS_GUARD_MS = 700;
+
+/** True when a dismissal by `method`, `visibleMs` after opening, is too early to be a choice. */
+export function isAnnualExitDismissTooEarly(method: AnnualExitDismissMethod, visibleMs: number): boolean {
+  return method !== "button" && visibleMs < ANNUAL_EXIT_DISMISS_GUARD_MS;
+}
+
 /** "49,00€" -> "49 €", "9,90€" -> "9,90 €": the way the paywall writes whole prices. */
 function formatPlanPrice(price: string): string {
   return `${price.replace("€", "").trim().replace(/,00$/, "")} €`;
