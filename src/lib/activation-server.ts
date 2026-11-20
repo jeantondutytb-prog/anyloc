@@ -66,6 +66,41 @@ export async function markActivated(userId: string, source: ActivationSource) {
   }
 }
 
+/**
+ * The customer linked an iPhone after paying: the iPhone app changes the
+ * position without telling the server, so markActivated never runs for them.
+ * Cancel the help email still waiting at Resend (same rule as the scheduling,
+ * which skips customers with a registered iPhone). Never throws.
+ */
+export async function cancelActivationHelpEmail(userId: string, reason: "iphone_registered") {
+  if (!isSupabaseAdminConfigured() || !isResendConfigured()) return;
+
+  try {
+    const { data: profile, error } = await createAdminClient()
+      .from("profiles")
+      .select("activated_at, activation_help_email_id")
+      .eq("id", userId)
+      .maybeSingle<{ activated_at: string | null; activation_help_email_id: string | null }>();
+
+    if (error) {
+      if (!isMissingColumn(error)) await logError("activation/cancel", error, { userId, reason });
+      return;
+    }
+    // Already activated: markActivated cancelled it then.
+    if (!profile?.activation_help_email_id || profile.activated_at) return;
+
+    if (await cancelScheduledEmail(profile.activation_help_email_id).catch(() => false)) {
+      await capturePostHogEvent({
+        distinctId: userId,
+        event: "activation_help_email_cancelled",
+        properties: { source: reason },
+      });
+    }
+  } catch (error) {
+    await logError("activation/cancel", error, { userId, reason });
+  }
+}
+
 type ProfileRow = {
   email: string | null;
   activated_at: string | null;
