@@ -3,12 +3,20 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { CHECKOUT_COPY } from "@/lib/checkout-copy";
-import { formatAnnualExitExpiry } from "@/lib/annual-exit-offer";
+import {
+  type AnnualExitDismissMethod,
+  formatAnnualExitExpiry,
+  isAnnualExitDismissTooEarly,
+} from "@/lib/annual-exit-offer";
+
+export type AnnualExitDismissal = { method: AnnualExitDismissMethod; visibleMs: number };
 
 /**
  * Shown once when a visitor leaves the paywall (payment popup closed, or back
  * button): the annual plan at `offerPrice` instead of `fullPrice`, kept for as
  * long as they stay subscribed. `expiresAt` is the real end, set by the server.
+ * A backdrop tap or Escape in the first moments after opening is ignored: it is
+ * the visitor still closing the payment popup, not a refusal.
  */
 export function AnnualExitOfferSheet({
   fullPrice,
@@ -21,7 +29,7 @@ export function AnnualExitOfferSheet({
   offerPrice: string;
   expiresAt: Date;
   onAccept: () => void;
-  onDismiss: () => void;
+  onDismiss: (dismissal: AnnualExitDismissal) => void;
 }) {
   const copy = CHECKOUT_COPY;
   const acceptRef = useRef<HTMLButtonElement>(null);
@@ -32,11 +40,14 @@ export function AnnualExitOfferSheet({
   useEffect(() => {
     onDismissRef.current = onDismiss;
   });
+  // When the sheet appeared on screen; null until then.
+  const openedAtRef = useRef<number | null>(null);
 
   useEffect(() => {
+    openedAtRef.current = performance.now();
     acceptRef.current?.focus();
     function handleKey(event: KeyboardEvent) {
-      if (event.key === "Escape") onDismissRef.current();
+      if (event.key === "Escape") requestDismiss("escape", openedAtRef.current, onDismissRef.current);
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
@@ -45,7 +56,7 @@ export function AnnualExitOfferSheet({
   return createPortal(
     <div
       className="fixed inset-0 z-[100] flex items-end justify-center bg-zinc-950/60 p-4 backdrop-blur-sm sm:items-center"
-      onClick={onDismiss}
+      onClick={() => requestDismiss("backdrop", openedAtRef.current, onDismiss)}
     >
       <div
         role="dialog"
@@ -74,7 +85,7 @@ export function AnnualExitOfferSheet({
         </button>
         <button
           type="button"
-          onClick={onDismiss}
+          onClick={() => requestDismiss("button", openedAtRef.current, onDismiss)}
           className="mt-2 w-full py-2 text-sm text-zinc-500 transition hover:text-zinc-900"
         >
           {copy.annualExitDismiss}
@@ -83,4 +94,15 @@ export function AnnualExitOfferSheet({
     </div>,
     document.body
   );
+}
+
+/** Calls `onDismiss` with how and after how long, unless it is too early to be a choice. */
+function requestDismiss(
+  method: AnnualExitDismissMethod,
+  openedAt: number | null,
+  onDismiss: (dismissal: AnnualExitDismissal) => void
+) {
+  const visibleMs = openedAt === null ? 0 : Math.round(performance.now() - openedAt);
+  if (isAnnualExitDismissTooEarly(method, visibleMs)) return;
+  onDismiss({ method, visibleMs });
 }
