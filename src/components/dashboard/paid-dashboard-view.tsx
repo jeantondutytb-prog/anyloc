@@ -4,6 +4,7 @@ import { Children, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Apple, Check, ChevronDown, Loader2, Monitor, Smartphone } from "lucide-react";
+import { AcquisitionSourceQuestion } from "@/components/dashboard/acquisition-source-question";
 import { DashboardAppHeader } from "@/components/dashboard/dashboard-app-header";
 import { IphoneInstallView } from "@/components/dashboard/iphone-install-view";
 import { SetupPasswordForm } from "@/components/dashboard/setup-password-form";
@@ -279,6 +280,8 @@ export function PaidDashboardView({
             </p>
           </div>
         ) : null}
+
+        {paymentSuccess ? <AcquisitionSourceQuestion preview={preview} /> : null}
 
         <div className="text-center">
           <h1 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
