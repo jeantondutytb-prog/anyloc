@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import type Stripe from "stripe";
 import {
   syncProfileFromCheckoutSession,
@@ -15,23 +15,31 @@ import {
   parsePostHogDistinctId,
 } from "@/lib/posthog/server";
 import { markCheckoutRecoveryConverted } from "@/lib/checkout-recovery-server";
+import { scheduleActivationHelpEmail } from "@/lib/activation-server";
 import { stripe } from "@/lib/stripe";
 import { logError } from "@/lib/log-error";
 import { claimStripeEvent, releaseStripeEvent } from "@/lib/webhook-idempotency";
 
 export const runtime = "nodejs";
 
+/**
+ * A delayed payment method (e.g. SEPA) completes the session before the money
+ * arrives: nothing has been bought yet.
+ */
+function isPaidCheckout(session: Stripe.Checkout.Session) {
+  return (
+    !session.payment_status ||
+    session.payment_status === "paid" ||
+    session.payment_status === "no_payment_required"
+  );
+}
+
 async function trackCheckoutCompleted(
   session: Stripe.Checkout.Session,
   userId: string | null
 ) {
-  // A delayed payment method (e.g. SEPA) completes the session before the money
-  // arrives: nothing has been bought yet, so don't count it as a purchase.
-  if (
-    session.payment_status &&
-    session.payment_status !== "paid" &&
-    session.payment_status !== "no_payment_required"
-  ) {
+  // Unpaid yet: don't count it as a purchase.
+  if (!isPaidCheckout(session)) {
     return;
   }
 
@@ -214,6 +222,11 @@ export async function POST(request: Request) {
           await markCheckoutRecoveryConverted(userId).catch((error) =>
             logError("checkout-recovery/converted", error, { userId })
           );
+          // Help email 1 h later if the position hasn't moved (off until
+          // ACTIVATION_HELP_EMAIL=on). After the response: Stripe never waits on it.
+          if (isPaidCheckout(session)) {
+            after(() => scheduleActivationHelpEmail(userId));
+          }
         }
 
         await trackCheckoutCompleted(

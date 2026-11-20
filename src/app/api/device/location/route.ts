@@ -1,3 +1,5 @@
+import { after } from "next/server";
+import { markActivated } from "@/lib/activation-server";
 import { corsPreflightResponse, jsonWithCors } from "@/lib/cors";
 import { extractBearerToken } from "@/lib/device";
 import { logError } from "@/lib/log-error";
@@ -50,6 +52,12 @@ export async function GET(request: Request) {
   await touchDeviceLastSeen(device.id);
 
   const payload = await getLocationPayloadForUser(device.user_id);
+
+  // The Android app applies the active position it reads here. The desktop app
+  // reads it too but reports its own success (desktop_location_applied).
+  if (device.platform === "android" && payload.location.isActive) {
+    after(() => markActivated(device.user_id, "android"));
+  }
 
   return jsonWithCors({
     device: {
@@ -104,6 +112,9 @@ export async function PUT(request: Request) {
   try {
     const result = await upsertLocationForUser(device.user_id, payload);
     await touchDeviceLastSeen(device.id);
+    if (device.platform === "android") {
+      after(() => markActivated(device.user_id, "android"));
+    }
 
     return Response.json({
       device: {
