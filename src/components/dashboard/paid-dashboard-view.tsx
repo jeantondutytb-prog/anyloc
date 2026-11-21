@@ -197,6 +197,10 @@ export function PaidDashboardView({
   );
   const [connecting, setConnecting] = useState(false);
   const [connectError, setConnectError] = useState<string | null>(null);
+  // The 1-year plan installs straight on the iPhone: on one, that is the page,
+  // not a fold under "Ça bloque ?" (the post-payment popup already promises
+  // "sans ordi"). The computer route stays one tap away.
+  const iphoneApp = track === "iphone" && device.isIos;
 
   const assets = preview ? PREVIEW_ASSETS : data?.assets ?? [];
   const hasAccess = preview || (data?.hasAccess ?? false);
@@ -285,7 +289,9 @@ export function PaidDashboardView({
             Installe Anyloc
           </h1>
           <p className="mt-3 text-sm text-zinc-600 sm:text-base">
-            3 étapes, c&apos;est tout.
+            {iphoneApp
+              ? "Directement sur ton iPhone, sans ordi ni câble."
+              : "3 étapes, c'est tout."}
           </p>
         </div>
 
@@ -295,6 +301,11 @@ export function PaidDashboardView({
           </div>
         ) : null}
 
+        {iphoneApp ? (
+          <div className="mt-8">
+            <IphoneInstallView embedded />
+          </div>
+        ) : (
         <ol className="mt-8 space-y-3">
           {/* On an iPhone nothing here can be installed: the Android button handed
               people an .apk that iOS cannot open. Send them to their computer. */}
@@ -309,12 +320,6 @@ export function PaidDashboardView({
                 label="Copier le lien"
                 preview={preview}
               />
-              {track === "iphone" ? (
-                <p className="mt-3 text-xs text-zinc-500">
-                  Pas d&apos;ordi ? Ta formule permet d&apos;installer l&apos;app directement
-                  sur l&apos;iPhone : ouvre « J&apos;ai un iPhone mais pas d&apos;ordi » plus bas.
-                </p>
-              ) : null}
             </StepCard>
           ) : (
           <StepCard
@@ -396,6 +401,7 @@ export function PaidDashboardView({
             text="Dans l'app, choisis une ville. C'est fait — vérifie dans Snap."
           />
         </ol>
+        )}
 
         <Card className="mt-8 border-zinc-200 bg-white px-5 py-2">
           <p className="pt-3 pb-1 text-xs font-medium uppercase tracking-wide text-zinc-500">
@@ -419,6 +425,8 @@ export function PaidDashboardView({
           <HelpItem title="Sur Windows, « Faites attention » s'affiche">
             <WindowsOpenHelp compact embedded zipDownloadPath={windowsZip?.downloadPath} />
           </HelpItem>
+          {iphoneApp ? null : (
+          <>
           <HelpItem title="Sur Android, l'app ne s'installe pas">
             <AndroidOpenHelp downloaded={false} />
           </HelpItem>
@@ -437,7 +445,23 @@ export function PaidDashboardView({
               </li>
             </ol>
           </HelpItem>
-          {track === "iphone" ? (
+          </>
+          )}
+          {iphoneApp ? (
+            <HelpItem title="Je préfère passer par mon ordi">
+              <p>
+                Ouvre cette page sur ton Mac ou ton PC, installe Anyloc, puis branche ton
+                iPhone avec son câble.
+              </p>
+              <div className="mt-3">
+                <CopyPageLink
+                  href={`${window.location.origin}/dashboard`}
+                  label="Copier le lien"
+                  preview={preview}
+                />
+              </div>
+            </HelpItem>
+          ) : track === "iphone" ? (
             <HelpItem title="J'ai un iPhone mais pas d'ordi">
               <IphoneInstallView embedded />
             </HelpItem>
