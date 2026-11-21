@@ -1,5 +1,28 @@
 /** Minimal Resend client: the REST API is one call, no SDK needed. */
 
+import { capturePostHogEvent } from "@/lib/posthog/server";
+
+/** All sends are counted on this one id, without creating a person. */
+export const EMAIL_USAGE_DISTINCT_ID = "system:resend";
+
+/**
+ * One `email_sent` per email Resend accepted: PostHog alerts at 80 % of the
+ * daily and monthly Resend quota count these. Never throws, never blocks the send.
+ */
+async function trackEmailSent(params: SendEmailParams) {
+  try {
+    await capturePostHogEvent({
+      distinctId: EMAIL_USAGE_DISTINCT_ID,
+      event: "email_sent",
+      properties: {
+        campaign: params.tags?.find((tag) => tag.name === "campaign")?.value ?? null,
+        scheduled: Boolean(params.scheduledAt),
+        $process_person_profile: false,
+      },
+    });
+  } catch {}
+}
+
 export type SendEmailParams = {
   to: string;
   subject: string;
@@ -65,6 +88,7 @@ export async function sendEmail(params: SendEmailParams): Promise<{ id: string }
     throw new Error(`Resend ${res.status}: ${body?.message ?? "unknown error"}`);
   }
 
+  await trackEmailSent(params);
   return { id: body.id };
 }
 
