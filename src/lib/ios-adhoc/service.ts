@@ -1,4 +1,5 @@
 import { timingSafeEqual } from "node:crypto";
+import { cancelActivationHelpEmail } from "@/lib/activation-server";
 import { logError } from "@/lib/log-error";
 import { ascCredentialsFromEnv, createAscClient } from "./app-store-connect";
 import { getIosInstallState, needsNewBuild, type IosInstallState } from "./build-queue";
@@ -87,6 +88,9 @@ export async function completeIosEnrollment(
     return { ok: false };
   }
 
+  // The iPhone app never tells the server it changed the position: a linked
+  // iPhone is our sign the customer is set up, so the 1 h help email goes.
+  await cancelActivationHelpEmail(device.user_id, "iphone_registered");
   await ensureBuildForPendingDevices(now);
   return { ok: true };
 }

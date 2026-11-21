@@ -1,3 +1,5 @@
+import { after } from "next/server";
+import { markActivated } from "@/lib/activation-server";
 import { desktopInstallDistinctId, parseAppEventReport } from "@/lib/app-event";
 import { aliasPostHogUser, capturePostHogEvent } from "@/lib/posthog/server";
 import { getAuthenticatedUser } from "@/lib/subscription";
@@ -31,6 +33,11 @@ export async function POST(request: Request) {
       app_version: report.appVersion,
     },
   });
+
+  // The desktop app only reports this once the iPhone really moved.
+  if (userId && report.event === "desktop_location_applied") {
+    after(() => markActivated(userId, "desktop"));
+  }
 
   return new Response(null, { status: 204 });
 }
