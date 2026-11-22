@@ -23,6 +23,18 @@ const SECURITY_HEADERS = [
 ];
 
 const nextConfig: NextConfig = {
+  // Short link for the TikTok carousels, so their visits show up apart from the videos'
+  // in PostHog. Temporary (307): the parameters can change later. Runs before
+  // src/proxy.ts, so the redirect itself draws no test group and sets no cookie.
+  async redirects() {
+    return [
+      {
+        source: "/snap",
+        destination: "/?utm_source=tiktok&utm_medium=carrousel",
+        permanent: false,
+      },
+    ];
+  },
   async headers() {
     return [{ source: "/:path*", headers: SECURITY_HEADERS }];
   },
