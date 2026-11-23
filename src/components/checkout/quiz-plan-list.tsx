@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { BlackFridayPrice } from "@/lib/black-friday";
 import { Check, Lock, Plus, ShieldCheck, TrendingDown } from "lucide-react";
 import { GuaranteeSheet } from "@/components/checkout/guarantee-sheet";
 import { CHECKOUT_COPY } from "@/lib/checkout-copy";
@@ -18,11 +19,14 @@ import { cn } from "@/lib/utils";
 export function QuizPlanCta({
   plan,
   worry,
+  firstPayment,
   onContinue,
 }: {
   plan: Plan;
   /** The worry picked in the quiz: its reassurance line sits just above the button. */
   worry?: string;
+  /** Discounted 1st payment ("7,92 €"), e.g. during Black Friday. */
+  firstPayment?: string;
   onContinue: () => void;
 }) {
   // A 1-month plan's value card already is the 48 h guarantee: don't say it twice.
@@ -43,7 +47,7 @@ export function QuizPlanCta({
       >
         Continuer avec {plan.name}
       </button>
-      <p className="mt-2 text-center text-xs text-zinc-500">{getPayTodayLine(plan)}</p>
+      <p className="mt-2 text-center text-xs text-zinc-500">{getPayTodayLine(plan, firstPayment)}</p>
       <p className="mt-1 flex items-center justify-center gap-1 text-[11px] text-zinc-400">
         <Lock className="h-3 w-3" aria-hidden />
         Paiement sécurisé · Carte bancaire · Apple Pay
@@ -67,6 +71,7 @@ export function QuizPlanList({
   recommendedPlanId,
   recommendationReason,
   welcomeOfferPrice,
+  blackFridayPrices,
   onSelectPlan,
 }: {
   title: { before: string; highlight: string; after: string };
@@ -80,6 +85,8 @@ export function QuizPlanList({
   recommendationReason?: string;
   /** "4,95 €" while the -50 % welcome offer applies to the selected plan. */
   welcomeOfferPrice?: string;
+  /** Black Friday prices, by plan: only on the checkout page, never in the quiz's sheet. */
+  blackFridayPrices?: Record<string, BlackFridayPrice>;
   onSelectPlan: (planId: string) => void;
 }) {
   const copy = CHECKOUT_COPY;
@@ -117,7 +124,10 @@ export function QuizPlanList({
       </p>
 
       <div role="radiogroup" aria-label="Choisis ton plan" className="mt-6 space-y-2.5">
-        {plans.map((plan) => {
+        {plans.map((basePlan) => {
+          // Black Friday: the per-month and per-day figures use the discounted 1st payment.
+          const bfPrice = blackFridayPrices?.[basePlan.id] ?? null;
+          const plan = bfPrice ? { ...basePlan, price: bfPrice.price, perDay: bfPrice.perDay } : basePlan;
           const selected = plan.id === selectedPlan.id;
           const recommended = plan.id === recommendedPlanId;
           return (
@@ -158,6 +168,12 @@ export function QuizPlanList({
                     </span>
                   ) : null}
                 </span>
+                {bfPrice ? (
+                  <span className="mt-0.5 block text-xs leading-snug text-pink-600">
+                    {copy.blackFridayCardBadge} · <s className="text-zinc-500">{bfPrice.fullPrice}</s>{" "}
+                    <span className="font-bold">{bfPrice.offerPrice}</span> {bfPrice.terms}
+                  </span>
+                ) : null}
                 {/* Only the recommendation: the platform lines were noise on the cards. */}
                 {recommended && recommendationReason ? (
                   <span className="mt-0.5 block text-xs leading-snug text-zinc-500">
@@ -194,6 +210,11 @@ export function QuizPlanList({
         ) : (
           <div className={valueCardClassName}>{valueCardContent}</div>
         )}
+        {blackFridayPrices && plans.some((item) => blackFridayPrices[item.id]) ? (
+          <p className="mt-2 text-center text-[11px] leading-snug text-zinc-500">
+            {copy.blackFridayReferenceNote}
+          </p>
+        ) : null}
         {welcomeOfferPrice ? (
           <p className="mt-2 text-center text-xs font-semibold text-pink-600">
             {copy.focusOfferNote}

@@ -62,6 +62,7 @@ import { registerPostHogProperties } from "@/lib/posthog/browser";
 import { getStripe } from "@/lib/stripe-browser";
 import { cn } from "@/lib/utils";
 import type { PaywallEmailOffer } from "@/lib/checkout-email-offer";
+import type { PaywallBlackFriday } from "@/lib/black-friday";
 
 /** Apple logo outline (Simple Icons path, CC0): lucide's `Apple` is a fruit, not the brand. */
 function AppleLogo({ className }: { className?: string }) {
@@ -130,6 +131,7 @@ export function AnyLocCheckoutPanel({
   canceled,
   offerEndsAt,
   emailOffer,
+  blackFriday,
   focusPayment,
   onShowAllPlans,
   returning,
@@ -150,6 +152,11 @@ export function AnyLocCheckoutPanel({
   offerEndsAt?: string | null;
   /** The 15-min email's discount while it runs: the checkout of these plans carries its coupon. */
   emailOffer?: PaywallEmailOffer | null;
+  /**
+   * Black Friday (-20 % on the 1st payment), decided by the server on its own
+   * clock: plans with a bigger running discount are already left out.
+   */
+  blackFriday?: PaywallBlackFriday | null;
   /** Arrived from an email: only the selected plan and the payment popup, no sales page. */
   focusPayment?: boolean;
   onShowAllPlans?: () => void;
@@ -184,6 +191,11 @@ export function AnyLocCheckoutPanel({
       ? emailOffer.prices[selectedPlan.id] ?? null
       : null;
   const downgradePlan = selectedPlan.id !== entryPlanId ? entryPlan : undefined;
+  // Black Friday price of each plan of this grid (none for a plan with a bigger offer).
+  const blackFridayPrices = blackFriday?.prices ?? {};
+  const blackFridayOnGrid = checkoutPlans.some((plan) => blackFridayPrices[plan.id]);
+  // The server already left out the plans with a bigger offer (never two discounts).
+  const blackFridayPrice = emailOfferPrice ? null : blackFridayPrices[selectedPlan.id] ?? null;
   // Checkout refused for lack of funds (or closed, in the A/B test) that
   // unlocks the shortest plan at -50 % on the 1st month.
   const [offerSessionId, setOfferSessionId] = useState<string | null>(null);
@@ -204,6 +216,19 @@ export function AnyLocCheckoutPanel({
   const [modalOpen, setModalOpen] = useState(Boolean(focusPayment) || autoPay);
   // The popup is portaled to <body>: only render it once in the browser.
   const hydrated = useSyncExternalStore(subscribeToNothing, () => true, () => false);
+
+  const blackFridayTrackedRef = useRef(false);
+  useEffect(() => {
+    if (!blackFridayOnGrid || blackFridayTrackedRef.current) return;
+    blackFridayTrackedRef.current = true;
+    track("black_friday_offer_shown", {
+      plan: selectedPlanId,
+      plans: checkoutPlans.filter((plan) => blackFridayPrices[plan.id]).map((plan) => plan.id),
+      source: focusPayment ? "email" : quiz || fromQuiz ? "quiz" : "paywall",
+    });
+    // Once per paywall view.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blackFridayOnGrid]);
 
   const autoPayTrackedRef = useRef(false);
   useEffect(() => {
@@ -552,9 +577,12 @@ export function AnyLocCheckoutPanel({
   function renderPlans(className?: string) {
     return (
     <div role="radiogroup" aria-label="Choisis ton plan" className={cn("space-y-2.5", className)}>
-      {checkoutPlans.map((plan) => {
-        const selected = plan.id === selectedPlanId;
-        const badge = plan.popular ? copy.popularBadge : null;
+      {checkoutPlans.map((basePlan) => {
+        const selected = basePlan.id === selectedPlanId;
+        const badge = basePlan.popular ? copy.popularBadge : null;
+        // Black Friday: both price displays use the discounted 1st payment.
+        const bfPrice = blackFridayPrices[basePlan.id] ?? null;
+        const plan = bfPrice ? { ...basePlan, price: bfPrice.price, perDay: bfPrice.perDay } : basePlan;
 
         return (
           <button
@@ -595,6 +623,11 @@ export function AnyLocCheckoutPanel({
                   </span>
                 ) : null}
               </span>
+              {bfPrice ? (
+                <span className="mt-0.5 block text-xs leading-snug text-pink-600">
+                  {copy.blackFridayCardBadge} · {bfPrice.terms}
+                </span>
+              ) : null}
             </span>
             <span className="shrink-0 text-right">
               <span className="block whitespace-nowrap text-lg font-bold tabular-nums text-zinc-900">
@@ -608,13 +641,20 @@ export function AnyLocCheckoutPanel({
                   {plan.oneTime ? " une fois" : priceDisplay === "per_month" ? "/mois" : "/jour"}
                 </span>
               </span>
-              <span className="block whitespace-nowrap text-xs tabular-nums text-zinc-500">
-                {plan.oneTime
-                  ? "Sans abonnement"
-                  : priceDisplay === "per_month" && BILLING_PERIOD_LABELS[plan.id] === "1 mois"
-                    ? "Sans engagement"
-                    : `${plan.price.replace("€", " €")} / ${BILLING_PERIOD_LABELS[plan.id]}`}
-              </span>
+              {bfPrice ? (
+                <span className="block whitespace-nowrap text-xs tabular-nums text-zinc-500">
+                  <s>{bfPrice.fullPrice}</s>{" "}
+                  <span className="font-bold text-pink-600">{bfPrice.offerPrice}</span>
+                </span>
+              ) : (
+                <span className="block whitespace-nowrap text-xs tabular-nums text-zinc-500">
+                  {plan.oneTime
+                    ? "Sans abonnement"
+                    : priceDisplay === "per_month" && BILLING_PERIOD_LABELS[plan.id] === "1 mois"
+                      ? "Sans engagement"
+                      : `${plan.price.replace("€", " €")} / ${BILLING_PERIOD_LABELS[plan.id]}`}
+                </span>
+              )}
               {offerEndsAt && recoveryOffer && plan.id === RECOVERY_OFFER_PLAN_ID ? (
                 <span className="mt-0.5 block whitespace-nowrap text-xs font-bold tabular-nums text-pink-600">
                   {copy.focusOfferNote}
@@ -637,6 +677,8 @@ export function AnyLocCheckoutPanel({
       >
         {emailOfferPrice
           ? copy.continueCtaEmailOffer(emailOfferPrice.offerPrice)
+          : blackFridayPrice
+          ? copy.continueCtaEmailOffer(blackFridayPrice.offerPrice)
           : recoveryOffer && selectedPlan.id === RECOVERY_OFFER_PLAN_ID
           ? copy.continueCtaRecoveryOffer
           : copy.continueCta(
@@ -654,6 +696,13 @@ export function AnyLocCheckoutPanel({
           {copy.canceled}
         </p>
       )}
+
+      {blackFridayOnGrid ? (
+        <p className="mb-4 rounded-xl border border-zinc-900 bg-zinc-950 px-4 py-3 text-center text-sm text-white">
+          <span className="font-bold">{copy.blackFridayBannerTitle}</span>
+          {copy.blackFridayBannerRest}
+        </p>
+      ) : null}
 
       {emailOfferPrice ? (
         <p
@@ -708,6 +757,7 @@ export function AnyLocCheckoutPanel({
               ? getFirstMonthOfferPrice(selectedPlan.price)
               : undefined
           }
+          blackFridayPrices={blackFriday?.prices}
           hidden={autoPay && !hydrated}
           onSelectPlan={selectPlan}
           onContinue={() => openPaymentModal("main")}
@@ -731,8 +781,17 @@ export function AnyLocCheckoutPanel({
             {copy.focusTitle}
           </h1>
           <p className="mt-2 text-sm text-zinc-600">
-            {selectedPlan.name} · {selectedPlan.price}
-            {selectedPlan.period}
+            {selectedPlan.name} ·{" "}
+            {blackFridayPrice ? (
+              <>
+                <s>{blackFridayPrice.fullPrice}</s> {blackFridayPrice.offerPrice} {blackFridayPrice.terms}
+              </>
+            ) : (
+              <>
+                {selectedPlan.price}
+                {selectedPlan.period}
+              </>
+            )}
             {recoveryOffer && selectedPlanId === RECOVERY_OFFER_PLAN_ID
               ? ` · ${copy.focusOfferNote}`
               : ""}
@@ -758,6 +817,11 @@ export function AnyLocCheckoutPanel({
               ) : null}
 
               {renderPlans("mt-5")}
+              {blackFridayOnGrid ? (
+                <p className="mt-2 text-center text-[11px] leading-snug text-zinc-500">
+                  {copy.blackFridayReferenceNote}
+                </p>
+              ) : null}
             </>
           )}
 
@@ -923,6 +987,7 @@ export function AnyLocCheckoutPanel({
               ? { offerPrice: ANNUAL_EXIT_OFFERS[selectedPlan.id].offerPrice }
               : undefined
           }
+          blackFridayPrice={blackFridayPrice?.offerPrice}
           onAnnualExitOfferExpired={leaveAnnualExitOffer}
           onDeclineOffer={acceptDeclineOffer}
           stripePublishableKey={stripePublishableKey}

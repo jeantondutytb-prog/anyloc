@@ -20,6 +20,13 @@ export const CHECKOUT_COPY = {
   continueCta: (amount: string, period: string) => `Débloquer · ${amount} pour ${period}`,
   continueCtaRecoveryOffer: "Débloquer · 4,95 € le 1er mois",
   continueCtaEmailOffer: (offerPrice: string) => `Débloquer · ${offerPrice}`,
+  // Black Friday 2026 (lib/black-friday): the struck price is the current
+  // public price, the same for everyone; no countdown.
+  blackFridayBannerTitle: "🖤 Black Friday : −20 % sur ton 1er paiement",
+  blackFridayBannerRest: ", quelle que soit la formule. Jusqu'au lundi 30/11 à 23 h 59.",
+  blackFridayCardBadge: "Black Friday −20 %",
+  blackFridayReferenceNote:
+    "Prix barrés : prix publics d'Anyloc, les mêmes pour tous depuis le 11/09 (9,90 €/mois, 34,90 €/6 mois) et depuis le 04/10 (49 €/an). Remise appliquée au 1er paiement seulement.",
   /** Right under the pay button, where the fear of paying for nothing peaks. */
   payReassurance: "Ça marche ou remboursé · Résiliable en 1 clic",
   payReassuranceOneTime: "Ça marche ou remboursé · Paiement unique",

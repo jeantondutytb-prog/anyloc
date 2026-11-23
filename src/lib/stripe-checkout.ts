@@ -63,8 +63,8 @@ export async function createSubscriptionCheckoutSession({
    * pending lookup: it runs alongside the Stripe customer lookup.
    */
   couponId?: string | null | Promise<string | null>;
-  /** Offer tag (e.g. "annual_exit") put on the session and the subscription. */
-  offer?: string | null;
+  /** Offer tag (e.g. "annual_exit") put on the session and the subscription. May be pending, like the coupon. */
+  offer?: string | null | Promise<string | null>;
 }) {
   if (!stripe || !plan.stripePriceId) {
     throw new UserFacingError("Paiement non configuré pour ce plan");
@@ -72,9 +72,10 @@ export async function createSubscriptionCheckoutSession({
 
   const returnUrl = getCheckoutReturnUrl();
 
-  const [subscriptionParams, coupon] = await Promise.all([
+  const [subscriptionParams, coupon, offerTag] = await Promise.all([
     user?.id ? buildAuthenticatedCheckoutParams(plan, user) : buildGuestCheckoutParams(plan),
     couponId,
+    offer,
   ]);
 
   // The lifetime plan is paid once: no subscription, and none of the offers
@@ -86,7 +87,7 @@ export async function createSubscriptionCheckoutSession({
   const sharedParams = {
     ...(oneTime
       ? withAnalyticsId(baseParams, analyticsId)
-      : withCheckoutOffer(withAnalyticsId(baseParams, analyticsId), offer ?? null)),
+      : withCheckoutOffer(withAnalyticsId(baseParams, analyticsId), offerTag ?? null)),
     ...getDeviceRequirementParams(),
     ...(applyCoupon ? { discounts: [{ coupon: coupon! }] } : {}),
   };

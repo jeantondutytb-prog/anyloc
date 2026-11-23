@@ -7,6 +7,11 @@ import {
 import { PLANS } from "@/lib/constants";
 import { resolveAnnualExitCoupon } from "@/lib/annual-exit-coupon";
 import { CHECKOUT_OFFER_ANNUAL_EXIT } from "@/lib/checkout-offer";
+import {
+  CHECKOUT_OFFER_BLACK_FRIDAY,
+  getBlackFridayCouponId,
+  pickCheckoutCoupon,
+} from "@/lib/black-friday";
 import { capturePostHogEvent, parsePostHogDistinctId } from "@/lib/posthog/server";
 import { publicErrorMessage } from "@/lib/errors";
 import { limitByIp } from "@/lib/rate-limit";
@@ -56,11 +61,27 @@ export async function POST(request: Request) {
     const annualExitCoupon = gate.kind === "coupon" ? gate.couponId : null;
 
     // Looked up while Stripe finds the customer: every round trip delays the payment form.
-    const couponPromise = annualExitCoupon
-      ? Promise.resolve(annualExitCoupon)
-      : user
-        ? getRecoveryCouponForUser(user.id, plan.id)
-        : null;
+    // Black Friday (-20 % on the 1st payment) only when no bigger discount
+    // applies: never two coupons (see lib/black-friday).
+    const pickPromise = annualExitCoupon
+      ? Promise.resolve({ couponId: annualExitCoupon, blackFriday: false })
+      : Promise.resolve(user ? getRecoveryCouponForUser(user.id, plan.id) : null).then(
+          (existing) =>
+            pickCheckoutCoupon({
+              planId: plan.id,
+              existing,
+              blackFridayCouponId: getBlackFridayCouponId(),
+              now: new Date(),
+            })
+        );
+    const couponPromise = pickPromise.then((pick) => pick.couponId);
+    const checkoutOfferPromise = pickPromise.then((pick) =>
+      annualExitCoupon
+        ? CHECKOUT_OFFER_ANNUAL_EXIT
+        : pick.blackFriday
+          ? CHECKOUT_OFFER_BLACK_FRIDAY
+          : null
+    );
 
     // The paywall's "Continuer" button: Stripe-hosted payment page.
     const session = await createSubscriptionCheckoutSession({
@@ -69,9 +90,10 @@ export async function POST(request: Request) {
       analyticsId,
       uiMode: "hosted_page",
       couponId: couponPromise,
-      offer: annualExitCoupon ? CHECKOUT_OFFER_ANNUAL_EXIT : null,
+      offer: checkoutOfferPromise,
     });
-    const couponId = await couponPromise;
+    const [couponId, checkoutOffer] = await Promise.all([couponPromise, checkoutOfferPromise]);
+    const blackFriday = checkoutOffer === CHECKOUT_OFFER_BLACK_FRIDAY;
 
     // Bookkeeping that the customer doesn't wait for: sent once the response is out.
     after(async () => {
@@ -87,10 +109,17 @@ export async function POST(request: Request) {
             guest_checkout: !user,
             ui_mode: "hosted",
             checkout_variant: "direct",
-            recovery_offer: Boolean(couponId) && !annualExitCoupon,
-            offer: annualExitCoupon ? CHECKOUT_OFFER_ANNUAL_EXIT : null,
+            recovery_offer: Boolean(couponId) && !annualExitCoupon && !blackFriday,
+            offer: checkoutOffer,
           },
         });
+        if (blackFriday) {
+          await capturePostHogEvent({
+            distinctId: user?.id ?? analyticsId ?? session.id,
+            event: "black_friday_offer_applied",
+            properties: { plan: plan.id, ui_mode: "hosted" },
+          });
+        }
       } catch (error) {
         await logError("checkout/after", error, { userId, plan_id: plan.id });
       }

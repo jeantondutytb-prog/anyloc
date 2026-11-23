@@ -9,7 +9,9 @@ import {
   getActiveEmailOfferEnd,
   getActiveRecoveryOfferExpiry,
 } from "@/lib/checkout-recovery-server";
-import { toPaywallEmailOffer, type PaywallEmailOffer } from "@/lib/checkout-email-offer";
+import { EMAIL_OFFERS, toPaywallEmailOffer, type PaywallEmailOffer } from "@/lib/checkout-email-offer";
+import { getBlackFridayCouponId, getPaywallBlackFriday } from "@/lib/black-friday";
+import { RECOVERY_OFFER_PLAN_ID } from "@/lib/checkout-recovery-plan";
 import { DEFAULT_PLAN_ID, getCheckoutUrl, getPlanDisplayName, isValidPlanId } from "@/lib/constants";
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 import { getSubscriptionInactiveReason } from "@/lib/subscription-inactive";
@@ -50,6 +52,7 @@ export default async function CheckoutPage({
     payer?: string;
     prix?: string;
     sortie?: string;
+    bf?: string;
     utm_source?: string;
     utm_medium?: string;
     utm_campaign?: string;
@@ -57,7 +60,7 @@ export default async function CheckoutPage({
   }>;
 }) {
   const params = await searchParams;
-  const { plan, canceled, preview, paiement, pricing, retour, parcours, payer, prix, offre, sortie } =
+  const { plan, canceled, preview, paiement, pricing, retour, parcours, payer, prix, offre, sortie, bf } =
     params;
   // Kept through the login redirect, so the email's clicks stay attributed.
   const utmQuery = new URLSearchParams(
@@ -147,6 +150,15 @@ export default async function CheckoutPage({
     }
   }
 
+  // Black Friday: decided here, on the server clock, never in the browser.
+  // The dev preview can show it without the Stripe coupon: /checkout?preview=1&bf=1.
+  const blackFriday = getPaywallBlackFriday({
+    now: new Date(),
+    couponId: devPreview && bf === "1" ? "preview" : getBlackFridayCouponId(),
+    welcomeOfferPlanId: offerEndsAt ? RECOVERY_OFFER_PLAN_ID : null,
+    emailOfferPlanIds: emailOffer ? Object.keys(EMAIL_OFFERS) : [],
+  });
+
   return (
     <>
       {isPricingExperimentEnabled() ? (
@@ -160,6 +172,7 @@ export default async function CheckoutPage({
         canceled={canceled === "true"}
         offerEndsAt={offerEndsAt}
         emailOffer={emailOffer}
+        blackFriday={blackFriday}
         focusPayment={focusPayment}
         stripePublishableKey={getStripePublishableKey()}
         returning={returning}

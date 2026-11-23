@@ -47,7 +47,7 @@ describe("quiz paywall helpers", () => {
     );
     assert.equal(
       getPayTodayLine(plan("monthly"), "4,95 €"),
-      "4,95 € à payer aujourd'hui, puis chaque mois · Résiliable en 1 clic"
+      "4,95 € à payer aujourd'hui, puis 9,90 € chaque mois · Résiliable en 1 clic"
     );
     assert.equal(getBillingCadence("quarter_v2"), "tous les 3 mois");
   });

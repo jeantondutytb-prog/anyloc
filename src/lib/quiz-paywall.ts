@@ -42,9 +42,12 @@ export function getBillingCadence(planId: string) {
 
 /** Line under the paywall button: what is charged now and when it renews. */
 export function getPayTodayLine(plan: PricedPlan, firstPayment?: string) {
-  const amount = firstPayment ?? plan.price.replace("€", " €");
+  const fullAmount = plan.price.replace("€", " €");
+  const amount = firstPayment ?? fullAmount;
   if (plan.oneTime) return `${amount} à payer une seule fois · Pas d'abonnement`;
-  return `${amount} à payer aujourd'hui, puis ${getBillingCadence(plan.id)} · Résiliable en 1 clic`;
+  // A discounted 1st payment: say what the renewals cost.
+  const then = firstPayment ? `${fullAmount} ${getBillingCadence(plan.id)}` : getBillingCadence(plan.id);
+  return `${amount} à payer aujourd'hui, puis ${then} · Résiliable en 1 clic`;
 }
 
 /** "49,00€" -> "49 €", "9,90€" -> "9,90 €", "29 €" -> "29 €": the order page's amounts. */
