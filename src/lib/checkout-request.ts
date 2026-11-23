@@ -1,5 +1,6 @@
 import { track } from "@/lib/analytics/track";
 import { getPostHogDistinctId } from "@/lib/posthog/browser";
+import { UPDATE_CARD_PATH } from "@/lib/checkout-payment-failed-guard-core";
 
 /** Backoff between attempts when the request never reaches the server. */
 const NETWORK_RETRY_DELAYS_MS = [800, 2000];
@@ -34,6 +35,7 @@ async function parseJsonResponse(res: Response) {
       sessionId?: string;
       url?: string;
       error?: string;
+      redirectTo?: string;
     };
   } catch {
     throw new Error("Réponse serveur invalide. Réessaie dans quelques instants.");
@@ -89,6 +91,10 @@ export async function requestCheckoutSession(
       });
       const data = await parseJsonResponse(res);
       if (!res.ok) {
+        // Renewal failed: the server sends to the card fix instead of a 2nd subscription.
+        if (res.status === 409 && data.redirectTo === UPDATE_CARD_PATH) {
+          window.location.assign(UPDATE_CARD_PATH);
+        }
         throw new CheckoutRequestError(data.error ?? "Impossible de démarrer le paiement.", res.status);
       }
       return { ...data, networkRetries: attempt };

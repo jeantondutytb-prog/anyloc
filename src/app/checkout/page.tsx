@@ -11,6 +11,7 @@ import {
 } from "@/lib/checkout-recovery-server";
 import { EMAIL_OFFERS, toPaywallEmailOffer, type PaywallEmailOffer } from "@/lib/checkout-email-offer";
 import { getBlackFridayCouponId, getPaywallBlackFriday } from "@/lib/black-friday";
+import { getPaymentFailedCheckoutBlock } from "@/lib/checkout-payment-failed-guard";
 import { RECOVERY_OFFER_PLAN_ID } from "@/lib/checkout-recovery-plan";
 import { DEFAULT_PLAN_ID, getCheckoutUrl, getPlanDisplayName, isValidPlanId } from "@/lib/constants";
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
@@ -124,6 +125,13 @@ export default async function CheckoutPage({
 
     if (access.hasAccess) {
       redirect("/dashboard");
+    }
+
+    // Renewal failed and the old subscription still runs: a new card on it,
+    // not a 2nd subscription that the old one's retries would charge on top.
+    const paymentFailedBlock = await getPaymentFailedCheckoutBlock(user.id);
+    if (paymentFailedBlock.blocked) {
+      redirect(paymentFailedBlock.redirectTo);
     }
 
     // The first paywall view starts the welcome offer (and its emails).

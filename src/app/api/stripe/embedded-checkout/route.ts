@@ -16,6 +16,10 @@ import {
   pickCheckoutCoupon,
 } from "@/lib/black-friday";
 import { capturePostHogEvent, parsePostHogDistinctId } from "@/lib/posthog/server";
+import {
+  getPaymentFailedCheckoutBlock,
+  paymentFailedCheckoutResponse,
+} from "@/lib/checkout-payment-failed-guard";
 import { publicErrorMessage } from "@/lib/errors";
 import { limitByIp } from "@/lib/rate-limit";
 import {
@@ -53,6 +57,8 @@ export async function POST(request: Request) {
     // test) that this one comes from: -50 % on the 1st month.
     const offerSessionId = typeof body?.offerSessionId === "string" ? body.offerSessionId : null;
     const closeOfferVariant = parseCloseOfferVariant((await cookies()).get(CLOSE_OFFER_COOKIE)?.value);
+    // A failed renewal is fixed with a new card, never with a 2nd subscription.
+    const paymentFailedBlock = getPaymentFailedCheckoutBlock(user?.id);
 
     // The annual exit offer: checked here, never trusted from the browser.
     // It wins over the -50 % and the recovery coupon (never two discounts).
@@ -97,14 +103,22 @@ export async function POST(request: Request) {
           : null
     );
 
-    const session = await createSubscriptionCheckoutSession({
-      plan,
-      user,
-      analyticsId,
-      uiMode: "embedded_page",
-      couponId: couponPromise,
-      offer: checkoutOfferPromise,
-    });
+    // Checked alongside the session (no added wait for a normal buyer); a
+    // refused session is never handed out and simply expires unused.
+    const [session, block] = await Promise.all([
+      createSubscriptionCheckoutSession({
+        plan,
+        user,
+        analyticsId,
+        uiMode: "embedded_page",
+        couponId: couponPromise,
+        offer: checkoutOfferPromise,
+      }),
+      paymentFailedBlock,
+    ]);
+    if (block.blocked) {
+      return paymentFailedCheckoutResponse();
+    }
     const [couponId, offer, checkoutOffer] = await Promise.all([
       couponPromise,
       offerPromise,
