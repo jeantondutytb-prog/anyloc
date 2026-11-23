@@ -29,6 +29,7 @@ export function CheckoutPaymentModal({
   offerSessionId,
   welcomeOffer,
   annualExitOffer,
+  blackFridayPrice,
   onAnnualExitOfferExpired,
   onDeclineOffer,
   stripePublishableKey,
@@ -48,6 +49,8 @@ export function CheckoutPaymentModal({
   welcomeOffer?: boolean;
   /** The annual exit offer: the server checks it, the header shows `offerPrice`. */
   annualExitOffer?: { offerPrice: string };
+  /** Black Friday 1st payment ("7,92 €"), when no bigger offer applies (the server decides the coupon). */
+  blackFridayPrice?: string;
   /** The server answered 409 to the offer: the parent leaves offer mode, so a retry asks the normal price. */
   onAnnualExitOfferExpired?: () => void;
   onDeclineOffer: (declinedSessionId: string) => void;
@@ -230,7 +233,7 @@ export function CheckoutPaymentModal({
     ? annualExitOffer.offerPrice
     : discounted
       ? getFirstMonthOfferPrice(plan.price)
-      : price;
+      : blackFridayPrice ?? price;
   const quizRenewalLine = getOrderRenewalLine(plan, { annualExitOfferPrice: annualExitOffer?.offerPrice });
 
   function retry() {
@@ -282,7 +285,7 @@ export function CheckoutPaymentModal({
               ? annualExitOffer.offerPrice
               : discounted
                 ? copy.firstMonthOfferHeader(getFirstMonthOfferPrice(plan.price))
-                : price}
+                : blackFridayPrice ?? price}
           </p>
           <button
             ref={closeRef}

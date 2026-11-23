@@ -15,6 +15,7 @@ import {
 import { readQuizResult, type QuizResult } from "@/lib/onboarding-quiz";
 import type { PriceDisplayVariant } from "@/lib/price-display-experiment";
 import type { PaywallEmailOffer } from "@/lib/checkout-email-offer";
+import type { PaywallBlackFriday } from "@/lib/black-friday";
 
 // The paywall keeps only what a buyer may need: the legal pages and support.
 const CHECKOUT_FOOTER_LINKS = [
@@ -34,6 +35,7 @@ export function CheckoutView({
   stripePublishableKey,
   offerEndsAt,
   emailOffer,
+  blackFriday,
   focusPayment: initialFocusPayment,
   returning,
   fromQuiz,
@@ -47,6 +49,8 @@ export function CheckoutView({
   /** End of the -50 % welcome offer (ISO), while it runs. */
   offerEndsAt?: string | null;
   emailOffer?: PaywallEmailOffer | null;
+  /** Black Friday prices, decided by the server (null when off). */
+  blackFriday?: PaywallBlackFriday | null;
   focusPayment?: boolean;
   returning?: ReturningCustomer | null;
   /** Arrived from the quiz onboarding: its recommendation shapes the paywall. */
@@ -121,6 +125,7 @@ export function CheckoutView({
           canceled={canceled}
           offerEndsAt={offerEndsAt}
           emailOffer={emailOffer}
+          blackFriday={blackFriday}
           focusPayment={focusPayment}
           onShowAllPlans={() => setFocusPayment(false)}
           returning={returning}

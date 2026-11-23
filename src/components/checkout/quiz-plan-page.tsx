@@ -1,6 +1,7 @@
 "use client";
 
 import { QuizPlanCta, QuizPlanList } from "@/components/checkout/quiz-plan-list";
+import type { BlackFridayPrice } from "@/lib/black-friday";
 import type { Plan } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +21,7 @@ export function QuizPlanPage({
   recommendationReason,
   worry,
   welcomeOfferPrice,
+  blackFridayPrices,
   hidden,
   onSelectPlan,
   onContinue,
@@ -32,6 +34,8 @@ export function QuizPlanPage({
   recommendationReason?: string;
   worry?: string;
   welcomeOfferPrice?: string;
+  /** Black Friday prices, by plan (see lib/black-friday). */
+  blackFridayPrices?: Record<string, BlackFridayPrice>;
   /** Invisible until the popup is up, so arriving from the sheet shows no intermediate page. */
   hidden?: boolean;
   onSelectPlan: (planId: string) => void;
@@ -54,6 +58,7 @@ export function QuizPlanPage({
           recommendedPlanId={recommendedPlanId}
           recommendationReason={recommendationReason}
           welcomeOfferPrice={welcomeOfferPrice}
+          blackFridayPrices={blackFridayPrices}
           onSelectPlan={onSelectPlan}
         />
       </div>
@@ -61,7 +66,12 @@ export function QuizPlanPage({
         className="sticky bottom-0 z-20 -mx-4 border-t border-zinc-200/80 bg-white/90 px-4 pt-3 backdrop-blur-md sm:mx-0 sm:rounded-t-3xl sm:border-x sm:px-5"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)" }}
       >
-        <QuizPlanCta plan={selectedPlan} worry={worry} onContinue={onContinue} />
+        <QuizPlanCta
+          plan={selectedPlan}
+          worry={worry}
+          firstPayment={blackFridayPrices?.[selectedPlan.id]?.offerPrice}
+          onContinue={onContinue}
+        />
       </div>
     </div>
   );
