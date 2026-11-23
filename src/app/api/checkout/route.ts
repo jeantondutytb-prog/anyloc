@@ -20,6 +20,10 @@ import {
   getAuthenticatedCheckoutUser,
 } from "@/lib/stripe-checkout";
 import { CHECKOUT_INTENT_COOKIE } from "@/lib/checkout-intent-cookie";
+import {
+  getPaymentFailedCheckoutBlock,
+  paymentFailedCheckoutResponse,
+} from "@/lib/checkout-payment-failed-guard";
 
 export async function POST(request: Request) {
   const limited = limitByIp(request, "checkout", 10, 60_000);
@@ -47,6 +51,8 @@ export async function POST(request: Request) {
     const user = await getAuthenticatedCheckoutUser();
     userId = user?.id;
     const analyticsId = parsePostHogDistinctId(body?.analyticsId);
+    // A failed renewal is fixed with a new card, never with a 2nd subscription.
+    const paymentFailedBlock = getPaymentFailedCheckoutBlock(user?.id);
 
     // The annual exit offer: checked here, never trusted from the browser.
     // It wins over the recovery coupon (never two discounts).
@@ -84,14 +90,22 @@ export async function POST(request: Request) {
     );
 
     // The paywall's "Continuer" button: Stripe-hosted payment page.
-    const session = await createSubscriptionCheckoutSession({
-      plan,
-      user,
-      analyticsId,
-      uiMode: "hosted_page",
-      couponId: couponPromise,
-      offer: checkoutOfferPromise,
-    });
+    // Checked alongside the session (no added wait for a normal buyer); a
+    // refused session is never handed out and simply expires unused.
+    const [session, block] = await Promise.all([
+      createSubscriptionCheckoutSession({
+        plan,
+        user,
+        analyticsId,
+        uiMode: "hosted_page",
+        couponId: couponPromise,
+        offer: checkoutOfferPromise,
+      }),
+      paymentFailedBlock,
+    ]);
+    if (block.blocked) {
+      return paymentFailedCheckoutResponse();
+    }
     const [couponId, checkoutOffer] = await Promise.all([couponPromise, checkoutOfferPromise]);
     const blackFriday = checkoutOffer === CHECKOUT_OFFER_BLACK_FRIDAY;
 

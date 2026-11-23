@@ -1,6 +1,7 @@
 import { getCheckoutUrl, getPlanDisplayName, isValidPlanId } from "@/lib/constants";
 import type { TrialStatus } from "@/lib/trial";
 import { isActiveSubscriptionStatus } from "@/lib/subscription";
+import { isPaymentFailedStatus } from "@/lib/checkout-payment-failed-guard-core";
 
 export type SubscriptionInactiveReason =
   | "payment_failed"
@@ -17,9 +18,9 @@ export type SubscriptionInactiveDetails = {
   checkoutUrl: string;
   previousPlanName: string | null;
   /**
-   * Renewal failed and Stripe is still retrying (past_due): the fix is a new
-   * card on the existing subscription, not a new checkout, which would leave
-   * the old one to be charged again by a later retry.
+   * Renewal failed and the subscription still exists (past_due, unpaid,
+   * incomplete): the fix is a new card on it, not a new checkout, which would
+   * leave the old one to be charged again by a later retry.
    */
   updatePaymentMethod: boolean;
 };
@@ -54,7 +55,6 @@ type ProfileInactiveFields = {
   plan_id?: string | null;
 };
 
-const PAYMENT_FAILED_STATUSES = new Set(["past_due", "unpaid", "incomplete"]);
 
 const REASON_COPY: Record<
   SubscriptionInactiveReason,
@@ -113,7 +113,7 @@ export function getSubscriptionInactiveReason(
 
   if (
     trialStatus === "charge_failed" ||
-    (subscriptionStatus && PAYMENT_FAILED_STATUSES.has(subscriptionStatus))
+    isPaymentFailedStatus(subscriptionStatus)
   ) {
     return "payment_failed";
   }
@@ -149,7 +149,9 @@ export function getSubscriptionInactiveDetails(
   const checkoutPlanId = isValidPlanId(profile.plan_id ?? undefined)
     ? profile.plan_id!
     : "annual";
-  const updatePaymentMethod = profile.subscription_status === "past_due";
+  // The old subscription still exists (past_due, unpaid, incomplete): the
+  // checkout refuses a 2nd one, so the fix is a new card on this one.
+  const updatePaymentMethod = isPaymentFailedStatus(profile.subscription_status);
 
   return {
     reason,

@@ -20,6 +20,7 @@ import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/adm
 import { getAppUrl, stripe } from "@/lib/stripe";
 import { isActiveSubscriptionStatus } from "@/lib/subscription";
 import { UserFacingError } from "@/lib/errors";
+import { isPaymentFailedStatus } from "@/lib/checkout-payment-failed-guard-core";
 
 export type { BillingPortalFlow };
 
@@ -317,7 +318,8 @@ export async function cancelStripeSubscriptionForUser(userId: string) {
 }
 
 /**
- * Called when a past_due customer comes back from the portal with a new card.
+ * Called when a past_due (or unpaid / incomplete) customer comes back from the
+ * portal with a new card.
  * The subscription keeps its own default card (set by Checkout), which would
  * override the customer's new one, so point it at the new card and pay the
  * overdue invoice right away. Returns whether the subscription is paid up.
@@ -337,7 +339,9 @@ export async function settlePastDueSubscriptionForUser(userId: string) {
     profile.stripe_subscription_id
   );
 
-  if (subscription.status !== "past_due") {
+  // past_due, unpaid or incomplete: the overdue invoice is still open and
+  // paying it brings this same subscription back (checkout sends all three here).
+  if (!isPaymentFailedStatus(subscription.status)) {
     return { settled: isActiveSubscriptionStatus(subscription.status) };
   }
 
