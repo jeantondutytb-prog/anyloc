@@ -122,6 +122,10 @@ runPython([
 
 prune();
 
+// The Wi-Fi tunnel needs sslpsk_pmd3 on Python < 3.13, and pymobiledevice3
+// only finds out at connection time on the customer's PC: check it here.
+runPython(["-I", path.join(root, "build-tools", "check-python-bundle.py")]);
+
 const installed = runPython(["-c", "import importlib.metadata as m, pymobiledevice3; print(m.version('pymobiledevice3'))"], { capture: true });
 if (installed !== PMD3_VERSION) throw new Error(`Expected pymobiledevice3 ${PMD3_VERSION}, got ${installed}`);
 console.log(`Bundled Python ${PYTHON} + pymobiledevice3 ${installed} in ${pythonDir}`);

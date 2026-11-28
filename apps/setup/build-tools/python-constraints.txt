@@ -85,7 +85,12 @@ rich==15.0.0
 shellingham==1.5.4
 six==1.17.0
 srptools==1.0.1
-sslpsk-pmd3==1.0.3
+# Windows: the 1.0.3 wheels link OpenSSL 1.1 (libssl-1_1-x64.dll) while the
+# bundled Python 3.12 ships OpenSSL 3, so `import sslpsk_pmd3` failed on every
+# PC and the Wi-Fi tunnel died on "sslpsk_pmd3 is required for the TCP tunnel".
+# 1.2.x binds to the interpreter's own OpenSSL. macOS keeps 1.0.3 (works).
+sslpsk-pmd3==1.0.3; sys_platform != "win32"
+sslpsk-pmd3==1.2.2; sys_platform == "win32"
 stack-data==0.6.3
 starlette==1.7.0
 termcolor==3.3.0
