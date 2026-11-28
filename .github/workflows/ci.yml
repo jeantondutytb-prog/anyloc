@@ -19,5 +19,7 @@ jobs:
       - run: npx next typegen
       - run: npx tsc --noEmit
       - run: npm test
+      # Desktop app helpers (plain Node, no Electron needed).
+      - run: node --test "apps/setup/src/*.test.js"
       # Builds without secrets: every integration is optional at build time.
       - run: npm run build

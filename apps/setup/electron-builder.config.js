@@ -16,7 +16,8 @@ module.exports = {
     description: "Anyloc — GPS iPhone via USB",
     author: "Anyloc",
   },
-  files: ["src/**/*", "package.json"],
+  // Tests stay out of the installer.
+  files: ["src/**/*", "!src/**/*.test.js", "package.json"],
   extraResources: [
     {
       from: "scripts",
