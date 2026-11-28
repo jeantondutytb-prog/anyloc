@@ -11,6 +11,7 @@ import { CHECKOUT_COPY } from "@/lib/checkout-copy";
 import { type DeclineKind, getFirstMonthOfferPrice } from "@/lib/checkout-first-month-offer";
 import { CheckoutRequestError, isNetworkError, requestCheckoutSession } from "@/lib/checkout-request";
 import { GUARANTEE, type Plan } from "@/lib/constants";
+import { guardPopupBack, installPopupBackListener } from "@/lib/popup-back";
 import { getOrderRenewalLine } from "@/lib/quiz-paywall";
 
 /**
@@ -20,6 +21,10 @@ import { getOrderRenewalLine } from "@/lib/quiz-paywall";
  * refuses the card for lack of funds, offers -50 % on the shortest plan.
  * Rendered only while open, so every opening starts a fresh session.
  */
+// Registered when this module loads, ahead of the page's own back handling
+// (useBackInterception, Next's router), so the popup's back press stops there.
+if (typeof window !== "undefined") installPopupBackListener(window);
+
 /** How often the popup asks whether its checkout was refused for lack of funds. */
 const DECLINE_POLL_MS = 3000;
 
@@ -215,6 +220,11 @@ export function CheckoutPaymentModal({
   useEffect(() => {
     requestCloseRef.current = requestClose;
   });
+
+  // Android's back button or gesture closes the popup like its X. Before, it
+  // left the checkout page (back to signup, onboarding...) with no exit
+  // question, offer or downsell: 8 of 37 Android forms ended that way.
+  useEffect(() => guardPopupBack(window, () => requestCloseRef.current()), []);
 
   function answerExitReason(reason: string | null) {
     track("checkout_exit_reason", {
