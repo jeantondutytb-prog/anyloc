@@ -63,6 +63,7 @@ import { getStripe } from "@/lib/stripe-browser";
 import { cn } from "@/lib/utils";
 import type { PaywallEmailOffer } from "@/lib/checkout-email-offer";
 import type { PaywallBlackFriday } from "@/lib/black-friday";
+import { BlackFridayBanner } from "@/components/checkout/black-friday-banner";
 
 /** Apple logo outline (Simple Icons path, CC0): lucide's `Apple` is a fruit, not the brand. */
 function AppleLogo({ className }: { className?: string }) {
@@ -697,12 +698,7 @@ export function AnyLocCheckoutPanel({
         </p>
       )}
 
-      {blackFridayOnGrid ? (
-        <p className="mb-4 rounded-xl border border-zinc-900 bg-zinc-950 px-4 py-3 text-center text-sm text-white">
-          <span className="font-bold">{copy.blackFridayBannerTitle}</span>
-          {copy.blackFridayBannerRest}
-        </p>
-      ) : null}
+      {blackFridayOnGrid ? <BlackFridayBanner className="mb-4" /> : null}
 
       {emailOfferPrice ? (
         <p
