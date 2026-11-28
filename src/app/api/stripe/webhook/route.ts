@@ -17,6 +17,7 @@ import {
 import { markCheckoutRecoveryConverted } from "@/lib/checkout-recovery-server";
 import { scheduleActivationHelpEmail } from "@/lib/activation-server";
 import { stripe } from "@/lib/stripe";
+import { firstTouchProperties } from "@/lib/first-touch";
 import { logError } from "@/lib/log-error";
 import { claimStripeEvent, releaseStripeEvent } from "@/lib/webhook-idempotency";
 
@@ -61,6 +62,8 @@ async function trackCheckoutCompleted(
       amount_total: session.amount_total,
       currency: session.currency,
       offer: session.metadata?.offer ?? null,
+      // UTM tags and sending site of the first visit (see lib/first-touch).
+      ...firstTouchProperties(session.metadata),
     },
   });
 }

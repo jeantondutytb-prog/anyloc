@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { after, NextResponse } from "next/server";
 import { logError } from "@/lib/log-error";
 import {
@@ -13,6 +14,7 @@ import {
   pickCheckoutCoupon,
 } from "@/lib/black-friday";
 import { capturePostHogEvent, parsePostHogDistinctId } from "@/lib/posthog/server";
+import { FIRST_TOUCH_COOKIE, firstTouchProperties, firstTouchMetadata, parseFirstTouch } from "@/lib/first-touch";
 import { publicErrorMessage } from "@/lib/errors";
 import { limitByIp } from "@/lib/rate-limit";
 import {
@@ -51,6 +53,8 @@ export async function POST(request: Request) {
     const user = await getAuthenticatedCheckoutUser();
     userId = user?.id;
     const analyticsId = parsePostHogDistinctId(body?.analyticsId);
+    // Where the buyer first came from (UTM, sending site): kept since the first visit.
+    const firstTouch = parseFirstTouch((await cookies()).get(FIRST_TOUCH_COOKIE)?.value);
     // A failed renewal is fixed with a new card, never with a 2nd subscription.
     const paymentFailedBlock = getPaymentFailedCheckoutBlock(user?.id);
 
@@ -98,6 +102,7 @@ export async function POST(request: Request) {
         user,
         analyticsId,
         uiMode: "hosted_page",
+        firstTouch,
         couponId: couponPromise,
         offer: checkoutOfferPromise,
       }),
@@ -125,6 +130,7 @@ export async function POST(request: Request) {
             checkout_variant: "direct",
             recovery_offer: Boolean(couponId) && !annualExitCoupon && !blackFriday,
             offer: checkoutOffer,
+            ...firstTouchProperties(firstTouchMetadata(firstTouch)),
           },
         });
         if (blackFriday) {
