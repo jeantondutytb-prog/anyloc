@@ -2,6 +2,7 @@ import { getPlanLabel } from "@/lib/account-billing";
 import { logError } from "@/lib/log-error";
 import { stripe } from "@/lib/stripe";
 import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
+import { describeIphoneApp } from "@/lib/support/iphone-app";
 
 /**
  * What the agent may know about the person writing. The email comes from the
@@ -26,7 +27,7 @@ export async function describeCustomer(email: string | null | undefined): Promis
     // typed as "%" would match someone else's account.
     const { data: profile } = await admin
       .from("profiles")
-      .select("id, plan_id, subscription_status, stripe_subscription_id, created_at")
+      .select("id, plan_id, subscription_status, stripe_subscription_id, created_at, is_admin, is_clipper")
       .ilike("email", normalizedEmail.replace(/[\\%_]/g, "\\$&"))
       .limit(1)
       .maybeSingle();
@@ -56,6 +57,7 @@ export async function describeCustomer(email: string | null | undefined): Promis
     const lines = [
       `Compte créé le ${formatDate(profile.created_at)}.`,
       `Formule : ${getPlanLabel(profile.plan_id) ?? "aucune"} — statut : ${profile.subscription_status ?? "aucun abonnement"}.`,
+      describeIphoneApp(profile),
     ];
 
     if (stripe && profile.stripe_subscription_id) {
