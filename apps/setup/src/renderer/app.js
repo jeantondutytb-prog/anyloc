@@ -632,6 +632,12 @@ async function init() {
     persistSession(fresh);
     window.homeSetSession?.(fresh);
   });
+  // Dead session the main process could not renew: clean logout + message.
+  window.anylocSetup.onSessionExpired?.((info) => {
+    if (!session) return;
+    logout();
+    $("login-error").textContent = info?.message || "Reconnecte-toi à ton compte Anyloc.";
+  });
 
   void applyPlatformHints();
 

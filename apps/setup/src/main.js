@@ -25,6 +25,7 @@ const { ensurePymobiledevice3, isBundleReady, isBundleCurrent, removeLegacyEnv }
 const { diagnoseWindows, repairWindows } = require("./windows-driver");
 const { configureErrorReporter, reportError, getRecentErrors } = require("./error-reporter");
 const { configureAnalytics, trackEvent } = require("./analytics");
+const { SESSION_EXPIRED_MESSAGE, createSessionGuard, nextPollDelay } = require("./autosync-session");
 
 const SUPABASE_URL =
   process.env.ANYLOC_SUPABASE_URL || "https://gqkxnktprctdvpwvnqli.supabase.co";
@@ -39,7 +40,13 @@ let tray = null;
 
 // ── Auto-sync: poll Supabase and apply GPS in a loop ──
 const fs = require("node:fs");
-let autoSyncInterval = null;
+// Pending poll (a setTimeout: the delay grows while polls fail) and run id:
+// a stop or restart bumps the id, so a poll still in flight drops its result.
+let autoSyncTimer = null;
+let autoSyncActive = false;
+let autoSyncRun = 0;
+let autoSyncFailures = 0;
+let autoSyncGuard = null;
 let autoSyncSession = null;
 let lastSyncedLoc = null;
 let autoSyncSpoofChild = null;
@@ -248,70 +255,117 @@ function startAutoSync(session) {
   if (!session?.access_token || !session?.user?.id) return;
   autoSyncSession = session;
   saveSessionFile(session);
-  console.log("[AutoSync] Started — polling every 1s, re-apply every 5s");
+  console.log("[AutoSync] Started — polling every 1s (backs off to 30s on errors), re-apply every 5s");
   prewarmSpoofChild();
 
-  autoSyncInterval = setInterval(async () => {
-    // Walking or playing a route from this computer drives the GPS directly.
-    // During a tools upgrade pip is replacing the files the spoof runs from.
-    if (liveActive || toolsUpgrade) return;
-    try {
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/location_settings?user_id=eq.${autoSyncSession.user.id}&select=name,lat,lng,is_active,updated_at`,
-        {
-          headers: {
-            apikey: SUPABASE_ANON_KEY,
-            Authorization: `Bearer ${autoSyncSession.access_token}`,
-          },
-        }
-      );
-      if (!res.ok) {
-        // 401: the token expired, keepSessionFresh renews it.
-        if (res.status !== 401) {
-          reportError("autosync/fetch", `HTTP ${res.status}`, { http_status: res.status });
-        }
-        return;
+  autoSyncActive = true;
+  autoSyncFailures = 0;
+  autoSyncGuard = createSessionGuard({ refresh: refreshSession });
+  const run = ++autoSyncRun;
+  scheduleAutoSyncPoll(run, nextPollDelay(0));
+}
+
+function scheduleAutoSyncPoll(run, delay) {
+  if (run !== autoSyncRun) return;
+  autoSyncTimer = setTimeout(() => void runAutoSyncPoll(run), delay);
+}
+
+async function runAutoSyncPoll(run) {
+  if (run !== autoSyncRun) return;
+  // Walking or playing a route from this computer drives the GPS directly.
+  // During a tools upgrade pip is replacing the files the spoof runs from.
+  const ok = liveActive || toolsUpgrade ? true : await pollAutoSyncOnce(run);
+  if (run !== autoSyncRun) return;
+  autoSyncFailures = ok ? 0 : autoSyncFailures + 1;
+  scheduleAutoSyncPoll(run, nextPollDelay(autoSyncFailures));
+}
+
+/** One poll of the chosen location. Returns false when it failed (backoff). */
+async function pollAutoSyncOnce(run) {
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/location_settings?user_id=eq.${autoSyncSession.user.id}&select=name,lat,lng,is_active,updated_at`,
+      {
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${autoSyncSession.access_token}`,
+        },
       }
-      const rows = await res.json();
-      if (!rows.length) return;
-
-      const loc = rows[0];
-
-      // Check if location changed
-      const changed =
-        !lastSyncedLoc ||
-        lastSyncedLoc.lat !== loc.lat ||
-        lastSyncedLoc.lng !== loc.lng ||
-        lastSyncedLoc.is_active !== loc.is_active ||
-        // Choosing the same place again must re-apply it and report back.
-        lastSyncedLoc.updated_at !== loc.updated_at;
-
-      if (!changed) return;
-      lastSyncedLoc = loc;
-
-      if (!loc.is_active) {
-        clearSpoof();
-        console.log("[AutoSync] GPS cleared");
-        sendSyncStatus("GPS réinitialisé", false, loc);
-        return;
-      }
-
-      // New location — start re-apply loop
-      const name = loc.name || `${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`;
-      sendSyncStatus(`GPS: ${name}`, false, loc);
-      startReapplyLoop(loc);
-    } catch (err) {
-      // "fetch failed": no network on the user's side, nothing we could fix.
-      if (err?.message !== "fetch failed") reportError("autosync", err);
+    );
+    if (run !== autoSyncRun) return true;
+    if (res.status === 401) {
+      // Dead token: one immediate renewal, else a clean logout.
+      const outcome = await autoSyncGuard.onUnauthorized(autoSyncSession);
+      if (run !== autoSyncRun) return true;
+      if (outcome.action === "renewed") return true;
+      expireAutoSyncSession();
+      return false;
     }
-  }, 1000);
+    if (!res.ok) {
+      reportError("autosync/fetch", `HTTP ${res.status}`, { http_status: res.status });
+      return false;
+    }
+    autoSyncGuard.onSuccess();
+    const rows = await res.json();
+    if (!rows.length) return true;
+
+    const loc = rows[0];
+
+    // Check if location changed
+    const changed =
+      !lastSyncedLoc ||
+      lastSyncedLoc.lat !== loc.lat ||
+      lastSyncedLoc.lng !== loc.lng ||
+      lastSyncedLoc.is_active !== loc.is_active ||
+      // Choosing the same place again must re-apply it and report back.
+      lastSyncedLoc.updated_at !== loc.updated_at;
+
+    if (!changed) return true;
+    lastSyncedLoc = loc;
+
+    if (!loc.is_active) {
+      clearSpoof();
+      console.log("[AutoSync] GPS cleared");
+      sendSyncStatus("GPS réinitialisé", false, loc);
+      return true;
+    }
+
+    // New location — start re-apply loop
+    const name = loc.name || `${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`;
+    sendSyncStatus(`GPS: ${name}`, false, loc);
+    startReapplyLoop(loc);
+    return true;
+  } catch (err) {
+    // "fetch failed": no network on the user's side, nothing we could fix.
+    if (err?.message !== "fetch failed") reportError("autosync", err);
+    return false;
+  }
+}
+
+/**
+ * The session could not be renewed: stop polling, forget the saved session
+ * and send the window to the login screen ("Reconnecte-toi"), which also
+ * resets the GPS like the logout button does.
+ */
+function expireAutoSyncSession() {
+  console.log("[AutoSync] Session expired — logging out");
+  stopAutoSync();
+  clearSessionFile();
+  currentSession = null;
+  try { trackEvent("autosync_session_expired", {}); } catch {}
+  try { mainWindowRef?.webContents.send("setup:session-expired", { message: SESSION_EXPIRED_MESSAGE }); } catch {}
 }
 
 function stopAutoSync() {
   stopLive();
-  if (autoSyncInterval) {
-    clearInterval(autoSyncInterval);
-    autoSyncInterval = null;
+  autoSyncRun += 1;
+  if (autoSyncTimer) {
+    clearTimeout(autoSyncTimer);
+    autoSyncTimer = null;
+  }
+  if (autoSyncActive) {
+    autoSyncActive = false;
+    autoSyncGuard = null;
     lastSyncedLoc = null;
     killSpoofProcess();
     console.log("[AutoSync] Stopped");
@@ -497,7 +551,7 @@ function createTray() {
   tray.setToolTip("Anyloc");
 
   const updateTrayMenu = () => {
-    const syncActive = !!autoSyncInterval;
+    const syncActive = autoSyncActive;
     const locName = lastSyncedLoc?.name || (lastSyncedLoc ? `${lastSyncedLoc.lat.toFixed(4)}, ${lastSyncedLoc.lng.toFixed(4)}` : null);
     const statusLabel = syncActive
       ? locName ? `GPS: ${locName}` : "En attente..."
@@ -1212,7 +1266,7 @@ ipcMain.handle("setup:stop-live", async () => {
 });
 
 ipcMain.handle("setup:autosync-status", async () => {
-  return { active: !!autoSyncInterval };
+  return { active: autoSyncActive };
 });
 
 ipcMain.handle("setup:show-item-in-folder", async (_event, payload) => {

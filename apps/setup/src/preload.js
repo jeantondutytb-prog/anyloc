@@ -54,6 +54,12 @@ contextBridge.exposeInMainWorld("anylocSetup", {
     ipcRenderer.on("setup:session", listener);
     return () => ipcRenderer.removeListener("setup:session", listener);
   },
+  // The main process could not renew the session: back to the login screen.
+  onSessionExpired: (callback) => {
+    const listener = (_event, info) => callback(info);
+    ipcRenderer.on("setup:session-expired", listener);
+    return () => ipcRenderer.removeListener("setup:session-expired", listener);
+  },
   iphoneAppStatus: () => ipcRenderer.invoke("setup:iphone-app-status"),
   iphoneAppRegister: (payload) => ipcRenderer.invoke("setup:iphone-app-register", payload),
   iphoneAppInstall: (payload) => ipcRenderer.invoke("setup:iphone-app-install", payload),
