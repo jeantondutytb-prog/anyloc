@@ -64,7 +64,7 @@ export const CHECKOUT_PAY_CONSENT =
 
 /** Prérequis matériel affiché sur chaque plan, avant l'achat. */
 export const DEVICE_REQUIREMENT_NOTE =
-  "iPhone : un ordinateur (Mac ou PC) est obligatoire une fois pour l'installation. Android : aucun ordinateur requis.";
+  "iPhone : il faut un ordinateur (Mac ou PC), qui tient ta position, sauf avec la formule 1 an : l'app iPhone marche sans ordi. Android : aucun ordinateur requis.";
 
 export const PAYWALL_TESTIMONIALS = [
   {
@@ -347,7 +347,7 @@ export const PLANS = [
     perDay: "89",
     perDayLabel: "€ une fois",
     billedNote:
-      "Payé 89 € une seule fois. Pas d'abonnement, rien ne se renouvelle. Sur iPhone, un ordi est nécessaire une fois pour installer.",
+      "Payé 89 € une seule fois. Pas d'abonnement, rien ne se renouvelle. Sur iPhone, pas d'app : c'est ton ordi (Mac ou PC) qui tient ta position.",
     compare: "Le prix de 9 mois, pour toujours",
     description: "Tu paies une fois, Anyloc est à toi.",
     savings: "Plus jamais d'abonnement",
@@ -477,12 +477,12 @@ export const FAQ = [
   {
     q: "Ça passe sur iPhone et Android ?",
     a:
-      "Oui. Sur Android : 3 étapes sur le tel. Sur iPhone : un Mac ou un PC une seule fois (limite Apple), puis tu gères ta loc depuis l'iPhone, sans rebrancher l'ordi.",
+      "Oui. Sur Android : 3 étapes sur le tel, sans ordi. Sur iPhone, il faut un Mac ou un PC (limite Apple). Avec la formule 1 an, l'app iPhone s'installe sans ordi et tu gères ta loc depuis l'iPhone. En mensuel, 6 mois ou à vie, c'est l'ordi qui change et tient ta position.",
   },
   {
     q: "Faut-il garder le Mac branché ?",
     a:
-      "Non. Le Mac ne sert qu'une seule fois, à la première installation. Ensuite, installe LocalDevVPN sur ton iPhone, connecte le VPN en Wi-Fi, puis ouvre Anyloc : tout se gère depuis ton tel.",
+      "Avec la formule 1 an, non : l'app iPhone s'installe sans ordi, et avec LocalDevVPN allumée tout se gère depuis ton tel. En mensuel, 6 mois ou à vie, c'est l'ordi qui tient ta position : en USB, ou sans câble sur le même Wi-Fi, avec Anyloc ouvert et l'ordi éveillé.",
   },
   {
     q: "Faut jailbreaker ou bidouiller le tel ?",
@@ -492,7 +492,7 @@ export const FAQ = [
   {
     q: "La loc reste active si je ferme l'app ?",
     a:
-      "Sur Android, oui, même écran verrouillé. Avec le plan annuel sur iPhone, pareil. Sinon, la loc reste tant que la session Anyloc tourne.",
+      "Sur Android, oui, même écran verrouillé. Sur iPhone avec la formule 1 an, pareil. En mensuel, 6 mois ou à vie, la loc reste tant qu'Anyloc est ouvert sur l'ordi, que l'ordi est éveillé et qu'il parle à l'iPhone (câble ou même Wi-Fi).",
   },
 ];
 
