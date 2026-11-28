@@ -16,6 +16,7 @@ import {
   pickCheckoutCoupon,
 } from "@/lib/black-friday";
 import { capturePostHogEvent, parsePostHogDistinctId } from "@/lib/posthog/server";
+import { FIRST_TOUCH_COOKIE, firstTouchProperties, firstTouchMetadata, parseFirstTouch } from "@/lib/first-touch";
 import {
   getPaymentFailedCheckoutBlock,
   paymentFailedCheckoutResponse,
@@ -53,6 +54,8 @@ export async function POST(request: Request) {
     const user = await getAuthenticatedCheckoutUser();
     userId = user?.id;
     const analyticsId = parsePostHogDistinctId(body?.analyticsId);
+    // Where the buyer first came from (UTM, sending site): kept since the first visit.
+    const firstTouch = parseFirstTouch((await cookies()).get(FIRST_TOUCH_COOKIE)?.value);
     // The earlier checkout refused for lack of funds (or closed, in the A/B
     // test) that this one comes from: -50 % on the 1st month.
     const offerSessionId = typeof body?.offerSessionId === "string" ? body.offerSessionId : null;
@@ -111,6 +114,7 @@ export async function POST(request: Request) {
         user,
         analyticsId,
         uiMode: "embedded_page",
+        firstTouch,
         couponId: couponPromise,
         offer: checkoutOfferPromise,
       }),
@@ -143,6 +147,7 @@ export async function POST(request: Request) {
             recovery_offer: Boolean(couponId) && !offer && !annualExitCoupon && !blackFriday,
             first_month_offer: offer?.reason ?? null,
             offer: checkoutOffer,
+            ...firstTouchProperties(firstTouchMetadata(firstTouch)),
           },
         });
         if (blackFriday) {

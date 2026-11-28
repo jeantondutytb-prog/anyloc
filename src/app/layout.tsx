@@ -2,6 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AmplitudeProvider } from "@/components/amplitude/amplitude-provider";
 import { AnalyticsListener } from "@/components/analytics/analytics-listener";
+import { FirstTouchCapture } from "@/components/analytics/first-touch-capture";
 import { ClarityTag } from "@/components/clarity/clarity-tag";
 import { CrispChat } from "@/components/crisp/crisp-chat";
 import { PostHogProvider } from "@/components/posthog/posthog-provider";
@@ -41,6 +42,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <PostHogProvider />
         <AmplitudeProvider />
         <AnalyticsListener />
+        <FirstTouchCapture />
         <ClarityTag />
         {children}
         <CrispChat />

@@ -6,6 +6,7 @@ import { getAppUrl, stripe } from "@/lib/stripe";
 import { UserFacingError } from "@/lib/errors";
 import { withCheckoutOffer } from "@/lib/checkout-offer";
 import { isEmailOfferCoupon } from "@/lib/checkout-email-offer";
+import { withFirstTouch, type FirstTouch } from "@/lib/first-touch";
 
 export { CHECKOUT_OFFER_ANNUAL_EXIT, withCheckoutOffer } from "@/lib/checkout-offer";
 
@@ -53,6 +54,7 @@ export async function createSubscriptionCheckoutSession({
   analyticsId,
   couponId,
   offer,
+  firstTouch,
 }: {
   plan: Plan;
   user?: User | null;
@@ -65,6 +67,8 @@ export async function createSubscriptionCheckoutSession({
   couponId?: string | null | Promise<string | null>;
   /** Offer tag (e.g. "annual_exit") put on the session and the subscription. May be pending, like the coupon. */
   offer?: string | null | Promise<string | null>;
+  /** UTM tags and sending site of the first visit (cookie, see lib/first-touch). */
+  firstTouch?: FirstTouch | null;
 }) {
   if (!stripe || !plan.stripePriceId) {
     throw new UserFacingError("Paiement non configuré pour ce plan");
@@ -82,7 +86,10 @@ export async function createSubscriptionCheckoutSession({
   // and coupons made for a subscription plan, except the 15-min email's.
   const oneTime = Boolean(plan.oneTime);
   const applyCoupon = Boolean(coupon) && (!oneTime || isEmailOfferCoupon(coupon!));
-  const baseParams = oneTime ? toOneTimePaymentParams(subscriptionParams) : subscriptionParams;
+  const baseParams = withFirstTouch(
+    oneTime ? toOneTimePaymentParams(subscriptionParams) : subscriptionParams,
+    firstTouch
+  );
 
   const sharedParams = {
     ...(oneTime
