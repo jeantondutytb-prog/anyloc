@@ -76,6 +76,7 @@ import {
 import { getPricingGrid, readPricingVariantCookie } from "@/lib/pricing-experiment";
 import { cn } from "@/lib/utils";
 import type { VisitorLocation } from "@/lib/visitor-location";
+import type { PaywallBlackFriday } from "@/lib/black-friday";
 
 /** Neutral tile, same size as the brand tiles, for "Autre". */
 function GlyphTile({ children }: { children: ReactNode }) {
@@ -595,8 +596,11 @@ function ReadyScreen({
 export function OnboardingQuizView({
   visitorLocation,
   checkoutPreview = false,
+  blackFriday = null,
 }: {
   visitorLocation: VisitorLocation | null;
+  /** Black Friday prices for the plan sheet, computed on the server; null when off. */
+  blackFriday?: PaywallBlackFriday | null;
   /** Local preview without an account: the checkout opens in its dev preview mode. */
   checkoutPreview?: boolean;
 }) {
@@ -893,6 +897,7 @@ export function OnboardingQuizView({
           recommendedPlanId={plansSheet.recommendedPlanId}
           recommendationReason={plansSheet.reason}
           worry={plansSheet.worry}
+          blackFridayPrices={blackFriday?.prices}
           onSelectPlan={selectSheetPlan}
           onContinue={continueToOrder}
           onClose={() => setPlansSheet({ ...plansSheet, open: false })}

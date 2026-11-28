@@ -136,6 +136,18 @@ function perDayLabel(cents: number, months: number) {
   return months === 1 ? value : `≈ ${value}`;
 }
 
+/**
+ * The plans of a grid that show a Black Friday price, in grid order: what
+ * black_friday_offer_shown reports. Empty when the offer is off.
+ */
+export function blackFridayPlanIdsOn(
+  plans: readonly Pick<Plan, "id">[],
+  prices: Record<string, BlackFridayPrice> | null | undefined
+): string[] {
+  if (!prices) return [];
+  return plans.filter((plan) => prices[plan.id]).map((plan) => plan.id);
+}
+
 /** What the paywall shows, computed on the server; null when the offer is off. */
 export type PaywallBlackFriday = {
   prices: Record<string, BlackFridayPrice>;

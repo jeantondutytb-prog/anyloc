@@ -4,7 +4,10 @@ import { useEffect, useRef, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { X } from "lucide-react";
+import { BlackFridayBanner } from "@/components/checkout/black-friday-banner";
 import { QuizPlanCta, QuizPlanList } from "@/components/checkout/quiz-plan-list";
+import { track } from "@/lib/analytics/track";
+import { blackFridayPlanIdsOn, type BlackFridayPrice } from "@/lib/black-friday";
 import type { Plan } from "@/lib/constants";
 
 function subscribeToNothing() {
@@ -35,6 +38,8 @@ const EASE = [0.22, 1, 0.36, 1] as const;
  * screen. Full-height sheet on a phone, centred modal from 640 px. The cross,
  * Escape and the backdrop close it; "Continuer avec …" hands over to the
  * payment popup (/checkout?plan=…&parcours=quiz&payer=1). Portaled to <body>.
+ * During Black Friday it shows the same banner, struck prices and first
+ * payment as /checkout, from the prices the server computed.
  */
 export function QuizPlansSheet({
   open,
@@ -45,6 +50,7 @@ export function QuizPlansSheet({
   recommendedPlanId,
   recommendationReason,
   worry,
+  blackFridayPrices,
   onSelectPlan,
   onContinue,
   onClose,
@@ -58,6 +64,8 @@ export function QuizPlansSheet({
   recommendationReason?: string;
   /** The worry picked in the quiz: one reassurance line above the button. */
   worry?: string;
+  /** Black Friday prices, by plan (see lib/black-friday); absent when the offer is off. */
+  blackFridayPrices?: Record<string, BlackFridayPrice>;
   onSelectPlan: (planId: string) => void;
   onContinue: () => void;
   onClose: () => void;
@@ -74,6 +82,21 @@ export function QuizPlansSheet({
   useEffect(() => {
     onCloseRef.current = onClose;
   });
+
+  const blackFridayPlanIds = blackFridayPlanIdsOn(plans, blackFridayPrices);
+  const blackFridayOnGrid = blackFridayPlanIds.length > 0;
+  // Once per page view, the first time the sheet opens with the offer on its plans.
+  const blackFridayTrackedRef = useRef(false);
+  useEffect(() => {
+    if (!open || !blackFridayOnGrid || blackFridayTrackedRef.current) return;
+    blackFridayTrackedRef.current = true;
+    track("black_friday_offer_shown", {
+      plan: selectedPlan.id,
+      plans: blackFridayPlanIds,
+      source: "quiz_sheet",
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, blackFridayOnGrid]);
 
   // Escape, focus trap, body scroll lock; focus goes back where it was on close.
   useEffect(() => {
@@ -168,6 +191,7 @@ export function QuizPlansSheet({
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-6 sm:px-6">
+              {blackFridayOnGrid ? <BlackFridayBanner className="mb-4" /> : null}
               <QuizPlanList
                 title={title}
                 titleId="quiz-plans-title"
@@ -176,6 +200,7 @@ export function QuizPlansSheet({
                 referencePlan={referencePlan}
                 recommendedPlanId={recommendedPlanId}
                 recommendationReason={recommendationReason}
+                blackFridayPrices={blackFridayPrices}
                 onSelectPlan={onSelectPlan}
               />
             </div>
@@ -184,7 +209,12 @@ export function QuizPlansSheet({
               className="border-t border-zinc-100 bg-background px-4 pt-3 sm:rounded-b-[28px] sm:px-6"
               style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)" }}
             >
-              <QuizPlanCta plan={selectedPlan} worry={worry} onContinue={onContinue} />
+              <QuizPlanCta
+                plan={selectedPlan}
+                worry={worry}
+                firstPayment={blackFridayPrices?.[selectedPlan.id]?.offerPrice}
+                onContinue={onContinue}
+              />
             </div>
           </motion.div>
         </motion.div>

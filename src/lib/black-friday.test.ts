@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import {
+  blackFridayPlanIdsOn,
   BLACK_FRIDAY_ENDS_AT,
   CHECKOUT_OFFER_BLACK_FRIDAY,
   formatEuroCents,
@@ -11,6 +12,7 @@ import {
   pickCheckoutCoupon,
 } from "./black-friday";
 import { RECOVERY_COUPON_ID } from "./checkout-recovery";
+import { PLANS } from "./constants";
 
 const COUPON = "BF2026_20";
 /** Monday 30/11 23:59:59.999, Paris (UTC+1). */
@@ -173,5 +175,65 @@ describe("A/B tests: Black Friday changes no assignment and no exposure", () => 
     const b = getPaywallBlackFriday({ now: DURING, couponId: COUPON });
     assert.deepEqual(a, b);
     assert.equal(getPaywallBlackFriday.length, 1);
+  });
+});
+
+describe("Quiz plan sheet: same Black Friday prices as /checkout", () => {
+  const grid = PLANS.filter((plan) => ["monthly", "6months", "annual"].includes(plan.id));
+
+  it("lists the grid's plans that show the offer, in grid order", () => {
+    const offer = getPaywallBlackFriday({ now: DURING, couponId: COUPON });
+    assert.deepEqual(blackFridayPlanIdsOn(grid, offer?.prices), ["monthly", "6months", "annual"]);
+  });
+
+  it("lists nothing once the offer is off (01/12 00:00 Paris) or without the coupon", () => {
+    const ended = getPaywallBlackFriday({ now: FIRST_INSTANT_AFTER, couponId: COUPON });
+    assert.deepEqual(blackFridayPlanIdsOn(grid, ended?.prices), []);
+    const noCoupon = getPaywallBlackFriday({ now: DURING, couponId: null });
+    assert.deepEqual(blackFridayPlanIdsOn(grid, noCoupon?.prices), []);
+  });
+
+  it("leaves out a plan already showing the bigger -50 % welcome offer, like /checkout", () => {
+    const offer = getPaywallBlackFriday({ now: DURING, couponId: COUPON, welcomeOfferPlanId: "monthly" });
+    assert.deepEqual(blackFridayPlanIdsOn(grid, offer?.prices), ["6months", "annual"]);
+  });
+
+  it("the sheet passes the server prices to the list and the CTA, and reports source quiz_sheet", () => {
+    const sheet = readFileSync(
+      new URL("../components/onboarding/quiz-plans-sheet.tsx", import.meta.url),
+      "utf8"
+    );
+    assert.match(sheet, /blackFridayPrices=\{blackFridayPrices\}/);
+    assert.match(sheet, /firstPayment=\{blackFridayPrices\?\.\[selectedPlan\.id\]\?\.offerPrice\}/);
+    assert.match(sheet, /<BlackFridayBanner/);
+    assert.match(sheet, /track\("black_friday_offer_shown"/);
+    assert.match(sheet, /source: "quiz_sheet"/);
+  });
+
+  it("the quiz page computes the prices on the server, like /checkout", () => {
+    const page = readFileSync(new URL("../app/onboarding/quiz/page.tsx", import.meta.url), "utf8");
+    assert.match(page, /getPaywallBlackFridayForUser\(user\.id\)/);
+    assert.match(page, /blackFriday=\{blackFriday\}/);
+  });
+
+  it("changes no A/B assignment or exposure: no cookie, variant draw or exposure event", () => {
+    for (const file of [
+      "../components/onboarding/quiz-plans-sheet.tsx",
+      "../components/checkout/black-friday-banner.tsx",
+      "./black-friday-server.ts",
+    ]) {
+      const source = readFileSync(new URL(file, import.meta.url), "utf8");
+      for (const forbidden of [
+        "cookies(",
+        "document.cookie",
+        "_COOKIE",
+        "_experiment_exposed",
+        "onboarding-experiment",
+        "Math.random",
+        "@/proxy",
+      ]) {
+        assert.equal(source.includes(forbidden), false, `${file} mentions ${forbidden}`);
+      }
+    }
   });
 });
